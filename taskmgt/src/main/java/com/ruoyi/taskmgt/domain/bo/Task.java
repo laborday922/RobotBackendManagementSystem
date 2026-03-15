@@ -155,6 +155,8 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     /**准备队列顺序*/
     private Integer pendingOrder;
 
+    private String formContent;
+
     @JsonIgnore
     @ToString.Exclude
     @Setter

@@ -81,4 +81,7 @@ public class TaskPo extends BaseEntity {
     private String terminateReason;
 
     private Integer pendingOrder;
+
+    @Column(columnDefinition = "text")
+    private String formContent;
 }

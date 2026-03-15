@@ -123,7 +123,9 @@ public class TemplateServiceImpl implements ITemplateService {
         return templates.stream()
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
-                    if (StringUtils.isNotNull(template.getRobotGroupId())) {vo.setRobotGroupName(this.robotGroupsService.selectRobotGroupsById(template.getRobotGroupId()).getName());}
+                    if (StringUtils.isNotNull(template.getRobotGroupIds())) {
+                        vo.setRobotGroupNames(template.getRobotGroupIds());
+                    }
                     return vo;
                 })
                 .collect(Collectors.toList());
@@ -138,7 +140,9 @@ public class TemplateServiceImpl implements ITemplateService {
                             messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
                 });
         TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
-        if (StringUtils.isNotNull(template.getRobotGroupId())) {vo.setRobotGroupName(this.robotGroupsService.selectRobotGroupsById(template.getRobotGroupId()).getName());}
+        if (StringUtils.isNotNull(template.getRobotGroupIds())) {
+            vo.setRobotGroupNames(template.getRobotGroupIds());
+        }
         return vo;
     }
 }

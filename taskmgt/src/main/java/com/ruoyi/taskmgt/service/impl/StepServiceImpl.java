@@ -4,6 +4,7 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
@@ -19,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.transaction.Transactional;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +57,42 @@ public class StepServiceImpl implements IStepService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void updateSteps(Long taskId, List<TaskStep> steps) {
+        Task task = this.taskRepository.findById(taskId).orElseThrow(()-> {
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
+            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        });
+        if(!Objects.equals(task.getStatus(), Task.DISABLED)){
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString(), task.getStatus().toString()};
+            throw new TaskmgtException(ReturnNo.STATENOTALLOW,args,this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
+        }
+        else {
+            List<String>redisKeys = new ArrayList<>();
+            for(TaskStep step:steps){
+                redisKeys.addAll(this.stepRepository.update(step));
+            }
+            this.redisUtil.deleteObject(redisKeys);
+        }
+    }
+
+    @Override
+    public List<TaskStepVo> retrieveSteps(Long taskId) {
+        Task task = this.taskRepository.findById(taskId).orElseThrow(()-> {
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
+            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        });
+        List<TaskStep> taskSteps = this.stepRepository.findStepesByTaskId(taskId);
+        return taskSteps.stream()
+                .map(step -> {
+                    TaskStepVo vo = CloneFactory.copy(new TaskStepVo(), step);
+                    vo.setTaskName(task.getName());
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
     @Override
     public void completeStep(Long stepId) {
         TaskStep step = stepRepository.findById(stepId)
@@ -68,7 +102,7 @@ public class StepServiceImpl implements IStepService {
                             messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
                 });
 
-        if (step.getStatus() != TaskStep.EXECUTING) {
+        if (!Objects.equals(step.getStatus(), TaskStep.EXECUTING)) {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Step.name",LocaleContextHolder.getLocale()), step.getId().toString(), step.getStatus().toString()};
             throw new TaskmgtException(ReturnNo.STATENOTALLOW,args,this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
         }

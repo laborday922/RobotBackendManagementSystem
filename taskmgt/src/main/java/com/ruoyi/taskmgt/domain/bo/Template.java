@@ -38,7 +38,7 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     private String description;
 
     /** 关联的机器人组ID（可为空，表示不限制组） */
-    private Long robotGroupId;
+    private List<Long> robotGroupIds;
 
     /** 表单内容（JSON格式，定义任务参数） */
     private String formContent;

@@ -31,7 +31,9 @@ public class TemplatePo extends BaseEntity {
     private String description;
 
     /** 关联的机器人组ID*/
-    private Long robotGroupId;
+    @Getter
+    @Setter
+    private String robotGroupIds;
 
     /** 表单内容（JSON格式，定义任务参数） */
     @Column(columnDefinition = "text")

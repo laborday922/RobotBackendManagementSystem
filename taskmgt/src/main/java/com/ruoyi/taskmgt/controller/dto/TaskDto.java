@@ -67,4 +67,6 @@ public class TaskDto {
 
     /** 终止任务原因  */
     private String terminateReason;
+
+    private String formContent;
 }

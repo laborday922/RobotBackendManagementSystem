@@ -60,7 +60,7 @@ public class TemplateRepository {
     private Template build(TemplatePo po, Optional<String> redisKey) {
         if (Objects.nonNull(po)) {
             Template bo = CloneFactory.copy(new Template(), po);
-            bo.setRobotGroupIds(stringToList(po.getRobotGroupIds()));
+            bo.setRobotGroupIds(stringToList(po.getRobotGroupId()));
             redisKey.ifPresent(key -> this.redisUtil.setCacheObject(key, bo));
             return this.build(bo);
         }
@@ -97,7 +97,7 @@ public class TemplateRepository {
         Assert.notNull(template, "TemplateRepository.insert: template can not be null.");
         template.setId(null);
         TemplatePo templatePo = CloneFactory.copyNotNull(new TemplatePo(), template);
-        templatePo.setRobotGroupIds(listToString(template.getRobotGroupIds()));
+        templatePo.setRobotGroupId(listToString(template.getRobotGroupIds()));
         templatePo.setCreateTime(new Date());
         templatePo.setCreateBy(SecurityUtils.getUsername());
         try {
@@ -127,7 +127,7 @@ public class TemplateRepository {
         TemplatePo newPo = CloneFactory.copyNotNull(oldPo, template);
         newPo.setUpdateTime(new Date());
         newPo.setUpdateBy(SecurityUtils.getUsername());
-        newPo.setRobotGroupIds(listToString(template.getRobotGroupIds()));
+        newPo.setRobotGroupId(listToString(template.getRobotGroupIds()));
         try {
             this.templatePoMapper.save(newPo);
         } catch (DataIntegrityViolationException e) {

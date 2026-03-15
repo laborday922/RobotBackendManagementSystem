@@ -10,7 +10,7 @@ import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Table(name="robot_step")
+@Table(name= "tm_task_step")
 @Entity
 @DynamicInsert
 @DynamicUpdate

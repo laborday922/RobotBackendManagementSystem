@@ -1,5 +1,6 @@
 package com.ruoyi.app.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
@@ -11,6 +12,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
  * @author xiaocai
  * @date 2026-03-13
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)//仅序列化非空字段
 public class TAppConfig extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -36,8 +38,6 @@ public class TAppConfig extends BaseEntity
     /** 配置项描述 */
     private String configDesc;
 
-    /** 配置项展示排序（升序） */
-    private Long sort;
 
     public void setId(Long id) 
     {
@@ -109,15 +109,6 @@ public class TAppConfig extends BaseEntity
         return configDesc;
     }
 
-    public void setSort(Long sort) 
-    {
-        this.sort = sort;
-    }
-
-    public Long getSort() 
-    {
-        return sort;
-    }
 
     @Override
     public String toString() {
@@ -129,7 +120,6 @@ public class TAppConfig extends BaseEntity
             .append("configType", getConfigType())
             .append("configLabel", getConfigLabel())
             .append("configDesc", getConfigDesc())
-            .append("sort", getSort())
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
             .toString();

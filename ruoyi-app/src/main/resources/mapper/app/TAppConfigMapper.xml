@@ -12,13 +12,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="configType"    column="config_type"    />
         <result property="configLabel"    column="config_label"    />
         <result property="configDesc"    column="config_desc"    />
-        <result property="sort"    column="sort"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
     </resultMap>
 
     <sql id="selectTAppConfigVo">
-        select id, app_id, config_key, config_value, config_type, config_label, config_desc, sort, create_time, update_time from t_app_config
+        select id, app_id, config_key, config_value, config_type, config_label, config_desc,  create_time, update_time from t_app_config
     </sql>
 
     <select id="selectTAppConfigList" parameterType="TAppConfig" resultMap="TAppConfigResult">
@@ -30,7 +29,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="configType != null "> and config_type = #{configType}</if>
             <if test="configLabel != null  and configLabel != ''"> and config_label = #{configLabel}</if>
             <if test="configDesc != null  and configDesc != ''"> and config_desc = #{configDesc}</if>
-            <if test="sort != null "> and sort = #{sort}</if>
         </where>
     </select>
     
@@ -48,7 +46,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="configType != null">config_type,</if>
             <if test="configLabel != null">config_label,</if>
             <if test="configDesc != null">config_desc,</if>
-            <if test="sort != null">sort,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
          </trim>
@@ -59,7 +56,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="configType != null">#{configType},</if>
             <if test="configLabel != null">#{configLabel},</if>
             <if test="configDesc != null">#{configDesc},</if>
-            <if test="sort != null">#{sort},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
          </trim>
@@ -74,7 +70,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="configType != null">config_type = #{configType},</if>
             <if test="configLabel != null">config_label = #{configLabel},</if>
             <if test="configDesc != null">config_desc = #{configDesc},</if>
-            <if test="sort != null">sort = #{sort},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

@@ -2,6 +2,8 @@ package com.ruoyi.app.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +41,7 @@ public class TAppUpdateController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('app:appUpdate:list')")
     @GetMapping("/list")
+    @ApiOperation("查询应用更新记录列表")
     public TableDataInfo list(TAppUpdate tAppUpdate)
     {
         startPage();
@@ -62,6 +65,7 @@ public class TAppUpdateController extends BaseController
     /**
      * 获取应用更新记录详细信息
      */
+    @ApiOperation("获取应用更新记录详细信息")
     @PreAuthorize("@ss.hasPermi('app:appUpdate:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
@@ -73,6 +77,7 @@ public class TAppUpdateController extends BaseController
      * 新增应用更新记录
      */
     @PreAuthorize("@ss.hasPermi('app:appUpdate:add')")
+    @ApiOperation("新增应用更新记录")
     @Log(title = "应用更新记录", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TAppUpdate tAppUpdate)
@@ -80,25 +85,27 @@ public class TAppUpdateController extends BaseController
         return toAjax(tAppUpdateService.insertTAppUpdate(tAppUpdate));
     }
 
-    /**
-     * 修改应用更新记录
-     */
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:edit')")
-    @Log(title = "应用更新记录", businessType = BusinessType.UPDATE)
-    @PutMapping
-    public AjaxResult edit(@RequestBody TAppUpdate tAppUpdate)
-    {
-        return toAjax(tAppUpdateService.updateTAppUpdate(tAppUpdate));
-    }
 
-    /**
-     * 删除应用更新记录
-     */
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:remove')")
-    @Log(title = "应用更新记录", businessType = BusinessType.DELETE)
-	@DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long[] ids)
-    {
-        return toAjax(tAppUpdateService.deleteTAppUpdateByIds(ids));
-    }
+
+//    /**
+//     * 修改应用更新记录
+//     */
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:edit')")
+//    @Log(title = "应用更新记录", businessType = BusinessType.UPDATE)
+//    @PutMapping
+//    public AjaxResult edit(@RequestBody TAppUpdate tAppUpdate)
+//    {
+//        return toAjax(tAppUpdateService.updateTAppUpdate(tAppUpdate));
+//    }
+//
+//    /**
+//     * 删除应用更新记录
+//     */
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:remove')")
+//    @Log(title = "应用更新记录", businessType = BusinessType.DELETE)
+//	@DeleteMapping("/{ids}")
+//    public AjaxResult remove(@PathVariable Long[] ids)
+//    {
+//        return toAjax(tAppUpdateService.deleteTAppUpdateByIds(ids));
+//    }
 }

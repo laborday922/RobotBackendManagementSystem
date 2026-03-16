@@ -29,7 +29,7 @@ public class TInteractionHistory extends BaseEntity
     private String interactionId;
 
     /** 交互的机器人ID */
-    private String robotId;
+    private Long robotId;
 
     /** 操作用户ID（如管理员/终端用户） */
     private String userId;
@@ -96,12 +96,12 @@ public class TInteractionHistory extends BaseEntity
         return interactionId;
     }
 
-    public void setRobotId(String robotId) 
+    public void setRobotId(Long robotId)
     {
         this.robotId = robotId;
     }
 
-    public String getRobotId() 
+    public Long getRobotId()
     {
         return robotId;
     }

@@ -2,6 +2,7 @@ package com.ruoyi.app.mapper;
 
 import java.util.List;
 import com.ruoyi.app.domain.TAppLibrary;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 应用库Mapper接口
@@ -58,4 +59,9 @@ public interface TAppLibraryMapper
      * @return 结果
      */
     public int deleteTAppLibraryByIds(Long[] ids);
+
+    @Select("select count(id) from t_app_library where app_id = #{appId}")
+    int selectAppLibraryByAppId(String appId);
+    @Select("select count(id) from t_app_library where app_name = #{appName}")
+    int selectAppLibraryByAppName(String appName);
 }

@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `robots` (
                                        `task_status` TINYINT UNSIGNED NOT NULL DEFAULT 2 COMMENT '任务状态（0-执行中，1-充电中，2-闲置，3-维护）',
                                         `battery` TINYINT UNSIGNED NOT NULL DEFAULT 100 COMMENT '当前电量（0-100）',
                                         `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                        `idle_start_time` DATETIME DEFAULT NULL COMMENT '闲置开始时间（任务状态为闲置时记录）', -- 新增字段
                                         PRIMARY KEY (`id`),
                                         UNIQUE KEY `uk_code` (`code`) COMMENT '机器人编号唯一'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='机器人基础信息表';

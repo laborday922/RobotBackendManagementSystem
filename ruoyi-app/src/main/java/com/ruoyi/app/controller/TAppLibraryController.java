@@ -2,6 +2,9 @@ package com.ruoyi.app.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import com.ruoyi.app.controller.dto.TAppLibraryDto;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +40,7 @@ public class TAppLibraryController extends BaseController
     /**
      * 查询应用库列表
      */
+    @ApiOperation("查询应用库列表")
     @PreAuthorize("@ss.hasPermi('app:appLibrary:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppLibrary tAppLibrary)
@@ -62,6 +66,7 @@ public class TAppLibraryController extends BaseController
     /**
      * 获取应用库详细信息
      */
+    @ApiOperation("获取应用详细信息")
     @PreAuthorize("@ss.hasPermi('app:appLibrary:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
@@ -70,35 +75,54 @@ public class TAppLibraryController extends BaseController
     }
 
     /**
-     * 新增应用库
+     * 新增应用
      */
+    @ApiOperation("新增应用")
     @PreAuthorize("@ss.hasPermi('app:appLibrary:add')")
     @Log(title = "应用库", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody TAppLibrary tAppLibrary)
+    public AjaxResult add(@RequestBody TAppLibraryDto tAppLibraryDto)
     {
-        return toAjax(tAppLibraryService.insertTAppLibrary(tAppLibrary));
+        return toAjax(tAppLibraryService.insertTAppLibrary(tAppLibraryDto));
     }
 
     /**
-     * 修改应用库
+     * 修改应用
      */
+    @ApiOperation("修改应用")
     @PreAuthorize("@ss.hasPermi('app:appLibrary:edit')")
     @Log(title = "应用库", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody TAppLibrary tAppLibrary)
+    public AjaxResult edit(@RequestBody TAppLibraryDto tAppLibraryDto)
     {
-        return toAjax(tAppLibraryService.updateTAppLibrary(tAppLibrary));
+        return toAjax(tAppLibraryService.updateTAppLibrary(tAppLibraryDto));
     }
 
     /**
-     * 删除应用库
+     * 删除应用
      */
+    @ApiOperation("删除应用")
     @PreAuthorize("@ss.hasPermi('app:appLibrary:remove')")
     @Log(title = "应用库", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(tAppLibraryService.deleteTAppLibraryByIds(ids));
+    }
+
+
+    @ApiOperation("开启/关闭应用")
+    @Log(title = "应用库", businessType = BusinessType.UPDATE) // 标注为更新操作
+    @PutMapping("/{id}/enabled/{enabled}") // 路径参数：ids（应用ID数组）、status（状态）
+    public AjaxResult changeStatus(
+            @PathVariable Long id,
+            @PathVariable Integer enabled) {
+        // 1. 状态合法性校验（0-关闭，1-开启）
+        if (enabled != 0 && enabled != 1) {
+            return AjaxResult.error("状态值非法，仅支持0（关闭）或1（开启）");
+        }
+        // 2. 调用服务层修改
+        return toAjax(tAppLibraryService.updateAppStatus(id, enabled));
+
     }
 }

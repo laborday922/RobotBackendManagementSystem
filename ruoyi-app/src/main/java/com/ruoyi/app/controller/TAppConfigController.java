@@ -2,6 +2,8 @@ package com.ruoyi.app.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +39,7 @@ public class TAppConfigController extends BaseController
     /**
      * 查询应用配置列表
      */
+    @ApiOperation("查询应用配置列表")
     @PreAuthorize("@ss.hasPermi('app:appConfig:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppConfig tAppConfig)
@@ -62,6 +65,7 @@ public class TAppConfigController extends BaseController
     /**
      * 获取应用配置详细信息
      */
+    @ApiOperation("获取应用配置详细信息")
     @PreAuthorize("@ss.hasPermi('app:appConfig:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
@@ -72,6 +76,7 @@ public class TAppConfigController extends BaseController
     /**
      * 新增应用配置
      */
+    @ApiOperation("新增应用配置")
     @PreAuthorize("@ss.hasPermi('app:appConfig:add')")
     @Log(title = "应用配置", businessType = BusinessType.INSERT)
     @PostMapping
@@ -83,6 +88,7 @@ public class TAppConfigController extends BaseController
     /**
      * 修改应用配置
      */
+    @ApiOperation("修改应用配置")
     @PreAuthorize("@ss.hasPermi('app:appConfig:edit')")
     @Log(title = "应用配置", businessType = BusinessType.UPDATE)
     @PutMapping
@@ -94,6 +100,7 @@ public class TAppConfigController extends BaseController
     /**
      * 删除应用配置
      */
+    @ApiOperation("删除应用配置")
     @PreAuthorize("@ss.hasPermi('app:appConfig:remove')")
     @Log(title = "应用配置", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")

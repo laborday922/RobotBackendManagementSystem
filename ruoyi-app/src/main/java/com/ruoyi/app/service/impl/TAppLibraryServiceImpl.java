@@ -1,7 +1,13 @@
 package com.ruoyi.app.service.impl;
 
 import java.util.List;
+import java.util.Objects;
+
+import com.ruoyi.app.common.AppConstants;
+import com.ruoyi.app.controller.dto.TAppLibraryDto;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.robots.exception.InsertNoAllowedException;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.app.mapper.TAppLibraryMapper;
@@ -47,25 +53,34 @@ public class TAppLibraryServiceImpl implements ITAppLibraryService
     /**
      * 新增应用库
      * 
-     * @param tAppLibrary 应用库
+     *应用库
      * @return 结果
      */
     @Override
-    public int insertTAppLibrary(TAppLibrary tAppLibrary)
+    public int insertTAppLibrary(TAppLibraryDto tAppLibraryDto)
     {
+        int count=tAppLibraryMapper.selectAppLibraryByAppId(tAppLibraryDto.getAppId())
+                +tAppLibraryMapper.selectAppLibraryByAppName(tAppLibraryDto.getAppName());
+        if(count>0)
+           throw new InsertNoAllowedException(AppConstants.SOME_WORDS_HAS_EXISTED);
+        TAppLibrary tAppLibrary = new TAppLibrary();
+        BeanUtils.copyProperties(tAppLibraryDto,tAppLibrary);
         tAppLibrary.setCreateTime(DateUtils.getNowDate());
+        tAppLibrary.setEnabled(0);
         return tAppLibraryMapper.insertTAppLibrary(tAppLibrary);
     }
 
     /**
      * 修改应用库
      * 
-     * @param tAppLibrary 应用库
+     *  应用库
      * @return 结果
      */
     @Override
-    public int updateTAppLibrary(TAppLibrary tAppLibrary)
+    public int updateTAppLibrary(TAppLibraryDto tAppLibraryDto)
     {
+        TAppLibrary tAppLibrary = new TAppLibrary();
+        BeanUtils.copyProperties(tAppLibraryDto,tAppLibrary);
         tAppLibrary.setUpdateTime(DateUtils.getNowDate());
         return tAppLibraryMapper.updateTAppLibrary(tAppLibrary);
     }
@@ -92,5 +107,17 @@ public class TAppLibraryServiceImpl implements ITAppLibraryService
     public int deleteTAppLibraryById(Long id)
     {
         return tAppLibraryMapper.deleteTAppLibraryById(id);
+    }
+
+    @Override
+    public int updateAppStatus(Long id, Integer enabled) {
+        //校验
+        TAppLibrary test = tAppLibraryMapper.selectTAppLibraryById(id);
+        if(test==null|| Objects.equals(test.getEnabled(), enabled))
+            return 0;
+        TAppLibrary tApp = new TAppLibrary();
+        tApp.setId(id);
+        tApp.setEnabled(enabled&1);
+        return tAppLibraryMapper.updateTAppLibrary(tApp);
     }
 }

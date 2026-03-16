@@ -1,6 +1,8 @@
 package com.ruoyi.app.service;
 
 import java.util.List;
+
+import com.ruoyi.app.controller.dto.TAppLibraryDto;
 import com.ruoyi.app.domain.TAppLibrary;
 
 /**
@@ -30,18 +32,18 @@ public interface ITAppLibraryService
     /**
      * 新增应用库
      * 
-     * @param tAppLibrary 应用库
+     *
      * @return 结果
      */
-    public int insertTAppLibrary(TAppLibrary tAppLibrary);
+    public int insertTAppLibrary(TAppLibraryDto tAppLibraryDto);
 
     /**
      * 修改应用库
      * 
-     * @param tAppLibrary 应用库
+     * 应用库
      * @return 结果
      */
-    public int updateTAppLibrary(TAppLibrary tAppLibrary);
+    public int updateTAppLibrary(TAppLibraryDto tAppLibraryDto);
 
     /**
      * 批量删除应用库
@@ -58,4 +60,6 @@ public interface ITAppLibraryService
      * @return 结果
      */
     public int deleteTAppLibraryById(Long id);
+
+    int updateAppStatus(Long id, Integer enabled);
 }

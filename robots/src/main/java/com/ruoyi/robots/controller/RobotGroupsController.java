@@ -67,7 +67,7 @@ public class RobotGroupsController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('robots:groups:query')")
     @GetMapping(value = "/{id}")
-    public AjaxResult getInfo(@PathVariable("id") String id)
+    public AjaxResult getInfo(@PathVariable("id") Long id)
     {
         return success(robotGroupsService.selectRobotGroupsById(id));
     }
@@ -106,7 +106,7 @@ public class RobotGroupsController extends BaseController
     @PreAuthorize("@ss.hasPermi('robots:groups:remove')")
     @Log(title = "机器人分组", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable String[] ids)
+    public AjaxResult remove(@PathVariable Long[] ids)
     {
         return toAjax(robotGroupsService.deleteRobotGroupsByIds(ids));
     }

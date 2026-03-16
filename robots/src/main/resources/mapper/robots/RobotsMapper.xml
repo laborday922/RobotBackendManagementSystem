@@ -38,7 +38,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <insert id="insertRobots" parameterType="Robots" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertRobots" parameterType="Robot" useGeneratedKeys="true" keyProperty="id">
         insert into robots
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
@@ -91,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteRobotsByIds" parameterType="String">
-        delete from robot where id in
+        delete from robots where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

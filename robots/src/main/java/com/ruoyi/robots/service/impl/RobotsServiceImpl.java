@@ -32,7 +32,7 @@ public class RobotsServiceImpl implements IRobotsService
      * @return 机器人基础信息
      */
     @Override
-    public Robot selectRobotsById(String id)
+    public Robot selectRobotsById(Long id)
     {
         return robotsMapper.selectRobotsById(id);
     }

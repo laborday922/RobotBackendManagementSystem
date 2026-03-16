@@ -33,7 +33,7 @@ public class Robot extends BaseEntity
 
     /** 所属分组ID（逻辑外键） */
     @Excel(name = "所属分组ID", readConverterExp = "逻=辑外键")
-    private String groupId;
+    private Long groupId;
 
     /** 生产厂家 */
     @Excel(name = "生产厂家")
@@ -62,7 +62,7 @@ public class Robot extends BaseEntity
 
     /** 当前电量（0-100） */
     @Excel(name = "当前电量", readConverterExp = "0=-100")
-    private String battery;
+    private Integer battery;
 
 
 
@@ -103,12 +103,12 @@ public class Robot extends BaseEntity
         return name;
     }
 
-    public void setGroupId(String groupId) 
+    public void setGroupId(Long groupId)
     {
         this.groupId = groupId;
     }
 
-    public String getGroupId() 
+    public Long getGroupId()
     {
         return groupId;
     }
@@ -173,12 +173,12 @@ public class Robot extends BaseEntity
         return taskStatus;
     }
 
-    public void setBattery(String battery) 
+    public void setBattery(Integer battery)
     {
         this.battery = battery;
     }
 
-    public String getBattery() 
+    public Integer getBattery()
     {
         return battery;
     }

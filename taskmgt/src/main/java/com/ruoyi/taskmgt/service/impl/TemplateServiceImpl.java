@@ -4,6 +4,8 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Template;
 import com.ruoyi.taskmgt.service.ITemplateService;
@@ -27,6 +29,7 @@ public class TemplateServiceImpl implements ITemplateService {
     private final TemplateRepository templateRepository;
     private final MessageSourceAccessor messageSourceAccessor;
     private final RedisCache redisUtil;
+    private final IRobotGroupsService robotGroupsService;
 
     @Override
     public TemplateVo createTemplate(Template template) {
@@ -120,7 +123,9 @@ public class TemplateServiceImpl implements ITemplateService {
         return templates.stream()
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
-                    // vo.setRobotGroupName(...);
+                    if (StringUtils.isNotNull(template.getRobotGroupIds())) {
+                        vo.setRobotGroupNames(template.getRobotGroupIds());
+                    }
                     return vo;
                 })
                 .collect(Collectors.toList());
@@ -135,7 +140,9 @@ public class TemplateServiceImpl implements ITemplateService {
                             messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
                 });
         TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
-        // vo.setRobotGroupName(...);
+        if (StringUtils.isNotNull(template.getRobotGroupIds())) {
+            vo.setRobotGroupNames(template.getRobotGroupIds());
+        }
         return vo;
     }
 }

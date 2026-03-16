@@ -45,7 +45,6 @@ public class TaskController extends BaseController {
         return getDataTable(result);
     }
 
-    /*还需添加返回Vo对象中的机器人名称（需要调用机器人管理模块）*/
     @ApiOperation("创建任务")
     @Log(title = "创建任务", businessType = BusinessType.INSERT)
     @PostMapping("taskcore")

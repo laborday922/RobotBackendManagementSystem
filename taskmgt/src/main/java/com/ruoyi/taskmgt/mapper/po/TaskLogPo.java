@@ -9,7 +9,7 @@ import javax.persistence.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Table(name = "robot_task_log")
+@Table(name = "tm_task_log")
 @Entity
 @DynamicInsert
 @DynamicUpdate

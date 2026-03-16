@@ -32,18 +32,39 @@ public class StepController extends BaseController {
     @ApiOperation("创建任务步骤")
     @Log(title = "创建步骤", businessType = BusinessType.INSERT)
     @PostMapping("tasks/{id}/steps")
-    public AjaxResult createTaskSteps(@PathVariable Long taskId,@Validated(value = NewGroup.class) @RequestBody List<TaskStepDto> dtos)
+    public AjaxResult createTaskSteps(@PathVariable Long id,@Validated(value = NewGroup.class) @RequestBody List<TaskStepDto> dtos)
     {
         List<TaskStep> steps = dtos.stream()
                 .map(dto -> CloneFactory.copy(new TaskStep(), dto))
                 .collect(Collectors.toList());
-        List<TaskStepVo> result = this.stepService.createSteps(taskId,steps);
+        List<TaskStepVo> result = this.stepService.createSteps(id,steps);
+        return success(result);
+    }
+
+    @ApiOperation("修改任务步骤")
+    @Log(title = "修改步骤", businessType = BusinessType.UPDATE)
+    @PutMapping("tasks/{id}/steps")
+    public AjaxResult updateTaskSteps(@PathVariable Long id,@Validated @RequestBody List<TaskStepDto> dtos)
+    {
+        List<TaskStep> steps = dtos.stream()
+                .map(dto -> CloneFactory.copy(new TaskStep(), dto))
+                .collect(Collectors.toList());
+        this.stepService.updateSteps(id,steps);
+        return success();
+    }
+
+    @ApiOperation("查看任务步骤")
+    @Log(title = "查看步骤")
+    @GetMapping("tasks/{id}/steps")
+    public AjaxResult getTaskSteps(@PathVariable Long id)
+    {
+        List<TaskStepVo> result = this.stepService.retrieveSteps(id);
         return success(result);
     }
 
     @ApiOperation("完成步骤")
     @Log(title = "完成步骤", businessType = BusinessType.UPDATE)
-    @PutMapping("/{id}/complete")
+    @PutMapping("steps/{id}/complete")
     public AjaxResult completeStep(@PathVariable Long id) {
         stepService.completeStep(id);
         return success();

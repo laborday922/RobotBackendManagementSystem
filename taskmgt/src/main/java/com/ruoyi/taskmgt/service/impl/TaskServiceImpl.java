@@ -5,8 +5,9 @@ import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.domain.RobotWarnings;
-import com.ruoyi.robots.domain.Robots;
+import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.robots.service.IRobotWarningsService;
 import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
@@ -43,8 +44,9 @@ public class TaskServiceImpl implements ITaskService {
     private final StepReuseService stepReuseService;
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogService;
-    private final IRobotsService robotsService;
+    private final IRobotsService robotService;
     private final IRobotWarningsService robotWarningsService;
+    private final IRobotGroupsService robotGroupsService;
 
     /**
      * @param task 即将新增的任务
@@ -134,18 +136,18 @@ public class TaskServiceImpl implements ITaskService {
         List<Task> tasks = this.taskRepository.getTasks(status, isGroupTask, name, robotId, robotGroupId, taskType, riskLevel, templateId);
         if(StringUtils.isNull(isGroupTask)){
             if (StringUtils.isNotNull(robotId)){
-//                Robots robot=this.robotsService.selectRobotsById(robotId);
-//                robotGroupId= robot.getGroupId();
+                Robot robot=this.robotService.selectRobotsById(robotId);
+                robotGroupId= robot.getGroupId();
                 tasks.addAll(this.taskRepository.getTasks(status,null,name, null, robotGroupId, taskType, riskLevel, templateId));
             }
             else if(StringUtils.isNotNull(robotGroupId)){
                 List<Long> robotIds = new ArrayList<>();
-//                Robots robot=new Robots();
-//                robot.setGroupId(robotGroupId);
-//                List<Robots> robots=this.robotsService.selectRobotsList(robot);
-//                for(Robots bot:robots){
-//                    robotIds.add(bot.getId());
-//                }
+                Robot robot=new Robot();
+                robot.setGroupId(robotGroupId);
+                List<Robot> robots=this.robotService.selectRobotsList(robot);
+                for(Robot bot:robots){
+                    robotIds.add(bot.getId());
+                }
                 tasks.addAll(this.taskRepository.getTasksByRobotIds(status,null,name, robotIds, null, taskType, riskLevel, templateId));
             }
         }
@@ -156,14 +158,14 @@ public class TaskServiceImpl implements ITaskService {
                         String templateName = this.templateRepository.getTemplateNameById(task.getTemplateId());
                         taskVo.setTemplateName(templateName);
                     }
-//                    if (StringUtils.isNotNull(task.getRobotId())){
-//                        String robotName = this.robotsService.selectRobotsById(task.getRobotId()).getName();
-//                        taskVo.setRobotName(robotName);
-//                    }
-//                    if (StringUtils.isNotNull(task.getRobotGroupId())) {
-//                        String robotGroupName = this.robotGroupsService.selectRobotGroupsById(task.getRobotGroupId()).getName();
-//                        taskVo.setRobotGroupName(robotGroupName);
-//                    }
+                    if (StringUtils.isNotNull(task.getRobotId())){
+                        String robotName = this.robotService.selectRobotsById(task.getRobotId()).getName();
+                        taskVo.setRobotName(robotName);
+                    }
+                    if (StringUtils.isNotNull(task.getRobotGroupId())) {
+                        String robotGroupName = this.robotGroupsService.selectRobotGroupsById(task.getRobotGroupId()).getName();
+                        taskVo.setRobotGroupName(robotGroupName);
+                    }
                     log.info("TaskVo: {}", taskVo);
                     return taskVo;
                 })
@@ -183,6 +185,8 @@ public class TaskServiceImpl implements ITaskService {
         });
         TaskVo taskVo = CloneFactory.copy(new TaskVo(),task);
         if(StringUtils.isNotNull(task.getTemplateId()))taskVo.setTemplateName(this.templateRepository.getTemplateNameById(task.getTemplateId()));
+        if (StringUtils.isNotNull(task.getRobotId())){taskVo.setRobotName(this.robotService.selectRobotsById(task.getRobotId()).getName());}
+        if (StringUtils.isNotNull(task.getRobotGroupId())) {taskVo.setRobotGroupName(this.robotGroupsService.selectRobotGroupsById(task.getRobotGroupId()).getName());}
         return taskVo;
     }
 
@@ -260,12 +264,12 @@ public class TaskServiceImpl implements ITaskService {
         }
         else{
             //组任务需确认该组所有的机器人都没有正在执行的任务
-//            Robots robot = new Robots();
-//            robot.setGroupId(task.getRobotGroupId());
-//            List<Robots> robots = this.robotsService.selectRobotsList(robot);
-//            for(Robots bot : robots){
-//                tasks.addAll(this.taskRepository.findByRobotIdAndStatus(bot.getId(),Task.EXECUTING));
-//            }
+            Robot robot = new Robot();
+            robot.setGroupId(task.getRobotGroupId());
+            List<Robot> robots = this.robotService.selectRobotsList(robot);
+            for(Robot bot : robots){
+                tasks.addAll(this.taskRepository.findByRobotIdAndStatus(bot.getId(),Task.EXECUTING));
+            }
 
         }
         if (StringUtils.isEmpty(tasks)){
@@ -351,9 +355,10 @@ public class TaskServiceImpl implements ITaskService {
         if (task.getIsGroupTask() == 0) {
             allNormal = this.robotWarningsService.countUnresolvedByRobotId(task.getRobotId()) == 0;
         } else {
-            //List<Robots>robots = this.robotsService.selectRobotsList(new Robots().setGroupId(task.getRobotGroupId()));
-            //List<Long> robotIds = robots.stream().map(robot -> {return robot.getId();}).collect(Collectors.toList());
-            List<Long>robotIds = this.getMockRobotIdsByGroupId(task.getRobotGroupId());//待替换
+            Robot robot = new Robot();
+            robot.setGroupId(task.getRobotGroupId());
+            List<Robot>robots = this.robotService.selectRobotsList(robot);
+            List<Long> robotIds = robots.stream().map(Robot::getId).toList();
             allNormal = robotIds.stream()
                     .allMatch(rid -> robotWarningsService.countUnresolvedByRobotId(rid) == 0);
         }
@@ -392,7 +397,7 @@ public class TaskServiceImpl implements ITaskService {
             List<RobotWarnings> warnings = robotWarningsService.selectRobotWarningsList(robotWarning);
             RobotStatus rs = new RobotStatus();
             rs.setRobotId(task.getRobotId());
-            //rs.setRobotName(robotsService.selectRobotsById(task.getRobotId()).getRobotName(task.getRobotId()));
+            rs.setRobotName(robotService.selectRobotsById(task.getRobotId()).getName());
 
             if (warnings.isEmpty()) {
                 rs.setStatus("normal");
@@ -406,18 +411,18 @@ public class TaskServiceImpl implements ITaskService {
             vo.setRobotStatuses(List.of(rs));
         } else {
             // 组任务
-            Robots robot = new Robots();
-            //robot.setGroupId(task.getRobotGroupId());
-            List<Robots> robots = robotsService.selectRobotsList(robot);
+            Robot robot = new Robot();
+            robot.setGroupId(task.getRobotGroupId());
+            List<Robot> robots = this.robotService.selectRobotsList(robot);
             List<RobotStatus> robotStatuses = new ArrayList<>();
             boolean groupHasWarning = false;
 
-            for (Robots bot : robots) {
+            for (Robot bot : robots) {
                 RobotWarnings robotWarning = new RobotWarnings();
-                //robotWarning.setRobotId(bot.getId());
+                robotWarning.setRobotId(bot.getId());
                 List<RobotWarnings> warnings = robotWarningsService.selectRobotWarningsList(robotWarning);
                 RobotStatus rs = new RobotStatus();
-                //rs.setRobotId(bot.getId());
+                rs.setRobotId(bot.getId());
                 rs.setRobotName(bot.getName());
 
                 if (warnings.isEmpty()) {

@@ -9,7 +9,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "robot_template", uniqueConstraints = {
+@Table(name = "tm_template", uniqueConstraints = {
         @UniqueConstraint(name = "template_name_index", columnNames = "name")
 })
 @Entity
@@ -31,7 +31,9 @@ public class TemplatePo extends BaseEntity {
     private String description;
 
     /** 关联的机器人组ID*/
-    private Long robotGroupId;
+    @Getter
+    @Setter
+    private String robotGroupId;
 
     /** 表单内容（JSON格式，定义任务参数） */
     @Column(columnDefinition = "text")

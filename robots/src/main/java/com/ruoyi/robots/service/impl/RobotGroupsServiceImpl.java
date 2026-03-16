@@ -36,7 +36,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
      * @return 机器人分组
      */
     @Override
-    public RobotGroups selectRobotGroupsById(String id)
+    public RobotGroups selectRobotGroupsById(Long id)
     {
         return robotGroupsMapper.selectRobotGroupsById(id);
     }
@@ -92,9 +92,9 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
      * 删除前确认分组下是否有机器人
      */
     @Override
-    public int deleteRobotGroupsByIds(String[] ids)
+    public int deleteRobotGroupsByIds(Long[] ids)
     {
-        for(String id : ids)
+        for(Long id : ids)
         {
             Integer count=robotsMapper.countByGroupId(id);
             if(count>0){
@@ -111,7 +111,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
      * @return 结果
      */
     @Override
-    public int deleteRobotGroupsById(String id)
+    public int deleteRobotGroupsById(Long id)
     {
         Integer count=robotsMapper.countByGroupId(id);
         if(count>0){

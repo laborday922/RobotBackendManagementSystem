@@ -21,6 +21,8 @@ import javax.persistence.criteria.Predicate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ruoyi.common.utils.DictUtils.SEPARATOR;
+
 @Repository
 @Slf4j
 public class TemplateRepository {
@@ -58,6 +60,7 @@ public class TemplateRepository {
     private Template build(TemplatePo po, Optional<String> redisKey) {
         if (Objects.nonNull(po)) {
             Template bo = CloneFactory.copy(new Template(), po);
+            bo.setRobotGroupIds(stringToList(po.getRobotGroupId()));
             redisKey.ifPresent(key -> this.redisUtil.setCacheObject(key, bo));
             return this.build(bo);
         }
@@ -73,7 +76,7 @@ public class TemplateRepository {
     public Optional<Template> findById(Long id) {
         Assert.notNull(id, "TemplateRepository.findById: TemplateRepository.findById: id is null");
         String key = String.format(TEMPLATEBYID, id);
-        Template bo = (Template) this.redisUtil.getCacheObject(key);
+        Template bo = this.redisUtil.getCacheObject(key);
         if (Objects.isNull(bo)) {
             return this.templatePoMapper.findById(id).map(po -> this.build(po, Optional.of(key)));
         } else {
@@ -94,6 +97,7 @@ public class TemplateRepository {
         Assert.notNull(template, "TemplateRepository.insert: template can not be null.");
         template.setId(null);
         TemplatePo templatePo = CloneFactory.copyNotNull(new TemplatePo(), template);
+        templatePo.setRobotGroupId(listToString(template.getRobotGroupIds()));
         templatePo.setCreateTime(new Date());
         templatePo.setCreateBy(SecurityUtils.getUsername());
         try {
@@ -123,6 +127,7 @@ public class TemplateRepository {
         TemplatePo newPo = CloneFactory.copyNotNull(oldPo, template);
         newPo.setUpdateTime(new Date());
         newPo.setUpdateBy(SecurityUtils.getUsername());
+        newPo.setRobotGroupId(listToString(template.getRobotGroupIds()));
         try {
             this.templatePoMapper.save(newPo);
         } catch (DataIntegrityViolationException e) {
@@ -148,7 +153,12 @@ public class TemplateRepository {
                 predicates.add(cb.equal(root.get("status"), status));
             }
             if (robotGroupId != null) {
-                predicates.add(cb.equal(root.get("robotGroupId"), robotGroupId));
+                String groupIdStr = String.valueOf(robotGroupId);
+                Predicate containsGroupId = cb.like(
+                        cb.concat(cb.concat(",", root.get("robotGroupIds")), ","),
+                        "%," + groupIdStr + ",%"
+                );
+                predicates.add(containsGroupId);
             }
             predicates.add(cb.notEqual(root.get("status"), Template.DELETED));
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -156,6 +166,24 @@ public class TemplateRepository {
         List<TemplatePo> templatePos = templatePoMapper.findAll(spec);
         return templatePos.stream()
                 .map(po -> build(po, Optional.empty()))
+                .collect(Collectors.toList());
+    }
+
+    public static String listToString(List<Long> list) {
+        if (list == null || list.isEmpty()) {
+            return "";
+        }
+        return list.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(SEPARATOR));
+    }
+    public static List<Long> stringToList(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return Arrays.stream(str.split(SEPARATOR))
+                .map(String::trim)
+                .map(Long::parseLong)
                 .collect(Collectors.toList());
     }
 }

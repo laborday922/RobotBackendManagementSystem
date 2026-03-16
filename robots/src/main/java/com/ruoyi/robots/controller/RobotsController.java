@@ -72,7 +72,7 @@ public class RobotsController extends BaseController
     @ApiOperation("机器人基础信息详细信息")
     @PreAuthorize("@ss.hasPermi('robots:robots:query')")
     @GetMapping(value = "/{id}")
-    public AjaxResult getInfo(@PathVariable("id") String id)
+    public AjaxResult getInfo(@PathVariable("id") Long id)
     {
         return success(robotsService.selectRobotsById(id));
     }

@@ -43,8 +43,8 @@ public class TaskLogController extends BaseController {
     }
 
     @ApiOperation("根据任务ID查询日志")
-    @GetMapping("/taskcore/{taskId}")
-    public TableDataInfo listByTask(@PathVariable Long taskId,@RequestParam(required = false,defaultValue = "createTime DESC")String displayOrder) {
+    @GetMapping("/{taskId}")
+    public TableDataInfo listByTask(@RequestParam Long taskId,@RequestParam(required = false,defaultValue = "createTime DESC")String displayOrder) {
         startPage();
         TaskLog query = new TaskLog();
         query.setTaskId(taskId);

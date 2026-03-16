@@ -2,6 +2,7 @@ package com.ruoyi.taskmgt.service.impl;
 
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.robots.common.RobotsConstants;
+import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.event.RobotWarningEvent;
 import com.ruoyi.robots.service.IRobotWarningsService;
 import com.ruoyi.robots.service.IRobotsService;
@@ -72,8 +73,7 @@ public class TaskTriggerService {
     private void checkBatteryTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 2, null, null);
         for (Task task : tasks) {
-            //Integer battery = robotService.selectRobotsById(task.getRobotId()).getBattery();
-            Integer battery = getMockBattery(task.getRobotId());
+            Integer battery = robotService.selectRobotsById(task.getRobotId()).getBattery();
             if (battery != null && battery >= task.getBatteryThreshold()) {
                 triggerTask(task);
             }
@@ -86,9 +86,8 @@ public class TaskTriggerService {
     private void checkIdleTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null);
         for (Task task : tasks) {
-            //String taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
-            // Date idleSince = robotService.getIdleSince(task.getRobotId());
-            String taskStatus = getMockRobotStatus(task.getRobotId());
+            String taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
+            // Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleSince();
             Date idleSince = getMockIdleSince(task.getRobotId());
             if ("idle".equals(taskStatus) && idleSince != null) {
                 long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
@@ -173,7 +172,10 @@ public class TaskTriggerService {
                 continue;
             }
             // 检查组内机器人是否有正在执行的非组任务
-            List<Long> robotIds = getMockRobotIdsByGroupId(groupId);
+            //List<Long> robotIds = getMockRobotIdsByGroupId(groupId);
+            Robot robot = new Robot();
+            robot.setGroupId(groupId);
+            List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
             boolean hasExecutingNonGroup = false;
             for (Long rid : robotIds) {
                 List<Task> executingNonGroup = taskRepository.getTasks(Task.EXECUTING, 0, null,
@@ -240,14 +242,14 @@ public class TaskTriggerService {
         }
 
         //处理组任务
-        Long groupId = getMockRobotGroupId(robotId); // 待替换
-        //Long groupId = robotService.selectRobotsById(robotId).getGroupId();
+        Long groupId = robotService.selectRobotsById(robotId).getGroupId();
         if (groupId != null) {
             // 获取该组下所有组任务
             List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null);
             // 获取该组所有机器人的ID
-            List<Long> robotIds = getMockRobotIdsByGroupId(groupId); // 待替换
-//          List<Long> robotIds = robotService.selectRobotsList(groupId).stream().map(robot -> {return robot.getId();}).collect(Collectors.toList());
+            Robot robot = new Robot();
+            robot.setGroupId(groupId);
+            List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
             boolean hasUnresolvedWarning = false;
             if (robotWarningsService != null) {
                 for (Long rid : robotIds) {

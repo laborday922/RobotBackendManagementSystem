@@ -19,7 +19,7 @@ public interface RobotsMapper
      * @param id 机器人基础信息主键
      * @return 机器人基础信息
      */
-    public Robot selectRobotsById(String id);
+    public Robot selectRobotsById(Long id);
 
     /**
      * 查询机器人基础信息列表
@@ -62,7 +62,7 @@ public interface RobotsMapper
     public int deleteRobotsByIds(String[] ids);
 
     @Select("select count(id) from robots where group_id = #{groupId}")
-    public Integer countByGroupId(String categoryId);
+    public Integer countByGroupId(Long categoryId);
 
     @Select("select count(id) from robots where group_id = #{groupId}")
     int selectRobotsByCode(String code);

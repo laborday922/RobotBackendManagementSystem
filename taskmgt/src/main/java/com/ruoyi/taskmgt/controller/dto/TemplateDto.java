@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -22,7 +23,7 @@ public class TemplateDto {
     @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
     private String name;
     private String description;
-    private Long robotGroupId;
+    private List<Long> robotGroupIds;
     private String formContent;
     private String workflow;
 }

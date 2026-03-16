@@ -19,7 +19,7 @@ public interface IRobotsService
      * @param id 机器人基础信息主键
      * @return 机器人基础信息
      */
-    public Robot selectRobotsById(String id);
+    public Robot selectRobotsById(Long id);
 
     /**
      * 查询机器人基础信息列表

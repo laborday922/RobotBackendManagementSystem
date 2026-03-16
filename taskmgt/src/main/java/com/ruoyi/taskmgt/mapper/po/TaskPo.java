@@ -12,7 +12,7 @@ import java.util.Date;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@Table(name = "robot_task", uniqueConstraints = {
+@Table(name = "tm_task", uniqueConstraints = {
         @UniqueConstraint(name = "task_name_index", columnNames = "name")
 })
 @Entity
@@ -81,4 +81,7 @@ public class TaskPo extends BaseEntity {
     private String terminateReason;
 
     private Integer pendingOrder;
+
+    @Column(columnDefinition = "text")
+    private String formContent;
 }

@@ -17,7 +17,7 @@ public interface IRobotGroupsService
      * @param id 机器人分组主键
      * @return 机器人分组
      */
-    public RobotGroups selectRobotGroupsById(String id);
+    public RobotGroups selectRobotGroupsById(Long id);
 
     /**
      * 查询机器人分组列表
@@ -49,7 +49,7 @@ public interface IRobotGroupsService
      * @param ids 需要删除的机器人分组主键集合
      * @return 结果
      */
-    public int deleteRobotGroupsByIds(String[] ids);
+    public int deleteRobotGroupsByIds(Long[] ids);
 
     /**
      * 删除机器人分组信息
@@ -57,5 +57,5 @@ public interface IRobotGroupsService
      * @param id 机器人分组主键
      * @return 结果
      */
-    public int deleteRobotGroupsById(String id);
+    public int deleteRobotGroupsById(Long id);
 }

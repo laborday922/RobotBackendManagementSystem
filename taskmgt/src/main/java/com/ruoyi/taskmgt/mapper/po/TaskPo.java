@@ -50,7 +50,7 @@ public class TaskPo extends BaseEntity {
     /** 任务类型（1定时 2电量 3闲时） */
     private Integer taskType;
 
-    /** 任务状态（0未开始 1准备中 2执行中 3已暂停 4已禁用 5已终止） */
+    /** 任务状态（0执行中 1准备中 2已暂停 3未开始 4已禁用 5已终止 6已结束 7已删除） */
     private Byte status;
 
     /** 风险等级（0正常 1风险 2高风险） */

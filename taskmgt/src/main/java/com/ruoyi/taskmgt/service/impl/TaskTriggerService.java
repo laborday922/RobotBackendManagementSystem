@@ -63,6 +63,7 @@ public class TaskTriggerService {
         for (Task task : tasks) {
             if (task.getScheduledTime() != null && !task.getScheduledTime().after(now)) {
                 triggerTask(task);
+
             }
         }
     }

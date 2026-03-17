@@ -100,15 +100,15 @@ public class Task extends BaseEntity implements Serializable, Stateful {
                 {
                     add(NOTSTART);
                     add(EXECUTING);
-                    add(DISABLED);
                 }
             });
             put(EXECUTING, new HashSet<>() {
                 {
                     add(PAUSED);
-                    add(DISABLED);
                     add(TERMINATED);
                     add(FINISHED);
+                    add(NOTSTART);
+
                 }
             });
             put(PAUSED, new HashSet<>() {
@@ -116,7 +116,11 @@ public class Task extends BaseEntity implements Serializable, Stateful {
                     add(EXECUTING);
                     add(PENDING);
                     add(TERMINATED);
-                    add(DISABLED);
+                }
+            });
+            put(FINISHED, new HashSet<>(){
+                {
+                    add(NOTSTART);
                 }
             });
         }

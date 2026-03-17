@@ -57,7 +57,6 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     public final static Byte ENABLED = 0;
     public final static Byte DISABLED = 1;
     public final static Byte DELETED = 2;
-    public final static Byte LOCKED = 3;
 
     public static final Map<Byte, String> STATUSNAMES = new HashMap<>() {
         {

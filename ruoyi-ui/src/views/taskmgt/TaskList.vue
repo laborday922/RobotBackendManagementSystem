@@ -434,25 +434,24 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch, getCurrentInstance } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {computed, getCurrentInstance, onMounted, reactive, ref} from 'vue'
 import {
-  listTask,
-  getTask,
   addTask,
-  updateTask,
-  delTask,
-  banTask,
-  resumeTask,
-  pauseTask,
-  continueTask,
-  cancelTask,
-  terminateTask,
-  getTaskSteps,
   addTaskSteps,
-  listLogByTask
-} from '@/api/taskmgt'
-import { listTemplate } from '@/api/taskmgt' // 模板列表
+  banTask,
+  cancelTask,
+  continueTask,
+  delTask,
+  getTask,
+  getTaskSteps,
+  listLogByTask,
+  listTask,
+  listTemplate,
+  pauseTask,
+  resumeTask,
+  terminateTask,
+  updateTask
+} from '@/api/taskmgt/taskmgt' // 模板列表
 
 const { proxy } = getCurrentInstance()
 

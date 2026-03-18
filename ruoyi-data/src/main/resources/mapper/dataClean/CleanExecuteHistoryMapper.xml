@@ -3,9 +3,9 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.ruoyi.data.mapper.CleanExecuteHistoryMapper">
+<mapper namespace="com.ruoyi.data.clean.mapper.CleanExecuteHistoryMapper">
 
-    <resultMap id="BaseResultMap" type="com.ruoyi.data.domain.CleanExecuteHistory">
+    <resultMap id="BaseResultMap" type="com.ruoyi.data.clean.domain.CleanExecuteHistory">
         <id property="id" column="id"/>
         <result property="executeMode" column="execute_mode"/>
         <result property="applyDataSource" column="apply_data_source"/>

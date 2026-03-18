@@ -268,18 +268,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {
-  listAbnormalTask,
-  resolveRisk,
-  updateTask,
-  terminateTask,
+  continueTask,
   getTask,
+  listAbnormalTask,
   pauseTask,
-  continueTask // 继续任务接口
-} from '@/api/taskmgt'
-import { listRobot } from '@/api/system/robot'
+  resolveRisk,
+  terminateTask,
+  updateTask
+} from '@/api/taskmgt/taskmgt'
+import {listRobot} from '@/api/system/robots'
 
 // ========== 查询参数 ==========
 const queryParams = reactive({

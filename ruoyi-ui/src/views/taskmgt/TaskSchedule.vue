@@ -229,19 +229,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue'
 import Sortable from 'sortablejs'
 import {
-  listTask,
-  updateTask,
-  pauseTask as pauseTaskApi,
-  continueTask,
-  cancelTask as cancelTaskApi,
   banTask,
-  resumeTask,
-  terminateTask
-} from '@/api/taskmgt'
+  cancelTask as cancelTaskApi,
+  continueTask,
+  listTask,
+  pauseTask as pauseTaskApi,
+  terminateTask,
+  updateTask
+} from '@/api/taskmgt/taskmgt'
 
 // ========== 查询参数 ==========
 const queryParams = reactive({

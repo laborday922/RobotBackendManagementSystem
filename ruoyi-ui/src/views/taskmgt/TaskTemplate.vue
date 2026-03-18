@@ -206,7 +206,7 @@
                 <el-input-number v-model="step.estimatedTime" :min="1" :max="120" size="small" placeholder="预估分钟" style="width:100%" />
               </el-col>
               <el-col :span="8">
-                <el-input v-model="step.description" placeholder="步骤描述，可使用{{字段ID}}" size="small" />
+                <el-input v-model="step.description" :placeholder="'步骤描述，可使用' + step.fieldId" size="small" />
               </el-col>
               <el-col :span="2" style="text-align:right">
                 <el-button type="danger" link @click="removeStep(index)">删除</el-button>
@@ -277,18 +277,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, getCurrentInstance } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import {computed, getCurrentInstance, onMounted, reactive, ref} from 'vue'
 import {
-  listTemplate,
-  getTemplate,
   addTemplate,
-  updateTemplate,
-  delTemplate,
   banTemplate,
-  resumeTemplate
-} from '@/api/taskmgt'
+  delTemplate,
+  getTemplate,
+  listTemplate,
+  resumeTemplate,
+  updateTemplate
+} from '@/api/taskmgt/taskmgt'
 
 const { proxy } = getCurrentInstance()
 

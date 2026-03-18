@@ -3,10 +3,10 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.ruoyi.data.mapper.CleanRuleMapper">
+<mapper namespace="com.ruoyi.data.clean.mapper.CleanRuleMapper">
 
     <!-- 查询任务 -->
-    <select id="selectById" resultType="com.ruoyi.data.mapper.po.CleanRulePo">
+    <select id="selectById" resultType="com.ruoyi.data.clean.mapper.po.CleanRulePo">
         SELECT id,
                execute_mode,
                run_time,
@@ -28,15 +28,15 @@
 
     <!-- 查询未执行的定时任务 -->
     <!-- status待修改，如0未执行 1定时未执行 2执行成功 3执行失败 -->
-    <select id="selectScheduledRules" resultType="com.ruoyi.data.mapper.po.CleanRulePo">
+    <select id="selectScheduledRules" resultType="com.ruoyi.data.clean.mapper.po.CleanRulePo">
         SELECT *
-        FROM clean_rule
+        FROM clean_rule_config
         WHERE execute_mode = 'SCHEDULED'
           AND status = 1
     </select>
 
     <update id="updateRuntime">
-        UPDATE clean_rule
+        UPDATE clean_rule_config
         SET run_time = #{runTime}
         WHERE id = #{id}
     </update>

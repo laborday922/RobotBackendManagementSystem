@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.data.dashboard.mapper.DashboardMapper">
+
+    <select id="selectEvaluationTexts"
+            resultType="com.ruoyi.data.dashboard.mapper.po.InteractionEvaluationPo">
+
+        SELECT evaluation_text AS evaluationText
+        FROM t_interaction_history
+        WHERE evaluation_text IS NOT NULL
+        AND evaluation_text != ''
+
+        <if test="startTime != null">
+            AND interaction_time &gt;= #{startTime}
+        </if>
+
+        <if test="endTime != null">
+            AND interaction_time &lt;= #{endTime}
+        </if>
+
+        <if test="rating != null">
+            AND rating = #{rating}
+        </if>
+
+    </select>
+
+    <select id="selectRobotLatestPositions"
+            resultType="com.ruoyi.data.dashboard.mapper.po.RobotPositionLatestPo">
+
+        SELECT
+            r.robot_id AS robotId,
+            r.location_area AS locationArea,
+            r.specific_location AS specificLocation,
+            r.coordinate_x AS coordinateX,
+            r.coordinate_y AS coordinateY,
+            r.move_speed AS moveSpeed,
+            r.status_desc AS statusDesc
+        FROM robot_position_history r
+                 INNER JOIN (
+            SELECT robot_id, MAX(record_time) AS max_time
+            FROM robot_position_history
+            GROUP BY robot_id
+        ) latest
+                            ON r.robot_id = latest.robot_id
+                                AND r.record_time = latest.max_time
+
+    </select>
+
+</mapper>

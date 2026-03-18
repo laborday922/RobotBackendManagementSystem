@@ -276,8 +276,7 @@
 </template>
 
 <script>
-import { addTask, updateTask, getTask } from '@/api/taskmgt'
-import { listTemplate } from '@/api/taskmgt'
+import {addTask, getTask, listTemplate, updateTask} from '@/api/taskmgt/taskmgt'
 
 export default {
   data() {

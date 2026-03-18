@@ -142,3 +142,9 @@ xss:
   excludes: /system/notice
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
+
+#通义
+tongyi:
+  api-key: roiy's apikey
+  model: qwen-plus   # 可根据需要选择 qwen-turbo, qwen-plus, qwen-max 等
+  enable-search: true

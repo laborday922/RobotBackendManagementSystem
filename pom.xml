@@ -218,6 +218,20 @@
                 <version>${ruoyi.version}</version>
             </dependency>
 
+            <!-- 其他依赖 -->
+            <dependency>
+                <groupId>javax.persistence</groupId>
+                <artifactId>javax.persistence-api</artifactId>
+                <version>2.2</version> <!-- 可以指定版本，或从父 POM 继承 -->
+            </dependency>
+
+            <!-- 通义大模型 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>dashscope-sdk-java</artifactId>
+                <version>2.22.12</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

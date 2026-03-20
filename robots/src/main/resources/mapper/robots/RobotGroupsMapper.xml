@@ -23,7 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     
-    <select id="selectRobotGroupsById" parameterType="String" resultMap="RobotGroupsResult">
+    <select id="selectRobotGroupsById" parameterType="Long" resultMap="RobotGroupsResult">
         <include refid="selectRobotGroupsVo"/>
         where id = #{id}
     </select>

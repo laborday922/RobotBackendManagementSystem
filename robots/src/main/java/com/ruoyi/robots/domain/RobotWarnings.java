@@ -43,7 +43,7 @@ public class RobotWarnings extends BaseEntity
     private String status;
 
     /** 处理完成时间 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     @Excel(name = "处理完成时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date resolveTime;
 
@@ -56,7 +56,7 @@ public class RobotWarnings extends BaseEntity
     private String resolveNote;
 
     /** 预警创建时间 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     @Excel(name = "预警创建时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date createdAt;
 

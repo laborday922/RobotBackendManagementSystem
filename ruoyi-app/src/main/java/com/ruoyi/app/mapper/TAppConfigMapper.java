@@ -2,6 +2,8 @@ package com.ruoyi.app.mapper;
 
 import java.util.List;
 import com.ruoyi.app.domain.TAppConfig;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 应用配置Mapper接口
@@ -58,4 +60,7 @@ public interface TAppConfigMapper
      * @return 结果
      */
     public int deleteTAppConfigByIds(Long[] ids);
+
+    @Select("select count(id) from t_app_config where config_key = #{configKey} and app_id=#{appId}")
+    int selectRobotGroupsByConfigKey(@Param("configKey")String configKey, @Param("appId")String appId);
 }

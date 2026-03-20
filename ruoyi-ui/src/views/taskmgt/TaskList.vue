@@ -329,13 +329,106 @@
               placeholder="请输入位置"
               @blur="updateStepPreview"
             />
-            <!-- 文件类型 -->
-            <el-input
-              v-else-if="['image','audio','video','file'].includes(field.type)"
-              v-model="taskForm.formData[field.id]"
-              placeholder="文件上传暂未实现，请填写文件路径"
-              @blur="updateStepPreview"
-            />
+
+            <!-- 图片上传 -->
+            <div v-else-if="field.type === 'image'" class="upload-container">
+              <el-upload
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :file-list="getFileList(field.id)"
+                :limit="field.maxCount || 5"
+                list-type="picture-card"
+                :on-success="(res, file) => handleUploadSuccess(res, file, field.id)"
+                :on-remove="(file) => handleUploadRemove(file, field.id)"
+                :on-exceed="() => handleUploadExceed(field.maxCount || 5)"
+                accept=".jpg,.jpeg,.png,.gif,.bmp,.webp"
+              >
+                <i class="el-icon-plus"></i>
+              </el-upload>
+              <div class="upload-tip">
+                支持JPG/PNG/GIF，最多{{ field.maxCount || 5 }}张，单张≤{{ field.maxSize || 10 }}MB
+              </div>
+            </div>
+
+            <!-- 视频上传 -->
+            <div v-else-if="field.type === 'video'" class="upload-container">
+              <el-upload
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :file-list="getFileList(field.id)"
+                :limit="field.maxCount || 3"
+                :on-success="(res, file) => handleUploadSuccess(res, file, field.id)"
+                :on-remove="(file) => handleUploadRemove(file, field.id)"
+                :on-exceed="() => handleUploadExceed(field.maxCount || 3)"
+                accept=".mp4,.avi,.mov,.wmv,.flv,.mkv"
+              >
+                <el-button size="small" type="primary"><i class="el-icon-upload"></i> 上传视频</el-button>
+              </el-upload>
+              <div class="file-list" v-if="taskForm.formData[field.id] && taskForm.formData[field.id].length > 0">
+                <div v-for="(file, idx) in taskForm.formData[field.id]" :key="idx" class="file-item">
+                  <i class="el-icon-video-camera"></i>
+                  <span class="file-name">{{ file.name }}</span>
+                  <el-button type="text" size="mini" @click="previewVideo(file.url)">预览</el-button>
+                </div>
+              </div>
+              <div class="upload-tip">
+                支持MP4/AVI/MOV等，最多{{ field.maxCount || 3 }}个，单个≤{{ field.maxSize || 100 }}MB
+              </div>
+            </div>
+
+            <!-- 音频上传 -->
+            <div v-else-if="field.type === 'audio'" class="upload-container">
+              <el-upload
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :file-list="getFileList(field.id)"
+                :limit="field.maxCount || 5"
+                :on-success="(res, file) => handleUploadSuccess(res, file, field.id)"
+                :on-remove="(file) => handleUploadRemove(file, field.id)"
+                :on-exceed="() => handleUploadExceed(field.maxCount || 5)"
+                accept=".mp3,.wav,.wma,.aac,.flac,.m4a"
+              >
+                <el-button size="small" type="primary"><i class="el-icon-upload"></i> 上传音频</el-button>
+              </el-upload>
+              <div class="file-list" v-if="taskForm.formData[field.id] && taskForm.formData[field.id].length > 0">
+                <div v-for="(file, idx) in taskForm.formData[field.id]" :key="idx" class="file-item">
+                  <i class="el-icon-headset"></i>
+                  <span class="file-name">{{ file.name }}</span>
+                  <audio :src="file.url" controls style="height: 30px; margin-left: 10px;"></audio>
+                </div>
+              </div>
+              <div class="upload-tip">
+                支持MP3/WAV/AAC等，最多{{ field.maxCount || 5 }}个，单个≤{{ field.maxSize || 50 }}MB
+              </div>
+            </div>
+
+            <!-- 文件上传 -->
+            <div v-else-if="field.type === 'file'" class="upload-container">
+              <el-upload
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :file-list="getFileList(field.id)"
+                :limit="field.maxCount || 3"
+                :on-success="(res, file) => handleUploadSuccess(res, file, field.id)"
+                :on-remove="(file) => handleUploadRemove(file, field.id)"
+                :on-exceed="() => handleUploadExceed(field.maxCount || 3)"
+                :accept="field.accept ? field.accept.join(',') : ''"
+              >
+                <el-button size="small" type="primary"><i class="el-icon-upload"></i> 上传文件</el-button>
+              </el-upload>
+              <div class="file-list" v-if="taskForm.formData[field.id] && taskForm.formData[field.id].length > 0">
+                <div v-for="(file, idx) in taskForm.formData[field.id]" :key="idx" class="file-item">
+                  <i class="el-icon-document"></i>
+                  <span class="file-name">{{ file.name }}</span>
+                  <el-button type="text" size="mini" @click="downloadFile(file.url, file.name)">下载</el-button>
+                </div>
+              </div>
+              <div class="upload-tip">
+                最多{{ field.maxCount || 3 }}个，单个≤{{ field.maxSize || 100 }}MB
+                <span v-if="field.accept">，允许格式：{{ field.accept.join('、') }}</span>
+              </div>
+            </div>
+
             <div v-else>未知字段类型</div>
             <div v-if="field.type === 'text' || field.type === 'location'" class="field-tip">
               此字段可在步骤描述中使用 <code>{{ '{' + field.id + '}' }}</code> 作为占位符
@@ -492,7 +585,73 @@
         <div v-if="formFields.length > 0">
           <el-descriptions :column="1" border>
             <el-descriptions-item v-for="field in formFields" :key="field.id" :label="field.label">
-              {{ formatFormValue(field, currentTask.formData ? currentTask.formData[field.id] : '') }}
+              <!-- 普通字段 -->
+              <template v-if="!['image','video','audio','file'].includes(field.type)">
+                {{ formatFormValue(field, currentTask.formData ? currentTask.formData[field.id] : '') }}
+              </template>
+
+              <!-- 图片预览 -->
+              <template v-else-if="field.type === 'image'">
+                <div v-if="currentTask.formData && currentTask.formData[field.id] && currentTask.formData[field.id].length > 0" class="image-preview-list">
+                  <div v-for="(img, idx) in currentTask.formData[field.id]" :key="idx" class="image-preview-item">
+                    <el-image
+                      :src="img.url"
+                      :preview-src-list="currentTask.formData[field.id].map(i => i.url)"
+                      fit="cover"
+                      style="width: 100px; height: 100px; border-radius: 4px; cursor: pointer;"
+                    ></el-image>
+                    <div class="image-name" :title="img.name">{{ img.name }}</div>
+                  </div>
+                </div>
+                <span v-else>-</span>
+              </template>
+
+              <!-- 视频预览 -->
+              <template v-else-if="field.type === 'video'">
+                <div v-if="currentTask.formData && currentTask.formData[field.id] && currentTask.formData[field.id].length > 0">
+                  <div v-for="(video, idx) in currentTask.formData[field.id]" :key="idx" class="video-item">
+                    <video
+                      :src="video.url"
+                      controls
+                      style="max-width: 100%; max-height: 200px; border-radius: 4px;"
+                    ></video>
+                    <div class="file-actions">
+                      <span>{{ video.name }}</span>
+                      <el-button type="text" size="small" @click="downloadFile(video.url, video.name)">下载</el-button>
+                    </div>
+                  </div>
+                </div>
+                <span v-else>-</span>
+              </template>
+
+              <!-- 音频预览 -->
+              <template v-else-if="field.type === 'audio'">
+                <div v-if="currentTask.formData && currentTask.formData[field.id] && currentTask.formData[field.id].length > 0">
+                  <div v-for="(audio, idx) in currentTask.formData[field.id]" :key="idx" class="audio-item">
+                    <div class="audio-info">
+                      <i class="el-icon-headset"></i>
+                      <span>{{ audio.name }}</span>
+                    </div>
+                    <audio :src="audio.url" controls style="width: 100%; margin-top: 5px;"></audio>
+                    <el-button type="text" size="small" @click="downloadFile(audio.url, audio.name)" style="margin-left: 10px;">下载</el-button>
+                  </div>
+                </div>
+                <span v-else>-</span>
+              </template>
+
+              <!-- 文件下载 -->
+              <template v-else-if="field.type === 'file'">
+                <div v-if="currentTask.formData && currentTask.formData[field.id] && currentTask.formData[field.id].length > 0">
+                  <div v-for="(file, idx) in currentTask.formData[field.id]" :key="idx" class="file-download-item">
+                    <i class="el-icon-document"></i>
+                    <span class="file-name">{{ file.name }}</span>
+                    <el-button type="primary" size="mini" plain @click="downloadFile(file.url, file.name)">
+                      <i class="el-icon-download"></i> 下载
+                    </el-button>
+                  </div>
+                </div>
+                <span v-else>-</span>
+              </template>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -528,6 +687,16 @@
         <div v-if="taskLogs.length === 0" class="empty-tip">暂无日志</div>
       </div>
     </el-dialog>
+
+    <!-- 视频预览弹窗 -->
+    <el-dialog :visible.sync="videoPreview.visible" width="60%" title="视频预览" append-to-body>
+      <video
+        v-if="videoPreview.url"
+        :src="videoPreview.url"
+        controls
+        style="width: 100%; max-height: 600px;"
+      ></video>
+    </el-dialog>
   </div>
 </template>
 
@@ -551,6 +720,7 @@ import {
   updateTaskSteps
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
+import { getToken } from '@/utils/auth'
 import debounce from 'lodash/debounce'
 
 export default {
@@ -574,6 +744,11 @@ export default {
       robotOptions: [],
       robotGroupOptions: [],
       templateOptions: [],
+      // 上传配置
+      uploadAction: process.env.VUE_APP_BASE_API + '/common/upload',
+      uploadHeaders: {
+        Authorization: 'Bearer ' + getToken()
+      },
       // 对话框
       dialog: {
         visible: false,
@@ -613,7 +788,12 @@ export default {
       taskLogs: [],
       formFields: [],
       // 生成的步骤预览
-      generatedSteps: []
+      generatedSteps: [],
+      // 视频预览
+      videoPreview: {
+        visible: false,
+        url: ''
+      }
     }
   },
   computed: {
@@ -844,6 +1024,76 @@ export default {
         this.getList()
       }).catch(() => {})
     },
+    // ==================== 文件上传相关方法 ====================
+
+    // 获取文件列表（用于el-upload的file-list）
+    getFileList(fieldId) {
+      const files = this.taskForm.formData[fieldId]
+      if (!files || !Array.isArray(files)) return []
+      return files.map((file, index) => ({
+        name: file.name,
+        url: file.url,
+        uid: index // el-upload需要uid
+      }))
+    },
+
+    // 上传成功处理
+    handleUploadSuccess(res, file, fieldId) {
+      if (res.code !== 200) {
+        this.$message.error(res.msg || '上传失败')
+        return
+      }
+      // 初始化数组
+      if (!this.taskForm.formData[fieldId]) {
+        this.$set(this.taskForm.formData, fieldId, [])
+      }
+      // 添加文件
+      this.taskForm.formData[fieldId].push({
+        name: file.name || res.fileName,
+        url: res.url,
+        fileName: res.fileName || file.name
+      })
+      this.$message.success('上传成功')
+    },
+
+    // 删除文件
+    handleUploadRemove(file, fieldId) {
+      const files = this.taskForm.formData[fieldId]
+      if (files) {
+        const index = files.findIndex(f => f.url === file.url || f.name === file.name)
+        if (index > -1) {
+          files.splice(index, 1)
+        }
+      }
+    },
+
+    // 超出限制
+    handleUploadExceed(limit) {
+      this.$message.warning(`最多只能上传 ${limit} 个文件`)
+    },
+
+    // 预览视频
+    previewVideo(url) {
+      this.videoPreview.url = url
+      this.videoPreview.visible = true
+    },
+
+    // 下载文件
+    downloadFile(url, fileName) {
+      // 如果是相对路径，拼接baseURL
+      const fullUrl = url.startsWith('http') ? url : process.env.VUE_APP_BASE_API + url
+      // 使用a标签下载
+      const link = document.createElement('a')
+      link.href = fullUrl
+      link.download = fileName || 'download'
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+
+    // ==================== 原有方法 ====================
+
     // 打开新增对话框
     handleAdd() {
       this.dialog.mode = 'create'
@@ -887,10 +1137,24 @@ export default {
         robotGroupId: row.robotGroupId ? Number(row.robotGroupId) : undefined,
         formData: {}
       }
-      // 解析formData
+      // 解析formData（注意要解析文件字段）
       if (row.formContent) {
         try {
-          this.taskForm.formData = JSON.parse(row.formContent) || {}
+          const parsed = JSON.parse(row.formContent) || {}
+          // 确保文件字段是数组
+          if (this.currentTemplate && this.currentTemplate.fields) {
+            this.currentTemplate.fields.forEach(field => {
+              if (['image','video','audio','file'].includes(field.type)) {
+                if (parsed[field.id] && typeof parsed[field.id] === 'string') {
+                  // 如果是字符串（旧数据兼容），转换为数组
+                  parsed[field.id] = [{ name: '已上传文件', url: parsed[field.id] }]
+                } else if (!parsed[field.id]) {
+                  parsed[field.id] = []
+                }
+              }
+            })
+          }
+          this.taskForm.formData = parsed
         } catch (e) {
           this.taskForm.formData = {}
         }
@@ -913,7 +1177,12 @@ export default {
       if (template) {
         const formData = {}
         template.fields.forEach(field => {
-          formData[field.id] = ''
+          // 文件类型初始化为数组
+          if (['image','video','audio','file'].includes(field.type)) {
+            formData[field.id] = []
+          } else {
+            formData[field.id] = ''
+          }
         })
         this.taskForm.formData = formData
         // 清空已选的机器人（因为模板变了，机器人可能不再允许）
@@ -939,7 +1208,14 @@ export default {
           Object.entries(formData).forEach(([key, value]) => {
             // 使用正则替换所有 {key} 的实例
             const placeholder = new RegExp(`\\{${key}\\}`, 'g')
-            description = description.replace(placeholder, value || `{${key}}`)
+            // 如果是文件数组，显示为[文件]
+            let displayValue = value
+            if (Array.isArray(value) && value.length > 0) {
+              displayValue = `[${value.length}个文件]`
+            } else if (Array.isArray(value) && value.length === 0) {
+              displayValue = ''
+            }
+            description = description.replace(placeholder, displayValue || `{${key}}`)
           })
         }
         return {
@@ -1034,11 +1310,32 @@ export default {
         const taskRes = await getTask(row.id)
         this.currentTask = taskRes.data
 
+        // 解析表单数据
+        if (this.currentTask.formContent) {
+          try {
+            this.currentTask.formData = JSON.parse(this.currentTask.formContent)
+          } catch (e) {
+            this.currentTask.formData = {}
+          }
+        }
+
         // 解析表单字段定义（从模板）
         if (this.currentTask.templateId) {
           const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
           if (template) {
             this.formFields = template.fields || []
+            // 确保文件字段格式正确
+            this.formFields.forEach(field => {
+              if (['image','video','audio','file'].includes(field.type)) {
+                const value = this.currentTask.formData[field.id]
+                if (value && typeof value === 'string') {
+                  // 兼容旧数据
+                  this.currentTask.formData[field.id] = [{ name: '已上传文件', url: value }]
+                } else if (!value) {
+                  this.currentTask.formData[field.id] = []
+                }
+              }
+            })
           } else {
             this.formFields = []
           }
@@ -1185,5 +1482,85 @@ export default {
   border-radius: 3px;
   color: #409eff;
   font-family: monospace;
+}
+
+/* 上传相关样式 */
+.upload-container {
+  width: 100%;
+}
+.upload-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+}
+.file-list {
+  margin-top: 10px;
+}
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.file-item i {
+  margin-right: 8px;
+  color: #409eff;
+}
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+/* 详情页文件展示样式 */
+.image-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.image-preview-item {
+  width: 100px;
+}
+.image-name {
+  font-size: 12px;
+  color: #606266;
+  text-align: center;
+  margin-top: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.video-item, .audio-item {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+.file-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+}
+.file-download-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.file-download-item i {
+  color: #409eff;
+  margin-right: 8px;
+  font-size: 20px;
+}
+.file-download-item .file-name {
+  flex: 1;
+  margin-right: 10px;
 }
 </style>

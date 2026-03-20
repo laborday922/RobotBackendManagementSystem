@@ -25,18 +25,13 @@ public class TemplateVo {
     private String name;
     private String description;
     private List<Long> robotGroupIds;
+    //表单字段
     private String formContent;
+    //标准工作流
     private String workflow;
+    //0启用 1已禁用 2已删除
     private Byte status;
     private Date createTime;
     private Date updateTime;
     private List<String> robotGroupNames;
-    private IRobotGroupsService robotGroupsService;
-    public void setRobotGroupNames(List<Long> robotGroupIds){
-        List<String> robotGroupNames = new ArrayList<>();
-        for(Long robotGroupId : robotGroupIds){
-            robotGroupNames.add(this.robotGroupsService.selectRobotGroupsById(robotGroupId).getName());
-        }
-        this.robotGroupNames=robotGroupNames;
-    }
 }

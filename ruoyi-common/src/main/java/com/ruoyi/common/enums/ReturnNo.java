@@ -26,7 +26,7 @@ public enum ReturnNo {
     CATEGORY_IN_USE(23, "ReturnNo.CATEGORY_IN_USE"),
     SOURCE_IN_USE(42, "ReturnNo.SOURCE_IN_USE"),
     ROBOT_STATUS_ABNORMAL(50, "ReturnNo.ROBOT_STATUS_ABNORMAL"),
-
+    DATA_INVALID(30, "RetrunNo.DATA_INVALID"),
     //状态码201
     CREATED(1, "ReturnNo.CREATED"),
 
@@ -59,6 +59,7 @@ public enum ReturnNo {
     //状态码 403
     AUTH_NO_RIGHT(16, "ReturnNo.AUTH_NO_RIGHT"),
     RESOURCE_ID_OUTSCOPE(17, "ReturnNo.RESOURCE_ID_OUTSCOPE");
+
 
 
     private int errNo;

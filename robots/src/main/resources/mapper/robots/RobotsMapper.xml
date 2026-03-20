@@ -16,11 +16,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hardwareStatus"    column="hardware_status"    />
         <result property="taskStatus"    column="task_status"    />
         <result property="battery"    column="battery"    />
+        <result property="idleStartTime"    column="idle_start_time" />
         <result property="createdAt"    column="created_at"    />
     </resultMap>
 
     <sql id="selectRobotsVo">
-        select id, code, name, group_id, manufacturer, production_date, area, status, hardware_status, task_status, battery,  created_at from robots
+        select id, code, name, group_id, manufacturer, production_date, area, status, hardware_status, task_status, battery, idle_start_time, created_at from robots
     </sql>
 
     <select id="selectRobotsList" parameterType="Robot" resultMap="RobotsResult">
@@ -33,7 +34,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     
-    <select id="selectRobotsById" parameterType="String" resultMap="RobotsResult">
+    <select id="selectRobotsById" parameterType="Long" resultMap="RobotsResult">
         <include refid="selectRobotsVo"/>
         where id = #{id}
     </select>
@@ -62,8 +63,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="area != null and area != ''">#{area},</if>
             <if test="status != null">#{status},</if>
             <if test="hardwareStatus != null">#{hardwareStatus},</if>
-            <if test="taskStatus != null">#{taskStatus},</if>
+            <if test="taskStatus != null">#{taskStatus}</if>
             <if test="battery != null and battery != ''">#{battery},</if>
+            <if test="idleStartTime != null">#{idleStartTime}</if>
             <if test="createdAt != null">#{createdAt},</if>
          </trim>
     </insert>
@@ -81,16 +83,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hardwareStatus != null">hardware_status = #{hardwareStatus},</if>
             <if test="taskStatus != null">task_status = #{taskStatus},</if>
             <if test="battery != null and battery != ''">battery = #{battery},</if>
+            <if test="idleStartTime != null">idle_start_time = #{idleStartTime}</if>
             <if test="createdAt != null">created_at = #{createdAt},</if>
         </trim>
         where id = #{id}
     </update>
 
-    <delete id="deleteRobotsById" parameterType="String">
+    <delete id="deleteRobotsById" parameterType="Long">
         delete from robots where id = #{id}
     </delete>
 
-    <delete id="deleteRobotsByIds" parameterType="String">
+    <delete id="deleteRobotsByIds" parameterType="Long">
         delete from robots where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

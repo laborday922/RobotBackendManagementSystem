@@ -21,8 +21,10 @@ public class TaskVo {
     /** 任务ID */
     private Long id;
 
-    @Setter
+    private Long templateId;
+
     /** 模板名称（关联查询） */
+    @Setter
     private String templateName;
 
     /** 任务名称 */
@@ -55,8 +57,12 @@ public class TaskVo {
     /** 闲时等待时间 */
     private Integer idleTime;
 
+    private Long robotId;
+
     /** 指定机器人名称 */
     private String robotName;
+
+    private Long robotGroupId;
 
     /** 指定机器人组名称 */
     private String robotGroupName;

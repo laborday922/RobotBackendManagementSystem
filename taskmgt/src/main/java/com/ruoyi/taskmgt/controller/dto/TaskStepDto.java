@@ -8,12 +8,13 @@ import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
-import java.util.*;
 @Data
 @AllArgsConstructor
 @Builder
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @CopyTo({TaskStep.class})
 @ApiModel("任务步骤DTO")

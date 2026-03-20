@@ -4,7 +4,7 @@
     <el-row :gutter="16" class="stats-cards">
       <el-col :span="6">
         <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="stat-icon red"><i class="el-icon-warning"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ highRiskCount }}</div>
             <div class="stat-label">高风险</div>
@@ -13,7 +13,7 @@
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon orange"><i class="fas fa-exclamation-circle"></i></div>
+          <div class="stat-icon orange"><i class="el-icon-warning-outline"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ riskCount }}</div>
             <div class="stat-label">风险</div>
@@ -22,7 +22,7 @@
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon blue"><i class="fas fa-robot"></i></div>
+          <div class="stat-icon blue"><i class="el-icon-odometer"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ abnormalRobotCount }}</div>
             <div class="stat-label">异常机器人</div>
@@ -31,7 +31,7 @@
       </el-col>
       <el-col :span="6">
         <el-card class="stat-card" shadow="hover">
-          <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-icon green"><i class="el-icon-circle-check"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ resolvedToday }}</div>
             <div class="stat-label">今日已处理</div>
@@ -44,9 +44,9 @@
     <el-card class="table-card">
       <template #header>
         <div class="card-header">
-          <span><i class="fas fa-exclamation-triangle" style="color:#ff4d4f;"></i> 异常任务列表</span>
+          <span><i class="el-icon-warning" style="color:#ff4d4f;"></i> 异常任务列表</span>
           <el-button type="text" @click="refreshList">
-            <i class="fas fa-sync-alt"></i> 刷新
+            <i class="el-icon-refresh"></i> 刷新
           </el-button>
         </div>
       </template>
@@ -59,9 +59,10 @@
           clearable
           style="width:150px"
           @change="handleQuery"
+          @clear="handleQuery"
         >
-          <el-option label="高风险" :value="1" />
-          <el-option label="风险" :value="2" />
+          <el-option label="高风险" :value="2" />
+          <el-option label="风险" :value="1" />
         </el-select>
         <el-select
           v-model="queryParams.robotId"
@@ -69,6 +70,7 @@
           clearable
           style="width:180px; margin-left:10px;"
           @change="handleQuery"
+          @clear="handleQuery"
         >
           <el-option
             v-for="r in abnormalRobots"
@@ -77,7 +79,6 @@
             :value="r.id"
           />
         </el-select>
-        <el-button style="margin-left:10px;" @click="resetQuery">重置</el-button>
       </div>
 
       <!-- 表格 -->
@@ -92,86 +93,180 @@
         <el-table-column prop="id" label="ID" width="80" align="center" />
         <el-table-column prop="name" label="任务名称" min-width="180" show-overflow-tooltip />
         <el-table-column label="风险等级" width="120" align="center">
-          <template #default="scope">
-            <el-tag v-if="scope.row.riskLevel === 1" type="danger" effect="dark">高风险</el-tag>
-            <el-tag v-else-if="scope.row.riskLevel === 2" type="warning">风险</el-tag>
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.riskLevel === 2" type="danger" effect="dark">高风险</el-tag>
+            <el-tag v-else-if="scope.row.riskLevel === 1" type="warning">风险</el-tag>
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="任务状态" width="100" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             <span :class="'status-tag status-' + getStatusClass(scope.row.status)">
               {{ getStatusText(scope.row.status) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="异常原因" width="150" show-overflow-tooltip>
-          <template #default="scope">
-            <div v-if="scope.row.robotStatus">
-              <i v-if="scope.row.robotStatus === 'offline'" class="fas fa-wifi" style="color:#ff4d4f;">离线</i>
-              <i v-else-if="scope.row.robotStatus === 'fault'" class="fas fa-times-circle" style="color:#ff4d4f;">故障</i>
-              <i v-else-if="scope.row.robotStatus === 'low_battery'" class="fas fa-battery-quarter" style="color:#faad14;">电量低</i>
-              <span v-else>{{ scope.row.robotStatus }}</span>
+        <!-- 异常原因显示 -->
+        <el-table-column label="异常原因" min-width="180" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div v-if="scope.row.robotStatusSummary">
+              <i class="el-icon-info" style="color:#ff4d4f; margin-right:4px;"></i>
+              {{ scope.row.robotStatusSummary }}
+            </div>
+            <div v-else-if="scope.row.robotStatuses && scope.row.robotStatuses.length > 0">
+              <div v-for="(rs, idx) in scope.row.robotStatuses" :key="idx" style="margin-bottom:2px;">
+                <i class="el-icon-odometer" style="color:#909399; margin-right:4px;"></i>
+                {{ rs.robotName }}: {{ getRobotStatusText(rs.status) }}
+              </div>
             </div>
             <div v-else>-</div>
           </template>
         </el-table-column>
+        <el-table-column label="是否是组任务" width="100" align="center">
+          <template slot-scope="scope">
+            {{ scope.row.isGroupTask === 1 ? '是' : '否' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="原机器人组" prop="robotGroupName" min-width="120" show-overflow-tooltip />
         <el-table-column prop="robotName" label="原机器人" width="120" show-overflow-tooltip />
         <el-table-column label="进度" width="120" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             {{ scope.row.completedSteps || 0 }}/{{ scope.row.totalSteps || 5 }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="350" fixed="right" align="center">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
+        <!-- 操作列 -->
+        <el-table-column label="操作" width="380" fixed="right" align="center">
+          <template slot-scope="scope">
+            <!-- 详情 -->
+            <el-button size="small" circle title="详情" @click="handleView(scope.row)">
+              <i class="el-icon-view"></i>
+            </el-button>
 
             <!-- 高风险任务操作 -->
-            <template v-if="scope.row.riskLevel === 1">
+            <template v-if="scope.row.riskLevel === 2">
               <!-- 执行中任务可中止 -->
               <el-button
-                link
+                v-if="scope.row.status === 0"
+                size="small"
                 type="warning"
-                icon="Pause"
+                circle
+                title="中止"
                 @click="handleAbortHighRisk(scope.row)"
-                v-if="scope.row.status === 2"
-              >中止</el-button>
+              >
+                <i class="el-icon-remove-outline"></i>
+              </el-button>
+
               <!-- 已暂停任务的操作组 -->
-              <template v-else-if="scope.row.status === 3">
-                <el-button link type="primary" icon="Refresh" @click="showReassignDialog(scope.row)">重新分配</el-button>
-                <!-- 恢复任务（继续执行，不改变风险） -->
-                <el-button link type="success" icon="VideoPlay" @click="handleResume(scope.row)">恢复</el-button>
-                <!-- 解决风险（仅当机器人状态正常时可用） -->
+              <template v-else-if="scope.row.status === 2">
+                <!-- 恢复按钮：根据机器人/组状态判断是否可以恢复 -->
                 <el-button
-                  link
-                  :type="isRobotNormal(scope.row) ? 'success' : 'info'"
-                  icon="Check"
-                  :disabled="!isRobotNormal(scope.row)"
-                  @click="handleResolveRisk(scope.row)"
-                >解决风险</el-button>
-                <el-button link type="danger" icon="Ban" @click="handleTerminate(scope.row)">终止</el-button>
+                  size="small"
+                  :type="isRobotOrGroupNormal(scope.row) ? 'success' : 'info'"
+                  :disabled="!isRobotOrGroupNormal(scope.row)"
+                  circle
+                  :title="isRobotOrGroupNormal(scope.row) ? '恢复' : '机器人/组状态异常，无法恢复'"
+                  @click="handleResume(scope.row)"
+                >
+                  <i class="el-icon-video-play"></i>
+                </el-button>
+
+                <el-button
+                  size="small"
+                  type="primary"
+                  circle
+                  title="重新分配"
+                  @click="showReassignDialog(scope.row)"
+                >
+                  <i class="el-icon-refresh"></i>
+                </el-button>
+
+                <el-button
+                  size="small"
+                  type="danger"
+                  circle
+                  title="终止"
+                  @click="handleTerminate(scope.row)"
+                >
+                  <i class="el-icon-circle-close"></i>
+                </el-button>
               </template>
+
+              <!-- 已终止任务显示解决风险按钮 -->
+              <el-button
+                v-if="scope.row.status === 5 ||scope.row.status === 3"
+                size="small"
+                type="success"
+                circle
+                title="解决风险"
+                @click="handleResolveRisk(scope.row)"
+              >
+                <i class="el-icon-check"></i>
+              </el-button>
+
+              <!-- 操作后显示解决风险标记（等待手动解除） -->
+              <el-button
+                v-if="isTaskPendingResolve(scope.row)"
+                size="small"
+                type="success"
+                circle
+                title="点击解除风险标记"
+                @click="handleResolveRisk(scope.row)"
+                style="margin-left: 8px;"
+              >
+                <i class="el-icon-check"></i>
+              </el-button>
             </template>
 
             <!-- 普通风险任务操作 -->
-            <template v-else-if="scope.row.riskLevel === 2">
-              <el-button link type="primary" icon="Refresh" @click="showReassignDialog(scope.row)">重新分配</el-button>
-              <!-- 如果任务是暂停状态，显示恢复按钮 -->
+            <template v-else-if="scope.row.riskLevel === 1">
+              <!-- 准备中任务可取消 -->
               <el-button
-                v-if="scope.row.status === 3"
-                link
+                v-if="scope.row.status === 1"
+                size="small"
+                type="warning"
+                circle
+                title="取消"
+                @click="handleCancel(scope.row)"
+              >
+                <i class="el-icon-close"></i>
+              </el-button>
+
+              <!-- 已取消任务显示解决风险按钮 -->
+              <el-button
+                v-if="scope.row.status === 5||scope.row.status === 3"
+                size="small"
                 type="success"
-                icon="VideoPlay"
-                @click="handleResume(scope.row)"
-              >恢复</el-button>
-              <!-- 解决风险（仅当机器人状态正常时可用） -->
-              <el-button
-                link
-                :type="isRobotNormal(scope.row) ? 'success' : 'info'"
-                icon="Check"
-                :disabled="!isRobotNormal(scope.row)"
+                circle
+                title="解决风险"
                 @click="handleResolveRisk(scope.row)"
-              >解决风险</el-button>
+              >
+                <i class="el-icon-check"></i>
+              </el-button>
+
+              <!-- 重新分配 -->
+              <el-button
+                v-if="scope.row.status !== 5 && scope.row.status !== 6"
+                size="small"
+                type="primary"
+                circle
+                title="重新分配"
+                @click="showReassignDialog(scope.row)"
+              >
+                <i class="el-icon-refresh"></i>
+              </el-button>
+
+              <!-- 操作后显示解决风险标记（等待手动解除） -->
+              <el-button
+                v-if="isTaskPendingResolve(scope.row)"
+                size="small"
+                type="success"
+                circle
+                title="点击解除风险标记"
+                @click="handleResolveRisk(scope.row)"
+                style="margin-left: 8px;"
+              >
+                <i class="el-icon-check"></i>
+              </el-button>
             </template>
           </template>
         </el-table-column>
@@ -181,22 +276,22 @@
       <pagination
         v-show="total > 0"
         :total="total"
-        v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
     </el-card>
 
-    <!-- 重新分配对话框（与之前相同） -->
+    <!-- 重新分配对话框 - 支持组任务和单任务 -->
     <el-dialog
       title="重新分配任务"
-      v-model="reassignDialog.visible"
+      :visible.sync="reassignDialog.visible"
       width="600px"
       append-to-body
     >
       <div v-if="reassignDialog.task">
         <el-alert
-          v-if="reassignDialog.task.riskLevel === 1"
+          v-if="reassignDialog.task.riskLevel === 2"
           title="高风险任务"
           type="error"
           description="此任务已被中止，需要重新分配"
@@ -207,8 +302,11 @@
           <div><strong>任务名称：</strong>{{ reassignDialog.task.name }}</div>
           <div><strong>原机器人：</strong>{{ reassignDialog.task.robotName }}</div>
           <div><strong>适用组：</strong>{{ getRobotGroupNames(reassignDialog.task.robotGroupIds) }}</div>
+          <div><strong>任务类型：</strong>{{ reassignDialog.task.isGroupTask === 1 ? '组任务' : '单任务' }}</div>
         </div>
-        <div style="margin-bottom:16px;">
+
+        <!-- 单任务：显示可用机器人列表 -->
+        <div v-if="reassignDialog.task.isGroupTask === 0" style="margin-bottom:16px;">
           <div style="font-weight:bold; margin-bottom:8px;">可用机器人</div>
           <el-radio-group v-model="reassignDialog.selectedRobotId">
             <div
@@ -218,13 +316,13 @@
             >
               <el-radio :label="robot.id" style="width:100%;">
                 <div style="display:flex; align-items:center;">
-                  <i class="fas fa-robot" style="font-size:24px; color:#1890ff; margin-right:12px;"></i>
+                  <i class="el-icon-odometer" style="font-size:24px; color:#1890ff; margin-right:12px;"></i>
                   <div>
                     <div style="font-weight:bold;">{{ robot.name }}</div>
                     <div style="font-size:12px; color:#666;">
-                      <span><i class="fas fa-battery-full"></i> {{ robot.battery }}%</span>
-                      <span style="margin-left:12px;"><i class="fas fa-map-marker-alt"></i> {{ robot.location }}</span>
-                      <span style="margin-left:12px; color:#52c41a;"><i class="fas fa-circle" style="font-size:8px;"></i> 在线</span>
+                      <span><i class="el-icon-battery"></i> {{ robot.battery }}%</span>
+                      <span style="margin-left:12px;"><i class="el-icon-location"></i> {{ robot.location }}</span>
+                      <span style="margin-left:12px; color:#52c41a;"><i class="el-icon-success" style="font-size:8px;"></i> 在线正常</span>
                     </div>
                   </div>
                 </div>
@@ -232,8 +330,37 @@
             </div>
           </el-radio-group>
           <div v-if="availableRobotsForReassign.length === 0" class="empty-tip">
-            <i class="fas fa-robot" style="font-size:24px; margin-bottom:8px;"></i>
+            <i class="el-icon-odometer" style="font-size:24px; margin-bottom:8px;"></i>
             <div>当前没有可用的机器人</div>
+          </div>
+        </div>
+
+        <!-- 组任务：显示可用组列表（组内所有机器人正常） -->
+        <div v-else style="margin-bottom:16px;">
+          <div style="font-weight:bold; margin-bottom:8px;">可用机器人组（组内所有机器人正常）</div>
+          <el-radio-group v-model="reassignDialog.selectedGroupId">
+            <div
+              v-for="group in availableGroupsForReassign"
+              :key="group.id"
+              class="robot-option"
+            >
+              <el-radio :label="group.id" style="width:100%;">
+                <div style="display:flex; align-items:center;">
+                  <i class="el-icon-s-grid" style="font-size:24px; color:#1890ff; margin-right:12px;"></i>
+                  <div>
+                    <div style="font-weight:bold;">{{ group.name }}</div>
+                    <div style="font-size:12px; color:#666;">
+                      <span><i class="el-icon-odometer"></i> {{ group.robotCount }}个机器人</span>
+                      <span style="margin-left:12px; color:#52c41a;"><i class="el-icon-success" style="font-size:8px;"></i> 全部正常</span>
+                    </div>
+                  </div>
+                </div>
+              </el-radio>
+            </div>
+          </el-radio-group>
+          <div v-if="availableGroupsForReassign.length === 0" class="empty-tip">
+            <i class="el-icon-s-grid" style="font-size:24px; margin-bottom:8px;"></i>
+            <div>没有可用的机器人组（需要组内所有机器人正常）</div>
           </div>
         </div>
       </div>
@@ -243,265 +370,416 @@
           <el-button
             type="primary"
             @click="confirmReassign"
-            :disabled="!reassignDialog.selectedRobotId"
+            :disabled="!canConfirmReassign"
           >确认分配</el-button>
         </div>
       </template>
     </el-dialog>
 
-    <!-- 任务详情对话框（简化） -->
-    <el-dialog title="任务详情" v-model="detailVisible" width="700px" append-to-body>
+    <!-- 任务详情对话框 -->
+    <el-dialog title="任务详情" :visible.sync="detailVisible" width="800px" append-to-body>
       <div v-if="currentTask">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="任务名称">{{ currentTask.name }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ getStatusText(currentTask.status) }}</el-descriptions-item>
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="任务名称" :span="2">{{ currentTask.name }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <span :class="'status-tag status-' + getStatusClass(currentTask.status)">
+              {{ getStatusText(currentTask.status) }}
+            </span>
+          </el-descriptions-item>
           <el-descriptions-item label="风险等级">
-            <el-tag v-if="currentTask.riskLevel === 1" type="danger">高风险</el-tag>
-            <el-tag v-else-if="currentTask.riskLevel === 2" type="warning">风险</el-tag>
+            <el-tag v-if="currentTask.riskLevel === 2" type="danger">高风险</el-tag>
+            <el-tag v-else-if="currentTask.riskLevel === 1" type="warning">风险</el-tag>
             <span v-else>无</span>
           </el-descriptions-item>
-          <el-descriptions-item label="机器人">{{ currentTask.robotName }}</el-descriptions-item>
+          <el-descriptions-item label="是否是组任务">{{ currentTask.isGroupTask === 1 ? '是' : '否' }}</el-descriptions-item>
+          <el-descriptions-item label="机器人">{{ currentTask.robotName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="机器人组">{{ currentTask.robotGroupName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ currentTask.createTime || '-' }}</el-descriptions-item>
         </el-descriptions>
+
+        <!-- 异常详情展示 -->
+        <template v-if="currentTask.riskLevel > 0">
+          <el-divider content-position="left">异常详情</el-divider>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="异常原因">
+              {{ currentTask.robotStatusSummary || '无' }}
+            </el-descriptions-item>
+          </el-descriptions>
+
+          <!-- 机器人状态列表 -->
+          <div v-if="currentTask.robotStatuses && currentTask.robotStatuses.length > 0" style="margin-top:16px;">
+            <div style="font-weight:bold; margin-bottom:8px;">机器人状态详情</div>
+            <el-table :data="currentTask.robotStatuses" border size="small">
+              <el-table-column prop="robotName" label="机器人名称" width="180" />
+              <el-table-column prop="status" label="状态" width="120">
+                <template slot-scope="scope">
+                  <el-tag :type="getRobotStatusType(scope.row.status)" size="small">
+                    {{ getRobotStatusText(scope.row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="预警信息" min-width="200">
+                <template slot-scope="scope">
+                  <span v-if="scope.row.status !== 'normal' && scope.row.status !== '0'" style="color: #f56c6c;">
+                    <i class="el-icon-warning"></i> 存在异常
+                  </span>
+                  <span v-else style="color: #67c23a;">
+                    <i class="el-icon-success"></i> 正常
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </template>
       </div>
     </el-dialog>
   </div>
 </template>
 
-<script setup>
-import {computed, onMounted, reactive, ref} from 'vue'
+<script>
 import {
+  cancelTask,
   continueTask,
-  getTask,
+  getAbnormalTask,
   listAbnormalTask,
   pauseTask,
-  resolveRisk,
+  resolveTaskRisk,
   terminateTask,
   updateTask
 } from '@/api/taskmgt/taskmgt'
-import {listRobot} from '@/api/system/robots'
+import { listRobots, listGroups } from '@/api/system/robots'
 
-// ========== 查询参数 ==========
-const queryParams = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  riskLevel: undefined,
-  robotId: undefined,
-  robotGroupId: undefined
-})
+export default {
+  name: 'TaskAbnormal',
+  data() {
+    return {
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        riskLevel: undefined,
+        robotId: undefined,
+        robotGroupId: undefined
+      },
+      loading: false,
+      abnormalList: [],
+      total: 0,
+      robotList: [],
+      robotGroupList: [], // 机器人组列表
+      resolvedToday: 0,
+      detailVisible: false,
+      currentTask: null,
+      reassignDialog: {
+        visible: false,
+        task: null,
+        selectedRobotId: null,  // 单任务选中的机器人
+        selectedGroupId: null   // 组任务选中的组
+      },
+      // 记录已执行操作等待解除风险的任务ID集合
+      pendingResolveTasks: new Set()
+    }
+  },
+  computed: {
+    highRiskCount() {
+      return this.abnormalList.filter(t => t.riskLevel === 2).length
+    },
+    riskCount() {
+      return this.abnormalList.filter(t => t.riskLevel === 1).length
+    },
+    abnormalRobots() {
+      return this.robotList.filter(r =>
+        r.status === '0' ||
+        r.status === '2' ||
+        r.hardwareStatus === '2' ||
+        (r.battery && r.battery <= 20)
+      )
+    },
+    abnormalRobotCount() {
+      return this.abnormalRobots.length
+    },
+    // 单任务：可用机器人
+    availableRobotsForReassign() {
+      if (!this.reassignDialog.task || this.reassignDialog.task.isGroupTask === 1) return []
+      const task = this.reassignDialog.task
+      const groupIds = this.ensureArray(task.robotGroupIds)
+      return this.robotList.filter(r =>
+        groupIds.includes(r.groupId) &&
+        r.status === '1' &&
+        r.hardwareStatus === '0' &&
+        r.battery > 20 &&
+        r.id !== task.robotId
+      )
+    },
+    // 组任务：可用组（组内所有机器人正常）
+    availableGroupsForReassign() {
+      if (!this.reassignDialog.task || this.reassignDialog.task.isGroupTask === 0) return []
+      const task = this.reassignDialog.task
+      const groupIds = this.ensureArray(task.robotGroupIds)
 
-// ========== 数据 ==========
-const loading = ref(false)
-const abnormalList = ref([])
-const total = ref(0)
+      return this.robotGroupList.filter(group => {
+        // 只显示模板允许的组，且不是当前组
+        if (!groupIds.includes(group.id) || group.id === task.robotGroupId) return false
 
-// 机器人列表（用于筛选和重新分配）
-const robotList = ref([])
+        // 获取该组所有机器人
+        const groupRobots = this.robotList.filter(r => r.groupId === group.id)
+        if (groupRobots.length === 0) return false
 
-// 获取机器人列表
-const fetchRobots = async () => {
-  try {
-    const res = await listRobot({ pageNum: 1, pageSize: 100 })
-    robotList.value = res.rows || []
-  } catch (error) {
-    console.error('获取机器人列表失败', error)
+        // 检查是否所有机器人都正常
+        const allNormal = groupRobots.every(r =>
+          r.status === '1' &&
+          r.hardwareStatus === '0' &&
+          r.battery > 20
+        )
+
+        return allNormal
+      }).map(group => ({
+        ...group,
+        robotCount: this.robotList.filter(r => r.groupId === group.id).length
+      }))
+    },
+    // 是否可以确认重新分配
+    canConfirmReassign() {
+      if (!this.reassignDialog.task) return false
+      if (this.reassignDialog.task.isGroupTask === 0) {
+        return !!this.reassignDialog.selectedRobotId
+      } else {
+        return !!this.reassignDialog.selectedGroupId
+      }
+    }
+  },
+  created() {
+    this.getRobotList()
+    this.getRobotGroupList()
+    this.getList()
+  },
+  methods: {
+    ensureArray(ids) {
+      if (!ids) return []
+      if (Array.isArray(ids)) return ids
+      if (typeof ids === 'string') return ids.split(',').map(s => Number(s.trim()))
+      return [ids]
+    },
+    isRobotOnlineAndHealthy(robot) {
+      return robot && robot.status === '1' && robot.hardwareStatus === '0'
+    },
+    async getRobotList() {
+      try {
+        const res = await listRobots({ pageSize: 1000 })
+        this.robotList = res.rows || []
+      } catch (error) {
+        this.$message.error('获取机器人列表失败')
+      }
+    },
+    async getRobotGroupList() {
+      try {
+        const res = await listGroups()
+        this.robotGroupList = res.rows || []
+      } catch (error) {
+        this.$message.error('获取机器人组列表失败')
+      }
+    },
+    async getList() {
+      this.loading = true
+      try {
+        const params = { ...this.queryParams }
+        const res = await listAbnormalTask(params)
+        this.abnormalList = res.rows || []
+        this.total = res.total || 0
+      } catch (error) {
+        this.$message.error('获取异常任务列表失败')
+      } finally {
+        this.loading = false
+      }
+    },
+    handleQuery() {
+      this.queryParams.pageNum = 1
+      this.getList()
+    },
+    refreshList() {
+      this.getList()
+    },
+    isRobotNormal(task) {
+      if (!task.robotId) return false
+      const robot = this.robotList.find(r => r.id === task.robotId)
+      return this.isRobotOnlineAndHealthy(robot) && robot.battery > 20
+    },
+    // 检查机器人或组是否正常（用于恢复按钮状态）
+    isRobotOrGroupNormal(task) {
+      if (!task) return false
+
+      if (task.isGroupTask === 1) {
+        // 组任务：检查组内所有机器人是否正常
+        if (!task.robotGroupId) return false
+        const groupRobots = this.robotList.filter(r => r.groupId === task.robotGroupId)
+        if (groupRobots.length === 0) return false
+
+        return groupRobots.every(r =>
+          r.status === '1' &&
+          r.hardwareStatus === '0' &&
+          r.battery > 20
+        )
+      } else {
+        // 单任务：检查机器人是否正常
+        if (!task.robotId) return false
+        const robot = this.robotList.find(r => r.id === task.robotId)
+        if (!robot) return false
+
+        return robot.status === '1' &&
+          robot.hardwareStatus === '0' &&
+          robot.battery > 20
+      }
+    },
+    // 检查任务是否处于等待解除风险状态
+    isTaskPendingResolve(row) {
+      return this.pendingResolveTasks.has(row.id)
+    },
+    getRobotGroupNames(groupIds) {
+      const ids = this.ensureArray(groupIds)
+      return ids.join(', ') || '-'
+    },
+    getRobotStatusText(status) {
+      const map = {
+        '0': '低电量',
+        '1': '硬件故障',
+        '2': '硬件异常',
+        '3': '离线',
+        'normal': '正常'
+      }
+      return map[status] || status
+    },
+    getRobotStatusType(status) {
+      if (status === '0') return 'warning'
+      if (status === '1' || status === '2') return 'danger'
+      if (status === '3') return 'info'
+      if (status === 'normal') return 'success'
+      return 'info'
+    },
+    async handleView(row) {
+      try {
+        const res = await getAbnormalTask(row.id)
+        this.currentTask = res.data
+        this.detailVisible = true
+      } catch (error) {
+        this.$message.error('获取详情失败')
+      }
+    },
+    async handleResume(row) {
+      try {
+        // 检查机器人/组状态是否正常
+        if (!this.isRobotOrGroupNormal(row)) {
+          this.$message.warning('机器人或组状态异常，无法恢复')
+          return
+        }
+
+        await continueTask(row.id)
+        this.$message.success('任务已恢复执行')
+        // 添加到等待解除风险集合
+        this.pendingResolveTasks.add(row.id)
+        this.getList()
+      } catch (error) {
+        this.$message.error('恢复失败')
+      }
+    },
+    async handleCancel(row){
+      try{
+        await cancelTask(row.id)
+        this.$message.success('任务已取消')
+        // 添加到等待解除风险集合
+        this.pendingResolveTasks.add(row.id)
+        this.getList()
+      }catch (error){
+        this.$message.error('取消失败')
+      }
+    },
+    // 解决风险 - 需要手动点击，重新分配不会自动解决
+    async handleResolveRisk(row) {
+      try {
+        await this.$confirm('确认解决该任务的风险吗？风险移除后，任务将从异常列表中消失。', '确认解决', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'info'
+        })
+        await resolveTaskRisk(row.id)
+        this.resolvedToday += 1
+        // 从等待集合中移除
+        this.pendingResolveTasks.delete(row.id)
+        this.$message.success('风险已解决')
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') this.$message.error('操作失败')
+      }
+    },
+    async handleAbortHighRisk(row) {
+      try {
+        await pauseTask(row.id)
+        this.$message.success('任务已暂停，请重新分配、恢复或终止')
+        this.getList()
+      } catch (error) {
+        this.$message.error('操作失败')
+      }
+    },
+    async handleTerminate(row) {
+      try {
+        const { value: reason } = await this.$prompt('请输入终止原因', '终止任务', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPlaceholder: '终止原因'
+        })
+        await terminateTask(row.id, reason)
+        this.resolvedToday += 1
+        this.$message.success('任务已终止')
+        // 添加到等待解除风险集合（已终止任务也允许解除风险）
+        this.pendingResolveTasks.add(row.id)
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') this.$message.error('操作失败')
+      }
+    },
+    showReassignDialog(row) {
+      this.reassignDialog.task = row
+      this.reassignDialog.selectedRobotId = null
+      this.reassignDialog.selectedGroupId = null
+      this.reassignDialog.visible = true
+    },
+    // 确认重新分配 - 不自动解决风险，添加到等待集合
+    async confirmReassign() {
+      if (!this.canConfirmReassign) return
+      const task = this.reassignDialog.task
+
+      try {
+        if (task.isGroupTask === 0) {
+          // 单任务：更新机器人ID
+          const robotId = this.reassignDialog.selectedRobotId
+          await updateTask(task.id, { robotId: Number(robotId) })
+        } else {
+          // 组任务：更新组ID
+          const groupId = this.reassignDialog.selectedGroupId
+          await updateTask(task.id, { robotGroupId: Number(groupId) })
+        }
+
+        this.$message.success('重新分配成功，请点击"解决风险"按钮移除异常标记')
+        // 添加到等待解除风险集合
+        this.pendingResolveTasks.add(task.id)
+        this.reassignDialog.visible = false
+        this.getList()
+      } catch (error) {
+        this.$message.error('分配失败')
+      }
+    },
+    getStatusText(status) {
+      const map = { 3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止' }
+      return map[status] || status
+    },
+    getStatusClass(status) {
+      const map = { 3: 'pending', 1: 'ready', 0: 'executing', 2: 'paused', 6: 'completed', 4: 'disabled', 5: 'aborted' }
+      return map[status] || 'pending'
+    },
+    tableRowClassName({ row }) {
+      if (row.riskLevel === 2) return 'abnormal-task-row high-risk'
+      if (row.riskLevel === 1) return 'abnormal-task-row'
+      return ''
+    }
   }
 }
-
-// 统计卡片数据
-const highRiskCount = computed(() => abnormalList.value.filter(t => t.riskLevel === 1).length)
-const riskCount = computed(() => abnormalList.value.filter(t => t.riskLevel === 2).length)
-// 异常机器人（状态为离线/故障/低电量）
-const abnormalRobots = computed(() => robotList.value.filter(r =>
-  r.status === 'offline' || r.status === 'fault' || r.status === 'low_battery'
-))
-const abnormalRobotCount = computed(() => abnormalRobots.value.length)
-// 今日已处理
-const resolvedToday = ref(0)
-
-// 判断机器人是否正常（在线且电量>20）
-const isRobotNormal = (task) => {
-  if (!task.robotId) return false
-  const robot = robotList.value.find(r => r.id === task.robotId)
-  return robot && robot.status === 'online' && robot.battery > 20
-}
-
-// 获取异常任务列表
-const getList = async () => {
-  loading.value = true
-  try {
-    const params = { ...queryParams }
-    const res = await listAbnormalTask(params)
-    abnormalList.value = res.rows || []
-    total.value = res.total || 0
-  } catch (error) {
-    ElMessage.error('获取异常任务列表失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleQuery = () => {
-  queryParams.pageNum = 1
-  getList()
-}
-
-const resetQuery = () => {
-  queryParams.riskLevel = undefined
-  queryParams.robotId = undefined
-  handleQuery()
-}
-
-const refreshList = () => {
-  getList()
-}
-
-// ========== 操作 ==========
-
-// 查看详情
-const detailVisible = ref(false)
-const currentTask = ref(null)
-const handleView = async (row) => {
-  try {
-    const res = await getTask(row.id)
-    currentTask.value = res.data
-    detailVisible.value = true
-  } catch (error) {
-    ElMessage.error('获取详情失败')
-  }
-}
-
-// 恢复任务（继续执行）
-const handleResume = async (row) => {
-  try {
-    await continueTask(row.id)
-    ElMessage.success('任务已恢复执行')
-    getList()
-  } catch (error) {
-    ElMessage.error('恢复失败')
-  }
-}
-
-// 手动解决风险（清除风险标记）
-const handleResolveRisk = async (row) => {
-  if (!isRobotNormal(row)) {
-    ElMessage.warning('机器人状态异常，无法解决风险')
-    return
-  }
-  try {
-    await ElMessageBox.confirm('确认解决该任务的风险吗？风险移除后，任务将从异常列表中消失。', '确认解决', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'info'
-    })
-    await resolveRisk(row.id)
-    resolvedToday.value += 1
-    ElMessage.success('风险已解决')
-    getList()
-  } catch (error) {
-    if (error !== 'cancel') ElMessage.error('操作失败')
-  }
-}
-
-// 中止高风险任务（暂停任务，保持风险等级）
-const handleAbortHighRisk = async (row) => {
-  try {
-    const { value: reason } = await ElMessageBox.prompt('请输入中止原因', '中止高风险任务', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPlaceholder: '中止原因'
-    })
-    await pauseTask(row.id)
-    ElMessage.success('任务已暂停，请重新分配或终止')
-    getList()
-  } catch (error) {
-    if (error !== 'cancel') ElMessage.error('操作失败')
-  }
-}
-
-// 终止任务（彻底结束，并清除风险）
-const handleTerminate = async (row) => {
-  try {
-    const { value: reason } = await ElMessageBox.prompt('请输入终止原因', '终止任务', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPlaceholder: '终止原因'
-    })
-    await terminateTask(row.id, reason)
-    resolvedToday.value += 1
-    ElMessage.success('任务已终止')
-    getList()
-  } catch (error) {
-    if (error !== 'cancel') ElMessage.error('操作失败')
-  }
-}
-
-// ========== 重新分配 ==========
-const reassignDialog = reactive({
-  visible: false,
-  task: null,
-  selectedRobotId: null
-})
-
-// 可用机器人（在线且属于任务适用组）
-const availableRobotsForReassign = computed(() => {
-  if (!reassignDialog.task) return []
-  const task = reassignDialog.task
-  const groupIds = task.robotGroupIds || []
-  return robotList.value.filter(r =>
-    groupIds.includes(r.groupId) &&
-    r.status === 'online' &&
-    r.battery > 20 &&
-    r.id !== task.robotId
-  )
-})
-
-const showReassignDialog = (row) => {
-  reassignDialog.task = row
-  reassignDialog.selectedRobotId = null
-  reassignDialog.visible = true
-}
-
-const confirmReassign = async () => {
-  if (!reassignDialog.selectedRobotId) return
-  const task = reassignDialog.task
-  const robotId = reassignDialog.selectedRobotId
-  try {
-    await updateTask(task.id, { robotId })
-    // 重新分配后需要清除风险
-    await resolveRisk(task.id)
-    resolvedToday.value += 1
-    ElMessage.success('重新分配成功，风险已解除')
-    reassignDialog.visible = false
-    getList()
-  } catch (error) {
-    ElMessage.error('分配失败')
-  }
-}
-
-// ========== 辅助函数 ==========
-const statusMap = {
-  0: 'pending', 1: 'ready', 2: 'executing', 3: 'paused', 4: 'completed', 5: 'disabled', 6: 'aborted'
-}
-const statusTextMap = {
-  0: '未开始', 1: '准备中', 2: '执行中', 3: '已暂停', 4: '已完成', 5: '已禁用', 6: '已终止'
-}
-const getStatusText = (status) => statusTextMap[status] || status
-const getStatusClass = (status) => statusMap[status] || 'pending'
-
-const getRobotGroupNames = (groupIds) => {
-  return groupIds ? groupIds.join(', ') : '-'
-}
-
-// 表格行样式（高风险行高亮）
-const tableRowClassName = ({ row }) => {
-  if (row.riskLevel === 1) return 'abnormal-task-row'
-  return ''
-}
-
-onMounted(() => {
-  getList()
-  fetchRobots()
-})
 </script>
 
 <style scoped>
@@ -590,10 +868,22 @@ onMounted(() => {
   color: #999;
   padding: 20px;
 }
+/* Element UI 图标大小调整 */
+.el-button [class*="el-icon-"] {
+  font-size: 14px;
+  font-weight: bold;
+}
 </style>
 
 <style>
 .abnormal-task-row {
+  background-color: #fff8e6 !important;
+}
+.abnormal-task-row.high-risk {
   background-color: #fff1f0 !important;
+}
+/* 表格操作列按钮间距 */
+.el-table .cell .el-button + .el-button {
+  margin-left: 4px;
 }
 </style>

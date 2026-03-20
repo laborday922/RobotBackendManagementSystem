@@ -4,6 +4,7 @@ import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.service.vo.TaskVo;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 public interface ITaskService {
@@ -73,7 +74,17 @@ public interface ITaskService {
      */
     void cancelTask(Long id);
 
+    @Transactional
+    void updateGlobalOrder(List<Long> taskIds);
+
+    @Transactional
+    void updateLocalOrder(Long resourceId, boolean isGroupTask, List<Long> taskIds);
+
+    void validateLocalOrder(List<Task> tasks);
+
     List<TaskAbnormalVo> getAbnormalTasks(Integer riskLevel, Long robotId, Long robotGroupId);
 
-    void resolveRisk(Long id);
+    boolean resolveRisk(Long id);
+
+    TaskAbnormalVo getAbnormalTask(Long id);
 }

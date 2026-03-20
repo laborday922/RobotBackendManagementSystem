@@ -10,6 +10,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @CopyFrom({Task.class})
 public class TaskAbnormalVo extends TaskVo {
-    private String robotStatusSummary;          // 机器人状态摘要
+    private String robotStatusSummary;          // 机器人状态摘要/异常原因
     private List<RobotStatus> robotStatuses;    // 具体机器人状态列表
 }

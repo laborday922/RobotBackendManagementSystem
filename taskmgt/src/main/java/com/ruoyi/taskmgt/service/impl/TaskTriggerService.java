@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.service.impl;
 
 import com.ruoyi.common.core.redis.RedisCache;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.event.RobotWarningEvent;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -88,8 +88,8 @@ public class TaskTriggerService {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null);
         for (Task task : tasks) {
             String taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
-            // Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleSince();
-            Date idleSince = getMockIdleSince(task.getRobotId());
+            Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
+            //Date idleSince = getMockIdleSince(task.getRobotId());
             if ("idle".equals(taskStatus) && idleSince != null) {
                 long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
                 if (idleMinutes >= task.getIdleTime()) {
@@ -108,17 +108,40 @@ public class TaskTriggerService {
             return;
         }
 
-        // 设置准备队列顺序
+        // 1. 设置局部顺序 pendingOrder
         if (task.getIsGroupTask() == 0) {
             List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, 0, null,
                     task.getRobotId(), null, null, null, null);
-            int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(0);
+            int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(-1);
             task.setPendingOrder(maxOrder + 1);
         } else {
             List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, 1, null,
                     null, task.getRobotGroupId(), null, null, null);
-            int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(0);
+            int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(-1);
             task.setPendingOrder(maxOrder + 1);
+        }
+
+        // 设置全局顺序 globalPendingOrder,获取当前所有准备中任务的最大全局顺序
+        List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        int maxGlobal = allPending.stream().mapToInt(Task::getGlobalPendingOrder).max().orElse(-1);
+        task.setGlobalPendingOrder(maxGlobal + 1);
+
+        // 风险等级标记
+        if (StringUtils.isNotNull(task.getRobotId())) {
+            if (robotWarningsService.countUnresolvedByRobotId(task.getRobotId()) != 0)
+                task.setRiskLevel(1);
+        } else if (StringUtils.isNotNull(task.getRobotGroupId())) {
+            Robot robot = new Robot();
+            robot.setGroupId(task.getRobotGroupId());
+            List<Robot> robots = robotService.selectRobotsList(robot);
+            boolean hasWarning = false;
+            for (Robot bot : robots) {
+                if (robotWarningsService.countUnresolvedByRobotId(bot.getId()) != 0) {
+                    hasWarning = true;
+                    break;
+                }
+            }
+            if (hasWarning) task.setRiskLevel(1);
         }
 
         task.setStatus(Task.PENDING);
@@ -134,72 +157,58 @@ public class TaskTriggerService {
     }
 
     //任务开始触发
-    @Scheduled(fixedDelay = 10000) // 每10秒检查一次
+    @Scheduled(fixedDelay = 10000)
     public void checkPendingTasksToStart() {
         log.debug("检查准备中的任务是否可以开始执行");
 
-        // 非组任务
-        List<Task> pendingNonGroup = taskRepository.getTasks(Task.PENDING, 0, null, null, null, null, null, null);
-        Map<Long, Task> minTaskPerRobot = pendingNonGroup.stream()
-                .filter(t -> t.getRobotId() != null)
-                .collect(Collectors.toMap(
-                        Task::getRobotId,
-                        t -> t,
-                        (t1, t2) -> t1.getPendingOrder() < t2.getPendingOrder() ? t1 : t2
-                ));
-        for (Task task : minTaskPerRobot.values()) {
-            List<Task> executing = taskRepository.getTasks(Task.EXECUTING, 0, null,
-                    task.getRobotId(), null, null, null, null);
-            if (executing.isEmpty()) {
-                startTask(task);
-            }
-        }
+        // 获取所有准备中任务，已按 globalPendingOrder 排序
+        List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
 
-        // 组任务
-        List<Task> pendingGroup = taskRepository.getTasks(Task.PENDING, 1, null, null, null, null, null, null);
-        Map<Long, Task> minTaskPerGroup = pendingGroup.stream()
-                .filter(t -> t.getRobotGroupId() != null)
-                .collect(Collectors.toMap(
-                        Task::getRobotGroupId,
-                        t -> t,
-                        (t1, t2) -> t1.getPendingOrder() < t2.getPendingOrder() ? t1 : t2
-                ));
-        for (Task task : minTaskPerGroup.values()) {
-            Long groupId = task.getRobotGroupId();
-            // 是否有正在执行的组任务
-            List<Task> executingGroup = taskRepository.getTasks(Task.EXECUTING, 1, null,
-                    null, groupId, null, null, null);
-            if (!executingGroup.isEmpty()) {
-                continue;
-            }
-            // 检查组内机器人是否有正在执行的非组任务
-            //List<Long> robotIds = getMockRobotIdsByGroupId(groupId);
-            Robot robot = new Robot();
-            robot.setGroupId(groupId);
-            List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
-            boolean hasExecutingNonGroup = false;
-            for (Long rid : robotIds) {
-                List<Task> executingNonGroup = taskRepository.getTasks(Task.EXECUTING, 0, null,
-                        rid, null, null, null, null);
-                if (!executingNonGroup.isEmpty()) {
-                    hasExecutingNonGroup = true;
-                    break;
+        for (Task task : pendingTasks) {
+            if (task.getIsGroupTask() == 0) {
+                // 单任务：检查机器人空闲
+                List<Task> executing = taskRepository.getTasks(Task.EXECUTING, 0, null,
+                        task.getRobotId(), null, null, null, null);
+                if (executing.isEmpty()) {
+                    startTask(task);
                 }
-            }
-            if (!hasExecutingNonGroup) {
-                startTask(task);
+            } else {
+                // 组任务：检查组内所有机器人空闲且无组任务执行
+                Long groupId = task.getRobotGroupId();
+                List<Task> executingGroup = taskRepository.getTasks(Task.EXECUTING, 1, null,
+                        null, groupId, null, null, null);
+                if (!executingGroup.isEmpty()) {
+                    continue;
+                }
+                // 检查组内所有机器人是否有执行中的单任务
+                Robot robot = new Robot();
+                robot.setGroupId(groupId);
+                List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
+                boolean hasExecutingNonGroup = false;
+                for (Long rid : robotIds) {
+                    List<Task> executingNonGroup = taskRepository.getTasks(Task.EXECUTING, 0, null,
+                            rid, null, null, null, null);
+                    if (!executingNonGroup.isEmpty()) {
+                        hasExecutingNonGroup = true;
+                        break;
+                    }
+                }
+                if (!hasExecutingNonGroup) {
+                    startTask(task);
+                }
             }
         }
     }
-
     private void startTask(Task task) {
         if (!task.allowTransitStatus(Task.EXECUTING)) {
             log.warn("任务 {} 无法转为执行中", task.getId());
             return;
         }
         task.setStatus(Task.EXECUTING);
-        task.setPendingOrder(null); // 清空准备顺序
+        task.setPendingOrder(null);
+        task.setGlobalPendingOrder(null);
         task.setUpdateBy("system");
+        if(task.getRiskLevel()==1)task.setRiskLevel(2);
         List<String> redisKeys = taskRepository.update(task);
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
@@ -210,15 +219,16 @@ public class TaskTriggerService {
 
         // 触发第一个步骤（如果有模板）
         if (task.getTemplateId() != null) {
-            List<TaskStep> steps = stepRepository.findStepesByTaskId(task.getId());
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
             steps.stream()
+                    .filter(step -> !Objects.equals(step.getStatus(), TaskStep.FINISHED))
                     .min(Comparator.comparing(TaskStep::getOrderNum))
                     .ifPresent(this::startStep);
         }
     }
 
     private void startStep(TaskStep step) {
-        if (!Objects.equals(step.getStatus(), TaskStep.NOTSTART)) return;
+        if (!Objects.equals(step.getStatus(), TaskStep.NOTSTART)&&!Objects.equals(step.getStatus(), TaskStep.PAUSED)) return;
         step.setStatus(TaskStep.EXECUTING);
         step.setStartTime(new Date());
         List<String> redisKeys = stepRepository.update(step);
@@ -265,7 +275,9 @@ public class TaskTriggerService {
 
             for (Task task : groupTasks) {
                 if (hasUnresolvedWarning) {
-                    int riskLevel = (Objects.equals(task.getStatus(), Task.EXECUTING)) ? 2 : 1;
+                    Integer riskLevel = 0;
+                    if(Objects.equals(task.getStatus(),Task.EXECUTING)) riskLevel = 2;
+                    else if(Objects.equals(task.getStatus(),Task.PAUSED)||Objects.equals(task.getStatus(),Task.PENDING)) riskLevel = 1;
                     task.setRiskLevel(riskLevel);
                     taskLogService.record(task.getId(), null, TaskLogEventType.ROBOT_STATUS_CHANGE,
                             String.format("组内机器人存在未解决预警，任务标记为%s", riskLevel == 2 ? "高风险" : "风险"), "system");

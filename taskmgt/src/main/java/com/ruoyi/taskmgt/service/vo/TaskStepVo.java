@@ -18,6 +18,8 @@ import lombok.*;
 public class TaskStepVo {
     private Long id;
 
+    private Long taskId;
+
     /** 所属任务名 */
     private String taskName;
 

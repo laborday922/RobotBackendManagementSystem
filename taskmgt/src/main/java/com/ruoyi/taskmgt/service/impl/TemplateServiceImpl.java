@@ -5,6 +5,7 @@ import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.robots.domain.RobotGroups;
 import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Template;
@@ -17,6 +18,7 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -124,7 +126,14 @@ public class TemplateServiceImpl implements ITemplateService {
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
                     if (StringUtils.isNotNull(template.getRobotGroupIds())) {
-                        vo.setRobotGroupNames(template.getRobotGroupIds());
+                        List<String> groupNames = new ArrayList<>();
+                        for (Long groupId : vo.getRobotGroupIds()) {
+                            RobotGroups group = robotGroupsService.selectRobotGroupsById(groupId);
+                            if (group != null) {
+                                groupNames.add(group.getName());
+                            }
+                        }
+                        vo.setRobotGroupNames(groupNames);
                     }
                     return vo;
                 })
@@ -141,7 +150,14 @@ public class TemplateServiceImpl implements ITemplateService {
                 });
         TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
         if (StringUtils.isNotNull(template.getRobotGroupIds())) {
-            vo.setRobotGroupNames(template.getRobotGroupIds());
+            List<String> groupNames = new ArrayList<>();
+            for (Long groupId : vo.getRobotGroupIds()) {
+                RobotGroups group = robotGroupsService.selectRobotGroupsById(groupId);
+                if (group != null) {
+                    groupNames.add(group.getName());
+                }
+            }
+            vo.setRobotGroupNames(groupNames);
         }
         return vo;
     }

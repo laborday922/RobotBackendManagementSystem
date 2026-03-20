@@ -64,7 +64,9 @@ public class Robot extends BaseEntity
     @Excel(name = "当前电量", readConverterExp = "0=-100")
     private Integer battery;
 
-
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @Excel(name = "闲置开始时间",width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
+    private Date idleStartTime;
 
 
     /** 创建时间 */
@@ -183,7 +185,9 @@ public class Robot extends BaseEntity
         return battery;
     }
 
+    public void setIdleStartTime(Date idleStartTime){ this.idleStartTime = idleStartTime; }
 
+    public Date getIdleStartTime(){ return this.idleStartTime; }
 
     public void setCreatedAt(Date createdAt) 
     {

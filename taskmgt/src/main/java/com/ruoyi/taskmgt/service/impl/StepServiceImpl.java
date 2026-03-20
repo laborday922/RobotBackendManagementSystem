@@ -4,7 +4,7 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
-import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
@@ -73,7 +73,12 @@ public class StepServiceImpl implements IStepService {
         } else {
             List<String> redisKeys = new ArrayList<>();
             for (TaskStep step : steps) {
-                redisKeys.addAll(this.stepRepository.update(step));
+                TaskStep orginStep = this.stepRepository.findStepByTaskIdAndOrder(taskId,step.getOrderNum());
+                if(StringUtils.isNotNull(orginStep)){
+                    step.setId(orginStep.getId());
+                    redisKeys.addAll(this.stepRepository.update(step));
+                }
+                else this.stepRepository.insert(step);
             }
             this.redisUtil.deleteObject(redisKeys);
         }
@@ -85,7 +90,7 @@ public class StepServiceImpl implements IStepService {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
         });
-        List<TaskStep> taskSteps = this.stepRepository.findStepesByTaskId(taskId);
+        List<TaskStep> taskSteps = this.stepRepository.findStepsByTaskId(taskId);
         return taskSteps.stream()
                 .map(step -> {
                     TaskStepVo vo = CloneFactory.copy(new TaskStepVo(), step);
@@ -121,7 +126,7 @@ public class StepServiceImpl implements IStepService {
                         "结束时间:" + step.getEndTime(), "system");
 
         // 查找下一个步骤
-        List<TaskStep> steps = stepRepository.findStepesByTaskId(step.getTaskId());
+        List<TaskStep> steps = stepRepository.findStepsByTaskId(step.getTaskId());
         TaskStep nextStep = steps.stream()
                 .filter(s -> s.getOrderNum() > step.getOrderNum())
                 .min(Comparator.comparing(TaskStep::getOrderNum))

@@ -18,6 +18,8 @@ import javax.validation.constraints.NotBlank;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@Getter
+@Setter
 public class TemplatePo extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,9 +32,8 @@ public class TemplatePo extends BaseEntity {
     /** 模板描述 */
     private String description;
 
-    /** 关联的机器人组ID*/
-    @Getter
-    @Setter
+    /** 所有适用的机器人组ID,用逗号分隔*/
+    @Column(columnDefinition = "varchar(255)")
     private String robotGroupId;
 
     /** 表单内容（JSON格式，定义任务参数） */
@@ -44,5 +45,5 @@ public class TemplatePo extends BaseEntity {
     private String workflow;
 
     /** 状态（0正常 1停用） */
-    private String status;
+    private Byte status;
 }

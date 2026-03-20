@@ -91,32 +91,33 @@ export const constantRoutes = [
   {
     path: '/taskmgt',
     component: Layout,
+    redirect: '/taskmgt/tasks',
     hidden: false,
-    meta: { title: '任务管理', icon: 'el-icon-s-operation' },
+    meta: { title: '任务管理', icon: 'job' },
     children: [
       {
         path: 'templates',
         name: 'TaskTemplate',
         component: () => import('@/views/taskmgt/TaskTemplate'),
-        meta: { title: '模板管理', icon: 'el-icon-document' }
+        meta: { title: '模板管理', icon: 'documentation' }
       },
       {
         path: 'tasks',
         name: 'TaskList',
         component: () => import('@/views/taskmgt/TaskList'),
-        meta: { title: '任务列表', icon: 'el-icon-list' }
+        meta: { title: '任务列表', icon: 'list' }
       },
       {
         path: 'schedule',
         name: 'TaskSchedule',
         component: () => import('@/views/taskmgt/TaskSchedule'),
-        meta: { title: '计划管理', icon: 'el-icon-time' }
+        meta: { title: '计划管理', icon: 'time' }
       },
       {
         path: 'abnormal',
         name: 'TaskAbnormal',
         component: () => import('@/views/taskmgt/TaskAbnormal'),
-        meta: { title: '异常处理', icon: 'el-icon-warning' }
+        meta: { title: '异常处理', icon: 'bug' }
       }
     ]
   }

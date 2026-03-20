@@ -29,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     
-    <select id="selectRobotWarningsById" parameterType="String" resultMap="RobotWarningsResult">
+    <select id="selectRobotWarningsById" parameterType="Long" resultMap="RobotWarningsResult">
         <include refid="selectRobotWarningsVo"/>
         where id = #{id}
     </select>
@@ -76,11 +76,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
-    <delete id="deleteRobotWarningsById" parameterType="String">
+    <delete id="deleteRobotWarningsById" parameterType="Long">
         delete from robot_warnings where id = #{id}
     </delete>
 
-    <delete id="deleteRobotWarningsByIds" parameterType="String">
+    <delete id="deleteRobotWarningsByIds" parameterType="Long">
         delete from robot_warnings where id in 
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

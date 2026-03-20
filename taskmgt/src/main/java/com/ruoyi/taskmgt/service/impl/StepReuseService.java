@@ -1,6 +1,5 @@
 package com.ruoyi.taskmgt.service.impl;
 
-import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
@@ -19,8 +18,8 @@ public class StepReuseService {
     private final StepRepository stepRepository ;
     private final TaskLogReuseService taskLogService;
     public List<String> pauseStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepesByTaskId(taskId);
-        List<String> redisKeys = new ArrayList<>(List.of());
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+        List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
             if(Objects.equals(step.getStatus(), TaskStep.EXECUTING)){
                 step.setStatus(TaskStep.PAUSED);
@@ -29,7 +28,7 @@ public class StepReuseService {
                         step.getId(),
                         TaskLogEventType.STEP_PAUSE,
                         " 步骤" + step.getStepName() + "已暂停",
-                        SecurityUtils.getUsername()
+                        "system"
                 );
                 redisKeys.addAll(this.stepRepository.update(step));
             }
@@ -38,8 +37,8 @@ public class StepReuseService {
     }
 
     public List<String> continueStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepesByTaskId(taskId);
-        List<String> redisKeys = new ArrayList<>(List.of());
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+        List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
             if(Objects.equals(step.getStatus(), TaskStep.PAUSED)){
                 step.setStatus(TaskStep.EXECUTING);
@@ -48,7 +47,7 @@ public class StepReuseService {
                         step.getId(),
                         TaskLogEventType.STEP_RESUME,
                         " 步骤" + step.getStepName() + "已继续",
-                        SecurityUtils.getUsername()
+                        "system"
                 );
                 redisKeys.addAll(this.stepRepository.update(step));
             }
@@ -57,8 +56,8 @@ public class StepReuseService {
     }
 
     public List<String> terminatedStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepesByTaskId(taskId);
-        List<String> redisKeys = new ArrayList<>(List.of());
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+        List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
             step.setStatus(TaskStep.TERMINATED);
             this.taskLogService.record(
@@ -66,7 +65,7 @@ public class StepReuseService {
                     step.getId(),
                     TaskLogEventType.STEP_TERMINATE,
                     " 步骤" + step.getStepName() + "已终止",
-                    SecurityUtils.getUsername()
+                    "system"
             );
             redisKeys.addAll(this.stepRepository.update(step));
         }

@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
 import java.util.Date;
@@ -15,6 +16,7 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @Builder
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @CopyTo({Task.class})
 @ApiModel("任务DTO")
@@ -62,8 +64,11 @@ public class TaskDto {
     /** 任务开始时间（定时任务时使用） */
     private Date scheduledTime;
 
-    /** 任务准备顺序  */
+    /** 资源内任务准备顺序  */
     private Integer pendingOrder;
+
+    /** 全局任务准备顺序 */
+    private Integer globalPendingOrder;
 
     /** 终止任务原因  */
     private String terminateReason;

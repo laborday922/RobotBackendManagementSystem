@@ -138,6 +138,7 @@ export default {
   align-items: center;
   // padding: 0 8px;
   box-sizing: border-box;
+  margin-left: 31px;
 
   .hamburger-container {
     line-height: 46px;

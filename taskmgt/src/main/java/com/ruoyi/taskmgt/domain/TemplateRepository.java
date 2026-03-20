@@ -140,7 +140,9 @@ public class TemplateRepository {
             throw e;
         }
         String keyId = String.format(TEMPLATEBYID, template.getId());
-        return List.of(keyId);
+        List<String> key = new ArrayList<>();
+        key.add(keyId);
+        return key;
     }
 
     public List<Template> getTemplates(String name, Byte status, Long robotGroupId) {

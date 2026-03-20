@@ -6,6 +6,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.CloneFactory;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.validation.NewGroup;
 import com.ruoyi.taskmgt.controller.dto.TaskDto;
 import com.ruoyi.taskmgt.domain.bo.Task;
@@ -20,6 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Api(tags = "任务管理")
@@ -38,16 +43,24 @@ public class TaskController extends BaseController {
                                        @RequestParam(required = false) Long robotId, @RequestParam(required = false)Long robotGroupId, @RequestParam(required = false)Integer taskType,
                                        @RequestParam(required = false) Integer riskLevel, @RequestParam(required = false)Long templateId,
                                        @RequestParam(required = false,defaultValue = "1")Integer pageNum, @RequestParam(required = false,defaultValue = "10")Integer pageSize,
-                                       @RequestParam(required = false,defaultValue = "status ASC, pending_order ASC, priority DESC, create_time DESC")String displayOrder)
+                                       @RequestParam(required = false,defaultValue = "status ASC, global_pending_order ASC, pending_order ASC, priority DESC, create_time DESC")String displayOrder)
     {
-        startPage(pageNum,pageSize,displayOrder);
-        List<TaskVo> result = this.taskService.retrieveTasks(status,isGroupTask,name,robotId,robotGroupId,taskType, riskLevel, templateId);
-        return getDataTable(result);
+        List<TaskVo> allData = taskService.retrieveTasks(status, isGroupTask, name, robotId, robotGroupId, taskType, riskLevel, templateId);
+        if (StringUtils.hasText(displayOrder)) {
+            allData.sort(buildComparator(displayOrder));
+        }
+        int fromIndex = (pageNum - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, allData.size());
+        List<TaskVo> pageData = allData.subList(fromIndex, toIndex);
+        TableDataInfo tableDataInfo = new TableDataInfo();
+        tableDataInfo.setRows(pageData);
+        tableDataInfo.setTotal(allData.size());
+        return tableDataInfo;
     }
 
     @ApiOperation("创建任务")
     @Log(title = "创建任务", businessType = BusinessType.INSERT)
-    @PostMapping("taskcore")
+    @PostMapping("task")
     public AjaxResult createTask(@Validated(value = NewGroup.class) @RequestBody TaskDto dto)
     {
         Task task = CloneFactory.copy(new Task(),dto);
@@ -142,12 +155,72 @@ public class TaskController extends BaseController {
         return getDataTable(list);
     }
 
+    @ApiOperation("获取异常任务信息")
+    @GetMapping("/tasks/{id}/abnormal")
+    public AjaxResult getAbnormalTask(@PathVariable Long id){
+        TaskAbnormalVo result = taskService.getAbnormalTask(id);
+        return success(result);
+    }
+
     @ApiOperation("解决任务风险")
     @Log(title = "解决任务风险", businessType = BusinessType.UPDATE)
     @PutMapping("/tasks/{id}/resolve")
     public AjaxResult resolveRisk(@PathVariable Long id) {
-        taskService.resolveRisk(id);
+        boolean result = taskService.resolveRisk(id);
+        return success(result);
+    }
+
+    @ApiOperation("修改全局准备顺序")
+    @Log(title = "修改全局准备顺序", businessType = BusinessType.UPDATE)
+    @PutMapping("/tasks/order/global")
+    public AjaxResult updateGlobalOrder(@RequestBody List<Long> taskIds) {
+        taskService.updateGlobalOrder(taskIds);
         return success();
+    }
+    @ApiOperation("修改资源内准备顺序")
+    @Log(title = "修改资源内准备顺序", businessType = BusinessType.UPDATE)
+    @PutMapping("/tasks/order/local")
+    public AjaxResult updateLocalOrder(
+            @RequestParam Long robotId, @RequestParam boolean isGroupId,
+            @RequestBody List<Long> taskIds) {
+            taskService.updateLocalOrder(robotId, isGroupId, taskIds);
+        return success();
+    }
+
+    private Comparator<TaskVo> buildComparator(String orderBy) {
+        List<Comparator<TaskVo>> comparators = new ArrayList<>();
+        String[] parts = orderBy.split(",");
+        for (String part : parts) {
+            String[] fieldOrder = part.trim().split(" ");
+            String field = fieldOrder[0];
+            boolean ascending = fieldOrder.length == 1 || fieldOrder[1].equalsIgnoreCase("ASC");
+
+            Comparator<TaskVo> comparator = (v1, v2) -> {
+                Object val1 = getFieldValue(v1, field);
+                Object val2 = getFieldValue(v2, field);
+                if (val1 == null && val2 == null) return 0;
+                if (val1 == null) return ascending ? -1 : 1;
+                if (val2 == null) return ascending ? 1 : -1;
+                if (val1 instanceof Comparable && val2 instanceof Comparable) {
+                    int cmp = ((Comparable) val1).compareTo(val2);
+                    return ascending ? cmp : -cmp;
+                }
+                return 0;
+            };
+            comparators.add(comparator);
+        }
+        return comparators.stream().reduce(Comparator::thenComparing).orElse((a, b) -> 0);
+    }
+
+    // 通过反射获取字段值（可缓存字段对象以提高性能）
+    private Object getFieldValue(TaskVo vo, String fieldName) {
+        try {
+            Field field = vo.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(vo);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
 

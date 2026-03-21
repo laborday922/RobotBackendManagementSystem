@@ -6,6 +6,8 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
+import javax.validation.constraints.NotBlank;
+
 /**
  * 应用配置对象 t_app_config
  * 
@@ -21,12 +23,15 @@ public class TAppConfig extends BaseEntity
     private Long id;
 
     /** 关联应用库的app_id */
+    @NotBlank(message = "应用编号不能为空")
     private String appId;
 
     /** 配置项键名（如：timeout、max_retry） */
+    @NotBlank(message = "配置项键名不能为空")
     private String configKey;
 
     /** 配置项值（支持复杂内容） */
+    @NotBlank(message = "配置项值不能为空")
     private String configValue;
 
     /** 配置类型：0(字符串)、1(数字)、2(JSON)、3(布尔值) */

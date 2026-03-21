@@ -6,6 +6,9 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 /**
  * 应用库对象 t_app_library
  * 
@@ -21,12 +24,15 @@ public class TAppLibrary extends BaseEntity
     private Long id;
 
     /** 应用唯一标识（业务ID） */
+    @NotBlank(message = "应用编号不能为空")
     private String appId;
 
     /** 应用名称 */
+    @NotBlank(message = "应用名称不能为空")
     private String appName;
 
     /** 应用类型：0(交互类)、1(控制类)、2(监控类) */
+    @NotNull(message = "应用类型不能为空")
     private Long appType;
 
     /** 启用状态：1(启用)、0(禁用) */

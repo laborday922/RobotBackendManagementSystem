@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,7 +81,7 @@ public class RobotGroupsController extends BaseController
     @PreAuthorize("@ss.hasPermi('robots:groups:add')")
     @Log(title = "机器人分组", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody RobotGroups robotGroups)
+    public AjaxResult add(@Validated @RequestBody RobotGroups robotGroups)
     {
         return toAjax(robotGroupsService.insertRobotGroups(robotGroups));
     }
@@ -93,7 +94,7 @@ public class RobotGroupsController extends BaseController
     @PreAuthorize("@ss.hasPermi('robots:groups:edit')")
     @Log(title = "机器人分组", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody RobotGroups robotGroups)
+    public AjaxResult edit(@Validated @RequestBody RobotGroups robotGroups)
     {
 
         return toAjax(robotGroupsService.updateRobotGroups(robotGroups));

@@ -3,6 +3,7 @@ package com.ruoyi.robots.domain;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
@@ -14,6 +15,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
  * @author xiaocai
  * @date 2026-03-07
  */
+@Data
 @JsonInclude(JsonInclude.Include.NON_NULL)//仅序列化非空字段
 public class Robot extends BaseEntity
 {
@@ -50,15 +52,15 @@ public class Robot extends BaseEntity
 
     /** 在线状态（0-离线，1-在线，2-待激活） */
     @Excel(name = "在线状态", readConverterExp = "0=-离线，1-在线，2-待激活")
-    private String status;
+    private Integer status;
 
     /** 硬件状态（0-正常，1-警告，2-故障） */
     @Excel(name = "硬件状态", readConverterExp = "0=-正常，1-警告，2-故障")
-    private String hardwareStatus;
+    private Integer hardwareStatus;
 
     /** 任务状态（0-执行中，1-充电中，2-闲置，3-维护） */
     @Excel(name = "任务状态", readConverterExp = "0=-执行中，1-充电中，2-闲置，3-维护")
-    private String taskStatus;
+    private Integer taskStatus;
 
     /** 当前电量（0-100） */
     @Excel(name = "当前电量", readConverterExp = "0=-100")
@@ -75,149 +77,4 @@ public class Robot extends BaseEntity
     private Date createdAt;
 
 
-    public void setId(Long id)
-    {
-        this.id = id;
-    }
-
-    public Long getId()
-    {
-        return id;
-    }
-
-    public void setCode(String code) 
-    {
-        this.code = code;
-    }
-
-    public String getCode() 
-    {
-        return code;
-    }
-
-    public void setName(String name) 
-    {
-        this.name = name;
-    }
-
-    public String getName() 
-    {
-        return name;
-    }
-
-    public void setGroupId(Long groupId)
-    {
-        this.groupId = groupId;
-    }
-
-    public Long getGroupId()
-    {
-        return groupId;
-    }
-
-    public void setManufacturer(String manufacturer) 
-    {
-        this.manufacturer = manufacturer;
-    }
-
-    public String getManufacturer() 
-    {
-        return manufacturer;
-    }
-
-    public void setProductionDate(Date productionDate) 
-    {
-        this.productionDate = productionDate;
-    }
-
-    public Date getProductionDate() 
-    {
-        return productionDate;
-    }
-
-    public void setArea(String area) 
-    {
-        this.area = area;
-    }
-
-    public String getArea() 
-    {
-        return area;
-    }
-
-    public void setStatus(String status) 
-    {
-        this.status = status;
-    }
-
-    public String getStatus() 
-    {
-        return status;
-    }
-
-    public void setHardwareStatus(String hardwareStatus) 
-    {
-        this.hardwareStatus = hardwareStatus;
-    }
-
-    public String getHardwareStatus() 
-    {
-        return hardwareStatus;
-    }
-
-    public void setTaskStatus(String taskStatus) 
-    {
-        this.taskStatus = taskStatus;
-    }
-
-    public String getTaskStatus() 
-    {
-        return taskStatus;
-    }
-
-    public void setBattery(Integer battery)
-    {
-        this.battery = battery;
-    }
-
-    public Integer getBattery()
-    {
-        return battery;
-    }
-
-    public void setIdleStartTime(Date idleStartTime){ this.idleStartTime = idleStartTime; }
-
-    public Date getIdleStartTime(){ return this.idleStartTime; }
-
-    public void setCreatedAt(Date createdAt) 
-    {
-        this.createdAt = createdAt;
-    }
-
-    public Date getCreatedAt() 
-    {
-        return createdAt;
-    }
-
-
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
-            .append("id", getId())
-            .append("code", getCode())
-            .append("name", getName())
-            .append("groupId", getGroupId())
-            .append("manufacturer", getManufacturer())
-            .append("productionDate", getProductionDate())
-            .append("area", getArea())
-            .append("status", getStatus())
-            .append("hardwareStatus", getHardwareStatus())
-            .append("taskStatus", getTaskStatus())
-            .append("battery", getBattery())
-
-            .append("createdAt", getCreatedAt())
-
-            .toString();
-    }
 }

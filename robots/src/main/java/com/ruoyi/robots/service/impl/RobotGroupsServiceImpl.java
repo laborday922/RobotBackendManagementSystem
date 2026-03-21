@@ -62,6 +62,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
     @Override
     public int insertRobotGroups(RobotGroups robotGroups)
     {
+
         int count = robotGroupsMapper.selectRobotGroupsByName(robotGroups.getName());
         if(count>0)throw new InsertNoAllowedException(ROBOT_CODE_HAS_EXISTED);
         robotGroups.setCreateTime(new Date());

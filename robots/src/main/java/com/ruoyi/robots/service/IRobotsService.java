@@ -2,6 +2,7 @@ package com.ruoyi.robots.service;
 
 import java.util.List;
 
+import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.controller.dto.RobotsDto;
 import com.ruoyi.robots.domain.Robot;
 
@@ -35,7 +36,7 @@ public interface IRobotsService
      * @param robot 机器人基础信息
      * @return 结果
      */
-    public int insertRobots(Robot robot);
+    public int insertRobots(RobotsDto robotsDto);
 
     /**
      * 修改机器人基础信息
@@ -43,6 +44,8 @@ public interface IRobotsService
      * @return 结果
      */
     public int updateRobots(RobotsDto robotsDto);
+
+    public int updateRobotStatus(RobotStatusDto robotStatusDto);
 
     /**
      * 批量删除机器人基础信息

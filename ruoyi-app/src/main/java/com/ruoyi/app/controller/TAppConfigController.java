@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,7 +81,7 @@ public class TAppConfigController extends BaseController
     @PreAuthorize("@ss.hasPermi('app:appConfig:add')")
     @Log(title = "应用配置", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody TAppConfig tAppConfig)
+    public AjaxResult add(@Validated @RequestBody TAppConfig tAppConfig)
     {
         return toAjax(tAppConfigService.insertTAppConfig(tAppConfig));
     }
@@ -92,7 +93,7 @@ public class TAppConfigController extends BaseController
     @PreAuthorize("@ss.hasPermi('app:appConfig:edit')")
     @Log(title = "应用配置", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody TAppConfig tAppConfig)
+    public AjaxResult edit(@Validated @RequestBody TAppConfig tAppConfig)
     {
         return toAjax(tAppConfigService.updateTAppConfig(tAppConfig));
     }

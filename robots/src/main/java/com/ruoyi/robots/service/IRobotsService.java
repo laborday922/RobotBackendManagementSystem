@@ -33,7 +33,7 @@ public interface IRobotsService
     /**
      * 新增机器人基础信息
      * 
-     * @param robot 机器人基础信息
+     * @param robotsDto 机器人基础信息
      * @return 结果
      */
     public int insertRobots(RobotsDto robotsDto);

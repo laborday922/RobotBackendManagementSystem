@@ -87,10 +87,10 @@ public class TaskTriggerService {
     private void checkIdleTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null);
         for (Task task : tasks) {
-            String taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
+            Integer taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
             Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
             //Date idleSince = getMockIdleSince(task.getRobotId());
-            if ("idle".equals(taskStatus) && idleSince != null) {
+            if (taskStatus == 2 && idleSince != null) {
                 long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
                 if (idleMinutes >= task.getIdleTime()) {
                     triggerTask(task);
@@ -108,7 +108,7 @@ public class TaskTriggerService {
             return;
         }
 
-        // 1. 设置局部顺序 pendingOrder
+        // 设置局部顺序 pendingOrder
         if (task.getIsGroupTask() == 0) {
             List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, 0, null,
                     task.getRobotId(), null, null, null, null);

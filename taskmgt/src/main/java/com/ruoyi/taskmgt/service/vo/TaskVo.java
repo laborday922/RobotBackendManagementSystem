@@ -79,6 +79,10 @@ public class TaskVo {
 
     private String formContent;
 
+    private Integer pendingOrder;
+
+    private Integer globalPendingOrder;
+
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
@@ -86,4 +90,8 @@ public class TaskVo {
     /** 更新时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
+
+    private Integer completedSteps;
+
+    private Integer totalSteps;
 }

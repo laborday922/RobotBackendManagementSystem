@@ -3,11 +3,13 @@ package com.ruoyi.robots.controller;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.controller.dto.RobotsDto;
 import com.ruoyi.robots.domain.Robot;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -85,9 +87,9 @@ public class RobotsController extends BaseController
     @PreAuthorize("@ss.hasPermi('robots:robots:add')")
     @Log(title = "机器人基础信息", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody Robot robot)
+    public AjaxResult add(@Validated @RequestBody RobotsDto robotsDto)
     {
-        return toAjax(robotsService.insertRobots(robot));
+        return toAjax(robotsService.insertRobots(robotsDto));
     }
 
     /**
@@ -97,7 +99,7 @@ public class RobotsController extends BaseController
     @PreAuthorize("@ss.hasPermi('robots:robots:edit')")
     @Log(title = "机器人基础信息", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody RobotsDto robotsDto)
+    public AjaxResult edit(@Validated @RequestBody RobotsDto robotsDto)
     {
         return toAjax(robotsService.updateRobots(robotsDto));
     }
@@ -112,5 +114,15 @@ public class RobotsController extends BaseController
     public AjaxResult remove(@PathVariable String[] ids)
     {
         return toAjax(robotsService.deleteRobotsByIds(ids));
+    }
+
+    /**
+     * 机器人状态上传 机器人端调用
+     */
+    @PutMapping("/upload")
+    @ApiOperation("机器人状态上传")
+    public AjaxResult upload(@Validated @RequestBody RobotStatusDto robotStatusDto)
+    {
+        return toAjax(robotsService.updateRobotStatus(robotStatusDto));
     }
 }

@@ -25,8 +25,8 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
      * @param id 机器人位置历史信息主键
      * @return 机器人位置历史信息
      */
-    @Override
-    public RobotPositionHistory selectRobotPositionHistoryById(Long id)
+    @Override  // 标记重写父类方法
+    public RobotPositionHistory selectRobotPositionHistoryById(Long id)  // 方法声明：根据ID查询机器人位置历史信息
     {
         return robotPositionHistoryMapper.selectRobotPositionHistoryById(id);
     }

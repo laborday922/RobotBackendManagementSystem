@@ -7,6 +7,7 @@ import com.ruoyi.app.controller.dto.TAppLibraryDto;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -81,7 +82,7 @@ public class TAppLibraryController extends BaseController
     @PreAuthorize("@ss.hasPermi('app:appLibrary:add')")
     @Log(title = "应用库", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult add(@RequestBody TAppLibraryDto tAppLibraryDto)
+    public AjaxResult add(@Validated @RequestBody TAppLibraryDto tAppLibraryDto)
     {
         return toAjax(tAppLibraryService.insertTAppLibrary(tAppLibraryDto));
     }
@@ -93,7 +94,7 @@ public class TAppLibraryController extends BaseController
     @PreAuthorize("@ss.hasPermi('app:appLibrary:edit')")
     @Log(title = "应用库", businessType = BusinessType.UPDATE)
     @PutMapping
-    public AjaxResult edit(@RequestBody TAppLibraryDto tAppLibraryDto)
+    public AjaxResult edit(@Validated @RequestBody TAppLibraryDto tAppLibraryDto)
     {
         return toAjax(tAppLibraryService.updateTAppLibrary(tAppLibraryDto));
     }

@@ -131,7 +131,7 @@
         <el-table-column prop="robotName" label="原机器人" width="120" show-overflow-tooltip />
         <el-table-column label="进度" width="120" align="center">
           <template slot-scope="scope">
-            {{ scope.row.completedSteps || 0 }}/{{ scope.row.totalSteps || 5 }}
+            {{ scope.row.completedSteps || 0 }}/{{ scope.row.totalSteps || 0 }}
           </template>
         </el-table-column>
         <!-- 操作列 -->

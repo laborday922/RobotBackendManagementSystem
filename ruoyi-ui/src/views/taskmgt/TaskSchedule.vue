@@ -175,7 +175,7 @@
           <template slot-scope="scope">
             <div class="step-progress">
               <div
-                v-for="i in scope.row.totalSteps || 5"
+                v-for="i in scope.row.totalSteps || 0"
                 :key="i"
                 :class="['step-dot', {
                   completed: i <= (scope.row.completedSteps || 0),
@@ -740,20 +740,20 @@ export default {
 
       if (!draggedTask || !relatedTask) return false
 
-      // 全局排序模式：允许跨资源拖拽，但保持资源内相对顺序
+      // 全局排序模式：允许跨资源拖拽，但禁止同一资源内改变相对顺序
       if (this.sortMode === 'global') {
         const draggedResource = this.getResourceKey(draggedTask)
         const relatedResource = this.getResourceKey(relatedTask)
 
-        // 如果跨资源拖拽，检查是否会改变资源内相对顺序
-        if (draggedResource !== relatedResource) {
-          // 跨资源拖拽是允许的，但会在handleGlobalSortEnd中确保资源内顺序不变
-          return true
+        // 如果同一资源内拖拽，禁止（应该去资源内排序模式）
+        if (draggedResource === relatedResource) {
+          return false // 返回false会显示禁止放置的样式
         }
       }
 
       return true // 允许放置
     },
+    // 处理全局排序结束
     // 处理全局排序结束
     async handleGlobalSortEnd(evt) {
       const {oldIndex, newIndex} = evt
@@ -769,15 +769,12 @@ export default {
         return
       }
 
-      // 获取所有准备中任务的新顺序
+      // 【关键修复】获取所有准备中任务的新顺序（拖拽后的临时顺序）
       const newOrderList = [...this.displayedTasks]
       const [removed] = newOrderList.splice(oldIndex, 1)
       newOrderList.splice(newIndex, 0, removed)
 
-      // 确保资源内相对顺序不变：按资源分组，每组内部按pendingOrder排序
-      // 但保持跨资源的相对位置关系
-
-      // 构建新的顺序，确保同一资源内的任务按pendingOrder排序
+      // 【关键修复】按资源分组，校验每个资源内的相对顺序是否与 pendingOrder 一致
       const resourceGroups = {}
       newOrderList.forEach(task => {
         const key = this.getResourceKey(task)
@@ -787,26 +784,26 @@ export default {
         resourceGroups[key].push(task)
       })
 
-      // 对每个资源组内部按pendingOrder排序
-      Object.keys(resourceGroups).forEach(key => {
-        resourceGroups[key].sort((a, b) => (a.pendingOrder || 0) - (b.pendingOrder || 0))
-      })
+      // 校验每个资源组内的顺序是否按 pendingOrder 递增
+      for (const key in resourceGroups) {
+        const groupTasks = resourceGroups[key]
+        // 按当前列表中的顺序获取ID
+        const currentOrderIds = groupTasks.map(t => t.id)
+        // 按 pendingOrder 排序应该得到的顺序
+        const sortedByPendingOrder = [...groupTasks]
+          .sort((a, b) => (a.pendingOrder || 0) - (b.pendingOrder || 0))
+          .map(t => t.id)
 
-      // 重新构建列表，保持跨资源的全局顺序，但资源内按pendingOrder
-      const finalOrderList = []
-      const usedResources = new Set()
-
-      newOrderList.forEach(task => {
-        const key = this.getResourceKey(task)
-        if (!usedResources.has(key)) {
-          // 第一次遇到该资源，添加该资源的所有任务
-          finalOrderList.push(...resourceGroups[key])
-          usedResources.add(key)
+        // 如果顺序不一致，说明改变了资源内相对顺序，不允许
+        if (JSON.stringify(currentOrderIds) !== JSON.stringify(sortedByPendingOrder)) {
+          this.$message.error('全局排序不允许改变资源内的相对顺序，请使用"资源内排序"模式')
+          this.rollbackData()
+          return
         }
-      })
+      }
 
-      // 提取任务ID列表
-      const taskIds = finalOrderList.map(t => t.id)
+      // 校验通过，提取任务ID列表
+      const taskIds = newOrderList.map(t => t.id)
 
       try {
         await updateGlobalOrder({}, taskIds)

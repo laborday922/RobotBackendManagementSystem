@@ -15,6 +15,7 @@ import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
+import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.service.ITaskService;
 import com.ruoyi.taskmgt.service.vo.RobotStatus;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
@@ -175,6 +176,10 @@ public class TaskServiceImpl implements ITaskService {
                         if(StringUtils.isNotNull(task.getTemplateId())){
                             String templateName = this.templateRepository.getTemplateNameById(task.getTemplateId());
                             taskVo.setTemplateName(templateName);
+                            Integer totalSteps = this.stepRepository.findStepsByTaskId(task.getId()).size();
+                            Integer completedSteps = this.stepRepository.findStepsByTaskId(task.getId()).stream().filter(step-> Objects.equals(step.getStatus(), TaskStep.FINISHED)).toList().size();
+                            taskVo.setTotalSteps(totalSteps);
+                            taskVo.setCompletedSteps(completedSteps);
                         }
                         if (StringUtils.isNotNull(task.getRobotId())) {
                             try {
@@ -421,42 +426,59 @@ public class TaskServiceImpl implements ITaskService {
     public void updateGlobalOrder(List<Long> taskIds) {
         if (taskIds == null || taskIds.isEmpty()) return;
 
-        List<Task> tasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
-        Map<Long, Task> taskMap = tasks.stream().collect(Collectors.toMap(Task::getId, t -> t));
+        // 获取所有准备中任务
+        List<Task> allPendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        Map<Long, Task> taskMap = allPendingTasks.stream().collect(Collectors.toMap(Task::getId, t -> t));
+
+        // 校验所有taskId都存在
         if (taskMap.size() != taskIds.size()) {
-            String[] args = new String[]{};
-            throw new TaskmgtException(ReturnNo.DATA_INVALID, args, this.messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
+            throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{},
+                    this.messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
         }
 
-        // 按资源分组：机器人（单任务）和机器人组（组任务）
-        Map<Long, List<Task>> robotTasksMap = new HashMap<>();
-        Map<Long, List<Task>> groupTasksMap = new HashMap<>();
-        for (Task task : tasks) {
-            if (task.getIsGroupTask() == 0) {
-                robotTasksMap.computeIfAbsent(task.getRobotId(), k -> new ArrayList<>()).add(task);
-            } else {
-                groupTasksMap.computeIfAbsent(task.getRobotGroupId(), k -> new ArrayList<>()).add(task);
+        // 按资源分组当前数据库中的任务
+        Map<String, List<Task>> resourceGroups = new HashMap<>();
+        for (Task task : allPendingTasks) {
+            String key = task.getIsGroupTask() == 0
+                    ? "robot-" + task.getRobotId()
+                    : "group-" + task.getRobotGroupId();
+            resourceGroups.computeIfAbsent(key, k -> new ArrayList<>()).add(task);
+        }
+
+        // 校验传入的taskIds中，每个资源内的相对顺序必须与pendingOrder一致
+        Map<String, List<Long>> inputResourceGroups = new HashMap<>();
+        for (Long taskId : taskIds) {
+            Task task = taskMap.get(taskId);
+            String key = task.getIsGroupTask() == 0
+                    ? "robot-" + task.getRobotId()
+                    : "group-" + task.getRobotGroupId();
+            inputResourceGroups.computeIfAbsent(key, k -> new ArrayList<>()).add(taskId);
+        }
+
+        for (Map.Entry<String, List<Long>> entry : inputResourceGroups.entrySet()) {
+            String resourceKey = entry.getKey();
+            List<Long> inputIdsForResource = entry.getValue();
+
+            // 获取该资源下任务按pendingOrder排序的ID列表
+            List<Long> sortedByPendingOrder = resourceGroups.get(resourceKey).stream()
+                    .sorted(Comparator.comparingInt(Task::getPendingOrder))
+                    .map(Task::getId)
+                    .toList();
+
+            // 校验传入的顺序是否与pendingOrder一致
+            if (!inputIdsForResource.equals(sortedByPendingOrder)) {
+                throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{},
+                        "资源内任务顺序与pendingOrder不一致，不允许改变资源内相对顺序");
             }
         }
 
-        // 校验每个资源内任务的顺序是否与 pendingOrder 一致（不允许改变资源内顺序）
-        for (List<Task> rt : robotTasksMap.values()) {
-            validateLocalOrder(rt);
-        }
-        for (List<Task> gt : groupTasksMap.values()) {
-            validateLocalOrder(gt);
-        }
-
-        // 重新分配全局顺序
+        // 4. 重新分配全局顺序
         for (int i = 0; i < taskIds.size(); i++) {
             Long tid = taskIds.get(i);
             Task task = taskMap.get(tid);
             task.setGlobalPendingOrder(i);
-        }
-
-        // 批量更新
-        for (Task task : tasks) {
             task.setUpdateBy(SecurityUtils.getUsername());
+
             List<String> redisKeys = taskRepository.update(task);
             if (redisKeys != null && !redisKeys.isEmpty()) {
                 redisUtil.deleteObject(redisKeys);

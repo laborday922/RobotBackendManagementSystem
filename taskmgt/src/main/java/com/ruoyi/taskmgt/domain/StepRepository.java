@@ -184,4 +184,10 @@ public class StepRepository {
             return "system";
         }
     }
+
+    public TaskStep findByTraceId(String traceId) {
+        TaskStepPo taskStepPo = this.stepPoMapper.findByTraceId(traceId);
+        if(StringUtils.isNotNull(taskStepPo))return CloneFactory.copy(new TaskStep(), taskStepPo);
+        else return null;
+    }
 }

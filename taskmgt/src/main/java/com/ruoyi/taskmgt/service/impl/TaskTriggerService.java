@@ -12,6 +12,7 @@ import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.service.operation.StepExecutionEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -43,6 +45,9 @@ public class TaskTriggerService {
     @Autowired
     private IRobotWarningsService robotWarningsService;
 
+    @Autowired
+    private StepExecutionEngine stepExecutionEngine;  // 步骤执行引擎
+
     /**
      * 每分钟执行一次触发检查
      */
@@ -63,7 +68,6 @@ public class TaskTriggerService {
         for (Task task : tasks) {
             if (task.getScheduledTime() != null && !task.getScheduledTime().after(now)) {
                 triggerTask(task);
-
             }
         }
     }
@@ -89,7 +93,6 @@ public class TaskTriggerService {
         for (Task task : tasks) {
             Integer taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
             Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
-            //Date idleSince = getMockIdleSince(task.getRobotId());
             if (taskStatus == 2 && idleSince != null) {
                 long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
                 if (idleMinutes >= task.getIdleTime()) {
@@ -121,7 +124,7 @@ public class TaskTriggerService {
             task.setPendingOrder(maxOrder + 1);
         }
 
-        // 设置全局顺序 globalPendingOrder,获取当前所有准备中任务的最大全局顺序
+        // 设置全局顺序 globalPendingOrder
         List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
         int maxGlobal = allPending.stream().mapToInt(Task::getGlobalPendingOrder).max().orElse(-1);
         task.setGlobalPendingOrder(maxGlobal + 1);
@@ -156,7 +159,9 @@ public class TaskTriggerService {
         log.info("任务 {} 已触发进入准备队列", task.getId());
     }
 
-    //任务开始触发
+    /**
+     * 检查准备中的任务是否可以开始执行（每10秒执行一次）
+     */
     @Scheduled(fixedDelay = 10000)
     public void checkPendingTasksToStart() {
         log.debug("检查准备中的任务是否可以开始执行");
@@ -199,44 +204,115 @@ public class TaskTriggerService {
             }
         }
     }
+
+    /**
+     * 开始执行任务：状态变为执行中，并触发第一个步骤
+     */
     private void startTask(Task task) {
         if (!task.allowTransitStatus(Task.EXECUTING)) {
             log.warn("任务 {} 无法转为执行中", task.getId());
             return;
         }
+
+        // 更新任务状态
         task.setStatus(Task.EXECUTING);
         task.setPendingOrder(null);
         task.setGlobalPendingOrder(null);
         task.setUpdateBy("system");
-        if(task.getRiskLevel()==1)task.setRiskLevel(2);
+        if(task.getRiskLevel() == 1) task.setRiskLevel(2);
+
         List<String> redisKeys = taskRepository.update(task);
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
+
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_START,
                 "任务开始执行", "system");
         log.info("任务 {} 开始执行", task.getId());
 
-        // 触发第一个步骤（如果有模板）
-        if (task.getTemplateId() != null) {
-            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
-            steps.stream()
-                    .filter(step -> !Objects.equals(step.getStatus(), TaskStep.FINISHED))
-                    .min(Comparator.comparing(TaskStep::getOrderNum))
-                    .ifPresent(this::startStep);
+        // ========== 核心：触发第一个步骤 ==========
+        triggerFirstStep(task);
+    }
+
+    /**
+     * 触发任务的第一个步骤
+     */
+    private void triggerFirstStep(Task task) {
+        if (task.getTemplateId() == null) {
+            log.info("任务 {} 无模板，无需执行步骤", task.getId());
+            // 无步骤的任务直接标记完成
+            completeTask(task);
+            return;
+        }
+
+        // 查询步骤列表
+        List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+
+        // 找到第一个未完成的步骤
+        Optional<TaskStep> firstStep = steps.stream()
+                .filter(step -> !Objects.equals(step.getStatus(), TaskStep.FINISHED))
+                .min(Comparator.comparing(TaskStep::getOrderNum));
+
+        if (firstStep.isPresent()) {
+            TaskStep step = firstStep.get();
+            log.info("任务 {} 开始执行第一个步骤: {}", task.getId(), step.getId());
+
+            // 使用步骤执行引擎执行
+            stepExecutionEngine.executeStep(step, task);
+        } else {
+            log.info("任务 {} 所有步骤已完成", task.getId());
+            completeTask(task);
         }
     }
 
-    private void startStep(TaskStep step) {
-        if (!Objects.equals(step.getStatus(), TaskStep.NOTSTART)&&!Objects.equals(step.getStatus(), TaskStep.PAUSED)) return;
-        step.setStatus(TaskStep.EXECUTING);
-        step.setStartTime(new Date());
-        List<String> redisKeys = stepRepository.update(step);
+    /**
+     * 触发指定任务的下一个步骤（由StepExecutionEngine调用）
+     */
+    public void triggerNextStep(Long taskId) {
+        Task task = taskRepository.findById(taskId).orElse(null);
+        if (task == null || !Objects.equals(task.getStatus(), Task.EXECUTING)) {
+            log.warn("任务 {} 不存在或不在执行中，无法触发下一步", taskId);
+            return;
+        }
+
+        List<TaskStep> steps = stepRepository.findStepsByTaskId(taskId);
+
+        // 找到下一个未完成的步骤
+        Optional<TaskStep> nextStep = steps.stream()
+                .filter(step -> !Objects.equals(step.getStatus(), TaskStep.FINISHED)
+                        && !Objects.equals(step.getStatus(), TaskStep.EXECUTING))
+                .min(Comparator.comparing(TaskStep::getOrderNum));
+
+        if (nextStep.isPresent()) {
+            TaskStep step = nextStep.get();
+            log.info("任务 {} 触发下一步骤: {}", taskId, step.getId());
+            stepExecutionEngine.executeStep(step, task);
+        } else {
+            // 没有更多步骤，任务完成
+            log.info("任务 {} 所有步骤执行完毕", taskId);
+            completeTask(task);
+        }
+    }
+
+    /**
+     * 完成任务
+     */
+    private void completeTask(Task task) {
+        if (!task.allowTransitStatus(Task.FINISHED)) {
+            log.warn("任务 {} 无法转为已完成", task.getId());
+            return;
+        }
+
+        task.setStatus(Task.FINISHED);
+        task.setUpdateBy("system");
+        List<String> redisKeys = taskRepository.update(task);
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
-        taskLogService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
-                "步骤 " + step.getStepName() + " 开始执行", "system");
+
+        taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
+                "任务执行完成", "system");
+        log.info("任务 {} 已完成", task.getId());
     }
 
     /**
@@ -244,20 +320,19 @@ public class TaskTriggerService {
      */
     public void handleRobotWarning(RobotWarningEvent event) {
         Long robotId = event.getRobotId();
-        String warningStatus = event.getStatus();       // 0-待处理，1-已解决
+        String warningStatus = event.getStatus();
         boolean isResolved = RobotsConstants.RESOLVED.equals(warningStatus);
-        //处理非组任务
+
+        // 处理非组任务
         List<Task> tasks = taskRepository.getTasks(null, 0, null, robotId, null, null, null, null);
         for (Task task : tasks) {
             updateTaskRiskByWarning(task, robotId, isResolved);
         }
 
-        //处理组任务
+        // 处理组任务
         Long groupId = robotService.selectRobotsById(robotId).getGroupId();
         if (groupId != null) {
-            // 获取该组下所有组任务
             List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null);
-            // 获取该组所有机器人的ID
             Robot robot = new Robot();
             robot.setGroupId(groupId);
             List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
@@ -310,7 +385,6 @@ public class TaskTriggerService {
         if (robotWarningsService != null) {
             hasUnresolvedWarning = robotWarningsService.countUnresolvedByRobotId(robotId) > 0;
         } else {
-            // 简单模式：根据事件状态判断
             hasUnresolvedWarning = !isResolved;
         }
 
@@ -331,12 +405,4 @@ public class TaskTriggerService {
             redisUtil.deleteObject(redisKeys);
         }
     }
-
-    // 模拟方法（待替换为真实机器人服务调用）
-    private Long getMockRobotGroupId(Long robotId) { return 1L; }
-    private List<Long> getMockRobotIdsByGroupId(Long groupId) { return Arrays.asList(1L, 2L, 3L); }
-    private String getMockRobotStatus(Long robotId) { return "online"; }
-
-    private Integer getMockBattery(Long robotId) { return 80; }
-    private Date getMockIdleSince(Long robotId) { return new Date(System.currentTimeMillis() - 10 * 60 * 1000);}
 }

@@ -6,6 +6,8 @@ import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.persistence.Column;
+
 @CopyFrom({TaskStep.class})
 @Getter
 @Setter
@@ -34,4 +36,9 @@ public class TaskStepVo {
 
     /** 步骤状态（0未开始 1进行中 2已完成 3已暂停 4已终止） */
     private Byte status;
+
+    private Long operationId;
+
+    @Column(columnDefinition = "text")
+    private String operationJson;
 }

@@ -9,4 +9,6 @@ public interface StepPoMapper extends JpaRepository<TaskStepPo, Long> {
     List<TaskStepPo> findByTaskId(Long taskId);
 
     TaskStepPo findByTaskIdAndOrderNum(Long taskId, Integer orderNum);
+
+    TaskStepPo findByTraceId(String traceId);
 }

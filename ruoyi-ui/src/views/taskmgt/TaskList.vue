@@ -431,7 +431,7 @@
 
             <div v-else>未知字段类型</div>
             <div v-if="field.type === 'text' || field.type === 'location'" class="field-tip">
-<!--              此字段可在步骤描述中使用 <code>{{ '{' + field.id + '}' }}</code> 作为占位符-->
+              此字段可在步骤描述中使用 <code>{{ '{' + field.id + '}' }}</code> 作为占位符
             </div>
           </el-form-item>
         </template>
@@ -717,9 +717,7 @@ import {
   resumeTask,
   terminateTask,
   updateTask,
-  updateTaskSteps,
-  listOperation,
-  getOperation
+  updateTaskSteps
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
 import { getToken } from '@/utils/auth'
@@ -789,7 +787,6 @@ export default {
       taskSteps: [],
       taskLogs: [],
       formFields: [],
-      operationList: [],
       // 生成的步骤预览
       generatedSteps: [],
       // 视频预览
@@ -807,12 +804,12 @@ export default {
       }
       const allowedGroupIds = this.currentTemplate.robotGroupIds.map(id => Number(id))
       return this.robotOptions.filter(robot => {
-        const isHealthy = robot.status === 1 && robot.hardwareStatus === 0
+        const isHealthy = robot.status === '1' && robot.hardwareStatus === '0'
         const inAllowedGroup = allowedGroupIds.includes(Number(robot.groupId))
         return isHealthy && inAllowedGroup
       }).sort((a, b) => {
-        const aHealthy = (a.status === 1 && a.hardwareStatus === 0) ? 1 : 0
-        const bHealthy = (b.status === 1 && b.hardwareStatus === 0) ? 1 : 0
+        const aHealthy = (a.status === '1' && a.hardwareStatus === '0') ? 1 : 0
+        const bHealthy = (b.status === '1' && b.hardwareStatus === '0') ? 1 : 0
         return bHealthy - aHealthy
       })
     },
@@ -827,7 +824,6 @@ export default {
     this.getRobotGroups()
     this.getTemplates()
     this.getList()
-    this.getOperationList()
     this.debouncedQuery = debounce(this.handleQuery, 500)
   },
   beforeDestroy() {
@@ -843,26 +839,12 @@ export default {
     },
     // 格式化机器人状态显示
     formatRobotStatus(robot) {
-      if (robot.status === 1 && robot.hardwareStatus === 0) return '在线正常'
-      if (robot.status === 1 && robot.hardwareStatus === 1) return '硬件警告'
-      if (robot.status === 1 && robot.hardwareStatus === 2) return '硬件故障'
-      if (robot.status === 0) return '离线'
-      if (robot.status === 2) return '待激活'
+      if (robot.status === '1' && robot.hardwareStatus === '0') return '在线正常'
+      if (robot.status === '1' && robot.hardwareStatus === '1') return '硬件警告'
+      if (robot.status === '1' && robot.hardwareStatus === '2') return '硬件故障'
+      if (robot.status === '0') return '离线'
+      if (robot.status === '2') return '待激活'
       return '未知'
-    },
-    async getOperationList() {
-      try {
-        const res = await listOperation()  // 从 API 导入
-        this.operationList = res.data || []
-      } catch (error) {
-        console.warn('获取操作列表失败，使用模拟数据', error)
-        // 模拟数据，确保不报错
-        this.operationList = [
-          { id: 1001, name: '移动到点' },
-          { id: 1002, name: '机械臂抓取' },
-          { id: 1003, name: '视觉识别' }
-        ]
-      }
     },
     // 获取机器人列表
     async getRobotData() {
@@ -1220,51 +1202,26 @@ export default {
     // 根据模板和表单数据生成步骤列表
     generateStepsFromTemplate(template, formData) {
       if (!template || !template.steps) return []
-
       return template.steps.map((step, index) => {
-        // 构建 operationJson
-        let operationJson = {}
-        if (step.paramMappings && step.operationId) {
-          step.paramMappings.forEach(mapping => {
-            let value
-            if (mapping.sourceType === 'field') {
-              // 从表单数据取值
-              const fieldValue = formData[mapping.sourceValue]
-              // 处理文件类型字段（取第一个文件的URL或标识）
-              if (Array.isArray(fieldValue) && fieldValue.length > 0) {
-                value = fieldValue[0].url || fieldValue[0]
-              } else {
-                value = fieldValue
-              }
-            } else {
-              // 使用固定值
-              value = mapping.sourceValue
-            }
-            operationJson[mapping.paramName] = value
-          })
-        }
-
-        // 处理步骤描述中的占位符
         let description = step.description || ''
         if (formData) {
-          Object.entries(formData).forEach(([key, val]) => {
+          Object.entries(formData).forEach(([key, value]) => {
+            // 使用正则替换所有 {key} 的实例
             const placeholder = new RegExp(`\\{${key}\\}`, 'g')
-            let displayValue = val
-            if (Array.isArray(val)) {
-              displayValue = val.length > 0 ? `[${val.length}个文件]` : ''
+            // 如果是文件数组，显示为[文件]
+            let displayValue = value
+            if (Array.isArray(value) && value.length > 0) {
+              displayValue = `[${value.length}个文件]`
+            } else if (Array.isArray(value) && value.length === 0) {
+              displayValue = ''
             }
             description = description.replace(placeholder, displayValue || `{${key}}`)
           })
         }
-
         return {
           stepName: step.name,
           description: description,
-          orderNum: index + 1,
-          operationId: step.operationId,      // 关键：传递operationId
-          operationJson: JSON.stringify(operationJson),  // 关键：生成JSON
-          estimatedTime: step.estimatedTime,
-          status: 0  // 未开始
+          orderNum: index + 1
         }
       })
     },
@@ -1310,11 +1267,8 @@ export default {
             taskId = res.data.id
             this.$message.success('创建成功')
             // 新增任务时根据模板创建步骤
-            if (this.currentTemplate && this.currentTemplate.steps) {
-              const steps = this.generateStepsFromTemplate(
-                this.currentTemplate,
-                this.taskForm.formData
-              )
+            if (this.currentTemplate) {
+              const steps = this.generateStepsFromTemplate(this.currentTemplate, this.taskForm.formData)
               if (steps.length > 0) {
                 await addTaskSteps(taskId, steps)
               }
@@ -1363,8 +1317,6 @@ export default {
           } catch (e) {
             this.currentTask.formData = {}
           }
-        } else {
-          this.currentTask.formData = {}
         }
 
         // 解析表单字段定义（从模板）
@@ -1377,8 +1329,9 @@ export default {
               if (['image','video','audio','file'].includes(field.type)) {
                 const value = this.currentTask.formData[field.id]
                 if (value && typeof value === 'string') {
+                  // 兼容旧数据
                   this.currentTask.formData[field.id] = [{ name: '已上传文件', url: value }]
-                } else if (!value || !Array.isArray(value)) {
+                } else if (!value) {
                   this.currentTask.formData[field.id] = []
                 }
               }
@@ -1391,47 +1344,16 @@ export default {
         }
 
         const stepsRes = await getTaskSteps(row.id)
-        // 安全处理 stepsRes.data
-        const stepsData = stepsRes.data || []
-        this.taskSteps = stepsData.map(step => {
-          let operationData = {}
-          try {
-            if (step.operationJson) {
-              operationData = JSON.parse(step.operationJson)
-            }
-          } catch (e) {
-            console.warn('解析operationJson失败', e)
-          }
-
-          // 安全返回，确保所有字段都有值
-          return {
-            ...step,
-            orderNum: step.orderNum || 0,
-            stepName: step.stepName || step.name || '未命名步骤',
-            description: step.description || '-',
-            status: step.status || 0,
-            operationData,
-            operationName: this.getOperationName(step.operationId)
-          }
-        }).sort((a, b) => a.orderNum - b.orderNum)  // 按序号排序
+        this.taskSteps = stepsRes.data || []
 
         const logsRes = await listLogByTask(row.id)
         this.taskLogs = logsRes.rows || []
       } catch (error) {
-        console.error('查看详情失败:', error)
-        this.$message.error('获取详情失败: ' + (error.message || '未知错误'))
+        this.$message.error('获取详情失败')
         this.detailDialog.visible = false
       } finally {
         this.detailLoading = false
       }
-    },
-    getOperationName(operationId) {
-      if (!operationId) return '-'
-      if (!this.operationList || this.operationList.length === 0) {
-        return `操作${operationId}`
-      }
-      const op = this.operationList.find(o => o.id === operationId)
-      return op ? op.name : `操作${operationId}`
     },
     // 格式化表单值展示
     formatFormValue(field, value) {

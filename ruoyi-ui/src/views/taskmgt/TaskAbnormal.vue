@@ -301,7 +301,7 @@
         <div style="margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:4px;">
           <div><strong>任务名称：</strong>{{ reassignDialog.task.name }}</div>
           <div><strong>原机器人：</strong>{{ reassignDialog.task.robotName }}</div>
-          <div><strong>适用组：</strong>{{ getRobotGroupNames(reassignDialog.task.templateId) }}</div>
+          <div><strong>适用组：</strong>{{ getRobotGroupNames(reassignDialog.task.robotGroupIds) }}</div>
           <div><strong>任务类型：</strong>{{ reassignDialog.task.isGroupTask === 1 ? '组任务' : '单任务' }}</div>
         </div>
 
@@ -440,7 +440,7 @@
 import {
   cancelTask,
   continueTask,
-  getAbnormalTask, getTemplate,
+  getAbnormalTask,
   listAbnormalTask,
   pauseTask,
   resolveTaskRisk,
@@ -472,8 +472,7 @@ export default {
         visible: false,
         task: null,
         selectedRobotId: null,  // 单任务选中的机器人
-        selectedGroupId: null, // 组任务选中的组
-        templateInfo: null
+        selectedGroupId: null   // 组任务选中的组
       },
       // 记录已执行操作等待解除风险的任务ID集合
       pendingResolveTasks: new Set()
@@ -488,9 +487,9 @@ export default {
     },
     abnormalRobots() {
       return this.robotList.filter(r =>
-        r.status === 0 ||
-        r.status === 2 ||
-        r.hardwareStatus === 2 ||
+        r.status === '0' ||
+        r.status === '2' ||
+        r.hardwareStatus === '2' ||
         (r.battery && r.battery <= 20)
       )
     },
@@ -526,8 +525,8 @@ export default {
 
         // 检查是否所有机器人都正常
         const allNormal = groupRobots.every(r =>
-          r.status === 1 &&
-          r.hardwareStatus === 0 &&
+          r.status === '1' &&
+          r.hardwareStatus === '0' &&
           r.battery > 20
         )
 
@@ -560,7 +559,7 @@ export default {
       return [ids]
     },
     isRobotOnlineAndHealthy(robot) {
-      return robot && robot.status === 1 && robot.hardwareStatus === 0
+      return robot && robot.status === '1' && robot.hardwareStatus === '0'
     },
     async getRobotList() {
       try {
@@ -572,7 +571,7 @@ export default {
     },
     async getRobotGroupList() {
       try {
-        const res = await listGroups({ pageSize: 1000 })
+        const res = await listGroups()
         this.robotGroupList = res.rows || []
       } catch (error) {
         this.$message.error('获取机器人组列表失败')
@@ -614,8 +613,8 @@ export default {
         if (groupRobots.length === 0) return false
 
         return groupRobots.every(r =>
-          r.status === 1 &&
-          r.hardwareStatus === 0 &&
+          r.status === '1' &&
+          r.hardwareStatus === '0' &&
           r.battery > 20
         )
       } else {
@@ -624,8 +623,8 @@ export default {
         const robot = this.robotList.find(r => r.id === task.robotId)
         if (!robot) return false
 
-        return robot.status === 1 &&
-          robot.hardwareStatus === 0 &&
+        return robot.status === '1' &&
+          robot.hardwareStatus === '0' &&
           robot.battery > 20
       }
     },
@@ -633,34 +632,24 @@ export default {
     isTaskPendingResolve(row) {
       return this.pendingResolveTasks.has(row.id)
     },
-    getRobotGroupNames(templateId) {
-      if (!this.reassignDialog.templateInfo ||
-        this.reassignDialog.task?.templateId !== templateId) {
-        return '-'
-      }
-
-      const ids = this.reassignDialog.templateInfo.robotGroupIds
-      if (!ids || ids.length === 0) return '-'
-      const names = ids.map(id => {
-        const group = this.robotGroupList.find(g => g.id === id)
-        return group ? group.name : `组${id}`
-      })
-      return names.join(', ') || '-'
+    getRobotGroupNames(groupIds) {
+      const ids = this.ensureArray(groupIds)
+      return ids.join(', ') || '-'
     },
     getRobotStatusText(status) {
       const map = {
-        0: '低电量',
-        1: '硬件故障',
-        2: '硬件异常',
-        3: '离线',
+        '0': '低电量',
+        '1': '硬件故障',
+        '2': '硬件异常',
+        '3': '离线',
         'normal': '正常'
       }
       return map[status] || status
     },
     getRobotStatusType(status) {
-      if (status === 0) return 'warning'
-      if (status === 1 || status === 2) return 'danger'
-      if (status === 3) return 'info'
+      if (status === '0') return 'warning'
+      if (status === '1' || status === '2') return 'danger'
+      if (status === '3') return 'info'
       if (status === 'normal') return 'success'
       return 'info'
     },
@@ -745,20 +734,11 @@ export default {
         if (error !== 'cancel') this.$message.error('操作失败')
       }
     },
-    async showReassignDialog(row) {
+    showReassignDialog(row) {
       this.reassignDialog.task = row
       this.reassignDialog.selectedRobotId = null
       this.reassignDialog.selectedGroupId = null
       this.reassignDialog.visible = true
-      if (row.templateId) {
-        try {
-          const res = await getTemplate(row.templateId)
-          this.reassignDialog.templateInfo = res.data || res
-        } catch (error) {
-          console.error('获取模板信息失败', error)
-          this.reassignDialog.templateInfo = null
-        }
-      }
     },
     // 确认重新分配 - 不自动解决风险，添加到等待集合
     async confirmReassign() {

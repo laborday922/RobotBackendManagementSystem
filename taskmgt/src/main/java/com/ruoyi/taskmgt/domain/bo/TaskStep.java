@@ -50,8 +50,6 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     public final static Byte FINISHED =2;
     public final static Byte PAUSED = 3;
     public final static Byte TERMINATED= 4;
-    public static final Byte WAITING = 5;
-    public static final Byte WAITING_CALLBACK = 6;
 
     public static final Map<Byte, String> STATUSNAMES = new HashMap<>() {
         {
@@ -80,8 +78,6 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
                     add(PAUSED);
                     add(TERMINATED);
                     add(FINISHED);
-                    add(WAITING);
-                    add(WAITING_CALLBACK);
                 }
             });
             put(PAUSED, new HashSet<>() {
@@ -106,10 +102,6 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
 
     /** 结束时间 */
     private Date endTime;
-
-    private Long operationId;
-
-    private String operationJson;
 
     @JsonIgnore
     @ToString.Exclude
@@ -137,9 +129,4 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     public String getStatusName() {
         return STATUSNAMES.get(this.status);
     }
-
-    private String traceId;
-    private String resultData;
-    private String errorMsg;
-    private Long assignedRobotId;
 }

@@ -367,6 +367,10 @@ public class TaskServiceImpl implements ITaskService {
                 " 任务" + task.getName() + "已取消",
                 SecurityUtils.getUsername()
         );
+        if(StringUtils.isNotNull(task.getTemplateId())){
+            List<String> stepRedisKeys = this.stepReuseService.cancelStepsByTaskId(id);
+            redisKeys.addAll(stepRedisKeys);
+        }
         this.redisUtil.deleteObject(redisKeys);
     }
 
@@ -545,18 +549,6 @@ public class TaskServiceImpl implements ITaskService {
             }
         }
     }
-    @Override
-    public void validateLocalOrder(List<Task> tasks) {
-        List<Long> sortedIds = tasks.stream()
-                .sorted(Comparator.comparingInt(Task::getPendingOrder))
-                .map(Task::getId)
-                .toList();
-        List<Long> inputIds = tasks.stream().map(Task::getId).toList();
-        if (!sortedIds.equals(inputIds)) {
-            String[] args = new String[]{};
-            throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{}, this.messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
-        }
-    }
 
     @Override
     public List<TaskAbnormalVo> getAbnormalTasks(Integer riskLevel, Long robotId, Long robotGroupId) {
@@ -632,6 +624,10 @@ public class TaskServiceImpl implements ITaskService {
             vo.setRobotStatusSummary(groupHasWarning ? "组内异常" : "正常");
             vo.setRobotStatuses(robotStatuses);
             vo.setRobotGroupName(robotGroupsService.selectRobotGroupsById(task.getRobotGroupId()).getName());
+            Integer totalSteps = this.stepRepository.findStepsByTaskId(task.getId()).size();
+            Integer completedSteps = this.stepRepository.findStepsByTaskId(task.getId()).stream().filter(step-> Objects.equals(step.getStatus(), TaskStep.FINISHED)).toList().size();
+            vo.setTotalSteps(totalSteps);
+            vo.setCompletedSteps(completedSteps);
         }
         return vo;
     }

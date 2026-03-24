@@ -80,7 +80,6 @@ public interface ITaskService {
     @Transactional
     void updateLocalOrder(Long resourceId, boolean isGroupTask, List<Long> taskIds);
 
-    void validateLocalOrder(List<Task> tasks);
 
     List<TaskAbnormalVo> getAbnormalTasks(Integer riskLevel, Long robotId, Long robotGroupId);
 

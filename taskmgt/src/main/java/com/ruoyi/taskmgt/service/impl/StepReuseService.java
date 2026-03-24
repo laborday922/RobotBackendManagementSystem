@@ -71,4 +71,14 @@ public class StepReuseService {
         }
         return redisKeys;
     }
+
+    public List<String> cancelStepsByTaskId(Long taskId) {
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+        List<String> redisKeys = new ArrayList<>();
+        for(TaskStep step : steps){
+            step.setStatus(TaskStep.NOTSTART);
+            redisKeys.addAll(this.stepRepository.update(step));
+        }
+        return redisKeys;
+    }
 }

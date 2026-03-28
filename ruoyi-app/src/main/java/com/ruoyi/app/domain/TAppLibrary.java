@@ -41,9 +41,6 @@ public class TAppLibrary extends BaseEntity
     /** 应用描述 */
     private String description;
 
-    /** 应用版本号（如1.0.0） */
-    private String version;
-
     public void setId(Long id) 
     {
         this.id = id;
@@ -104,15 +101,7 @@ public class TAppLibrary extends BaseEntity
         return description;
     }
 
-    public void setVersion(String version) 
-    {
-        this.version = version;
-    }
 
-    public String getVersion() 
-    {
-        return version;
-    }
 
     @Override
     public String toString() {
@@ -125,7 +114,6 @@ public class TAppLibrary extends BaseEntity
             .append("createTime", getCreateTime())
             .append("updateTime", getUpdateTime())
             .append("description", getDescription())
-            .append("version", getVersion())
             .toString();
     }
 }

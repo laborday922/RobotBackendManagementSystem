@@ -13,11 +13,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="createTime"    column="create_time"    />
         <result property="updateTime"    column="update_time"    />
         <result property="description"    column="description"    />
-        <result property="version"    column="version"    />
     </resultMap>
 
     <sql id="selectTAppLibraryVo">
-        select id, app_id, app_name, app_type, enabled, create_time, update_time, description, version from t_app_library
+        select id, app_id, app_name, app_type, enabled, create_time, update_time, description from t_app_library
     </sql>
 
     <select id="selectTAppLibraryList" parameterType="TAppLibrary" resultMap="TAppLibraryResult">
@@ -45,7 +44,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="description != null">description,</if>
-            <if test="version != null">version,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="appId != null and appId != ''">#{appId},</if>
@@ -55,7 +53,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">#{createTime},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="description != null">#{description},</if>
-            <if test="version != null">#{version},</if>
          </trim>
     </insert>
 
@@ -69,7 +66,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="description != null">description = #{description},</if>
-            <if test="version != null">version = #{version},</if>
         </trim>
         where id = #{id}
     </update>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.app.mapper.TAppConstraintMapper">
+    
+    <resultMap type="TAppConstraint" id="TAppConstraintResult">
+        <result property="id"    column="id"    />
+        <result property="appId"    column="app_id"    />
+        <result property="name"    column="name"    />
+        <result property="expression"    column="expression"    />
+        <result property="errorMessage"    column="error_message"    />
+        <result property="severity"    column="severity"    />
+        <result property="createdAt"    column="created_at"    />
+    </resultMap>
+
+    <sql id="selectTAppConstraintVo">
+        select id, app_id, name, expression, error_message, severity, created_at from t_app_constraint
+    </sql>
+
+    <select id="selectTAppConstraintList" parameterType="TAppConstraint" resultMap="TAppConstraintResult">
+        <include refid="selectTAppConstraintVo"/>
+        <where>  
+            <if test="appId != null  and appId != ''"> and app_id = #{appId}</if>
+            <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+            <if test="expression != null  and expression != ''"> and expression = #{expression}</if>
+            <if test="errorMessage != null  and errorMessage != ''"> and error_message = #{errorMessage}</if>
+            <if test="severity != null  and severity != ''"> and severity = #{severity}</if>
+            <if test="createdAt != null "> and created_at = #{createdAt}</if>
+        </where>
+    </select>
+    
+    <select id="selectTAppConstraintById" parameterType="Long" resultMap="TAppConstraintResult">
+        <include refid="selectTAppConstraintVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertTAppConstraint" parameterType="TAppConstraint" useGeneratedKeys="true" keyProperty="id">
+        insert into t_app_constraint
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id,</if>
+            <if test="name != null">name,</if>
+            <if test="expression != null and expression != ''">expression,</if>
+            <if test="errorMessage != null and errorMessage != ''">error_message,</if>
+            <if test="severity != null">severity,</if>
+            <if test="createdAt != null">created_at,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">#{appId},</if>
+            <if test="name != null">#{name},</if>
+            <if test="expression != null and expression != ''">#{expression},</if>
+            <if test="errorMessage != null and errorMessage != ''">#{errorMessage},</if>
+            <if test="severity != null">#{severity},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTAppConstraint" parameterType="TAppConstraint">
+        update t_app_constraint
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id = #{appId},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="expression != null and expression != ''">expression = #{expression},</if>
+            <if test="errorMessage != null and errorMessage != ''">error_message = #{errorMessage},</if>
+            <if test="severity != null">severity = #{severity},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTAppConstraintById" parameterType="Long">
+        delete from t_app_constraint where id = #{id}
+    </delete>
+
+    <delete id="deleteTAppConstraintByIds" parameterType="String">
+        delete from t_app_constraint where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

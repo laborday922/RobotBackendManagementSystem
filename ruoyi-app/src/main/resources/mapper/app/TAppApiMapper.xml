@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.app.mapper.TAppApiMapper">
+    
+    <resultMap type="TAppApi" id="TAppApiResult">
+        <result property="id"    column="id"    />
+        <result property="appId"    column="app_id"    />
+        <result property="apiKey"    column="api_key"    />
+        <result property="apiName"    column="api_name"    />
+        <result property="description"    column="description"    />
+        <result property="paramsSchema"    column="params_schema"    />
+        <result property="createdAt"    column="created_at"    />
+    </resultMap>
+
+    <sql id="selectTAppApiVo">
+        select id, app_id, api_key, api_name, description, params_schema, created_at from t_app_api
+    </sql>
+
+    <select id="selectTAppApiList" parameterType="TAppApi" resultMap="TAppApiResult">
+        <include refid="selectTAppApiVo"/>
+        <where>  
+            <if test="appId != null  and appId != ''"> and app_id = #{appId}</if>
+            <if test="apiKey != null  and apiKey != ''"> and api_key = #{apiKey}</if>
+            <if test="apiName != null  and apiName != ''"> and api_name like concat('%', #{apiName}, '%')</if>
+            <if test="description != null  and description != ''"> and description = #{description}</if>
+            <if test="paramsSchema != null  and paramsSchema != ''"> and params_schema = #{paramsSchema}</if>
+            <if test="createdAt != null "> and created_at = #{createdAt}</if>
+        </where>
+    </select>
+    
+    <select id="selectTAppApiById" parameterType="Long" resultMap="TAppApiResult">
+        <include refid="selectTAppApiVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertTAppApi" parameterType="TAppApi" useGeneratedKeys="true" keyProperty="id">
+        insert into t_app_api
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id,</if>
+            <if test="apiKey != null and apiKey != ''">api_key,</if>
+            <if test="apiName != null and apiName != ''">api_name,</if>
+            <if test="description != null">description,</if>
+            <if test="paramsSchema != null and paramsSchema != ''">params_schema,</if>
+            <if test="createdAt != null">created_at,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">#{appId},</if>
+            <if test="apiKey != null and apiKey != ''">#{apiKey},</if>
+            <if test="apiName != null and apiName != ''">#{apiName},</if>
+            <if test="description != null">#{description},</if>
+            <if test="paramsSchema != null and paramsSchema != ''">#{paramsSchema},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTAppApi" parameterType="TAppApi">
+        update t_app_api
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id = #{appId},</if>
+            <if test="apiKey != null and apiKey != ''">api_key = #{apiKey},</if>
+            <if test="apiName != null and apiName != ''">api_name = #{apiName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="paramsSchema != null and paramsSchema != ''">params_schema = #{paramsSchema},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTAppApiById" parameterType="Long">
+        delete from t_app_api where id = #{id}
+    </delete>
+
+    <delete id="deleteTAppApiByIds" parameterType="String">
+        delete from t_app_api where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

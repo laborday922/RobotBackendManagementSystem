@@ -1,12 +1,14 @@
 package com.ruoyi.taskmgt.domain.bo;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.mapper.TAppConstraintMapper;
 import com.ruoyi.common.clonefactory.CopyFrom;
 import com.ruoyi.common.clonefactory.CopyNotNullTo;
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.ruoyi.common.core.model.Stateful;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.mapper.po.TemplatePo;
+import com.ruoyi.taskmgt.utils.JsonUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Setter;
@@ -34,6 +36,8 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     @NotBlank(message = "模板名称不能为空")
     private String name;
 
+    private Long appId;
+
     /** 模板描述 */
     private String description;
 
@@ -49,10 +53,14 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     /** 状态（0正常 1已禁用 2已删除） */
     private Byte status;
 
+    private List<TAppConstraint> rules;
+
     @Setter
     @JsonIgnore
     @ToString.Exclude
     private TemplateRepository templateRepository;
+
+    private TAppConstraintMapper appConstraintMapper;
 
     public final static Byte ENABLED = 0;
     public final static Byte DISABLED = 1;
@@ -107,5 +115,15 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     @JsonIgnore
     public String getStatusName() {
         return STATUSNAMES.get(this.status);
+    }
+
+    @JsonIgnore
+    public List<TaskStepDefinition> getStepDefinitions() {
+        if (workflow == null || workflow.isEmpty()) return Collections.emptyList();
+        try {
+            return JsonUtils.parseList(workflow,TaskStepDefinition.class);
+        } catch (Exception e) {
+            throw new RuntimeException("解析模板步骤失败: " + e.getMessage());
+        }
     }
 }

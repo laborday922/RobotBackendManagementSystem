@@ -17,7 +17,7 @@ public interface ITemplateService {
 
     void resumeTemplate(Long id);
 
-    List<TemplateVo> retrieveTemplates(String name, Byte status, Long robotGroupId);
+    List<TemplateVo> retrieveTemplates(Long appId, String name, Byte status, Long robotGroupId);
 
     TemplateVo getTemplate(Long id);
 }

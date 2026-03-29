@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.ruoyi.app.service.ITAppLibraryService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
@@ -32,6 +33,7 @@ public class TemplateServiceImpl implements ITemplateService {
     private final MessageSourceAccessor messageSourceAccessor;
     private final RedisCache redisUtil;
     private final IRobotGroupsService robotGroupsService;
+    private final ITAppLibraryService appLibraryService;
 
     @Override
     public TemplateVo createTemplate(Template template) {
@@ -120,8 +122,8 @@ public class TemplateServiceImpl implements ITemplateService {
     }
 
     @Override
-    public List<TemplateVo> retrieveTemplates(String name, Byte status, Long robotGroupId) {
-        List<Template> templates = templateRepository.getTemplates(name, status, robotGroupId);
+    public List<TemplateVo> retrieveTemplates(Long appId, String name, Byte status, Long robotGroupId) {
+        List<Template> templates = templateRepository.getTemplates(appId,name, status, robotGroupId);
         return templates.stream()
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
@@ -135,6 +137,7 @@ public class TemplateServiceImpl implements ITemplateService {
                         }
                         vo.setRobotGroupNames(groupNames);
                     }
+                    if(StringUtils.isNotNull(template.getAppId()))vo.setAppName(this.appLibraryService.selectTAppLibraryById(template.getAppId()).getAppName());
                     return vo;
                 })
                 .collect(Collectors.toList());
@@ -159,6 +162,7 @@ public class TemplateServiceImpl implements ITemplateService {
             }
             vo.setRobotGroupNames(groupNames);
         }
+        if(StringUtils.isNotNull(template.getAppId()))vo.setAppName(this.appLibraryService.selectTAppLibraryById(template.getAppId()).getAppName());
         return vo;
     }
 }

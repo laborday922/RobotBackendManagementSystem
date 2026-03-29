@@ -1,8 +1,20 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.app.service.ITAppApiService;
+import com.ruoyi.common.enums.ReturnNo;
+import com.ruoyi.common.exception.task.TaskmgtException;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
+import com.ruoyi.taskmgt.domain.bo.ParamBinding;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.domain.bo.TaskStepDefinition;
+import com.ruoyi.taskmgt.domain.bo.Template;
+import com.ruoyi.taskmgt.utils.ExpressionEvaluator;
+import com.ruoyi.taskmgt.utils.ParamValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +29,9 @@ import java.util.*;
 public class StepReuseService {
     private final StepRepository stepRepository ;
     private final TaskLogReuseService taskLogService;
+    private final ITAppApiService apiService;
+    private final ExpressionEvaluator expressionEvaluator;
+    private final ObjectMapper objectMapper;
     public List<String> pauseStepsByTaskId(Long taskId) {
         List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
         List<String> redisKeys = new ArrayList<>();
@@ -80,5 +95,59 @@ public class StepReuseService {
             redisKeys.addAll(this.stepRepository.update(step));
         }
         return redisKeys;
+    }
+
+    public List<TaskStep> insertSteps(Template template, String formData, Map<String, Object> appParams) {
+        Map<String, Object> formDataMap;
+        if (StringUtils.hasText(formData)) {
+            try {
+                formDataMap = objectMapper.readValue(formData, new TypeReference<Map<String, Object>>() {});
+            } catch (Exception e) {
+                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID,new Object[]{},"表单数据格式错误");
+            }
+        } else {
+            formDataMap = Collections.emptyMap();
+        }
+        List<TaskStepDefinition> stepDefs = template.getStepDefinitions();
+        List<TaskStep> steps = new ArrayList<>();
+        for (int i = 0; i < stepDefs.size(); i++) {
+            TaskStepDefinition def = stepDefs.get(i);
+            Long operationId = apiService.selectTAppApiById(def.getApiId()).getId();
+
+            Map<String, Object> params = new HashMap<>();
+            for (ParamBinding binding : def.getParams()) {
+                Object value = null;
+                switch (binding.getSource()) {
+                    case "form_field":
+                        value = formDataMap.get(binding.getValue());
+                        break;
+                    case "app_param":
+                        value = appParams.get(binding.getValue());
+                        break;
+                    case "fixed":
+                        value = binding.getValue();
+                        break;
+                    case "expression":
+                        value = expressionEvaluator.evaluateExpression(binding.getValue(), Map.of("form_data", formDataMap, "app_param", appParams));
+                        break;
+                }
+                params.put(binding.getName(), value);
+            }
+            String operationJson = null;
+            try {
+                operationJson = ParamValidator.objectMapper.writeValueAsString(params);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+
+            TaskStep step = new TaskStep();
+            step.setStepName(def.getName());
+            step.setOrderNum(i + 1);
+            step.setOperationId(operationId);
+            step.setOperationJson(operationJson);
+            step.setDescription(def.getDescription());
+            steps.add(step);
+        }
+        return steps;
     }
 }

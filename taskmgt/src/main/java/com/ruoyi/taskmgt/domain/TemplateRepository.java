@@ -145,9 +145,12 @@ public class TemplateRepository {
         return key;
     }
 
-    public List<Template> getTemplates(String name, Byte status, Long robotGroupId) {
+    public List<Template> getTemplates(Long appId, String name, Byte status, Long robotGroupId) {
         Specification<TemplatePo> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (appId != null) {
+                predicates.add(cb.equal(root.get("appId"), appId));
+            }
             if (StringUtils.hasText(name)) {
                 predicates.add(cb.like(root.get("name"), "%" + name + "%"));
             }

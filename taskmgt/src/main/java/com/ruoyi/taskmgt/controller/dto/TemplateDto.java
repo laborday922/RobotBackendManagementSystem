@@ -23,6 +23,8 @@ import java.util.List;
 public class TemplateDto {
     private Long id;
     @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
+    private Long appId;
+    @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
     private String name;
     private String description;
     private List<Long> robotGroupIds;

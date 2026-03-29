@@ -1,4 +1,10 @@
 package com.ruoyi.taskmgt.service.impl;
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.domain.TAppLibrary;
+import com.ruoyi.app.domain.TAppParam;
+import com.ruoyi.app.service.ITAppConstraintService;
+import com.ruoyi.app.service.ITAppLibraryService;
+import com.ruoyi.app.service.ITAppParamService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
@@ -16,10 +22,13 @@ import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.domain.bo.Template;
+import com.ruoyi.taskmgt.service.IStepService;
 import com.ruoyi.taskmgt.service.ITaskService;
 import com.ruoyi.taskmgt.service.vo.RobotStatus;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
 import com.ruoyi.taskmgt.service.vo.TaskVo;
+import com.ruoyi.taskmgt.utils.ExpressionEvaluator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -40,11 +49,16 @@ public class TaskServiceImpl implements ITaskService {
     private final RedisCache redisUtil;
     private final TemplateRepository templateRepository;
     private final StepReuseService stepReuseService;
+    private final IStepService stepService;
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogService;
     private final IRobotsService robotService;
     private final IRobotWarningsService robotWarningsService;
     private final IRobotGroupsService robotGroupsService;
+    private final ITAppLibraryService appLibraryService;
+    private final ITAppParamService appParamService;
+    private final ITAppConstraintService constraintService;
+    private final ExpressionEvaluator expressionEvaluator;
 
     /**
      * @param task 即将新增的任务
@@ -56,16 +70,57 @@ public class TaskServiceImpl implements ITaskService {
         task.setStatus(Task.NOTSTART);
         task.setRiskLevel(0);
         Task newTask = this.taskRepository.insert(task);
+        List<TaskStep> steps = retrieveSteps(newTask);
+        stepService.createSteps(newTask.getId(),steps);
         this.taskLogService.record(
                 newTask.getId(),
                 null,
                 TaskLogEventType.TASK_CREATE,
-                "创建任务：" + task.getName(),
+                "创建任务：" + newTask.getName(),
                 SecurityUtils.getUsername()
         );
         TaskVo taskVo = CloneFactory.copy(new TaskVo(), newTask);
         taskVo.setTemplateName(this.templateRepository.getTemplateNameById(task.getTemplateId()));
         return taskVo;
+    }
+    /**
+     * @param task 即将新增的任务
+     * @return 构造好的步骤
+     */
+    @Override
+    public List<TaskStep> retrieveSteps(Task task) {
+        Template template = this.templateRepository.findById(task.getTemplateId()).orElseThrow(()-> {
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Template.name",LocaleContextHolder.getLocale()), task.getTemplateId().toString()};
+            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        });;
+        TAppLibrary app = appLibraryService.selectTAppLibraryById(template.getAppId());
+        TAppParam param = new TAppParam();
+        param.setAppId(app.getAppId());
+        List<TAppParam> appParams = appParamService.selectTAppParamList(param);
+        Map<String, Object> finalAppParams = new HashMap<>();
+        for (TAppParam appParam : appParams) {
+            Object value = appParam.getDefaultValue();
+//            if (appParams.isEditableInTask() && task.getAppParamOverrides().containsKey(appParam.getKey())) {
+//                value = dto.getAppParamOverrides().get(param.getKey());
+//                // 校验覆盖值是否符合validation_rule
+//                validateParamValue(param, value);
+//            }
+            finalAppParams.put(appParam.getParamKey(), value);
+        }
+        List<TAppConstraint> rules = new ArrayList<>();
+        TAppConstraint appConstraint = new TAppConstraint();
+        appConstraint.setAppId(app.getAppId());
+        rules.addAll(constraintService.selectTAppConstraintList(appConstraint));
+        rules.addAll(template.getRules());
+        Map<String, Object> context = new HashMap<>();
+        context.put("form_data", task.getFormContent());
+        context.put("app_param", finalAppParams);
+        for (TAppConstraint rule : rules) {
+            if (!expressionEvaluator.evaluateBoolean(rule.getExpression(), context)) {
+                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID, new Object[]{},rule.getErrorMessage());
+            }
+        }
+        return stepReuseService.insertSteps(template,task.getFormContent(),finalAppParams);
     }
 
     /**
@@ -78,20 +133,24 @@ public class TaskServiceImpl implements ITaskService {
             throw new TaskmgtException(ReturnNo.STATENOTALLOW,args,this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
         }
         else {
+            Task originTask = this.taskRepository.findById(task.getId()).orElseThrow(()-> {
+                String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString()};
+                return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+            });
             if(StringUtils.isNotNull(task.getRobotId())||StringUtils.isNotNull(task.getRobotGroupId())){
                 if(!isRobotNormal(task)){
                     String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.toString()};
                     throw new  TaskmgtException(ReturnNo.ROBOT_STATUS_ABNORMAL, args,this.messageSourceAccessor.getMessage(ReturnNo.ROBOT_STATUS_ABNORMAL.getMessage()));
                 }
-                Task originTask = this.taskRepository.findById(task.getId()).orElseThrow(()-> {
-                    String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString()};
-                    return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
-                });
                 if (Objects.equals(originTask.getStatus(), Task.PAUSED)){
                     if(StringUtils.isNotNull(task.getRobotId())&& !task.getRobotId().equals(originTask.getRobotId())||StringUtils.isNotNull(task.getRobotGroupId())&& !task.getRobotGroupId().equals(originTask.getRobotGroupId())){
                         task.setStatus(Task.PENDING);
                     }
                 }
+            }
+            if(StringUtils.hasText(task.getFormContent())&&StringUtils.isNotNull(task.getTemplateId())&&Objects.equals(originTask.getStatus(), Task.DISABLED)){
+                List<TaskStep> steps = retrieveSteps(task);
+                stepService.updateSteps(task.getId(),steps);
             }
             task.setUpdateBy(SecurityUtils.getUsername());
             List<String> redisKeys = this.taskRepository.update(task);
@@ -650,5 +709,5 @@ public class TaskServiceImpl implements ITaskService {
         }
         return isNormal;
     }
-    private List<Long> getMockRobotIdsByGroupId(Long groupId) { return List.of(1L, 2L); }
+
 }

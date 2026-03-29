@@ -34,13 +34,14 @@ public class TemplateController extends BaseController {
     @Log(title = "查询模板列表", businessType = BusinessType.OTHER)
     @GetMapping("templates")
     public TableDataInfo retrieveTemplates(
+            @RequestParam(required = false) Long appId,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Byte status,
             @RequestParam(required = false) Long robotGroupId,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         startPage(pageNum, pageSize);
-        List<TemplateVo> list = templateService.retrieveTemplates(name, status, robotGroupId);
+        List<TemplateVo> list = templateService.retrieveTemplates(appId,name, status, robotGroupId);
         return getDataTable(list);
     }
 

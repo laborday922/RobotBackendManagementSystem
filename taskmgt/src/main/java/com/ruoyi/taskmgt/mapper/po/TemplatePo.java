@@ -29,6 +29,8 @@ public class TemplatePo extends BaseEntity {
     @NotBlank(message = "模板名称不能为空")
     private String name;
 
+    private Long appId;
+
     /** 模板描述 */
     private String description;
 

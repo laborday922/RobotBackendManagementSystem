@@ -25,6 +25,8 @@ public class TemplateVo {
     private String name;
     private String description;
     private List<Long> robotGroupIds;
+    private Long appId;
+    private String appName;
     //表单字段
     private String formContent;
     //标准工作流

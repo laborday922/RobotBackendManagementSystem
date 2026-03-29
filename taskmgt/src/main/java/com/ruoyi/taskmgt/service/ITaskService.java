@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.service;
 
 import com.ruoyi.taskmgt.domain.bo.Task;
+import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.service.vo.TaskVo;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
 
@@ -14,6 +15,9 @@ public interface ITaskService {
      * &#064;description    新增任务
      **/
     TaskVo createTask(Task task);
+
+
+    List<TaskStep> retrieveSteps(Task task);
 
     /**
      * @param task 保存了修改信息的任务

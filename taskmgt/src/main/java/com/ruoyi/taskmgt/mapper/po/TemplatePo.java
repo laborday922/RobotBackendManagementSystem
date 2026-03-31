@@ -48,4 +48,6 @@ public class TemplatePo extends BaseEntity {
 
     /** 状态（0正常 1停用） */
     private Byte status;
+
+    private String rule;
 }

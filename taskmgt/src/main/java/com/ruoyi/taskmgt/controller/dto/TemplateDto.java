@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.controller.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ruoyi.app.domain.TAppConstraint;
 import com.ruoyi.common.clonefactory.CopyTo;
 import com.ruoyi.common.validation.NewGroup;
 import com.ruoyi.taskmgt.domain.bo.Template;
@@ -11,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Data
@@ -22,7 +24,7 @@ import java.util.List;
 @ApiModel("任务模板DTO")
 public class TemplateDto {
     private Long id;
-    @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
+    @NotNull(message = "Dto.NotNull",groups = NewGroup.class)
     private Long appId;
     @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
     private String name;
@@ -30,4 +32,5 @@ public class TemplateDto {
     private List<Long> robotGroupIds;
     private String formContent;
     private String workflow;
+    private List<TAppConstraint> rules;
 }

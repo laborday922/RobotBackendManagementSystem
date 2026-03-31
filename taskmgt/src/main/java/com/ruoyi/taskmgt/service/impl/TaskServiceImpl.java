@@ -1,4 +1,5 @@
 package com.ruoyi.taskmgt.service.impl;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.ruoyi.app.domain.TAppConstraint;
 import com.ruoyi.app.domain.TAppLibrary;
 import com.ruoyi.app.domain.TAppParam;
@@ -38,6 +39,8 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.ruoyi.taskmgt.utils.ParamValidator.objectMapper;
 
 @Service
 @Transactional
@@ -89,17 +92,29 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public List<TaskStep> retrieveSteps(Task task) {
-        Template template = this.templateRepository.findById(task.getTemplateId()).orElseThrow(()-> {
-            String[] args = new String[]{this.messageSourceAccessor.getMessage("Template.name",LocaleContextHolder.getLocale()), task.getTemplateId().toString()};
-            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
-        });;
+        Template template = this.templateRepository.findById(task.getTemplateId()).orElseThrow(() -> {
+            String[] args = new String[]{
+                    this.messageSourceAccessor.getMessage("Template.name", LocaleContextHolder.getLocale()),
+                    task.getTemplateId().toString()
+            };
+            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,
+                    this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        });
+
         TAppLibrary app = appLibraryService.selectTAppLibraryById(template.getAppId());
+
+        // 获取并转换能力参数
         TAppParam param = new TAppParam();
         param.setAppId(app.getAppId());
         List<TAppParam> appParams = appParamService.selectTAppParamList(param);
         Map<String, Object> finalAppParams = new HashMap<>();
+
         for (TAppParam appParam : appParams) {
-            Object value = appParam.getDefaultValue();
+            Object value = convertValueByType(
+                    appParam.getDefaultValue(),
+                    appParam.getParamType(),
+                    appParam.getParamKey() + "(appParam)"
+            );
 //            if (appParams.isEditableInTask() && task.getAppParamOverrides().containsKey(appParam.getKey())) {
 //                value = dto.getAppParamOverrides().get(param.getKey());
 //                // 校验覆盖值是否符合validation_rule
@@ -107,20 +122,46 @@ public class TaskServiceImpl implements ITaskService {
 //            }
             finalAppParams.put(appParam.getParamKey(), value);
         }
+
+        // 获取模板约束规则（应用级 + 模板级）
         List<TAppConstraint> rules = new ArrayList<>();
         TAppConstraint appConstraint = new TAppConstraint();
         appConstraint.setAppId(app.getAppId());
-        rules.addAll(constraintService.selectTAppConstraintList(appConstraint));
-        rules.addAll(template.getRules());
-        Map<String, Object> context = new HashMap<>();
-        context.put("form_data", task.getFormContent());
-        context.put("app_param", finalAppParams);
-        for (TAppConstraint rule : rules) {
-            if (!expressionEvaluator.evaluateBoolean(rule.getExpression(), context)) {
-                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID, new Object[]{},rule.getErrorMessage());
+        List<TAppConstraint> appRules = constraintService.selectTAppConstraintList(appConstraint);
+        if (StringUtils.isNotEmpty(appRules)) {
+            rules.addAll(appRules);
+        }
+        if (StringUtils.isNotEmpty(template.getRules())) {
+            rules.addAll(template.getRules());
+        }
+
+        // 解析并转换表单数据
+        Map<String, Object> formDataMap = new HashMap<>();
+        if (StringUtils.hasText(task.getFormContent())) {
+            try {
+                Map<String, Object> rawFormData = objectMapper.readValue(
+                        task.getFormContent(),
+                        new TypeReference<Map<String, Object>>() {}
+                );
+                // 根据模板字段定义转换类型
+                formDataMap = convertFormDataByFieldTypes(rawFormData, template);
+            } catch (Exception e) {
+                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID, new Object[]{}, "表单数据格式错误: " + e.getMessage());
             }
         }
-        return stepReuseService.insertSteps(template,task.getFormContent(),finalAppParams);
+
+        // 构建表达式上下文并验证约束
+        Map<String, Object> context = new HashMap<>();
+        context.put("form_data", formDataMap);
+        context.put("app_param", finalAppParams);
+
+        for (TAppConstraint rule : rules) {
+            if (!expressionEvaluator.evaluateBoolean(rule.getExpression(), context)) {
+                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID, new Object[]{}, rule.getErrorMessage());
+            }
+        }
+
+        return stepReuseService.insertSteps(template, formDataMap, finalAppParams);
     }
 
     /**
@@ -709,5 +750,140 @@ public class TaskServiceImpl implements ITaskService {
         }
         return isNormal;
     }
+    /**
+     * 根据类型转换值
+     * @param value 原始值（通常是字符串）
+     * @param type 类型标识：number, integer, date, datetime, time, boolean, string
+     * @param fieldName 字段名（用于错误提示）
+     * @return 转换后的对象
+     */
+    private Object convertValueByType(Object value, String type, String fieldName) {
+        if (value == null || StringUtils.isBlank(value.toString())) {
+            return null;
+        }
 
+        String typeLower = type != null ? type.toLowerCase() : "string";
+        String valueStr = value.toString().trim();
+
+        try {
+            switch (typeLower) {
+                case "number":
+                case "double":
+                case "decimal":
+                case "float":
+                    // 统一使用 Double 进行数值比较
+                    return Double.parseDouble(valueStr);
+
+                case "integer":
+                case "int":
+                case "long":
+                    // 整数类型，但为比较统一也转为 Double，或根据需求用 Integer
+                    return Integer.parseInt(valueStr);
+
+                case "boolean":
+                case "bool":
+                    return Boolean.parseBoolean(valueStr);
+
+                case "date":
+                    // 日期类型：yyyy-MM-dd
+                    return java.time.LocalDate.parse(valueStr);
+
+                case "datetime":
+                case "timestamp":
+                    // 日期时间类型：yyyy-MM-dd HH:mm:ss 或 ISO 格式
+                    if (valueStr.contains("T")) {
+                        return java.time.LocalDateTime.parse(valueStr);
+                    } else {
+                        return java.time.LocalDateTime.parse(
+                                valueStr,
+                                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                        );
+                    }
+
+                case "time":
+                    // 时间类型：HH:mm:ss
+                    return java.time.LocalTime.parse(valueStr);
+
+                case "string":
+                case "text":
+                default:
+                    return valueStr;
+            }
+        } catch (Exception e) {
+            throw new TaskmgtException(
+                    ReturnNo.FIELD_NOTVALID,
+                    new Object[]{fieldName},
+                    String.format("字段[%s]类型转换失败: 值'%s'无法转换为类型'%s'", fieldName, valueStr, type)
+            );
+        }
+    }
+
+    /**
+     * 根据模板字段定义转换表单数据
+     * 从 template.formContent 中解析字段类型定义
+     */
+    private Map<String, Object> convertFormDataByFieldTypes(
+            Map<String, Object> rawFormData,
+            Template template
+    ) {
+        Map<String, Object> convertedData = new HashMap<>();
+
+        // 如果没有原始数据，直接返回
+        if (rawFormData == null || rawFormData.isEmpty()) {
+            return convertedData;
+        }
+
+        // 从模板解析字段定义
+        Map<String, String> fieldTypeMap = parseFieldTypesFromTemplate(template);
+
+        for (Map.Entry<String, Object> entry : rawFormData.entrySet()) {
+            String fieldId = entry.getKey();
+            Object rawValue = entry.getValue();
+
+            // 获取字段类型，默认为 string
+            String fieldType = fieldTypeMap.getOrDefault(fieldId, "string");
+
+            // 转换值
+            Object convertedValue = convertValueByType(rawValue, fieldType, "form_data." + fieldId);
+            convertedData.put(fieldId, convertedValue);
+        }
+
+        return convertedData;
+    }
+
+    /**
+     * 从模板 formContent 中解析字段类型定义
+     * 返回 Map<字段ID, 字段类型>
+     */
+    private Map<String, String> parseFieldTypesFromTemplate(Template template) {
+        Map<String, String> fieldTypes = new HashMap<>();
+
+        if (StringUtils.isBlank(template.getFormContent())) {
+            return fieldTypes;
+        }
+
+        try {
+            // 解析 formContent: {"fields": [{"id": "weight", "type": "number", "label": "重量"}, ...]}
+            Map<String, Object> formContent = objectMapper.readValue(
+                    template.getFormContent(),
+                    new TypeReference<Map<String, Object>>() {}
+            );
+
+            List<Map<String, Object>> fields = (List<Map<String, Object>>) formContent.get("fields");
+            if (fields != null) {
+                for (Map<String, Object> field : fields) {
+                    String id = (String) field.get("id");
+                    String type = (String) field.get("type");
+                    if (StringUtils.isNotBlank(id)) {
+                        fieldTypes.put(id, type != null ? type : "string");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 解析失败时返回空 Map，后续使用默认 string 类型
+            log.warn("解析模板表单字段类型失败: {}", e.getMessage());
+        }
+
+        return fieldTypes;
+    }
 }

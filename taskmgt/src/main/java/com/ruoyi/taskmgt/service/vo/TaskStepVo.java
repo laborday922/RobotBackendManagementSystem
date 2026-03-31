@@ -39,6 +39,8 @@ public class TaskStepVo {
 
     private Long operationId;
 
+    private Integer estimatedTime;
+
     @Column(columnDefinition = "text")
     private String operationJson;
 }

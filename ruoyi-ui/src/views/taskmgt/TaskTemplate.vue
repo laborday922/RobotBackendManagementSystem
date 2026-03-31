@@ -13,6 +13,23 @@
             @clear="debouncedQuery"
           />
         </el-form-item>
+        <el-form-item label="应用名称" prop="appId">
+          <el-select
+            v-model="queryParams.appId"
+            placeholder="请选择应用"
+            clearable
+            style="width: 200px"
+            @change="handleQuery"
+            @clear="handleQuery"
+          >
+            <el-option
+              v-for="item in appList"
+              :key="item.id"
+              :label="item.appName"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="机器人组" prop="robotGroupIds">
           <el-select
             v-model="queryParams.robotGroupIds"
@@ -60,12 +77,23 @@
       <el-table v-loading="loading" :data="templateList" border style="width: 100%">
         <el-table-column label="ID" prop="id" width="80" align="center" />
         <el-table-column label="模板名称" prop="name" min-width="150" show-overflow-tooltip />
+        <el-table-column label="应用" prop="appName" width="150" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.appName" type="info" size="small">{{ scope.row.appName }}</el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="描述" prop="description" min-width="200" show-overflow-tooltip />
         <el-table-column label="适用机器人组" width="180">
           <template slot-scope="scope">
             <el-tag v-for="(name, index) in scope.row.robotGroupNames" :key="index" size="small" style="margin-right:4px;">
               {{ name }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="约束规则" width="100" align="center">
+          <template slot-scope="scope">
+            <el-tag size="small" type="danger">{{ getRuleCount(scope.row) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="字段数量" width="100" align="center">
@@ -152,7 +180,7 @@
     <el-dialog
       :title="dialog.title"
       :visible.sync="dialog.visible"
-      width="900px"
+      width="1100px"
       append-to-body
       @close="cancel"
     >
@@ -160,6 +188,29 @@
         <el-form-item label="模板名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入模板名称" />
         </el-form-item>
+
+        <!-- 选择应用 -->
+        <el-form-item label="所属应用" prop="appId">
+          <el-select
+            v-model="form.appId"
+            placeholder="请选择应用"
+            style="width:100%"
+            @change="onAppChange"
+            :disabled="dialog.mode === 'edit'"
+          >
+            <el-option
+              v-for="item in appList"
+              :key="item.id"
+              :label="item.appName"
+              :value="item.id"
+            >
+              <span style="float: left">{{ item.appName }}</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">{{ item.appId }}</span>
+            </el-option>
+          </el-select>
+          <div class="el-form-item-msg">选择应用后将自动加载该应用的能力参数和API</div>
+        </el-form-item>
+
         <el-form-item label="模板描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="请输入模板描述" />
         </el-form-item>
@@ -232,23 +283,217 @@
           </div>
           <div v-if="form.fields.length === 0" class="empty-tip">暂无字段定义，请点击"添加字段"</div>
         </div>
+
+        <!-- 应用能力参数展示 -->
+        <template v-if="currentAppParams.length > 0">
+          <el-divider content-position="left">应用能力参数</el-divider>
+          <div class="app-params-container">
+            <el-alert
+              :title="`当前应用：${currentAppName} 的能力参数配置（只读，可在步骤和约束规则中使用）`"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 10px"
+            />
+            <el-table :data="currentAppParams" size="small" border style="width: 100%">
+              <el-table-column prop="paramKey" label="参数Key" width="150" />
+              <el-table-column prop="paramName" label="参数名称" width="150" />
+              <el-table-column prop="paramType" label="类型" width="100" />
+              <el-table-column prop="defaultValue" label="默认值" width="150" />
+              <el-table-column prop="validationRule" label="校验规则" min-width="200" />
+            </el-table>
+          </div>
+        </template>
+
+        <!-- 新增：模板约束规则 -->
+        <el-divider content-position="left">模板约束规则</el-divider>
+        <div class="rules-container">
+          <div class="rules-tip">
+            <i class="el-icon-warning" style="color: #e6a23c;"></i>
+            <span>配置约束规则限制表单字段取值。支持表单字段（form_data.X）、能力参数（app_param.X）和固定值的比较表达式。</span>
+          </div>
+
+          <el-button size="small" type="warning" @click="addRule" style="margin-bottom:10px; margin-top:10px;">
+            <i class="el-icon-plus"></i>添加约束规则
+          </el-button>
+
+          <div v-for="(rule, index) in form.rules" :key="'rule-'+index" class="rule-item">
+            <el-card shadow="hover" :body-style="{ padding: '15px' }">
+              <el-row :gutter="10" type="flex" align="middle">
+                <el-col :span="8">
+                  <el-form-item label="规则名称" class="compact-form-item" style="margin-bottom: 0;">
+                    <el-input v-model="rule.name" placeholder="如：重量限制" size="small" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="严重程度" class="compact-form-item" style="margin-bottom: 0;">
+                    <el-select v-model="rule.severity" placeholder="严重程度" size="small" style="width:100%">
+                      <el-option label="错误（阻止提交）" value="error" />
+                      <el-option label="警告（提示但允许）" value="warning" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8" style="text-align:right">
+                  <el-button type="danger" size="small" @click="removeRule(index)">删除规则</el-button>
+                </el-col>
+              </el-row>
+
+              <!-- 表达式配置 -->
+              <div class="expression-builder">
+                <div class="section-subtitle">约束表达式配置</div>
+                <el-row :gutter="10" type="flex" align="middle">
+                  <el-col :span="7">
+                    <el-select v-model="rule.leftType" placeholder="左侧类型" size="small" @change="onRuleLeftChange(rule)">
+                      <el-option label="表单字段" value="form_field" />
+                      <el-option label="能力参数" value="app_param" />
+                    </el-select>
+                  </el-col>
+                  <el-col :span="7">
+                    <!-- 左侧选择表单字段 -->
+                    <el-select
+                      v-if="rule.leftType === 'form_field'"
+                      v-model="rule.leftValue"
+                      placeholder="选择表单字段"
+                      size="small"
+                    >
+                      <el-option
+                        v-for="field in form.fields"
+                        :key="field.id"
+                        :label="field.label"
+                        :value="field.id"
+                      >
+                        <span style="float: left">{{ field.label }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 12px">{{ field.type }}</span>
+                      </el-option>
+                    </el-select>
+                    <!-- 左侧选择能力参数 -->
+                    <el-select
+                      v-else-if="rule.leftType === 'app_param'"
+                      v-model="rule.leftValue"
+                      placeholder="选择能力参数"
+                      size="small"
+                    >
+                      <el-option
+                        v-for="param in currentAppParams"
+                        :key="param.paramKey"
+                        :label="param.paramName"
+                        :value="param.paramKey"
+                      >
+                        <span style="float: left">{{ param.paramName }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 12px">{{ param.paramKey }}</span>
+                      </el-option>
+                    </el-select>
+                  </el-col>
+                  <el-col :span="4">
+                    <el-select v-model="rule.operator" placeholder="操作符" size="small">
+                      <el-option label="=" value="==" />
+                      <el-option label="!=" value="!=" />
+                      <el-option label=">" value=">" />
+                      <el-option label=">=" value=">=" />
+                      <el-option label="<" value="<" />
+                      <el-option label="<=" value="<=" />
+                    </el-select>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-select v-model="rule.rightType" placeholder="右侧类型" size="small">
+                      <el-option label="固定值" value="fixed" />
+                      <el-option label="表单字段" value="form_field" />
+                      <el-option label="能力参数" value="app_param" />
+                    </el-select>
+                  </el-col>
+                </el-row>
+
+                <!-- 右侧值配置 -->
+                <el-row :gutter="10" style="margin-top: 10px;">
+                  <el-col :span="24">
+                    <!-- 固定值 -->
+                    <el-input
+                      v-if="rule.rightType === 'fixed'"
+                      v-model="rule.rightValue"
+                      placeholder="输入固定值，如：100"
+                      size="small"
+                    />
+                    <!-- 表单字段 -->
+                    <el-select
+                      v-else-if="rule.rightType === 'form_field'"
+                      v-model="rule.rightValue"
+                      placeholder="选择表单字段"
+                      size="small"
+                      style="width:100%"
+                    >
+                      <el-option
+                        v-for="field in form.fields"
+                        :key="field.id"
+                        :label="field.label"
+                        :value="field.id"
+                      />
+                    </el-select>
+                    <!-- 能力参数 -->
+                    <el-select
+                      v-else-if="rule.rightType === 'app_param'"
+                      v-model="rule.rightValue"
+                      placeholder="选择能力参数"
+                      size="small"
+                      style="width:100%"
+                    >
+                      <el-option
+                        v-for="param in currentAppParams"
+                        :key="param.paramKey"
+                        :label="param.paramName"
+                        :value="param.paramKey"
+                      />
+                    </el-select>
+                  </el-col>
+                </el-row>
+
+                <!-- 生成的表达式预览 -->
+                <div class="expression-preview" v-if="getRuleExpression(rule)">
+                  <i class="el-icon-view"></i>
+                  表达式预览：<code>{{ getRuleExpression(rule) }}</code>
+                </div>
+              </div>
+
+              <!-- 错误提示信息 -->
+              <el-row style="margin-top:10px">
+                <el-col :span="24">
+                  <el-input
+                    v-model="rule.errorMessage"
+                    placeholder="验证失败时的提示信息，如：重量不能超过最大负载"
+                    size="small"
+                  />
+                </el-col>
+              </el-row>
+            </el-card>
+          </div>
+
+          <div v-if="form.rules.length === 0" class="empty-tip">暂无约束规则，请点击"添加约束规则"</div>
+        </div>
+
         <!-- 流程步骤定义 -->
-        <el-divider content-position="left">标准作业流程（带操作配置）</el-divider>
+        <el-divider content-position="left">标准作业流程（带API配置）</el-divider>
         <div class="steps-container">
           <div class="step-tip">
             <i class="el-icon-info" style="color: #409eff;"></i>
-            <span>配置步骤时，选择操作类型并映射参数。支持从表单字段取值或手动输入固定值。</span>
+            <span>配置步骤时，选择API并映射参数。支持从表单字段、能力参数或固定值取值。</span>
           </div>
 
-          <el-button size="small" type="primary" @click="addStep" style="margin-bottom:10px; margin-top:10px;">
+          <el-button
+            size="small"
+            type="primary"
+            @click="addStep"
+            style="margin-bottom:10px; margin-top:10px;"
+            :disabled="!form.appId"
+          >
             <i class="el-icon-plus"></i>添加步骤
           </el-button>
+          <div v-if="!form.appId" class="empty-tip" style="color: #f56c6c; margin-bottom: 10px;">
+            请先选择所属应用以加载API列表
+          </div>
 
           <div v-for="(step, index) in form.steps" :key="'step-'+index" class="step-item">
             <el-card shadow="hover" :body-style="{ padding: '15px' }">
               <!-- 步骤基础信息 -->
               <el-row :gutter="10">
-                <el-col :span="8">
+                <el-col :span="7">
                   <el-form-item label="步骤名称" :required="true" class="compact-form-item">
                     <el-input v-model="step.name" placeholder="如：移动到取货点" size="small" />
                   </el-form-item>
@@ -259,23 +504,24 @@
                     <span style="margin-left:5px; color:#999">分钟</span>
                   </el-form-item>
                 </el-col>
-                <el-col :span="8">
-                  <el-form-item label="执行操作" class="compact-form-item">
+                <el-col :span="9">
+                  <el-form-item label="选择API" class="compact-form-item">
                     <el-select
-                      v-model="step.operationId"
-                      placeholder="选择操作"
+                      v-model="step.apiId"
+                      placeholder="选择API"
                       size="small"
                       style="width:100%"
-                      @change="onOperationChange(step)"
+                      @change="onApiChange(step)"
+                      filterable
                     >
                       <el-option
-                        v-for="op in operationList"
-                        :key="op.id"
-                        :label="op.name"
-                        :value="op.id"
+                        v-for="api in currentAppApis"
+                        :key="api.id"
+                        :label="api.apiName"
+                        :value="api.id"
                       >
-                        <span style="float: left">{{ op.name }}</span>
-                        <span style="float: right; color: #8492a6; font-size: 13px">{{ op.type }}</span>
+                        <span style="float: left">{{ api.apiName }}</span>
+                        <span style="float: right; color: #8492a6; font-size: 13px">{{ api.apiKey }}</span>
                       </el-option>
                     </el-select>
                   </el-form-item>
@@ -285,24 +531,24 @@
                 </el-col>
               </el-row>
 
-              <!-- 操作描述 -->
-              <el-row v-if="step.operationId && getOperation(step.operationId)">
+              <!-- API描述 -->
+              <el-row v-if="step.apiId && getApi(step.apiId)">
                 <el-col :span="24">
                   <div class="operation-desc">
                     <i class="el-icon-info"></i>
-                    {{ getOperation(step.operationId).description }}
+                    {{ getApi(step.apiId).description || '暂无描述' }}
                   </div>
                 </el-col>
               </el-row>
 
               <!-- 参数映射配置 -->
-              <div v-if="step.operationId && step.paramMappings" class="param-mapping-section">
+              <div v-if="step.apiId && step.paramMappings && step.paramMappings.length > 0" class="param-mapping-section">
                 <div class="section-title">参数映射配置</div>
 
                 <el-table :data="step.paramMappings" size="small" border style="width:100%">
                   <el-table-column prop="paramName" label="参数" width="120">
                     <template slot-scope="scope">
-                      <div style="font-weight:bold">{{ scope.row.paramLabel }}</div>
+                      <div style="font-weight:bold">{{ scope.row.paramLabel || scope.row.paramName }}</div>
                       <div style="font-size:12px; color:#999">{{ scope.row.paramName }}</div>
                     </template>
                   </el-table-column>
@@ -311,6 +557,7 @@
                     <template slot-scope="scope">
                       <el-select v-model="scope.row.sourceType" size="small" style="width:100%">
                         <el-option label="表单字段" value="field" />
+                        <el-option label="能力参数" value="app_param" />
                         <el-option label="固定值" value="fixed" />
                       </el-select>
                     </template>
@@ -337,12 +584,31 @@
                         </el-option>
                       </el-select>
 
+                      <!-- 选择能力参数 -->
+                      <el-select
+                        v-else-if="scope.row.sourceType === 'app_param'"
+                        v-model="scope.row.sourceValue"
+                        placeholder="选择能力参数"
+                        size="small"
+                        style="width:100%"
+                      >
+                        <el-option
+                          v-for="param in currentAppParams"
+                          :key="param.paramKey"
+                          :label="param.paramName"
+                          :value="param.paramKey"
+                        >
+                          <span style="float: left">{{ param.paramName }}</span>
+                          <span style="float: right; color: #8492a6; font-size: 13px">{{ param.paramKey }}</span>
+                        </el-option>
+                      </el-select>
+
                       <!-- 输入固定值 -->
                       <div v-else>
                         <el-input
-                          v-if="scope.row.paramType === 'string' || scope.row.paramType === 'select'"
+                          v-if="scope.row.paramType === 'string' || !scope.row.paramType"
                           v-model="scope.row.sourceValue"
-                          :placeholder="'请输入' + scope.row.paramLabel"
+                          :placeholder="'请输入' + (scope.row.paramLabel || scope.row.paramName)"
                           size="small"
                         />
                         <el-input-number
@@ -359,19 +625,6 @@
                         >
                           <el-option label="是" :value="true" />
                           <el-option label="否" :value="false" />
-                        </el-select>
-                        <el-select
-                          v-else-if="scope.row.paramType === 'select'"
-                          v-model="scope.row.sourceValue"
-                          size="small"
-                          style="width:100%"
-                        >
-                          <el-option
-                            v-for="opt in scope.row.options"
-                            :key="opt"
-                            :label="opt"
-                            :value="opt"
-                          />
                         </el-select>
                       </div>
                     </template>
@@ -414,10 +667,11 @@
     </el-dialog>
 
     <!-- 模板详情查看对话框 -->
-    <el-dialog title="模板详情" :visible.sync="viewDialog.visible" width="600px" append-to-body>
+    <el-dialog title="模板详情" :visible.sync="viewDialog.visible" width="800px" append-to-body>
       <div v-if="viewDialog.data">
         <el-descriptions :column="1" border>
           <el-descriptions-item label="模板名称">{{ viewDialog.data.name }}</el-descriptions-item>
+          <el-descriptions-item label="所属应用">{{ viewDialog.data.appName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="描述">{{ viewDialog.data.description }}</el-descriptions-item>
           <el-descriptions-item label="适用机器人组">
             <el-tag v-for="name in viewDialog.data.robotGroupNames" :key="name" style="margin-right:4px;">
@@ -432,6 +686,28 @@
           <el-descriptions-item label="创建时间">{{ viewDialog.data.createTime }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ viewDialog.data.updateTime }}</el-descriptions-item>
         </el-descriptions>
+
+        <!-- 约束规则 -->
+        <template v-if="viewDialog.rules && viewDialog.rules.length > 0">
+          <el-divider />
+          <h4>约束规则</h4>
+          <el-table :data="viewDialog.rules" border size="small">
+            <el-table-column prop="name" label="规则名称" width="150" />
+            <el-table-column prop="expression" label="表达式" min-width="250">
+              <template slot-scope="scope">
+                <code>{{ scope.row.expression }}</code>
+              </template>
+            </el-table-column>
+            <el-table-column prop="severity" label="严重程度" width="100">
+              <template slot-scope="scope">
+                <el-tag :type="scope.row.severity === 'error' ? 'danger' : 'warning'" size="small">
+                  {{ scope.row.severity === 'error' ? '错误' : '警告' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="errorMessage" label="提示信息" min-width="200" />
+          </el-table>
+        </template>
 
         <el-divider />
         <h4>表单字段</h4>
@@ -457,6 +733,12 @@
         <h4>作业步骤</h4>
         <el-table :data="viewDialog.steps" border size="small">
           <el-table-column prop="name" label="步骤名称" width="150" />
+          <el-table-column prop="apiName" label="API" width="150">
+            <template slot-scope="scope">
+              <el-tag v-if="scope.row.apiName" size="small" type="info">{{ scope.row.apiName }}</el-tag>
+              <span v-else>-</span>
+            </template>
+          </el-table-column>
           <el-table-column prop="description" label="描述" min-width="200" />
           <el-table-column prop="estimatedTime" label="预估(分钟)" width="100" align="center" />
         </el-table>
@@ -473,11 +755,12 @@ import {
   getTemplate,
   delTemplate,
   banTemplate,
-  resumeTemplate,
-  listOperation,
-  getOperation
+  resumeTemplate
 } from '@/api/taskmgt/taskmgt'
 import { listGroups } from '@/api/system/robots'
+import { listAppLibrary, getAppLibrary } from '@/api/app/app'
+import { listAppApi } from '@/api/app/app'
+import { listAppParam } from '@/api/app/app'
 import debounce from 'lodash/debounce'
 
 export default {
@@ -489,6 +772,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         name: undefined,
+        appId: undefined,
         robotGroupIds: [],
         status: undefined
       },
@@ -496,26 +780,34 @@ export default {
       templateList: [],
       total: 0,
       robotGroupOptions: [],
+      // 应用列表
+      appList: [],
       // 表单对话框
       dialog: {
         visible: false,
-        title: ''
+        title: '',
+        mode: 'create'
       },
-      // 操作列表
-      operationList: [],
-      operationMap: {},  // id -> operation 的映射
+      // 当前选中的应用的API和参数
+      currentAppApis: [],
+      currentAppParams: [],
+      currentAppName: '',
+      currentAppObj: null,
       // 表单数据
       form: {
         id: null,
         name: '',
+        appId: null,
         description: '',
         robotGroupIds: [],
         fields: [],
+        rules: [],
         steps: []
       },
       rules: {
-        name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }],
-        robotGroupIds: [{ required: true, message: '请选择适用机器人组', trigger: 'change' }]
+        name: [{required: true, message: '请输入模板名称', trigger: 'blur'}],
+        appId: [{required: true, message: '请选择所属应用', trigger: 'change'}],
+        robotGroupIds: [{required: true, message: '请选择适用机器人组', trigger: 'change'}]
       },
       submitLoading: false,
       // 查看详情对话框
@@ -523,7 +815,8 @@ export default {
         visible: false,
         data: null,
         fields: [],
-        steps: []
+        steps: [],
+        rules: []
       }
     }
   },
@@ -534,66 +827,149 @@ export default {
   },
   created() {
     this.getRobotGroups()
+    this.getAppList()
     this.getList()
     this.debouncedQuery = debounce(this.handleQuery, 500)
-    this.getOperationList()
   },
   beforeDestroy() {
     this.debouncedQuery.cancel()
   },
   methods: {
-    // 获取操作列表
-    async getOperationList() {
+    // 获取应用列表
+    async getAppList() {
       try {
-        const res = await listOperation()
-        this.operationList = res.data || []
-        // 构建映射
-        this.operationMap = {}
-        this.operationList.forEach(op => {
-          this.operationMap[op.id] = op
-        })
+        const res = await listAppLibrary({pageSize: 1000, enabled: 1})
+        this.appList = res.rows || []
       } catch (error) {
-        console.error('获取操作列表失败', error)
-        // 使用模拟数据
-        this.operationList = [
-          { id: 1001, name: '移动到点', type: 'HTTP', description: '控制机器人移动到指定坐标' },
-          { id: 1002, name: '机械臂抓取', type: 'SDK', description: '控制机械臂抓取物体' },
-          { id: 1003, name: '视觉识别', type: 'HTTP', description: '调用摄像头识别目标' }
-        ]
-        this.operationMap = {
-          1001: this.operationList[0],
-          1002: this.operationList[1],
-          1003: this.operationList[2]
-        }
+        console.error('获取应用列表失败', error)
+        this.$message.error('获取应用列表失败')
       }
     },
 
-    // 获取操作详情
-    getOperation(id) {
-      return this.operationMap[id]
+    // 应用选择变更
+    async onAppChange(appId) {
+      if (!appId) {
+        this.currentAppApis = []
+        this.currentAppParams = []
+        this.currentAppName = ''
+        this.currentAppObj = null
+        return
+      }
+
+      try {
+        const res = await getAppLibrary(appId)
+        this.currentAppObj = res.data
+        this.currentAppName = res.data ? res.data.appName : ''
+        const appIdStr = res.data ? res.data.appId : ''
+
+        const apiRes = await listAppApi({appId: appIdStr, pageSize: 1000})
+        this.currentAppApis = apiRes.rows || []
+
+        const paramRes = await listAppParam({appId: appIdStr, pageSize: 1000})
+        this.currentAppParams = paramRes.rows || []
+
+        if (this.dialog.mode === 'create') {
+          this.form.steps.forEach(step => {
+            step.apiId = null
+            step.paramMappings = []
+          })
+        }
+      } catch (error) {
+        console.error('加载应用详情失败', error)
+        this.$message.error('加载应用信息失败')
+      }
     },
 
-    // 操作变更时初始化参数映射
-    onOperationChange(step) {
-      const operation = this.getOperation(step.operationId)
-      if (!operation || !operation.params) {
+    // 获取API详情
+    getApi(apiId) {
+      return this.currentAppApis.find(api => api.id === apiId)
+    },
+
+    // API选择变更
+    onApiChange(step) {
+      const api = this.getApi(step.apiId)
+      if (!api || !api.paramsSchema) {
         step.paramMappings = []
         return
       }
 
-      // 根据操作参数定义，初始化参数映射配置
-      step.paramMappings = operation.params.map(param => ({
-        paramName: param.name,
-        paramLabel: param.label,
-        paramType: param.type,
-        required: param.required,
-        options: param.options || [],
-        description: param.description,
-        // 智能默认值：如果是field_ref类型，默认选择表单字段模式
-        sourceType: param.type === 'field_ref' ? 'field' : 'fixed',
-        sourceValue: param.type === 'field_ref' ? '' : (param.defaultValue || '')
-      }))
+      try {
+        const schema = JSON.parse(api.paramsSchema)
+        let params = []
+        if (Array.isArray(schema)) {
+          params = schema
+        } else if (typeof schema === 'object') {
+          params = Object.keys(schema).map(key => ({
+            name: key,
+            label: schema[key].label || key,
+            type: schema[key].type || 'string',
+            required: schema[key].required || false
+          }))
+        }
+
+        step.paramMappings = params.map(param => ({
+          paramName: param.name || param.paramName || param.key,
+          paramLabel: param.label || param.paramName || param.name,
+          paramType: param.type || param.paramType || 'string',
+          required: param.required || false,
+          sourceType: 'field',
+          sourceValue: ''
+        }))
+      } catch (e) {
+        console.warn('解析paramsSchema失败', e)
+        step.paramMappings = []
+      }
     },
+
+    // 约束规则相关方法
+    addRule() {
+      this.form.rules.push({
+        name: '',
+        expression: '',
+        errorMessage: '',
+        severity: 'error',
+        leftType: 'form_field',
+        leftValue: '',
+        operator: '<=',
+        rightType: 'fixed',
+        rightValue: ''
+      })
+    },
+
+    removeRule(index) {
+      this.form.rules.splice(index, 1)
+    },
+
+    onRuleLeftChange(rule) {
+      rule.leftValue = ''
+    },
+
+    getRuleExpression(rule) {
+      if (!rule.leftValue || !rule.operator) return ''
+
+      const leftPrefix = rule.leftType === 'form_field' ? 'form_data' : 'app_param'
+      const leftExpr = `${leftPrefix}.${rule.leftValue}`
+
+      let rightExpr = ''
+      if (rule.rightType === 'fixed') {
+        rightExpr = rule.rightValue || ''
+      } else if (rule.rightType === 'form_field') {
+        rightExpr = rule.rightValue ? `form_data.${rule.rightValue}` : ''
+      } else if (rule.rightType === 'app_param') {
+        rightExpr = rule.rightValue ? `app_param.${rule.rightValue}` : ''
+      }
+
+      if (!rightExpr) return ''
+
+      return `${leftExpr} ${rule.operator} ${rightExpr}`
+    },
+
+    buildRuleExpression(rule) {
+      const expr = this.getRuleExpression(rule)
+      rule.expression = expr
+      return expr
+    },
+
     // 确保数组
     ensureArray(ids) {
       if (!ids) return []
@@ -601,6 +977,7 @@ export default {
       if (typeof ids === 'string') return ids.split(',').map(s => Number(s.trim()))
       return [ids]
     },
+
     // 获取机器人组
     async getRobotGroups() {
       try {
@@ -611,17 +988,17 @@ export default {
         console.error(error)
       }
     },
+
     // 获取模板列表
     async getList() {
       this.loading = true
       try {
-        const params = { ...this.queryParams }
+        const params = {...this.queryParams}
         if (params.robotGroupIds && params.robotGroupIds.length) {
           params.robotGroupIds = params.robotGroupIds.join(',')
         }
         const res = await listTemplate(params)
         this.templateList = (res.rows || []).map(tpl => {
-          // 解析 robotGroupIds
           let robotGroupIds = []
           if (tpl.robotGroupIds) {
             if (Array.isArray(tpl.robotGroupIds)) {
@@ -630,7 +1007,6 @@ export default {
               robotGroupIds = tpl.robotGroupIds.split(',').map(s => Number(s.trim()))
             }
           }
-          // 优先使用后端返回的 robotGroupNames
           let robotGroupNames = tpl.robotGroupNames && Array.isArray(tpl.robotGroupNames)
             ? tpl.robotGroupNames
             : robotGroupIds.map(id => {
@@ -638,8 +1014,7 @@ export default {
               return group ? group.name : id
             })
 
-          // 解析 formContent 和 workflow
-          let fields = [], steps = []
+          let fields = [], steps = [], rules = []
           try {
             if (tpl.formContent) {
               const content = JSON.parse(tpl.formContent)
@@ -649,10 +1024,15 @@ export default {
               const wf = JSON.parse(tpl.workflow)
               steps = wf.steps || []
             }
+            rules = tpl.rules || []
           } catch (e) {
             console.warn('解析模板内容失败', e)
           }
-          return { ...tpl, robotGroupIds, robotGroupNames, _fields: fields, _steps: steps }
+
+          const app = this.appList.find(a => a.id === tpl.appId)
+          const appName = tpl.appName || (app ? app.appName : '')
+
+          return {...tpl, robotGroupIds, robotGroupNames, appName, _fields: fields, _steps: steps, _rules: rules}
         })
         this.total = res.total || 0
       } catch (error) {
@@ -661,24 +1041,24 @@ export default {
         this.loading = false
       }
     },
+
     handleQuery() {
       this.queryParams.pageNum = 1
       this.getList()
     },
-    // 获取机器人组名称
-    getRobotGroupName(groupId) {
-      const group = this.robotGroupOptions.find(g => g.id === groupId)
-      return group ? group.name : groupId
+
+    getRuleCount(row) {
+      return row._rules ? row._rules.length : 0
     },
-    // 解析字段数量
+
     getFieldCount(row) {
       return row._fields ? row._fields.length : 0
     },
-    // 解析步骤数量
+
     getStepCount(row) {
       return row._steps ? row._steps.length : 0
     },
-    // 字段类型文本
+
     getFieldTypeText(type) {
       const map = {
         'text': '文本',
@@ -694,102 +1074,155 @@ export default {
       }
       return map[type] || type
     },
-    // 重置表单
+
     resetForm() {
       this.form = {
         id: null,
         name: '',
+        appId: null,
         description: '',
         robotGroupIds: [...this.allGroupIds],
         fields: [],
+        rules: [],
         steps: []
       }
+      this.currentAppApis = []
+      this.currentAppParams = []
+      this.currentAppName = ''
+      this.currentAppObj = null
       if (this.$refs.formRef) {
         this.$refs.formRef.resetFields()
       }
     },
-    // 新增模板
+
     handleAdd() {
+      this.dialog.mode = 'create'
       this.dialog.title = '新增模板'
       this.resetForm()
       this.dialog.visible = true
     },
-    // 编辑模板 - 调用getTemplate API获取完整数据，不只读取表格
-    // async handleEdit(row) {
-    //   // 严格校验 ID 是否存在且有效
-    //   if (!row || !row.id) {
-    //     this.$message.error('模板ID无效，无法编辑')
-    //     return
-    //   }
-    //
-    //   const templateId = Number(row.id)
-    //   if (isNaN(templateId) || templateId <= 0) {
-    //     this.$message.error('模板ID格式错误，无法编辑')
-    //     return
-    //   }
-    //
-    //   this.dialog.title = '修改模板'
-    //   this.submitLoading = true
-    //
-    //   try {
-    //     // 调用API获取最新数据，而不是直接使用表格数据
-    //     const res = await getTemplate(templateId)
-    //     const data = res.data
-    //
-    //     console.log('获取模板详情：', data)
-    //
-    //     // 校验返回数据是否有有效ID
-    //     if (!data || !data.id) {
-    //       this.$message.error('获取模板详情失败：返回数据无效')
-    //       return
-    //     }
-    //
-    //     // 解析表单字段
-    //     let fields = []
-    //     if (data.formContent) {
-    //       try {
-    //         const content = JSON.parse(data.formContent)
-    //         fields = content.fields || []
-    //       } catch (e) {
-    //         console.warn('解析formContent失败', e)
-    //       }
-    //     }
-    //
-    //     // 解析工作流步骤
-    //     let steps = []
-    //     if (data.workflow) {
-    //       try {
-    //         const wf = JSON.parse(data.workflow)
-    //         steps = wf.steps || []
-    //       } catch (e) {
-    //         console.warn('解析workflow失败', e)
-    //       }
-    //     }
 
-    //    // 设置表单数据 - 确保ID是数字
-    //     this.form = {
-    //       id: Number(data.id),
-    //       name: data.name || '',
-    //       description: data.description || '',
-    //       robotGroupIds: this.ensureArray(data.robotGroupIds),
-    //       fields: fields,
-    //       steps: steps
-    //     }
-    //
-    //     console.log('编辑表单数据：', this.form)
-    //     this.dialog.visible = true
-    //   } catch (error) {
-    //     this.$message.error('获取模板详情失败：' + (error.response?.data?.msg || error.message))
-    //   } finally {
-    //     this.submitLoading = false
-    //   }
-    // },
-    // 取消对话框
+    async handleEdit(row) {
+      if (!row || !row.id) {
+        this.$message.error('模板ID无效')
+        return
+      }
+
+      this.dialog.mode = 'edit'
+      this.dialog.title = '修改模板'
+      this.submitLoading = true
+
+      try {
+        const res = await getTemplate(row.id)
+        const data = res.data
+
+        let fields = []
+        if (data.formContent) {
+          try {
+            const content = JSON.parse(data.formContent)
+            fields = content.fields || []
+          } catch (e) {
+            console.warn('解析formContent失败', e)
+          }
+        }
+
+        let steps = []
+        if (data.workflow) {
+          try {
+            const wf = JSON.parse(data.workflow)
+            steps = (wf.steps || []).map(step => ({
+              name: step.name,
+              description: step.description,
+              estimatedTime: step.estimatedTime || 5,
+              apiId: step.apiId,
+              paramMappings: step.paramMapping || []
+            }))
+          } catch (e) {
+            console.warn('解析workflow失败', e)
+          }
+        }
+
+        // 解析约束规则
+        let rules = []
+        if (data.rules && Array.isArray(data.rules)) {
+          rules = data.rules.map(rule => {
+            // 尝试解析已有的expression（如果前端配置丢失了）
+            if (rule.expression && !rule.leftValue) {
+              // 简单解析：form_data.X <= app_param.Y 或 form_data.X <= 100
+              const match = rule.expression.match(/(form_data|app_param)\.(\w+)\s*(<=|>=|<|>|==|!=)\s*(.+)/)
+              if (match) {
+                const [, leftPrefix, leftVal, operator, rightPart] = match
+                rule.leftType = leftPrefix === 'form_data' ? 'form_field' : 'app_param'
+                rule.leftValue = leftVal
+                rule.operator = operator
+
+                // 解析右侧
+                const rightMatch = rightPart.match(/(form_data|app_param)\.(\w+)/)
+                if (rightMatch) {
+                  rule.rightType = rightMatch[1] === 'form_data' ? 'form_field' : 'app_param'
+                  rule.rightValue = rightMatch[2]
+                } else {
+                  rule.rightType = 'fixed'
+                  rule.rightValue = rightPart.trim()
+                }
+              }
+            }
+            return {
+              name: rule.name || '',
+              expression: rule.expression || '',
+              errorMessage: rule.errorMessage || '',
+              severity: rule.severity || 'error',
+              leftType: rule.leftType || 'form_field',
+              leftValue: rule.leftValue || '',
+              operator: rule.operator || '<=',
+              rightType: rule.rightType || 'fixed',
+              rightValue: rule.rightValue || ''
+            }
+          })
+        }
+
+        this.form = {
+          id: Number(data.id),
+          name: data.name || '',
+          appId: data.appId || null,
+          description: data.description || '',
+          robotGroupIds: this.ensureArray(data.robotGroupIds),
+          fields: fields,
+          rules: rules,
+          steps: steps
+        }
+
+        if (this.form.appId) {
+          await this.onAppChange(this.form.appId)
+
+          for (const step of this.form.steps) {
+            if (step.apiId) {
+              const oldMappings = step.paramMappings || []
+              this.onApiChange(step)
+              step.paramMappings.forEach(newMapping => {
+                const oldMapping = oldMappings.find(o => o.paramName === newMapping.paramName)
+                if (oldMapping) {
+                  newMapping.sourceType = oldMapping.sourceType
+                  newMapping.sourceValue = oldMapping.sourceValue
+                }
+              })
+            }
+          }
+        }
+
+        this.dialog.visible = true
+      } catch (error) {
+        this.$message.error('获取模板详情失败')
+      } finally {
+        this.submitLoading = false
+      }
+    },
+
     cancel() {
       this.dialog.visible = false
       this.resetForm()
     },
-    // 添加字段
+
     addField() {
       this.form.fields.push({
         id: '',
@@ -801,23 +1234,29 @@ export default {
         accept: []
       })
     },
+
     removeField(index) {
       this.form.fields.splice(index, 1)
     },
+
     addStep() {
+      if (!this.form.appId) {
+        this.$message.warning('请先选择所属应用')
+        return
+      }
       this.form.steps.push({
         name: '',
         description: '',
         estimatedTime: 5,
-        operationId: null,        // 新增：操作ID
-        paramMappings: []         // 新增：参数映射配置
+        apiId: null,
+        paramMappings: []
       })
     },
 
     removeStep(index) {
       this.form.steps.splice(index, 1)
     },
-    // 提交表单
+
     submitForm() {
       this.$refs.formRef.validate(async (valid) => {
         if (!valid) return
@@ -826,41 +1265,69 @@ export default {
         for (let i = 0; i < this.form.steps.length; i++) {
           const step = this.form.steps[i]
           if (!step.name) {
-            this.$message.error(`第${i+1}步：请填写步骤名称`)
+            this.$message.error(`第${i + 1}步：请填写步骤名称`)
             return
           }
-          if (step.operationId && step.paramMappings) {
-            // 验证必填参数
+          if (!step.apiId) {
+            this.$message.error(`第${i + 1}步 [${step.name}]：请选择API`)
+            return
+          }
+          if (step.paramMappings) {
             for (const mapping of step.paramMappings) {
               if (mapping.required && !mapping.sourceValue) {
-                this.$message.error(`第${i+1}步 [${step.name}]：参数"${mapping.paramLabel}"必填`)
+                this.$message.error(`第${i + 1}步 [${step.name}]：参数"${mapping.paramLabel || mapping.paramName}"必填`)
                 return
               }
             }
           }
         }
 
+        // 验证并构建约束规则
+        const rulesForSubmit = []
+        for (let i = 0; i < this.form.rules.length; i++) {
+          const rule = this.form.rules[i]
+          if (!rule.name) {
+            this.$message.error(`第${i + 1}条约束规则：请填写规则名称`)
+            return
+          }
+          const expr = this.buildRuleExpression(rule)
+          if (!expr) {
+            this.$message.error(`第${i + 1}条约束规则 [${rule.name}]：请完善表达式配置`)
+            return
+          }
+          if (!rule.errorMessage) {
+            this.$message.error(`第${i + 1}条约束规则 [${rule.name}]：请填写错误提示信息`)
+            return
+          }
+          rulesForSubmit.push({
+            name: rule.name,
+            expression: expr,
+            errorMessage: rule.errorMessage,
+            severity: rule.severity
+          })
+        }
+
         this.submitLoading = true
         try {
-          // 构建提交数据
           const stepsForSubmit = this.form.steps.map(step => ({
             name: step.name,
             description: step.description,
             estimatedTime: step.estimatedTime,
-            operationId: step.operationId,
-            // 参数映射配置单独存储，用于后续生成operationJson
+            apiId: step.apiId,
             paramMapping: step.paramMappings
           }))
 
           const dto = {
             name: this.form.name,
             description: this.form.description,
+            appId: this.form.appId,
             robotGroupIds: this.form.robotGroupIds,
-            formContent: JSON.stringify({ fields: this.form.fields }),
-            workflow: JSON.stringify({ steps: stepsForSubmit })  // 包含operation配置
+            formContent: JSON.stringify({fields: this.form.fields}),
+            workflow: JSON.stringify({steps: stepsForSubmit}),
+            rules: rulesForSubmit
           }
 
-          if (this.dialog.title === '修改模板') {
+          if (this.dialog.mode === 'edit') {
             await updateTemplate(this.form.id, dto)
             this.$message.success('修改成功')
           } else {
@@ -877,102 +1344,46 @@ export default {
       })
     },
 
-    // ========== 修改：编辑时解析步骤 ==========
-
-    async handleEdit(row) {
-      if (!row || !row.id) {
-        this.$message.error('模板ID无效')
-        return
-      }
-
-      this.dialog.title = '修改模板'
-      this.submitLoading = true
-
+    async handleView(row) {
       try {
         const res = await getTemplate(row.id)
         const data = res.data
 
-        // 解析表单字段
-        let fields = []
-        if (data.formContent) {
-          try {
-            const content = JSON.parse(data.formContent)
-            fields = content.fields || []
-          } catch (e) {
-            console.warn('解析formContent失败', e)
-          }
-        }
+        const app = this.appList.find(a => a.id === data.appId)
+        data.appName = data.appName || (app ? app.appName : '')
 
-        // 解析工作流步骤（包含operation配置）
-        let steps = []
-        if (data.workflow) {
-          try {
-            const wf = JSON.parse(data.workflow)
-            steps = (wf.steps || []).map(step => ({
-              name: step.name,
-              description: step.description,
-              estimatedTime: step.estimatedTime || 5,
-              operationId: step.operationId,
-              // 解析参数映射
-              paramMappings: step.paramMapping || []
-            }))
+        this.viewDialog.data = data
 
-            // 如果有operationId但没有paramMappings，尝试重新加载
-            for (const step of steps) {
-              if (step.operationId && (!step.paramMappings || step.paramMappings.length === 0)) {
-                this.onOperationChange(step)
-              }
-            }
-          } catch (e) {
-            console.warn('解析workflow失败', e)
-          }
-        }
-
-        this.form = {
-          id: Number(data.id),
-          name: data.name || '',
-          description: data.description || '',
-          robotGroupIds: this.ensureArray(data.robotGroupIds),
-          fields: fields,
-          steps: steps
-        }
-
-        this.dialog.visible = true
-      } catch (error) {
-        this.$message.error('获取模板详情失败')
-      } finally {
-        this.submitLoading = false
-      }
-    },
-    // 查看详情
-    async handleView(row) {
-      try {
-        const res = await getTemplate(row.id)
-        this.viewDialog.data = res.data
-        // 解析字段和步骤
         try {
-          if (res.data.formContent) {
-            const content = JSON.parse(res.data.formContent)
+          if (data.formContent) {
+            const content = JSON.parse(data.formContent)
             this.viewDialog.fields = content.fields || []
           } else {
             this.viewDialog.fields = []
           }
-          if (res.data.workflow) {
-            const wf = JSON.parse(res.data.workflow)
+          if (data.workflow) {
+            const wf = JSON.parse(data.workflow)
             this.viewDialog.steps = wf.steps || []
+            for (const step of this.viewDialog.steps) {
+              if (step.apiId) {
+                step.apiName = step.apiName || `API(${step.apiId})`
+              }
+            }
           } else {
             this.viewDialog.steps = []
           }
+          this.viewDialog.rules = data.rules || []
         } catch (e) {
           this.viewDialog.fields = []
           this.viewDialog.steps = []
+          this.viewDialog.rules = []
         }
         this.viewDialog.visible = true
       } catch (error) {
         this.$message.error('获取详情失败')
       }
     },
-    // 删除
+
     handleDelete(row) {
       this.$confirm('确认删除该模板吗？', '警告', {
         confirmButtonText: '确定',
@@ -985,7 +1396,7 @@ export default {
       }).catch(() => {
       })
     },
-    // 禁用
+
     handleBan(row) {
       this.$confirm('禁用后，基于此模板的任务将无法创建，确定禁用吗？', '警告', {
         confirmButtonText: '确定',
@@ -998,7 +1409,7 @@ export default {
       }).catch(() => {
       })
     },
-    // 恢复
+
     handleResume(row) {
       this.$confirm('确定恢复该模板吗？', '提示', {
         confirmButtonText: '确定',
@@ -1034,7 +1445,7 @@ export default {
   align-items: center;
 }
 
-.fields-container, .steps-container {
+.fields-container, .steps-container, .rules-container {
   border: 1px dashed #dcdfe6;
   border-radius: 4px;
   padding: 15px;
@@ -1042,7 +1453,7 @@ export default {
   margin-bottom: 20px;
 }
 
-.field-item, .step-item {
+.field-item, .step-item, .rule-item {
   background: white;
   padding: 10px;
   border-radius: 4px;
@@ -1067,23 +1478,18 @@ export default {
 .el-button [class*="fas"] {
   font-size: 14px;
 }
+
 .el-table .cell .el-button + .el-button {
   margin-left: 4px;
 }
-.step-tip {
+
+.step-tip, .rules-tip {
   font-size: 13px;
   color: #606266;
   line-height: 1.5;
   margin-bottom: 5px;
 }
-.step-tip code {
-  background: #f4f4f5;
-  padding: 1px 4px;
-  border-radius: 3px;
-  color: #409eff;
-  font-family: monospace;
-  font-weight: bold;
-}
+
 /* 新增样式 */
 .compact-form-item {
   margin-bottom: 0;
@@ -1099,7 +1505,7 @@ export default {
   font-size: 13px;
 }
 
-.param-mapping-section {
+.param-mapping-section, .expression-builder {
   background: #fafafa;
   border: 1px dashed #dcdfe6;
   border-radius: 4px;
@@ -1107,7 +1513,7 @@ export default {
   margin-top: 10px;
 }
 
-.section-title {
+.section-title, .section-subtitle {
   font-size: 13px;
   font-weight: bold;
   color: #606266;
@@ -1116,11 +1522,41 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.step-item {
+.section-subtitle {
+  font-size: 12px;
+  color: #909399;
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+
+.step-item, .rule-item {
   margin-bottom: 15px;
 }
 
-.step-item:last-child {
+.step-item:last-child, .rule-item:last-child {
   margin-bottom: 0;
+}
+
+.app-params-container {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 15px;
+  background: #f5f7fa;
+  margin-bottom: 20px;
+}
+
+.expression-preview {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.expression-preview code {
+  color: #409eff;
+  font-weight: bold;
+  margin-left: 5px;
 }
 </style>

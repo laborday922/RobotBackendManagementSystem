@@ -41,6 +41,8 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     /** 具体描述 */
     private String description;
 
+    private Integer estimatedTime;
+
     /** 步骤状态（0未开始 1进行中 2已完成 3已暂停 4已终止） */
     private Byte status;
 

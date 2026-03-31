@@ -437,9 +437,9 @@ import {
 import { listRobots, listGroups } from '@/api/system/robots'
 import { getToken } from '@/utils/auth'
 import debounce from 'lodash/debounce'
-import StepPreview from './components/StepPreview'
-import DynamicFormFields from './components/DynamicFormFields'
-import TaskDetail from './components/TaskDetail'
+import StepPreview from '../components/StepPreview'
+import DynamicFormFields from '../components/DynamicFormFields'
+import TaskDetail from '../components/TaskDetail'
 
 export default {
   name: 'TaskList',

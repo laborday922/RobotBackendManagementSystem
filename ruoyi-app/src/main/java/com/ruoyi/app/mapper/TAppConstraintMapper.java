@@ -2,6 +2,7 @@ package com.ruoyi.app.mapper;
 
 import java.util.List;
 import com.ruoyi.app.domain.TAppConstraint;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 应用级约束规则Mapper接口
@@ -9,6 +10,7 @@ import com.ruoyi.app.domain.TAppConstraint;
  * @author xiaocai
  * @date 2026-03-28
  */
+@Mapper
 public interface TAppConstraintMapper 
 {
     /**

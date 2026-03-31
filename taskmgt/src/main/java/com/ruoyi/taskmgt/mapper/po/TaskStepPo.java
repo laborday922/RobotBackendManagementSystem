@@ -51,6 +51,8 @@ public class TaskStepPo extends BaseEntity {
     @Column(columnDefinition = "text")
     private String operationJson;
 
+    private Integer estimatedTime;
+
     private String traceId;
     private String resultData;
     private String errorMsg;

@@ -97,17 +97,7 @@ public class StepReuseService {
         return redisKeys;
     }
 
-    public List<TaskStep> insertSteps(Template template, String formData, Map<String, Object> appParams) {
-        Map<String, Object> formDataMap;
-        if (StringUtils.hasText(formData)) {
-            try {
-                formDataMap = objectMapper.readValue(formData, new TypeReference<Map<String, Object>>() {});
-            } catch (Exception e) {
-                throw new TaskmgtException(ReturnNo.FIELD_NOTVALID,new Object[]{},"表单数据格式错误");
-            }
-        } else {
-            formDataMap = Collections.emptyMap();
-        }
+    public List<TaskStep> insertSteps(Template template, Map<String, Object> formDataMap, Map<String, Object> appParams) {
         List<TaskStepDefinition> stepDefs = template.getStepDefinitions();
         List<TaskStep> steps = new ArrayList<>();
         for (int i = 0; i < stepDefs.size(); i++) {

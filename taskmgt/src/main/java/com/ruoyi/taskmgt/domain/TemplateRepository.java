@@ -1,5 +1,7 @@
 package com.ruoyi.taskmgt.domain;
 
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.mapper.TAppConstraintMapper;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
@@ -30,11 +32,13 @@ public class TemplateRepository {
     private final RedisCache redisUtil;
     private final TemplatePoMapper templatePoMapper;
     private final MessageSourceAccessor messageSourceAccessor;
+    private final TAppConstraintMapper appConstraintMapper;
 
-    public TemplateRepository(RedisCache redisUtil, TemplatePoMapper templatePoMapper, MessageSourceAccessor messageSourceAccessor) {
+    public TemplateRepository(RedisCache redisUtil, TemplatePoMapper templatePoMapper, MessageSourceAccessor messageSourceAccessor, TAppConstraintMapper appConstraintMapper) {
         this.redisUtil = redisUtil;
         this.templatePoMapper = templatePoMapper;
         this.messageSourceAccessor = messageSourceAccessor;
+        this.appConstraintMapper = appConstraintMapper;
     }
 
     /**
@@ -61,6 +65,12 @@ public class TemplateRepository {
         if (Objects.nonNull(po)) {
             Template bo = CloneFactory.copy(new Template(), po);
             bo.setRobotGroupIds(stringToList(po.getRobotGroupId()));
+            bo.setRuleIds(stringToList(po.getRule()));
+            List<TAppConstraint> rules = new ArrayList<>();
+            for(Long id : bo.getRuleIds()){
+                rules.add(this.appConstraintMapper.selectTAppConstraintById(id));
+            }
+            bo.setRules(rules);
             redisKey.ifPresent(key -> this.redisUtil.setCacheObject(key, bo));
             return this.build(bo);
         }
@@ -98,6 +108,7 @@ public class TemplateRepository {
         template.setId(null);
         TemplatePo templatePo = CloneFactory.copyNotNull(new TemplatePo(), template);
         templatePo.setRobotGroupId(listToString(template.getRobotGroupIds()));
+        templatePo.setRule(listToString(template.getRuleIds()));
         templatePo.setCreateTime(new Date());
         templatePo.setCreateBy(SecurityUtils.getUsername());
         try {
@@ -127,7 +138,8 @@ public class TemplateRepository {
         TemplatePo newPo = CloneFactory.copyNotNull(oldPo, template);
         newPo.setUpdateTime(new Date());
         newPo.setUpdateBy(SecurityUtils.getUsername());
-        newPo.setRobotGroupId(listToString(template.getRobotGroupIds()));
+        if(StringUtils.isNotNull(template.getRobotGroupIds()))newPo.setRobotGroupId(listToString(template.getRobotGroupIds()));
+        if(StringUtils.isNotNull(template.getRuleIds()))newPo.setRule(listToString(template.getRuleIds()));
         try {
             this.templatePoMapper.save(newPo);
         } catch (DataIntegrityViolationException e) {

@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.service.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ruoyi.app.domain.TAppConstraint;
 import com.ruoyi.common.clonefactory.CopyFrom;
 import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.taskmgt.domain.bo.Template;
@@ -36,4 +37,5 @@ public class TemplateVo {
     private Date createTime;
     private Date updateTime;
     private List<String> robotGroupNames;
+    private List<TAppConstraint> rules;
 }

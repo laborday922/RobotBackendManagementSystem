@@ -1,5 +1,8 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.domain.TAppLibrary;
+import com.ruoyi.app.service.ITAppConstraintService;
 import com.ruoyi.app.service.ITAppLibraryService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
@@ -34,10 +37,20 @@ public class TemplateServiceImpl implements ITemplateService {
     private final RedisCache redisUtil;
     private final IRobotGroupsService robotGroupsService;
     private final ITAppLibraryService appLibraryService;
+    private final ITAppConstraintService appConstraintService;
 
     @Override
     public TemplateVo createTemplate(Template template) {
+        TAppLibrary app = this.appLibraryService.selectTAppLibraryById(template.getAppId());
         template.setStatus(Template.ENABLED);
+        List<Long>ruleIds = new ArrayList<>();
+        for(TAppConstraint rule:template.getRules()){
+            rule.setAppId(app.getAppId());
+            this.appConstraintService.insertTAppConstraint(rule);
+            List<Long> id = this.appConstraintService.selectTAppConstraintList(rule).stream().map(TAppConstraint::getId).toList();
+            if(StringUtils.isNotEmpty(id))ruleIds.addAll(id);
+        }
+        template.setRuleIds(ruleIds);
         Template newTemplate = templateRepository.insert(template);
         return CloneFactory.copy(new TemplateVo(), newTemplate);
     }
@@ -57,6 +70,13 @@ public class TemplateServiceImpl implements ITemplateService {
             throw new TaskmgtException(ReturnNo.STATENOTALLOW, args,
                     messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
         }
+        List<Long>ruleIds = new ArrayList<>();
+        for(TAppConstraint rule:template.getRules()){
+            this.appConstraintService.updateTAppConstraint(rule);
+            List<Long> id = this.appConstraintService.selectTAppConstraintList(rule).stream().map(TAppConstraint::getId).toList();
+            if(StringUtils.isNotEmpty(id))ruleIds.addAll(id);
+        }
+        template.setRuleIds(ruleIds);
         List<String> redisKeys = templateRepository.update(template);
         redisUtil.deleteObject(redisKeys);
     }
@@ -74,6 +94,11 @@ public class TemplateServiceImpl implements ITemplateService {
                     id.toString(), template.getStatus().toString()};
             throw new TaskmgtException(ReturnNo.STATENOTALLOW, args,
                     messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
+        }
+        if(StringUtils.isNotEmpty(template.getRuleIds())){
+            for (Long ruleId : template.getRuleIds()){
+                this.appConstraintService.deleteTAppConstraintById(ruleId);
+            }
         }
         List<String> redisKeys = updateTemplateStatus(template, Template.DELETED);
         redisUtil.deleteObject(redisKeys);

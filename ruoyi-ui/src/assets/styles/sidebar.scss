@@ -15,7 +15,7 @@
     -webkit-transition: width .28s;
     transition: width 0.28s;
     width: $base-sidebar-width !important;
-    background-color: $base-menu-background;
+    //background-color: $base-menu-background;
     height: 100%;
     position: fixed;
     font-size: 0px;
@@ -68,6 +68,7 @@
       border: none;
       height: 100%;
       width: 100% !important;
+      background-color: transparent !important;
     }
 
     .el-menu-item, .el-submenu__title {
@@ -80,7 +81,7 @@
     .submenu-title-noDropdown,
     .el-submenu__title {
       &:hover {
-        background-color: rgba(0, 0, 0, 0.06) !important;
+        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
       }
     }
 
@@ -93,7 +94,7 @@
       min-width: $base-sidebar-width !important;
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.06) !important;
+        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
       }
     }
 
@@ -102,7 +103,7 @@
       background-color: $base-sub-menu-background !important;
 
       &:hover {
-        background-color: $base-sub-menu-hover !important;
+        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
       }
     }
   }

@@ -33,7 +33,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
     
-    <select id="selectRobotsById" parameterType="String" resultMap="RobotsResult">
+    <select id="selectRobotsById" parameterType="Long" resultMap="RobotsResult">
         <include refid="selectRobotsVo"/>
         where id = #{id}
     </select>

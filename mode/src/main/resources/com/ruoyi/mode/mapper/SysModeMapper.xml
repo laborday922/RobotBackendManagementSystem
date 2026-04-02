@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mode.mapper.SysModeMapper">
+
+    <resultMap type="com.ruoyi.mode.domain.SysMode" id="SysModeResult">
+        <id     property="modeId"        column="mode_id"       />
+        <result property="modeName"      column="mode_name"     />
+        <result property="modeType"      column="mode_type"     />
+        <result property="categoryId"    column="category_id"   />
+        <result property="modeColor"     column="mode_color"    />
+        <result property="modeIcon"       column="mode_icon"      />
+        <result property="description"   column="description"   />
+        <result property="enabled"       column="enabled"       />
+        <result property="usageCount"    column="usage_count"   />
+        <result property="robotCount"    column="robot_count"   />
+        <result property="orderNum"      column="order_num"     />
+        <result property="delFlag"       column="del_flag"      />
+        <result property="createBy"      column="create_by"     />
+        <result property="createTime"    column="create_time"   />
+        <result property="updateBy"      column="update_by"     />
+        <result property="updateTime"    column="update_time"   />
+    </resultMap>
+
+    <sql id="selectModeVo">
+        select mode_id, mode_name, mode_type, category_id, mode_color, mode_icon,
+        description, enabled, usage_count, robot_count, order_num, del_flag,
+        create_by, create_time, update_by, update_time
+        from sys_mode
+    </sql>
+
+    <!-- 查询模式列表 - 只查询未删除的数据 -->
+    <select id="selectSysModeList" parameterType="com.ruoyi.mode.domain.SysMode" resultMap="SysModeResult">
+        <include refid="selectModeVo"/>
+        <where>
+            <if test="modeName != null and modeName != ''">
+                AND mode_name like concat('%', #{modeName}, '%')
+            </if>
+            <if test="modeType != null and modeType != ''">
+                AND mode_type = #{modeType}
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="enabled != null and enabled != ''">
+                AND enabled = #{enabled}
+            </if>
+            <!-- 关键：只查询未删除的数据 -->
+            AND del_flag = '0'
+        </where>
+        order by order_num
+    </select>
+
+    <!-- 查询单个模式 - 只查询未删除的数据 -->
+    <select id="selectSysModeById" parameterType="Long" resultMap="SysModeResult">
+        <include refid="selectModeVo"/>
+        where mode_id = #{modeId} and del_flag = '0'
+    </select>
+
+    <!-- 新增模式 -->
+    <insert id="insertSysMode" parameterType="com.ruoyi.mode.domain.SysMode" useGeneratedKeys="true" keyProperty="modeId">
+        insert into sys_mode(
+        <if test="modeName != null and modeName != ''">mode_name,</if>
+        <if test="modeType != null and modeType != ''">mode_type,</if>
+        <if test="categoryId != null">category_id,</if>
+        <if test="modeColor != null and modeColor != ''">mode_color,</if>
+        <if test="modeIcon != null and modeIcon != ''">mode_icon,</if>
+        <if test="description != null and description != ''">description,</if>
+        <if test="enabled != null and enabled != ''">enabled,</if>
+        <if test="usageCount != null">usage_count,</if>
+        <if test="robotCount != null">robot_count,</if>
+        <if test="orderNum != null">order_num,</if>
+        <if test="createBy != null and createBy != ''">create_by,</if>
+        create_time
+        )values(
+        <if test="modeName != null and modeName != ''">#{modeName},</if>
+        <if test="modeType != null and modeType != ''">#{modeType},</if>
+        <if test="categoryId != null">#{categoryId},</if>
+        <if test="modeColor != null and modeColor != ''">#{modeColor},</if>
+        <if test="modeIcon != null and modeIcon != ''">#{modeIcon},</if>
+        <if test="description != null and description != ''">#{description},</if>
+        <if test="enabled != null and enabled != ''">#{enabled},</if>
+        <if test="usageCount != null">#{usageCount},</if>
+        <if test="robotCount != null">#{robotCount},</if>
+        <if test="orderNum != null">#{orderNum},</if>
+        <if test="createBy != null and createBy != ''">#{createBy},</if>
+        sysdate()
+        )
+    </insert>
+
+    <!-- 修改模式 -->
+    <update id="updateSysMode" parameterType="com.ruoyi.mode.domain.SysMode">
+        update sys_mode
+        <set>
+            <if test="modeName != null and modeName != ''">mode_name = #{modeName},</if>
+            <if test="modeType != null and modeType != ''">mode_type = #{modeType},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="modeColor != null and modeColor != ''">mode_color = #{modeColor},</if>
+            <if test="modeIcon != null and modeIcon != ''">mode_icon = #{modeIcon},</if>
+            <if test="description != null and description != ''">description = #{description},</if>
+            <if test="enabled != null and enabled != ''">enabled = #{enabled},</if>
+            <if test="usageCount != null">usage_count = #{usageCount},</if>
+            <if test="robotCount != null">robot_count = #{robotCount},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where mode_id = #{modeId}
+    </update>
+
+    <!-- 逻辑删除单个模式 -->
+    <update id="deleteSysModeById" parameterType="Long">
+        update sys_mode set del_flag = '2' where mode_id = #{modeId}
+    </update>
+
+    <!-- 逻辑删除批量模式 -->
+    <update id="deleteSysModeByIds" parameterType="String">
+        update sys_mode set del_flag = '2' where mode_id in
+        <foreach item="modeId" collection="array" open="(" separator="," close=")">
+            #{modeId}
+        </foreach>
+    </update>
+
+</mapper>

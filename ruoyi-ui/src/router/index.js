@@ -122,6 +122,101 @@ export const constantRoutes = [
     ]
   }
 ]
+ // ========== 模式管理模块 ==========
+  {
+    path: '/mode',
+    component: Layout,
+    redirect: '/mode/quick',
+    name: 'Mode',
+    meta: {
+      title: '模式管理',
+      icon: 'cascader',
+      roles: ['admin']
+    },
+    children: [
+      {
+        path: 'quick',
+        component: () => import('@/views/mode/quick/index'),
+        name: 'Quick',
+        meta: {
+          title: '快捷操作',
+          icon: 'flash',
+          noCache: true
+        }
+      },
+      {
+        path: 'switch',
+        component: () => import('@/views/mode/switch/index'),
+        name: 'Switch',
+        meta: {
+          title: '模式切换',
+          icon: 'exchange',
+          noCache: true
+        }
+      },
+      {
+        path: 'schedule',
+        component: () => import('@/views/mode/schedule/index'),
+        name: 'Schedule',
+        meta: {
+          title: '模式排程',
+          icon: 'date',
+          noCache: true
+        }
+      },
+      {
+        path: 'history',
+        component: () => import('@/views/mode/history/index'),
+        name: 'History',
+        meta: {
+          title: '历史记录',
+          icon: 'history',
+          noCache: true
+        }
+      },
+      {
+        path: 'edit',
+        component: () => import('@/views/mode/mode/index.vue'),
+        name: 'Edit',
+        meta: {
+          title: '编辑模式',
+          icon: 'edit',
+          noCache: true
+        }
+      }
+    ]
+  },
+  {
+    path: '/func',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'FuncManagement',
+    meta: {
+      title: '功能管理',
+      icon: 'clipboard'
+    },
+    children: [
+      {
+        path: 'reception',
+        component: () => import('@/views/func/reception/index.vue'),
+        name: 'Reception',
+        meta: { title: '业务接待', icon: 'handshake' }
+      },
+      {
+        path: 'nav',
+        component: () => import('@/views/func/nav/index.vue'),
+        name: 'Nav',
+        meta: { title: '导航指引', icon: 'map-signs' }
+      },
+      {
+        path: 'tour',
+        component: () => import('@/views/func/tour/index'),
+        name: 'Tour',
+        meta: { title: '智能讲解', icon: 'chalkboard-teacher' }
+      }
+    ]
+  },
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [

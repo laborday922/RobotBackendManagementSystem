@@ -45,4 +45,16 @@ public class TaskStepPo extends BaseEntity {
 
     /** 结束时间 */
     private Date endTime;
+
+    private Long operationId;
+
+    @Column(columnDefinition = "text")
+    private String operationJson;
+
+    private Integer estimatedTime;
+
+    private String traceId;
+    private String resultData;
+    private String errorMsg;
+    private Long assignedRobotId;
 }

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mode.mapper.SysModeParamMapper">
+
+    <resultMap type="SysModeParam" id="SysModeParamResult">
+        <id     property="paramId"           column="param_id"          />
+        <result property="modeId"            column="mode_id"           />
+        <result property="paramName"         column="param_name"        />
+        <result property="paramType"         column="param_type"        />
+        <result property="paramDescription"  column="param_description" />
+        <result property="paramValue"        column="param_value"       />
+        <result property="paramOptions"      column="param_options"     />
+        <result property="paramMin"          column="param_min"         />
+        <result property="paramMax"          column="param_max"         />
+        <result property="paramUnit"          column="param_unit"        />
+        <result property="orderNum"          column="order_num"         />
+        <result property="delFlag"           column="del_flag"          />
+        <result property="createBy"          column="create_by"         />
+        <result property="createTime"        column="create_time"       />
+        <result property="updateBy"          column="update_by"         />
+        <result property="updateTime"        column="update_time"       />
+    </resultMap>
+
+    <sql id="selectParamVo">
+        select param_id, mode_id, param_name, param_type, param_description,
+        param_value, param_options, param_min, param_max, param_unit,
+        order_num, del_flag, create_by, create_time, update_by, update_time
+        from sys_mode_param
+    </sql>
+
+    <!-- 查询参数列表 - 只查询未删除的数据 -->
+    <select id="selectSysModeParamList" parameterType="SysModeParam" resultMap="SysModeParamResult">
+        <include refid="selectParamVo"/>
+        <where>
+            <if test="modeId != null">
+                AND mode_id = #{modeId}
+            </if>
+            <if test="paramName != null and paramName != ''">
+                AND param_name like concat('%', #{paramName}, '%')
+            </if>
+            <!-- 关键：只查询未删除的数据 -->
+            AND del_flag = '0'
+        </where>
+        order by order_num
+    </select>
+
+    <!-- 根据模式ID查询参数列表 - 只查询未删除的数据 -->
+    <select id="selectSysModeParamByModeId" parameterType="Long" resultMap="SysModeParamResult">
+        <include refid="selectParamVo"/>
+        where mode_id = #{modeId} and del_flag = '0'
+        order by order_num
+    </select>
+
+    <!-- 根据参数ID查询 - 只查询未删除的数据 -->
+    <select id="selectSysModeParamById" parameterType="Long" resultMap="SysModeParamResult">
+        <include refid="selectParamVo"/>
+        where param_id = #{paramId} and del_flag = '0'
+    </select>
+
+    <!-- 新增参数 -->
+    <insert id="insertSysModeParam" parameterType="SysModeParam" useGeneratedKeys="true" keyProperty="paramId">
+        insert into sys_mode_param(
+        <if test="modeId != null">mode_id,</if>
+        <if test="paramName != null and paramName != ''">param_name,</if>
+        <if test="paramType != null and paramType != ''">param_type,</if>
+        <if test="paramDescription != null and paramDescription != ''">param_description,</if>
+        <if test="paramValue != null">param_value,</if>
+        <if test="paramOptions != null">param_options,</if>
+        <if test="paramMin != null">param_min,</if>
+        <if test="paramMax != null">param_max,</if>
+        <if test="paramUnit != null">param_unit,</if>
+        <if test="orderNum != null">order_num,</if>
+        <if test="createBy != null and createBy != ''">create_by,</if>
+        create_time
+        )values(
+        <if test="modeId != null">#{modeId},</if>
+        <if test="paramName != null and paramName != ''">#{paramName},</if>
+        <if test="paramType != null and paramType != ''">#{paramType},</if>
+        <if test="paramDescription != null and paramDescription != ''">#{paramDescription},</if>
+        <if test="paramValue != null">#{paramValue},</if>
+        <if test="paramOptions != null">#{paramOptions},</if>
+        <if test="paramMin != null">#{paramMin},</if>
+        <if test="paramMax != null">#{paramMax},</if>
+        <if test="paramUnit != null">#{paramUnit},</if>
+        <if test="orderNum != null">#{orderNum},</if>
+        <if test="createBy != null and createBy != ''">#{createBy},</if>
+        sysdate()
+        )
+    </insert>
+
+    <!-- 修改参数 -->
+    <update id="updateSysModeParam" parameterType="SysModeParam">
+        update sys_mode_param
+        <set>
+            <if test="paramName != null and paramName != ''">param_name = #{paramName},</if>
+            <if test="paramType != null and paramType != ''">param_type = #{paramType},</if>
+            <if test="paramDescription != null and paramDescription != ''">param_description = #{paramDescription},</if>
+            <if test="paramValue != null">param_value = #{paramValue},</if>
+            <if test="paramOptions != null">param_options = #{paramOptions},</if>
+            <if test="paramMin != null">param_min = #{paramMin},</if>
+            <if test="paramMax != null">param_max = #{paramMax},</if>
+            <if test="paramUnit != null">param_unit = #{paramUnit},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where param_id = #{paramId}
+    </update>
+
+    <!-- 逻辑删除单个参数 -->
+    <update id="deleteSysModeParamById" parameterType="Long">
+        update sys_mode_param set del_flag = '2' where param_id = #{paramId}
+    </update>
+
+    <!-- 逻辑删除批量参数 -->
+    <update id="deleteSysModeParamByIds" parameterType="String">
+        update sys_mode_param set del_flag = '2' where param_id in
+        <foreach item="paramId" collection="array" open="(" separator="," close=")">
+            #{paramId}
+        </foreach>
+    </update>
+
+    <!-- 根据模式ID逻辑删除所有参数 -->
+    <update id="deleteSysModeParamByModeId" parameterType="Long">
+        update sys_mode_param set del_flag = '2' where mode_id = #{modeId}
+    </update>
+
+</mapper>

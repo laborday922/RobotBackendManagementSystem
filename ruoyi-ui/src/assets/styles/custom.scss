@@ -1,0 +1,299 @@
+/* -------------------- 侧边栏整体 -------------------- */
+.sidebar-container {
+  background-color: #E7EDF9 !important;
+  border-radius: 12px;
+  margin: 12px 0 12px 31px;
+  height: calc(100vh - 24px);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+/* 折叠时侧边栏背景 */
+.sidebar-container.collapse {
+  background-color: #E7EDF9 !important;
+}
+
+/* -------------------- Logo 区域（强制覆盖） -------------------- */
+.sidebar-container .logo,
+.sidebar-container > .logo {
+  background-color: #E7EDF9 !important;  /* 与侧边栏一致 */
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.sidebar-container .logo .logo-title {
+  color: #000000 !important;             /* 文字黑色 */
+  font-size: 16px;
+  font-weight: 600;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.sidebar-container .logo img {
+  max-height: 40px;
+  width: auto;
+}
+
+/* 折叠时隐藏文字 */
+.sidebar-container.collapse .logo {
+  justify-content: center;
+  padding: 0;
+}
+.sidebar-container.collapse .logo .logo-title {
+  display: none;
+}
+
+/* -------------------- 菜单容器 -------------------- */
+.sidebar-container .el-menu {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+/* -------------------- 一级菜单项 -------------------- */
+.sidebar-container .el-menu-item {
+  background-color: transparent !important;
+  color: #4D4D4D !important;
+  height: 48px;
+  line-height: 48px;
+}
+.sidebar-container .el-menu-item:hover {
+  background-color: rgba(57, 118, 228, 0.08) !important;
+  color: #3976E4 !important;
+}
+.sidebar-container .el-menu-item.is-active {
+  color: #3976E4 !important;
+  background-color: rgb(19, 19, 20) !important;
+}
+.sidebar-container .el-menu-item [class^="el-icon-"] {
+  color: inherit;
+}
+
+/* -------------------- 子菜单标题 -------------------- */
+.sidebar-container .el-submenu__title {
+  background-color: transparent !important;
+  color: #4D4D4D !important;
+  height: 48px;
+  line-height: 48px;
+}
+.sidebar-container .el-submenu__title:hover {
+  background-color: rgba(57, 118, 228, 0.08) !important;
+  color: #3976E4 !important;
+}
+.sidebar-container .el-submenu__title [class^="el-icon-"] {
+  color: inherit;
+}
+
+/* -------------------- 展开的子菜单容器（关键） -------------------- */
+.sidebar-container .el-submenu .el-menu.el-menu--inline {
+  background-color: #E7EDF9 !important;
+}
+
+/* -------------------- 强制覆盖 .theme-dark 下的子菜单项 -------------------- */
+/* 若依默认使用 .theme-dark 类给子菜单深色背景，此处完全覆盖 */
+.sidebar-container .theme-dark .el-submenu .el-menu-item,
+.sidebar-container .theme-dark .nest-menu .el-submenu > .el-submenu__title {
+  background-color: #E7EDF9 !important;
+  color: #4D4D4D !important;
+}
+.sidebar-container .theme-dark .el-submenu .el-menu-item:hover,
+.sidebar-container .theme-dark .nest-menu .el-submenu > .el-submenu__title:hover {
+  background-color: rgba(57, 118, 228, 0.08) !important;
+  color: #3976E4 !important;
+}
+.sidebar-container .theme-dark .el-submenu .el-menu-item.is-active,
+.sidebar-container .theme-dark .nest-menu .el-submenu > .el-submenu__title.is-active {
+  color: #3976E4 !important;
+  background-color: rgba(57, 118, 228, 0.12) !important;
+}
+
+/* 更深层嵌套子菜单缩进（三级及以上） */
+.sidebar-container .el-submenu .el-submenu .el-menu-item {
+  padding-left: 72px !important;
+}
+
+/* -------------------- 弹出式子菜单（侧边栏折叠时） -------------------- */
+.el-menu--popup {
+  background-color: #E7EDF9 !important;
+  border-radius: 8px;
+  padding: 4px 0;
+}
+.el-menu--popup .el-menu-item {
+  background-color: transparent !important;
+  color: #4D4D4D !important;
+  min-width: 160px;
+  height: 40px;
+  line-height: 40px;
+}
+.el-menu--popup .el-menu-item:hover {
+  background-color: rgba(57, 118, 228, 0.08) !important;
+  color: #3976E4 !important;
+}
+.el-menu--popup .el-menu-item.is-active {
+  color: #3976E4 !important;
+  background-color: rgba(57, 118, 228, 0.12) !important;
+}
+
+/* 折叠时隐藏菜单文字 */
+.sidebar-container.collapse .el-menu-item span,
+.sidebar-container.collapse .el-submenu__title span {
+  display: none;
+}
+
+/* -------------------- 顶部导航栏 (Navbar) -------------------- */
+.navbar {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
+}
+.navbar .right-menu {
+  background: transparent;
+}
+.navbar .right-menu .avatar-wrapper {
+  background: transparent;
+}
+
+/* 面包屑容器 */
+.breadcrumb-container .el-breadcrumb__inner {
+  color: #4D4D4D;
+}
+.breadcrumb-container .el-breadcrumb__inner.is-link {
+  color: #3976E4;
+}
+.breadcrumb-container .el-breadcrumb__inner.is-link:hover {
+  color: #5387E4;
+}
+
+/* -------------------- TagsView 多标签页 -------------------- */
+.tags-view-container {
+  background: transparent !important;
+}
+.tags-view-container .tags-view-wrapper {
+  background: transparent;
+}
+.tags-view-container .tags-view-item {
+  border: 1px solid #d8dce5;
+  color: #495060;
+  background-color: #fff;
+  border-radius: 4px;
+  margin: 4px 4px 0 0;
+}
+.tags-view-container .tags-view-item.active {
+  background-color: #3976E4;
+  border-color: #3976E4;
+  color: #fff;
+}
+.tags-view-container .tags-view-item .el-icon-close {
+  color: #495060;
+}
+.tags-view-container .tags-view-item .el-icon-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* -------------------- 卡片组件 -------------------- */
+.el-card {
+  border-radius: 10px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
+  border: none;
+}
+.el-card .el-card__header {
+  border-bottom: 1px solid #E5E7EB;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 10px 10px 0 0;
+}
+.el-card .el-card__body {
+  padding: 24px 20px;
+}
+
+/* -------------------- 表格 -------------------- */
+.el-table th.el-table__cell {
+  background: #F5F5F5 !important;
+  color: #4D4D4D !important;
+  border-bottom: 1px solid #E0E0E0 !important;
+  font-weight: 500;
+}
+.el-table td.el-table__cell {
+  border-bottom: 1px solid #F0F0F0 !important;
+}
+
+/* -------------------- 按钮 -------------------- */
+.el-button--primary {
+  background-color: #3976E4;
+  border-color: #3976E4;
+}
+.el-button--primary:hover {
+  background-color: #5387E4;
+  border-color: #5387E4;
+}
+.el-button--default {
+  background: #D7E4FA;
+  color: #3976E4;
+  border: none;
+}
+.el-button--default:hover {
+  background: #c1d4f5;
+  color: #2a5fcf;
+}
+.el-button--danger {
+  background: #EF4444;
+  border-color: #EF4444;
+}
+.el-button--danger:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
+}
+.el-button--success {
+  background: #22A06B;
+  border-color: #22A06B;
+}
+.el-button--success:hover {
+  background: #2bc77e;
+  border-color: #2bc77e;
+}
+
+/* -------------------- 输入框 -------------------- */
+.el-input__inner,
+.el-textarea__inner {
+  background-color: #F5F5F5;
+  border: 1px solid #B3B3B3;
+  border-radius: 4px;
+}
+.el-input__inner:focus,
+.el-textarea__inner:focus {
+  border-color: #3976E4;
+}
+
+/* -------------------- 标签 -------------------- */
+.el-tag {
+  border: none;
+  border-radius: 4px;
+}
+.el-tag--success {
+  background: #DCFCE7;
+  color: #166534;
+}
+.el-tag--warning {
+  background: #FEF9C3;
+  color: #B45309;
+}
+.el-tag--danger {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+.el-tag--info {
+  background: #E5E7EB;
+  color: #4D4D4D;
+}
+
+/* -------------------- 分割线 -------------------- */
+.el-divider {
+  background-color: #E5E7EB;
+}
+
+/* -------------------- 弹框 -------------------- */
+.el-dialog {
+  border-radius: 10px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
+}

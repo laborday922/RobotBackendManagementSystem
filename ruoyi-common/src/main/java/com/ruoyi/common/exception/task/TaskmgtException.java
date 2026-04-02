@@ -1,26 +1,39 @@
 package com.ruoyi.common.exception.task;
 
-
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.base.BaseException;
 
 /**
  * 机器人任务管理异常类
- *
- * @author ruoyi
  */
-public class TaskmgtException extends BaseException
-{
+public class TaskmgtException extends BaseException {
     private static final long serialVersionUID = 1L;
 
-    private ReturnNo errno;
+    private ReturnNo returnNo; // 保存枚举，用于获取错误码和消息 key
 
-    public TaskmgtException(ReturnNo errno, Object[] args, String msg) {
-        super("taskmgt", String.valueOf(errno.getErrNo()), args, msg);
-        this.errno = errno;
+    /**
+     * 构造方法
+     *
+     * @param returnNo 返回码枚举
+     * @param args     国际化消息参数
+     * @param message
+     */
+    public TaskmgtException(ReturnNo returnNo, Object[] args, String message) {
+        super("taskmgt", returnNo.getMessage(), args, message);
+        this.returnNo = returnNo;
     }
 
-    public ReturnNo getErrno(){
-        return this.errno;
+    /**
+     * 获取返回码枚举
+     */
+    public ReturnNo getReturnNo() {
+        return returnNo;
+    }
+
+    /**
+     * 获取错误码（数字）
+     */
+    public int getErrNo() {
+        return returnNo.getErrNo();
     }
 }

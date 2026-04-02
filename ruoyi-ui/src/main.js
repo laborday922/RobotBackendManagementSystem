@@ -1,7 +1,7 @@
 import Vue from 'vue'
 
 import Cookies from 'js-cookie'
-
+import '@fortawesome/fontawesome-free/css/all.css'
 import Element from 'element-ui'
 import '@/assets/styles/custom-theme.scss' //老师的模板scss
 import './assets/styles/element-variables.scss'
@@ -10,6 +10,8 @@ import '@fortawesome/fontawesome-free/css/all.css'
 
 import '@/assets/styles/index.scss' // global css
 import '@/assets/styles/ruoyi.scss' // ruoyi css
+import '@/assets/styles/custom.scss' //  自定义样式
+
 import App from './App'
 import store from './store'
 import router from './router'

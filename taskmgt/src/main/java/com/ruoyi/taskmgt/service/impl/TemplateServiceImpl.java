@@ -1,10 +1,15 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.domain.TAppLibrary;
+import com.ruoyi.app.service.ITAppConstraintService;
+import com.ruoyi.app.service.ITAppLibraryService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.robots.domain.RobotGroups;
 import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Template;
@@ -17,6 +22,7 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,10 +36,21 @@ public class TemplateServiceImpl implements ITemplateService {
     private final MessageSourceAccessor messageSourceAccessor;
     private final RedisCache redisUtil;
     private final IRobotGroupsService robotGroupsService;
+    private final ITAppLibraryService appLibraryService;
+    private final ITAppConstraintService appConstraintService;
 
     @Override
     public TemplateVo createTemplate(Template template) {
+        TAppLibrary app = this.appLibraryService.selectTAppLibraryById(template.getAppId());
         template.setStatus(Template.ENABLED);
+        List<Long>ruleIds = new ArrayList<>();
+        for(TAppConstraint rule:template.getRules()){
+            rule.setAppId(app.getAppId());
+            this.appConstraintService.insertTAppConstraint(rule);
+            List<Long> id = this.appConstraintService.selectTAppConstraintList(rule).stream().map(TAppConstraint::getId).toList();
+            if(StringUtils.isNotEmpty(id))ruleIds.addAll(id);
+        }
+        template.setRuleIds(ruleIds);
         Template newTemplate = templateRepository.insert(template);
         return CloneFactory.copy(new TemplateVo(), newTemplate);
     }
@@ -53,6 +70,13 @@ public class TemplateServiceImpl implements ITemplateService {
             throw new TaskmgtException(ReturnNo.STATENOTALLOW, args,
                     messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
         }
+        List<Long>ruleIds = new ArrayList<>();
+        for(TAppConstraint rule:template.getRules()){
+            this.appConstraintService.updateTAppConstraint(rule);
+            List<Long> id = this.appConstraintService.selectTAppConstraintList(rule).stream().map(TAppConstraint::getId).toList();
+            if(StringUtils.isNotEmpty(id))ruleIds.addAll(id);
+        }
+        template.setRuleIds(ruleIds);
         List<String> redisKeys = templateRepository.update(template);
         redisUtil.deleteObject(redisKeys);
     }
@@ -70,6 +94,11 @@ public class TemplateServiceImpl implements ITemplateService {
                     id.toString(), template.getStatus().toString()};
             throw new TaskmgtException(ReturnNo.STATENOTALLOW, args,
                     messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
+        }
+        if(StringUtils.isNotEmpty(template.getRuleIds())){
+            for (Long ruleId : template.getRuleIds()){
+                this.appConstraintService.deleteTAppConstraintById(ruleId);
+            }
         }
         List<String> redisKeys = updateTemplateStatus(template, Template.DELETED);
         redisUtil.deleteObject(redisKeys);
@@ -118,14 +147,22 @@ public class TemplateServiceImpl implements ITemplateService {
     }
 
     @Override
-    public List<TemplateVo> retrieveTemplates(String name, Byte status, Long robotGroupId) {
-        List<Template> templates = templateRepository.getTemplates(name, status, robotGroupId);
+    public List<TemplateVo> retrieveTemplates(Long appId, String name, Byte status, Long robotGroupId) {
+        List<Template> templates = templateRepository.getTemplates(appId,name, status, robotGroupId);
         return templates.stream()
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
                     if (StringUtils.isNotNull(template.getRobotGroupIds())) {
-                        vo.setRobotGroupNames(template.getRobotGroupIds());
+                        List<String> groupNames = new ArrayList<>();
+                        for (Long groupId : vo.getRobotGroupIds()) {
+                            RobotGroups group = robotGroupsService.selectRobotGroupsById(groupId);
+                            if (group != null) {
+                                groupNames.add(group.getName());
+                            }
+                        }
+                        vo.setRobotGroupNames(groupNames);
                     }
+                    if(StringUtils.isNotNull(template.getAppId()))vo.setAppName(this.appLibraryService.selectTAppLibraryById(template.getAppId()).getAppName());
                     return vo;
                 })
                 .collect(Collectors.toList());
@@ -141,8 +178,16 @@ public class TemplateServiceImpl implements ITemplateService {
                 });
         TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);
         if (StringUtils.isNotNull(template.getRobotGroupIds())) {
-            vo.setRobotGroupNames(template.getRobotGroupIds());
+            List<String> groupNames = new ArrayList<>();
+            for (Long groupId : vo.getRobotGroupIds()) {
+                RobotGroups group = robotGroupsService.selectRobotGroupsById(groupId);
+                if (group != null) {
+                    groupNames.add(group.getName());
+                }
+            }
+            vo.setRobotGroupNames(groupNames);
         }
+        if(StringUtils.isNotNull(template.getAppId()))vo.setAppName(this.appLibraryService.selectTAppLibraryById(template.getAppId()).getAppName());
         return vo;
     }
 }

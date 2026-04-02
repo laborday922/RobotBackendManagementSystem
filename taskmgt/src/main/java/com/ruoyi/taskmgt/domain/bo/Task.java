@@ -100,15 +100,15 @@ public class Task extends BaseEntity implements Serializable, Stateful {
                 {
                     add(NOTSTART);
                     add(EXECUTING);
-                    add(DISABLED);
                 }
             });
             put(EXECUTING, new HashSet<>() {
                 {
                     add(PAUSED);
-                    add(DISABLED);
                     add(TERMINATED);
                     add(FINISHED);
+                    add(NOTSTART);
+
                 }
             });
             put(PAUSED, new HashSet<>() {
@@ -116,7 +116,11 @@ public class Task extends BaseEntity implements Serializable, Stateful {
                     add(EXECUTING);
                     add(PENDING);
                     add(TERMINATED);
-                    add(DISABLED);
+                }
+            });
+            put(FINISHED, new HashSet<>(){
+                {
+                    add(NOTSTART);
                 }
             });
         }
@@ -155,6 +159,8 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     /**准备队列顺序*/
     private Integer pendingOrder;
 
+    private Integer globalPendingOrder;
+
     private String formContent;
 
     @JsonIgnore
@@ -179,5 +185,18 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     @JsonIgnore
     public String getStatusName() {
         return STATUSNAMES.get(this.status);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return Objects.equals(id, task.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

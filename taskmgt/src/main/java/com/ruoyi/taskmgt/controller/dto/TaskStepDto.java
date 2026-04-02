@@ -8,12 +8,13 @@ import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
-import java.util.*;
 @Data
 @AllArgsConstructor
 @Builder
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @CopyTo({TaskStep.class})
 @ApiModel("任务步骤DTO")
@@ -26,11 +27,19 @@ public class TaskStepDto {
     /** 步骤名称 */
     @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
     private String stepName;
-
     /** 具体描述 */
     private String description;
+
+    private Long operationId;
+
+    private String operationJson;
 
     /** 步骤序号 */
     @NotBlank(message = "Dto.NotNull",groups = NewGroup.class)
     private Integer orderNum;
+
+    private String traceId;
+    private String resultData;
+    private String errorMsg;
+    private Long assignedRobotId;
 }

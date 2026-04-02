@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.service.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ruoyi.app.domain.TAppConstraint;
 import com.ruoyi.common.clonefactory.CopyFrom;
 import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.taskmgt.domain.bo.Template;
@@ -25,18 +26,16 @@ public class TemplateVo {
     private String name;
     private String description;
     private List<Long> robotGroupIds;
+    private Long appId;
+    private String appName;
+    //表单字段
     private String formContent;
+    //标准工作流
     private String workflow;
+    //0启用 1已禁用 2已删除
     private Byte status;
     private Date createTime;
     private Date updateTime;
     private List<String> robotGroupNames;
-    private IRobotGroupsService robotGroupsService;
-    public void setRobotGroupNames(List<Long> robotGroupIds){
-        List<String> robotGroupNames = new ArrayList<>();
-        for(Long robotGroupId : robotGroupIds){
-            robotGroupNames.add(this.robotGroupsService.selectRobotGroupsById(robotGroupId).getName());
-        }
-        this.robotGroupNames=robotGroupNames;
-    }
+    private List<TAppConstraint> rules;
 }

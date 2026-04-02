@@ -2,11 +2,14 @@ package com.ruoyi.app.service.impl;
 
 import java.util.List;
 import com.ruoyi.common.utils.DateUtils;
+import com.ruoyi.robots.exception.InsertNoAllowedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.app.mapper.TAppConfigMapper;
 import com.ruoyi.app.domain.TAppConfig;
 import com.ruoyi.app.service.ITAppConfigService;
+
+import static com.ruoyi.robots.common.RobotsConstants.ROBOT_CODE_HAS_EXISTED;
 
 /**
  * 应用配置Service业务层处理
@@ -53,6 +56,8 @@ public class TAppConfigServiceImpl implements ITAppConfigService
     @Override
     public int insertTAppConfig(TAppConfig tAppConfig)
     {
+        int count = tAppConfigMapper.selectRobotGroupsByConfigKey(tAppConfig.getConfigKey(), tAppConfig.getAppId());
+        if(count>0)throw new InsertNoAllowedException("配置项名已存在");
         tAppConfig.setCreateTime(DateUtils.getNowDate());
         return tAppConfigMapper.insertTAppConfig(tAppConfig);
     }

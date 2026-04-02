@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.app.mapper.TAppParamMapper">
+    
+    <resultMap type="TAppParam" id="TAppParamResult">
+        <result property="id"    column="id"    />
+        <result property="appId"    column="app_id"    />
+        <result property="paramKey"    column="param_key"    />
+        <result property="paramName"    column="param_name"    />
+        <result property="paramType"    column="param_type"    />
+        <result property="defaultValue"    column="default_value"    />
+        <result property="validationRule"    column="validation_rule"    />
+        <result property="createdAt"    column="created_at"    />
+    </resultMap>
+
+    <sql id="selectTAppParamVo">
+        select id, app_id, param_key, param_name, param_type, default_value, validation_rule, created_at from t_app_param
+    </sql>
+
+    <select id="selectTAppParamList" parameterType="TAppParam" resultMap="TAppParamResult">
+        <include refid="selectTAppParamVo"/>
+        <where>  
+            <if test="appId != null  and appId != ''"> and app_id = #{appId}</if>
+            <if test="paramKey != null  and paramKey != ''"> and param_key = #{paramKey}</if>
+            <if test="paramName != null  and paramName != ''"> and param_name like concat('%', #{paramName}, '%')</if>
+            <if test="paramType != null  and paramType != ''"> and param_type = #{paramType}</if>
+            <if test="defaultValue != null  and defaultValue != ''"> and default_value = #{defaultValue}</if>
+            <if test="validationRule != null  and validationRule != ''"> and validation_rule = #{validationRule}</if>
+            <if test="createdAt != null "> and created_at = #{createdAt}</if>
+        </where>
+    </select>
+    
+    <select id="selectTAppParamById" parameterType="Long" resultMap="TAppParamResult">
+        <include refid="selectTAppParamVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertTAppParam" parameterType="TAppParam" useGeneratedKeys="true" keyProperty="id">
+        insert into t_app_param
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id,</if>
+            <if test="paramKey != null and paramKey != ''">param_key,</if>
+            <if test="paramName != null and paramName != ''">param_name,</if>
+            <if test="paramType != null and paramType != ''">param_type,</if>
+            <if test="defaultValue != null">default_value,</if>
+            <if test="validationRule != null">validation_rule,</if>
+            <if test="createdAt != null">created_at,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="appId != null and appId != ''">#{appId},</if>
+            <if test="paramKey != null and paramKey != ''">#{paramKey},</if>
+            <if test="paramName != null and paramName != ''">#{paramName},</if>
+            <if test="paramType != null and paramType != ''">#{paramType},</if>
+            <if test="defaultValue != null">#{defaultValue},</if>
+            <if test="validationRule != null">#{validationRule},</if>
+            <if test="createdAt != null">#{createdAt},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTAppParam" parameterType="TAppParam">
+        update t_app_param
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="appId != null and appId != ''">app_id = #{appId},</if>
+            <if test="paramKey != null and paramKey != ''">param_key = #{paramKey},</if>
+            <if test="paramName != null and paramName != ''">param_name = #{paramName},</if>
+            <if test="paramType != null and paramType != ''">param_type = #{paramType},</if>
+            <if test="defaultValue != null">default_value = #{defaultValue},</if>
+            <if test="validationRule != null">validation_rule = #{validationRule},</if>
+            <if test="createdAt != null">created_at = #{createdAt},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTAppParamById" parameterType="Long">
+        delete from t_app_param where id = #{id}
+    </delete>
+
+    <delete id="deleteTAppParamByIds" parameterType="String">
+        delete from t_app_param where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

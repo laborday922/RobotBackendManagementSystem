@@ -41,6 +41,8 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     /** 具体描述 */
     private String description;
 
+    private Integer estimatedTime;
+
     /** 步骤状态（0未开始 1进行中 2已完成 3已暂停 4已终止） */
     private Byte status;
 
@@ -50,6 +52,8 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     public final static Byte FINISHED =2;
     public final static Byte PAUSED = 3;
     public final static Byte TERMINATED= 4;
+    public static final Byte WAITING = 5;
+    public static final Byte WAITING_CALLBACK = 6;
 
     public static final Map<Byte, String> STATUSNAMES = new HashMap<>() {
         {
@@ -78,12 +82,19 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
                     add(PAUSED);
                     add(TERMINATED);
                     add(FINISHED);
+                    add(WAITING);
+                    add(WAITING_CALLBACK);
                 }
             });
             put(PAUSED, new HashSet<>() {
                 {
                     add(EXECUTING);
                     add(TERMINATED);
+                }
+            });
+            put(FINISHED, new HashSet<>() {
+                {
+                    add(NOTSTART);
                 }
             });
         }
@@ -97,6 +108,10 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
 
     /** 结束时间 */
     private Date endTime;
+
+    private Long operationId;
+
+    private String operationJson;
 
     @JsonIgnore
     @ToString.Exclude
@@ -124,4 +139,9 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
     public String getStatusName() {
         return STATUSNAMES.get(this.status);
     }
+
+    private String traceId;
+    private String resultData;
+    private String errorMsg;
+    private Long assignedRobotId;
 }

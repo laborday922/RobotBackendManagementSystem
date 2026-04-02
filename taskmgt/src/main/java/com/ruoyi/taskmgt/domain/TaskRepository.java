@@ -76,7 +76,7 @@ public class TaskRepository {
     public Optional<Task> findById(Long id) {
         Assert.notNull(id, "TaskRepository.findById: TaskRepository.findById: id is null");
         String key = String.format(TASKBYID, id);
-        Task bo = (Task) this.redisUtil.getCacheObject(key);
+        Task bo = this.redisUtil.getCacheObject(key);
         if (Objects.isNull(bo)) {
             return this.taskPoMapper.findById(id).map(po -> this.build(po, Optional.of(key)));
         } else {
@@ -149,7 +149,10 @@ public class TaskRepository {
         }
         String keyId = String.format(TASKBYID, task.getId());
         String keyName = String.format(TASKBYNAME, oldtaskPo.getName());
-        return List.of(keyId, keyName);
+        List<String> keys = new ArrayList<>();
+        keys.add(keyId);
+        keys.add(keyName);
+        return keys;
     }
 
     public List<Task> getTasks(Byte status, Integer isGroupTask, String name, Long robotId, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId) {
@@ -180,6 +183,11 @@ public class TaskRepository {
                 predicates.add(cb.equal(root.get("templateId"), templateId));
             }
             predicates.add(cb.notEqual(root.get("status"), Task.DELETED));
+            query.orderBy(cb.asc(root.get("status")),
+                    cb.asc(root.get("globalPendingOrder")),
+                    cb.asc(root.get("pendingOrder")),
+                    cb.desc(root.get("priority")),
+                    cb.asc(root.get("createTime")));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
         List<TaskPo> taskPos = taskPoMapper.findAll(spec);

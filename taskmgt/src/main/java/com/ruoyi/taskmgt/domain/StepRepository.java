@@ -53,7 +53,7 @@ public class StepRepository {
     }
 
     /**
-     * 构成满血的Task对象
+     * 构成满血的TaskStep对象
      *
      * @param po       Task Po 对象
      * @param redisKey redis key
@@ -86,11 +86,17 @@ public class StepRepository {
         }
     }
 
-    public List<TaskStep> findStepesByTaskId(Long taskId) {
+    public List<TaskStep> findStepsByTaskId(Long taskId) {
         List<TaskStepPo>taskStepPos = this.stepPoMapper.findByTaskId(taskId);
         return taskStepPos.stream()
                 .map(po -> build(po, Optional.empty()))
                 .collect(Collectors.toList());
+    }
+
+    public TaskStep findStepByTaskIdAndOrder(Long taskId,Integer orderNum) {
+        TaskStepPo taskStepPo = this.stepPoMapper.findByTaskIdAndOrderNum(taskId,orderNum);
+        if(StringUtils.isNotNull(taskStepPo))return CloneFactory.copy(new TaskStep(), taskStepPo);
+        else return null;
     }
 
     public List<String> delete(Long id) {
@@ -107,7 +113,7 @@ public class StepRepository {
      **/
     public Set<String> deleteStepsByTaskId(Long taskId) {
         Assert.notNull(taskId, "TaskRepository.deleteTaskAllSteps: id is null");
-        List<TaskStep> taskSteps = this.findStepesByTaskId(taskId);
+        List<TaskStep> taskSteps = this.findStepsByTaskId(taskId);
         if (StringUtils.isEmpty(taskSteps)) {
             return Set.of();
         }
@@ -132,7 +138,7 @@ public class StepRepository {
         });
         TaskStepPo newPo = CloneFactory.copyNotNull(oldstepPo, step);
         newPo.setUpdateTime(new Date());
-        newPo.setUpdateBy(SecurityUtils.getUsername());
+        newPo.setUpdateBy(getCurrentUsername());
         try {
             this.stepPoMapper.save(newPo);
         } catch (DataIntegrityViolationException e) {
@@ -146,7 +152,10 @@ public class StepRepository {
         }
         String keyId = String.format(STEPBYID, step.getId());
         String keyName = String.format(STEPBYNAME, oldstepPo.getStepName());
-        return List.of(keyId, keyName);
+        List<String>key = new ArrayList<>();
+        key.add(keyId);
+        key.add(keyName);
+        return key;
     }
 
     public TaskStep insert(TaskStep step) {
@@ -167,5 +176,18 @@ public class StepRepository {
             }
             throw e;
         }
+    }
+    private String getCurrentUsername() {
+        try {
+            return SecurityUtils.getUsername();
+        } catch (Exception e) {
+            return "system";
+        }
+    }
+
+    public TaskStep findByTraceId(String traceId) {
+        TaskStepPo taskStepPo = this.stepPoMapper.findByTraceId(traceId);
+        if(StringUtils.isNotNull(taskStepPo))return CloneFactory.copy(new TaskStep(), taskStepPo);
+        else return null;
     }
 }

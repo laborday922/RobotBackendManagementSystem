@@ -267,6 +267,8 @@
         <module>ruoyi-data</module>
         <module>robots</module>
         <module>ruoyi-app</module>
+        <module>function</module>
+        <module>mode</module>
     </modules>
     <packaging>pom</packaging>
 

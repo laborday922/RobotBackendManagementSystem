@@ -50,7 +50,6 @@ public class TaskPo extends BaseEntity {
     /** 任务类型（1定时 2电量 3闲时） */
     private Integer taskType;
 
-    /** 任务状态（0未开始 1准备中 2执行中 3已暂停 4已禁用 5已终止） */
     private Byte status;
 
     /** 风险等级（0正常 1风险 2高风险） */
@@ -81,6 +80,8 @@ public class TaskPo extends BaseEntity {
     private String terminateReason;
 
     private Integer pendingOrder;
+
+    private Integer globalPendingOrder;
 
     @Column(columnDefinition = "text")
     private String formContent;

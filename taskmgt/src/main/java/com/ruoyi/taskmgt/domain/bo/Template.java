@@ -1,16 +1,24 @@
 package com.ruoyi.taskmgt.domain.bo;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.app.domain.TAppConstraint;
+import com.ruoyi.app.mapper.TAppConstraintMapper;
 import com.ruoyi.common.clonefactory.CopyFrom;
 import com.ruoyi.common.clonefactory.CopyNotNullTo;
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.ruoyi.common.core.model.Stateful;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.mapper.po.TemplatePo;
+import com.ruoyi.taskmgt.utils.JsonUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Setter;
 import lombok.ToString;
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -34,6 +42,8 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     @NotBlank(message = "模板名称不能为空")
     private String name;
 
+    private Long appId;
+
     /** 模板描述 */
     private String description;
 
@@ -49,6 +59,10 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     /** 状态（0正常 1已禁用 2已删除） */
     private Byte status;
 
+    private List<TAppConstraint> rules;
+
+    private List<Long>ruleIds;
+
     @Setter
     @JsonIgnore
     @ToString.Exclude
@@ -57,7 +71,6 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     public final static Byte ENABLED = 0;
     public final static Byte DISABLED = 1;
     public final static Byte DELETED = 2;
-    public final static Byte LOCKED = 3;
 
     public static final Map<Byte, String> STATUSNAMES = new HashMap<>() {
         {
@@ -108,5 +121,25 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     @JsonIgnore
     public String getStatusName() {
         return STATUSNAMES.get(this.status);
+    }
+
+    @JsonIgnore
+    public List<TaskStepDefinition> getStepDefinitions() {
+        if (workflow == null || workflow.isEmpty()) return Collections.emptyList();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            // 先读取为树模型
+            JsonNode root = objectMapper.readTree(workflow);
+            // 提取 steps 字段
+            JsonNode stepsNode = root.get("steps");
+            if (stepsNode == null || !stepsNode.isArray()) {
+                return Collections.emptyList();
+            }
+            // 解析 steps 数组
+            return objectMapper.readValue(stepsNode.toString(),
+                    new TypeReference<List<TaskStepDefinition>>() {});
+        } catch (Exception e) {
+            throw new RuntimeException("解析模板步骤失败: " + e.getMessage(), e);
+        }
     }
 }

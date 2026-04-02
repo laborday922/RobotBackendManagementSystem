@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.github.pagehelper.PageHelper;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
@@ -42,6 +43,7 @@ public class TaskLogServiceImpl implements ITaskLogService {
         if(!StringUtils.isEmpty(beginTime)) beginTimeDate = DateUtils.parseDate(beginTime);
         if(!StringUtils.isEmpty(endTime)) endTimeDate = DateUtils.parseDate(endTime);
         List<TaskLog> logs = taskLogRepository.findTaskLogs(query,beginTimeDate,endTimeDate);
+        PageHelper.clearPage();
         return logs.stream().map(taskLog -> {
             TaskLogVo vo = CloneFactory.copy(new TaskLogVo(), taskLog);
             Task task = this.taskRepository.findById(taskLog.getTaskId()).orElseThrow(()-> {

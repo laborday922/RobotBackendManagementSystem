@@ -18,15 +18,15 @@ export function getTemplate(id) {
 
 export function addTemplate(data) {
   return request({
-    url: '/taskmgt/templates',
+    url: '/taskmgt/template',
     method: 'post',
     data: data
   })
 }
 
-export function updateTemplate(data) {
+export function updateTemplate(id,data) {
   return request({
-    url: '/taskmgt/templates/' + data.id,
+    url: '/taskmgt/templates/' + id,
     method: 'put',
     data: data
   })
@@ -36,6 +36,20 @@ export function delTemplate(id) {
   return request({
     url: '/taskmgt/templates/' + id,
     method: 'delete'
+  })
+}
+
+export function banTemplate(id) {
+  return request({
+    url: '/taskmgt/templates/' + id + '/ban',
+    method: 'put'
+  })
+}
+
+export function resumeTemplate(id) {
+  return request({
+    url: '/taskmgt/templates/' + id + '/resume',
+    method: 'put'
   })
 }
 
@@ -83,6 +97,31 @@ export function listAbnormalTask(query) {
     url: '/taskmgt/tasks/abnormal',
     method: 'get',
     params: query
+  })
+}
+
+export function getAbnormalTask(id) {
+  return request({
+    url: '/taskmgt/tasks/' + id + '/abnormal',
+    method: 'get'
+  })
+}
+
+export function updatePendingOrder(query,data){
+  return request({
+    url: '/taskmgt/tasks/order/local',
+    method: 'put',
+    params: query,
+    data: data
+  })
+}
+
+export function updateGlobalOrder(query,data){
+  return request({
+    url: '/taskmgt/tasks/order/global',
+    method: 'put',
+    params: query,
+    data: data
   })
 }
 
@@ -138,7 +177,7 @@ export function resolveTaskRisk(id) {
 }
 export function addTaskSteps(id, data) {
   return request({
-    url: '/taskmgt/tasks/' +  id + 'steps',
+    url: '/taskmgt/tasks/' +  id + '/steps',
     method: 'post',
     data: data
   })
@@ -146,7 +185,7 @@ export function addTaskSteps(id, data) {
 
 export function getTaskSteps(id) {
   return request({
-    url: '/taskmgt/tasks/' + id + 'steps',
+    url: '/taskmgt/tasks/' + id + '/steps',
     method: 'get'
   })
 }
@@ -154,7 +193,7 @@ export function getTaskSteps(id) {
 
 export function updateTaskSteps(id, data) {
   return request({
-    url: '/taskmgt/tasks/' + id + 'steps',
+    url: '/taskmgt/tasks/' + id + '/steps',
     method: 'put',
     data: data
   })
@@ -162,7 +201,31 @@ export function updateTaskSteps(id, data) {
 
 export function completeTaskSteps(id){
   return request({
-    url: 'taskmgt/steps/' + id,
+    url: '/taskmgt/steps/' + id,
     method: 'put'
+  })
+}
+
+export function listLogByTask(taskId,query){
+  return request({
+    url: '/taskmgt/logs',
+    method: 'get',
+    params: taskId, ...query
+  })
+}
+
+// 获取操作列表
+export function listOperation() {
+  return request({
+    url: '/taskmgt/operation/list',
+    method: 'get'
+  })
+}
+
+// 获取操作详情
+export function getOperation(id) {
+  return request({
+    url: `/taskmgt/operation/` + id,
+    method: 'get'
   })
 }

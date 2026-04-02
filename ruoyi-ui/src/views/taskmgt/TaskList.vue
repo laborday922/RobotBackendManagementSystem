@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 搜索栏 -->
+    <!-- 搜索栏 - 实时筛选，无重置按钮 -->
     <el-card class="search-card">
       <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="90px">
         <el-form-item label="任务名称" prop="name">
@@ -9,7 +9,8 @@
             placeholder="请输入任务名称"
             clearable
             style="width: 180px"
-            @keyup.enter="handleQuery"
+            @input="debouncedQuery"
+            @clear="debouncedQuery"
           />
         </el-form-item>
         <el-form-item label="任务状态" prop="status">
@@ -18,14 +19,16 @@
             placeholder="全部"
             clearable
             style="width: 120px"
+            @change="handleQuery"
+            @clear="handleQuery"
           >
-            <el-option label="未开始" :value="0" />
+            <el-option label="未开始" :value="3" />
             <el-option label="准备中" :value="1" />
-            <el-option label="执行中" :value="2" />
-            <el-option label="已暂停" :value="3" />
-            <el-option label="已完成" :value="4" />
-            <el-option label="已禁用" :value="5" />
-            <el-option label="已终止" :value="6" />
+            <el-option label="执行中" :value="0" />
+            <el-option label="已暂停" :value="2" />
+            <el-option label="已完成" :value="6" />
+            <el-option label="已禁用" :value="4" />
+            <el-option label="已终止" :value="5" />
           </el-select>
         </el-form-item>
         <el-form-item label="任务类型" prop="taskType">
@@ -34,6 +37,8 @@
             placeholder="全部"
             clearable
             style="width: 120px"
+            @change="handleQuery"
+            @clear="handleQuery"
           >
             <el-option label="定时任务" :value="1" />
             <el-option label="电量任务" :value="2" />
@@ -46,6 +51,8 @@
             placeholder="请选择机器人"
             clearable
             style="width: 150px"
+            @change="handleQuery"
+            @clear="handleQuery"
           >
             <el-option
               v-for="item in robotOptions"
@@ -61,6 +68,8 @@
             placeholder="请选择组"
             clearable
             style="width: 150px"
+            @change="handleQuery"
+            @clear="handleQuery"
           >
             <el-option
               v-for="item in robotGroupOptions"
@@ -70,10 +79,6 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-        </el-form-item>
       </el-form>
     </el-card>
 
@@ -82,10 +87,7 @@
       <template #header>
         <div class="card-header">
           <span>任务列表</span>
-          <div>
-            <el-button type="primary" icon="Plus" @click="handleAdd('process')">创建流程任务</el-button>
-            <el-button type="primary" plain icon="Plus" @click="handleAdd('simple')">创建简单任务</el-button>
-          </div>
+          <el-button type="primary" icon="el-icon-plus" @click="handleAdd">创建任务</el-button>
         </div>
       </template>
 
@@ -94,53 +96,136 @@
         <el-table-column label="ID" prop="id" width="80" align="center" />
         <el-table-column label="任务名称" prop="name" min-width="150" show-overflow-tooltip />
         <el-table-column label="模板" prop="templateName" width="140" show-overflow-tooltip />
-        <el-table-column label="类型" width="100" align="center">
-          <template #default="scope">
-            <el-tag :type="scope.row.templateId ? 'primary' : 'info'">
-              {{ scope.row.templateId ? '流程' : '简单' }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column label="触发方式" width="100" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             <el-tag :type="getTriggerTypeTag(scope.row.taskType)">
               {{ getTriggerTypeText(scope.row.taskType) }}
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="是否是组任务" width="100" align="center">
+          <template slot-scope="scope">
+            {{ scope.row.isGroupTask === 1 ? '是' : '否' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="机器人组名称" prop="robotGroupName" min-width="120" show-overflow-tooltip/>
         <el-table-column label="状态" width="100" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             <span :class="'status-tag status-' + getStatusClass(scope.row.status)">{{ getStatusText(scope.row.status) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="机器人" prop="robotName" width="120" show-overflow-tooltip />
         <el-table-column label="优先级" width="80" align="center">
-          <template #default="scope">
+          <template slot-scope="scope">
             <el-tag v-if="scope.row.priority === 1" type="danger">高</el-tag>
             <el-tag v-else-if="scope.row.priority === 2" type="warning">中</el-tag>
             <el-tag v-else type="info">低</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
-        <el-table-column label="操作" width="300" fixed="right" align="center">
-          <template #default="scope">
-            <el-button link type="primary" icon="View" @click="handleView(scope.row)">详情</el-button>
-            <el-button link type="primary" icon="Edit" @click="handleEdit(scope.row)" v-if="canEdit(scope.row)">编辑</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-if="canDelete(scope.row)">删除</el-button>
-            <!-- 状态操作按钮 -->
-            <el-dropdown @command="(cmd) => handleStatusCommand(cmd, scope.row)" v-if="scope.row.status !== 4 && scope.row.status !== 6">
-              <el-button link type="primary" icon="MoreFilled">更多</el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item v-if="scope.row.status === 0 || scope.row.status === 1" command="pause">暂停</el-dropdown-item>
-                  <el-dropdown-item v-if="scope.row.status === 3" command="continue">继续</el-dropdown-item>
-                  <el-dropdown-item v-if="scope.row.status === 1 || scope.row.status === 2 || scope.row.status === 3" command="cancel">取消</el-dropdown-item>
-                  <el-dropdown-item v-if="scope.row.status === 0 || scope.row.status === 1 || scope.row.status === 2 || scope.row.status === 3" command="terminate">终止</el-dropdown-item>
-                  <el-dropdown-item v-if="scope.row.status !== 5" command="ban">禁用</el-dropdown-item>
-                  <el-dropdown-item v-if="scope.row.status === 5" command="resume">恢复</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+        <!-- 操作列改为图标按钮 -->
+        <el-table-column label="操作" width="320" fixed="right" align="center">
+          <template slot-scope="scope">
+            <!-- 详情 -->
+            <el-button size="small" circle title="详情" @click="handleView(scope.row)">
+              <i class="fas fa-eye"></i>
+            </el-button>
+
+            <!-- 编辑 -->
+            <el-button
+              v-if="canEdit(scope.row)"
+              size="small"
+              type="primary"
+              circle
+              title="编辑"
+              @click="handleEdit(scope.row)"
+            >
+              <i class="fas fa-edit"></i>
+            </el-button>
+
+            <!-- 删除 -->
+            <el-button
+              v-if="canDelete(scope.row)"
+              size="small"
+              type="danger"
+              circle
+              title="删除"
+              @click="handleDelete(scope.row)"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </el-button>
+
+            <!-- 禁用 -->
+            <el-button
+              v-if="scope.row.status === 3"
+              size="small"
+              type="warning"
+              circle
+              title="禁用"
+              @click="handleBan(scope.row)"
+            >
+              <i class="fas fa-ban"></i>
+            </el-button>
+
+            <!-- 恢复 -->
+            <el-button
+              v-if="scope.row.status === 4"
+              size="small"
+              type="success"
+              circle
+              title="恢复"
+              @click="handleResume(scope.row)"
+            >
+              <i class="fas fa-undo"></i>
+            </el-button>
+
+            <!-- 暂停 -->
+            <el-button
+              v-if="scope.row.status === 0"
+              size="small"
+              type="warning"
+              circle
+              title="暂停"
+              @click="handlePause(scope.row)"
+            >
+              <i class="fas fa-pause"></i>
+            </el-button>
+
+            <!-- 继续 -->
+            <el-button
+              v-if="scope.row.status === 2"
+              size="small"
+              type="success"
+              circle
+              title="继续"
+              @click="handleContinue(scope.row)"
+            >
+              <i class="fas fa-play"></i>
+            </el-button>
+
+            <!-- 取消 -->
+            <el-button
+              v-if="scope.row.status === 1"
+              size="small"
+              type="info"
+              circle
+              title="取消"
+              @click="handleCancel(scope.row)"
+            >
+              <i class="fas fa-times"></i>
+            </el-button>
+
+            <!-- 终止 -->
+            <el-button
+              v-if="[0,2].includes(scope.row.status)"
+              size="small"
+              type="danger"
+              circle
+              title="终止"
+              @click="handleTerminate(scope.row)"
+            >
+              <i class="fas fa-power-off"></i>
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -149,8 +234,8 @@
       <pagination
         v-show="total > 0"
         :total="total"
-        v-model:page="queryParams.pageNum"
-        v-model:limit="queryParams.pageSize"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
     </el-card>
@@ -158,113 +243,49 @@
     <!-- 任务创建/编辑对话框 -->
     <el-dialog
       :title="dialog.title"
-      v-model="dialog.visible"
-      width="750px"
+      :visible.sync="dialog.visible"
+      width="850px"
       append-to-body
       @close="cancelTaskDialog"
     >
       <el-form ref="taskFormRef" :model="taskForm" :rules="taskRules" label-width="130px">
-        <!-- 基本信息 -->
         <el-form-item label="任务名称" prop="name">
           <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
         </el-form-item>
 
-        <!-- 流程任务：模板选择 -->
-        <template v-if="taskForm.type === 'process'">
-          <el-form-item label="选择模板" prop="templateId" required>
-            <el-select
-              v-model="taskForm.templateId"
-              placeholder="请选择模板"
-              style="width:100%"
-              @change="onTemplateChange"
-              :disabled="dialog.mode === 'edit'"
-            >
-              <el-option
-                v-for="item in templateOptions"
-                :key="item.id"
-                :label="item.name"
-                :value="item.id"
-              />
-            </el-select>
-          </el-form-item>
+        <el-form-item label="选择模板" prop="templateId" required>
+          <el-select
+            v-model="taskForm.templateId"
+            placeholder="请选择模板"
+            style="width:100%"
+            @change="onTemplateChange"
+            :disabled="dialog.mode === 'edit'"
+          >
+            <el-option
+              v-for="item in templateOptions"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
 
-          <!-- 动态表单字段（根据模板渲染） -->
-          <template v-if="taskForm.templateId && currentTemplate">
-            <el-form-item
-              v-for="field in currentTemplate.fields"
-              :key="field.id"
-              :label="field.label"
-              :required="field.required"
-            >
-              <!-- 文本 -->
-              <el-input
-                v-if="field.type === 'text'"
-                v-model="taskForm.formData[field.id]"
-                :placeholder="'请输入' + field.label"
-              />
-              <!-- 数字 -->
-              <el-input-number
-                v-else-if="field.type === 'number'"
-                v-model="taskForm.formData[field.id]"
-                style="width:100%"
-                :placeholder="'请输入' + field.label"
-              />
-              <!-- 下拉选择（简单模拟） -->
-              <el-select
-                v-else-if="field.type === 'select'"
-                v-model="taskForm.formData[field.id]"
-                placeholder="请选择"
-                style="width:100%"
-              >
-                <el-option label="选项1" value="option1" />
-                <el-option label="选项2" value="option2" />
-              </el-select>
-              <!-- 日期 -->
-              <el-date-picker
-                v-else-if="field.type === 'date'"
-                v-model="taskForm.formData[field.id]"
-                type="date"
-                placeholder="选择日期"
-                style="width:100%"
-              />
-              <!-- 时间 -->
-              <el-time-picker
-                v-else-if="field.type === 'time'"
-                v-model="taskForm.formData[field.id]"
-                placeholder="选择时间"
-                style="width:100%"
-              />
-              <!-- 位置（简单输入） -->
-              <el-input
-                v-else-if="field.type === 'location'"
-                v-model="taskForm.formData[field.id]"
-                placeholder="请输入位置"
-              />
-              <!-- 文件类型暂简化处理，仅展示文本提示 -->
-              <el-input
-                v-else-if="['image','audio','video','file'].includes(field.type)"
-                v-model="taskForm.formData[field.id]"
-                placeholder="文件上传暂未实现，请填写文件路径"
-              />
-              <div v-else>未知字段类型</div>
-            </el-form-item>
-          </template>
+        <!-- 动态表单字段（根据模板渲染） -->
+        <template v-if="taskForm.templateId && currentTemplate">
+          <el-divider content-position="left">填写表单字段</el-divider>
+          <dynamic-form-fields
+            :fields="currentTemplate.fields"
+            :form-data="taskForm.formData"
+            :upload-action="uploadAction"
+            :upload-headers="uploadHeaders"
+            @field-change="updateStepPreview"
+            @file-change="updateStepPreview"
+          />
         </template>
 
-        <!-- 简单任务 -->
-        <template v-if="taskForm.type === 'simple'">
-          <el-form-item label="简单动作" prop="simpleAction" required>
-            <el-select v-model="taskForm.simpleAction" placeholder="请选择简单动作" style="width:100%">
-              <el-option label="清洁任务" value="clean" />
-              <el-option label="巡检任务" value="inspect" />
-              <el-option label="配送任务" value="deliver" />
-              <el-option label="安防巡逻" value="patrol" />
-              <el-option label="送餐服务" value="meal" />
-            </el-select>
-          </el-form-item>
-        </template>
+        <!-- 步骤预览区域（使用提取的组件） -->
+        <step-preview :steps="generatedSteps" v-if="generatedSteps.length > 0" />
 
-        <!-- 通用设置 -->
         <el-divider content-position="left">任务设置</el-divider>
         <el-form-item label="任务优先级" prop="priority">
           <el-radio-group v-model="taskForm.priority">
@@ -323,7 +344,10 @@
         </template>
 
         <!-- 机器人/机器人组选择 -->
-        <el-form-item :label="taskForm.isGroupTask ? '选择机器人组' : '选择机器人'" prop="targetId" required>
+        <el-form-item
+          :label="taskForm.isGroupTask ? '选择机器人组' : '选择机器人'"
+          required
+        >
           <template v-if="taskForm.isGroupTask">
             <el-select v-model="taskForm.robotGroupId" placeholder="请选择机器人组" style="width:100%">
               <el-option
@@ -341,12 +365,19 @@
                 :key="item.id"
                 :label="item.name"
                 :value="item.id"
-              />
+              >
+                <div style="display: flex; justify-content: space-between;">
+                  <span>{{ item.name }}</span>
+                  <span style="color: #999; font-size: 12px;">
+                    电量{{ item.battery }}% |
+                    {{ formatRobotStatus(item) }}
+                  </span>
+                </div>
+              </el-option>
             </el-select>
           </template>
         </el-form-item>
       </el-form>
-
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialog.visible = false">取 消</el-button>
@@ -358,534 +389,609 @@
     <!-- 任务详情对话框 -->
     <el-dialog
       title="任务详情"
-      v-model="detailDialog.visible"
+      :visible.sync="detailDialog.visible"
       width="800px"
       append-to-body
     >
-      <div v-loading="detailLoading" v-if="currentTask">
-        <!-- 基本信息 -->
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="任务名称">{{ currentTask.name }}</el-descriptions-item>
-          <el-descriptions-item label="模板">{{ currentTask.templateName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="任务类型">
-            {{ currentTask.templateId ? '流程任务' : '简单任务' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="触发方式">
-            {{ getTriggerTypeText(currentTask.taskType) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <span :class="'status-tag status-' + getStatusClass(currentTask.status)">{{ getStatusText(currentTask.status) }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="优先级">
-            <el-tag v-if="currentTask.priority === 1" type="danger">高</el-tag>
-            <el-tag v-else-if="currentTask.priority === 2" type="warning">中</el-tag>
-            <el-tag v-else type="info">低</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="机器人">{{ currentTask.robotName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="机器人组">{{ currentTask.robotGroupName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ currentTask.createTime }}</el-descriptions-item>
-          <el-descriptions-item label="更新时间">{{ currentTask.updateTime }}</el-descriptions-item>
-          <el-descriptions-item label="任务时长">{{ currentTask.duration }}分钟</el-descriptions-item>
-          <el-descriptions-item label="终止原因" v-if="currentTask.terminateReason">{{ currentTask.terminateReason }}</el-descriptions-item>
-        </el-descriptions>
+      <task-detail
+        :task="currentTask"
+        :loading="detailLoading"
+        :form-fields="formFields"
+        :task-steps="taskSteps"
+        :task-logs="taskLogs"
+        :operation-list="operationList"
+        @download="downloadFile"
+      />
+    </el-dialog>
 
-        <!-- 表单内容（解析formContent） -->
-        <el-divider content-position="left">表单内容</el-divider>
-        <div v-if="formFields.length > 0">
-          <el-descriptions :column="1" border>
-            <el-descriptions-item v-for="field in formFields" :key="field.id" :label="field.label">
-              {{ formatFormValue(field, currentTask.formData ? currentTask.formData[field.id] : '') }}
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-        <div v-else class="empty-tip">无表单内容</div>
-
-        <!-- 作业步骤 -->
-        <el-divider content-position="left">作业步骤</el-divider>
-        <el-table :data="taskSteps" border size="small" style="width:100%">
-          <el-table-column label="步骤序号" width="80" align="center">
-            <template #default="scope">{{ scope.row.orderNum }}</template>
-          </el-table-column>
-          <el-table-column prop="stepName" label="步骤名称" width="150" />
-          <el-table-column prop="description" label="描述" min-width="200" />
-          <el-table-column label="状态" width="100" align="center">
-            <template #default="scope">
-              <span :class="'status-tag status-' + getStepStatusClass(scope.row.status)">{{ getStepStatusText(scope.row.status) }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <!-- 任务日志 -->
-        <el-divider content-position="left">任务日志</el-divider>
-        <el-timeline>
-          <el-timeline-item
-            v-for="log in taskLogs"
-            :key="log.id"
-            :type="log.eventType === 'ERROR' ? 'danger' : 'info'"
-            :timestamp="log.createTime"
-          >
-            {{ log.content }}
-          </el-timeline-item>
-        </el-timeline>
-        <div v-if="taskLogs.length === 0" class="empty-tip">暂无日志</div>
-      </div>
+    <!-- 视频预览弹窗 -->
+    <el-dialog :visible.sync="videoPreview.visible" width="60%" title="视频预览" append-to-body>
+      <video
+        v-if="videoPreview.url"
+        :src="videoPreview.url"
+        controls
+        style="width: 100%; max-height: 600px;"
+      ></video>
     </el-dialog>
   </div>
 </template>
 
-<script setup>
-import {computed, getCurrentInstance, onMounted, reactive, ref} from 'vue'
+<script>
 import {
   addTask,
-  addTaskSteps,
-  banTask,
-  cancelTask,
-  continueTask,
+  updateTask,
   delTask,
   getTask,
-  getTaskSteps,
-  listLogByTask,
   listTask,
   listTemplate,
   pauseTask,
   resumeTask,
+  banTask,
+  cancelTask,
+  continueTask,
   terminateTask,
-  updateTask
-} from '@/api/taskmgt/taskmgt' // 模板列表
+  getTaskSteps,
+  listLogByTask,
+  listOperation
+} from '@/api/taskmgt/taskmgt'
+import { listRobots, listGroups } from '@/api/system/robots'
+import { getToken } from '@/utils/auth'
+import debounce from 'lodash/debounce'
+import StepPreview from './components/StepPreview'
+import DynamicFormFields from './components/DynamicFormFields'
+import TaskDetail from './components/TaskDetail'
 
-const { proxy } = getCurrentInstance()
-
-// ========== 查询参数 ==========
-const queryParams = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  name: undefined,
-  status: undefined,
-  taskType: undefined,
-  robotId: undefined,
-  robotGroupId: undefined,
-  displayOrder: 'status ASC, pending_order ASC, priority DESC, create_time DESC'
-})
-
-// ========== 数据 ==========
-const loading = ref(false)
-const taskList = ref([])
-const total = ref(0)
-
-// 机器人选项（模拟，实际应从接口获取）
-const robotOptions = ref([
-  { id: 1, name: '机器人A', groupId: 1, status: 'online' },
-  { id: 2, name: '机器人B', groupId: 1, status: 'online' },
-  { id: 3, name: '机器人C', groupId: 2, status: 'offline' }
-])
-
-const robotGroupOptions = ref([
-  { id: 1, name: '配送组' },
-  { id: 2, name: '巡检组' }
-])
-
-// 可用机器人（仅在线）
-const availableRobots = computed(() => robotOptions.value.filter(r => r.status === 'online'))
-
-// 模板选项
-const templateOptions = ref([])
-
-// 获取模板列表
-const fetchTemplates = async () => {
-  try {
-    const res = await listTemplate({ pageNum: 1, pageSize: 100 })
-    templateOptions.value = res.rows || []
-  } catch (error) {
-    console.error('获取模板列表失败', error)
-  }
-}
-
-// 获取任务列表
-const getList = async () => {
-  loading.value = true
-  try {
-    const res = await listTask(queryParams)
-    taskList.value = res.rows || []
-    total.value = res.total || 0
-  } catch (error) {
-    ElMessage.error('获取任务列表失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleQuery = () => {
-  queryParams.pageNum = 1
-  getList()
-}
-
-const resetQuery = () => {
-  queryParams.name = undefined
-  queryParams.status = undefined
-  queryParams.taskType = undefined
-  queryParams.robotId = undefined
-  queryParams.robotGroupId = undefined
-  handleQuery()
-}
-
-// 状态映射
-const statusMap = {
-  0: 'pending', 1: 'ready', 2: 'executing', 3: 'paused', 4: 'completed', 5: 'disabled', 6: 'aborted'
-}
-const statusTextMap = {
-  0: '未开始', 1: '准备中', 2: '执行中', 3: '已暂停', 4: '已完成', 5: '已禁用', 6: '已终止'
-}
-const getStatusText = (status) => statusTextMap[status] || status
-const getStatusClass = (status) => statusMap[status] || 'pending'
-
-const triggerTypeMap = {
-  1: '定时任务', 2: '电量任务', 3: '闲时任务'
-}
-const getTriggerTypeText = (type) => triggerTypeMap[type] || type
-const getTriggerTypeTag = (type) => {
-  const map = { 1: 'primary', 2: 'success', 3: 'warning' }
-  return map[type] || 'info'
-}
-
-const canEdit = (row) => [0, 1, 5].includes(row.status)
-const canDelete = (row) => [0, 1, 4, 5, 6].includes(row.status)
-
-// 操作处理
-const handleStatusCommand = async (cmd, row) => {
-  const id = row.id
-  try {
-    switch (cmd) {
-      case 'pause':
-        await pauseTask(id)
-        ElMessage.success('已暂停')
-        break
-      case 'continue':
-        await continueTask(id)
-        ElMessage.success('已继续')
-        break
-      case 'cancel':
-        await cancelTask(id)
-        ElMessage.success('已取消')
-        break
-      case 'terminate': {
-        const { value: reason } = await ElMessageBox.prompt('请输入终止原因', '终止任务', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+export default {
+  name: 'TaskList',
+  components: {
+    StepPreview,
+    DynamicFormFields,
+    TaskDetail
+  },
+  data() {
+    return {
+      // 查询参数
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        name: undefined,
+        status: undefined,
+        taskType: undefined,
+        robotId: undefined,
+        robotGroupId: undefined,
+        displayOrder: 'status ASC, pending_order ASC, priority DESC, create_time DESC'
+      },
+      loading: false,
+      taskList: [],
+      total: 0,
+      robotOptions: [],
+      robotGroupOptions: [],
+      templateOptions: [],
+      // 上传配置
+      uploadAction: process.env.VUE_APP_BASE_API + '/common/upload',
+      uploadHeaders: {
+        Authorization: 'Bearer ' + getToken()
+      },
+      // 对话框
+      dialog: {
+        visible: false,
+        title: '',
+        mode: 'create',
+        loading: false
+      },
+      taskForm: this.getInitialTaskForm(),
+      taskRules: {
+        name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
+        templateId: [{ required: true, message: '请选择模板', trigger: 'change' }],
+        batteryThreshold: [{ required: true, message: '请输入触发电量', trigger: 'blur' }],
+        idleTime: [{ required: true, message: '请输入闲时等待时间', trigger: 'blur' }],
+      },
+      // 详情对话框
+      detailDialog: {
+        visible: false
+      },
+      detailLoading: false,
+      currentTask: null,
+      taskSteps: [],
+      taskLogs: [],
+      formFields: [],
+      operationList: [],
+      // 生成的步骤预览（仅用于前端展示）
+      generatedSteps: [],
+      // 视频预览
+      videoPreview: {
+        visible: false,
+        url: ''
+      }
+    }
+  },
+  computed: {
+    // 可用机器人：根据当前模板过滤
+    availableRobots() {
+      if (!this.currentTemplate || !this.currentTemplate.robotGroupIds || this.currentTemplate.robotGroupIds.length === 0) {
+        return []
+      }
+      const allowedGroupIds = this.currentTemplate.robotGroupIds.map(id => Number(id))
+      return this.robotOptions.filter(robot => {
+        const isHealthy = robot.status === 1 && robot.hardwareStatus === 0
+        const inAllowedGroup = allowedGroupIds.includes(Number(robot.groupId))
+        return isHealthy && inAllowedGroup
+      }).sort((a, b) => {
+        const aHealthy = (a.status === 1 && a.hardwareStatus === 0) ? 1 : 0
+        const bHealthy = (b.status === 1 && b.hardwareStatus === 0) ? 1 : 0
+        return bHealthy - aHealthy
+      })
+    },
+    // 当前选中的模板
+    currentTemplate() {
+      if (!this.taskForm.templateId) return null
+      return this.templateOptions.find(t => t.id === this.taskForm.templateId)
+    }
+  },
+  created() {
+    this.getRobotData()
+    this.getRobotGroups()
+    this.getTemplates()
+    this.getList()
+    this.getOperationList()
+    this.debouncedQuery = debounce(this.handleQuery, 500)
+  },
+  beforeDestroy() {
+    this.debouncedQuery.cancel()
+  },
+  methods: {
+    getInitialTaskForm() {
+      return {
+        id: undefined,
+        name: '',
+        templateId: undefined,
+        formData: {},
+        priority: 2,
+        isGroupTask: false,
+        duration: 30,
+        taskType: 1,
+        cronExpression: '',
+        scheduledTime: undefined,
+        batteryThreshold: 80,
+        idleTime: 30,
+        robotId: undefined,
+        robotGroupId: undefined,
+      }
+    },
+    // 格式化机器人状态显示
+    formatRobotStatus(robot) {
+      if (robot.status === 1 && robot.hardwareStatus === 0) return '在线正常'
+      if (robot.status === 1 && robot.hardwareStatus === 1) return '硬件警告'
+      if (robot.status === 1 && robot.hardwareStatus === 2) return '硬件故障'
+      if (robot.status === 0) return '离线'
+      if (robot.status === 2) return '待激活'
+      return '未知'
+    },
+    async getOperationList() {
+      try {
+        const res = await listOperation()
+        this.operationList = res.data || []
+      } catch (error) {
+        console.warn('获取操作列表失败', error)
+        this.operationList = []
+      }
+    },
+    // 获取机器人列表
+    async getRobotData() {
+      try {
+        const res = await listRobots({ pageSize: 1000 })
+        this.robotOptions = res.rows || []
+      } catch (error) {
+        this.$message.error('获取机器人列表失败')
+      }
+    },
+    // 获取机器人组
+    async getRobotGroups() {
+      try {
+        const res = await listGroups()
+        this.robotGroupOptions = res.rows || []
+      } catch (error) {
+        this.$message.error('获取机器人组失败')
+      }
+    },
+    // 获取模板列表
+    async getTemplates() {
+      try {
+        const res = await listTemplate({ pageSize: 100 })
+        this.templateOptions = (res.rows || []).map(tpl => {
+          let fields = [], steps = []
+          try {
+            if (tpl.formContent) {
+              const content = JSON.parse(tpl.formContent)
+              fields = content.fields || []
+            }
+            if (tpl.workflow) {
+              const wf = JSON.parse(tpl.workflow)
+              steps = wf.steps || []
+            }
+          } catch (e) {
+            console.warn('解析模板内容失败', e)
+          }
+          let robotGroupIds = []
+          if (tpl.robotGroupIds) {
+            if (Array.isArray(tpl.robotGroupIds)) {
+              robotGroupIds = tpl.robotGroupIds
+            } else if (typeof tpl.robotGroupIds === 'string') {
+              robotGroupIds = tpl.robotGroupIds.split(',').map(s => Number(s.trim()))
+            }
+          }
+          return { ...tpl, fields, steps, robotGroupIds }
+        })
+      } catch (error) {
+        this.$message.error('获取模板列表失败')
+      }
+    },
+    // 获取任务列表
+    async getList() {
+      this.loading = true
+      try {
+        const res = await listTask(this.queryParams)
+        this.taskList = res.rows || []
+        this.total = res.total || 0
+      } catch (error) {
+        this.$message.error('获取任务列表失败')
+      } finally {
+        this.loading = false
+      }
+    },
+    handleQuery() {
+      this.queryParams.pageNum = 1
+      this.getList()
+    },
+    // 状态映射
+    getStatusText(status) {
+      const map = { 3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止' }
+      return map[status] || status
+    },
+    getStatusClass(status) {
+      const map = { 3: 'pending', 1: 'ready', 0: 'executing', 2: 'paused', 6: 'completed', 4: 'disabled', 5: 'aborted' }
+      return map[status] || 'pending'
+    },
+    getTriggerTypeText(type) {
+      const map = { 1: '定时任务', 2: '电量任务', 3: '闲时任务' }
+      return map[type] || type
+    },
+    getTriggerTypeTag(type) {
+      const map = { 1: 'primary', 2: 'success', 3: 'warning' }
+      return map[type] || 'info'
+    },
+    // 编辑权限：只有已禁用的任务可编辑
+    canEdit(row) {
+      return row.status === 4
+    },
+    // 删除权限：已禁用可删除
+    canDelete(row) {
+      return row.status === 4
+    },
+    // 状态操作
+    handlePause(row) {
+      this.$confirm('确认暂停该任务吗？', '提示', { type: 'info' })
+        .then(() => pauseTask(row.id))
+        .then(() => {
+          this.$message.success('已暂停')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    handleContinue(row) {
+      this.$confirm('确认继续该任务吗？', '提示', { type: 'info' })
+        .then(() => continueTask(row.id))
+        .then(() => {
+          this.$message.success('已继续')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    handleCancel(row) {
+      this.$confirm('确认取消该任务吗？', '警告', { type: 'warning' })
+        .then(() => cancelTask(row.id))
+        .then(() => {
+          this.$message.success('已取消')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    async handleTerminate(row) {
+      try {
+        const { value: reason } = await this.$prompt('请输入终止原因', '终止任务', {
           inputPlaceholder: '终止原因'
         })
-        await terminateTask(id, reason)
-        ElMessage.success('已终止')
-        break
-      }
-      case 'ban':
-        await banTask(id)
-        ElMessage.success('已禁用')
-        break
-      case 'resume':
-        await resumeTask(id)
-        ElMessage.success('已恢复')
-        break
-    }
-    getList()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
-  }
-}
-
-// 删除任务
-const handleDelete = (row) => {
-  ElMessageBox.confirm('确认删除该任务吗？', '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    await delTask(row.id)
-    ElMessage.success('删除成功')
-    getList()
-  }).catch(() => {})
-}
-
-// ========== 任务创建/编辑对话框 ==========
-const dialog = reactive({
-  visible: false,
-  title: '',
-  mode: 'create', // 'create' or 'edit'
-  loading: false
-})
-
-const taskFormRef = ref()
-const taskForm = reactive({
-  id: undefined,
-  name: '',
-  type: 'process', // 'process' or 'simple'
-  templateId: undefined,
-  simpleAction: '',
-  formData: {}, // 存储动态表单值
-  priority: 2,
-  isGroupTask: false,
-  duration: 30,
-  taskType: 1, // 1定时 2电量 3闲时
-  cronExpression: '',
-  scheduledTime: undefined,
-  batteryThreshold: 80,
-  idleTime: 30,
-  robotId: undefined,
-  robotGroupId: undefined,
-})
-
-const taskRules = {
-  name: [{ required: true, message: '请输入任务名称', trigger: 'blur' }],
-  templateId: [{ required: true, message: '请选择模板', trigger: 'change' }],
-  simpleAction: [{ required: true, message: '请选择简单动作', trigger: 'change' }],
-  targetId: [{ required: true, message: '请选择机器人或机器人组', trigger: 'change' }],
-  batteryThreshold: [{ required: true, message: '请输入触发电量', trigger: 'blur' }],
-  idleTime: [{ required: true, message: '请输入闲时等待时间', trigger: 'blur' }],
-}
-
-// 当前选中的模板
-const currentTemplate = computed(() => {
-  if (!taskForm.templateId) return null
-  return templateOptions.value.find(t => t.id === taskForm.templateId)
-})
-
-// 模板变更时初始化formData
-const onTemplateChange = (val) => {
-  const template = templateOptions.value.find(t => t.id === val)
-  if (template) {
-    // 解析模板字段
-    let fields = []
-    try {
-      if (template.formContent) {
-        const content = JSON.parse(template.formContent)
-        fields = content.fields || []
-      }
-    } catch (e) {
-      console.warn('解析模板字段失败', e)
-    }
-    // 初始化formData
-    const formData = {}
-    fields.forEach(field => {
-      formData[field.id] = ''
-    })
-    taskForm.formData = formData
-  }
-}
-
-// 打开新增对话框
-const handleAdd = (type) => {
-  dialog.mode = 'create'
-  dialog.title = type === 'process' ? '创建流程任务' : '创建简单任务'
-  // 重置表单
-  taskForm.id = undefined
-  taskForm.name = ''
-  taskForm.type = type
-  taskForm.templateId = undefined
-  taskForm.simpleAction = ''
-  taskForm.formData = {}
-  taskForm.priority = 2
-  taskForm.isGroupTask = false
-  taskForm.duration = 30
-  taskForm.taskType = 1
-  taskForm.cronExpression = ''
-  taskForm.scheduledTime = undefined
-  taskForm.batteryThreshold = 80
-  taskForm.idleTime = 30
-  taskForm.robotId = undefined
-  taskForm.robotGroupId = undefined
-  dialog.visible = true
-}
-
-// 打开编辑对话框
-const handleEdit = (row) => {
-  dialog.mode = 'edit'
-  dialog.title = '修改任务'
-  // 填充基本信息（注意：编辑时通常不允许修改模板和表单内容，仅修改基本信息）
-  taskForm.id = row.id
-  taskForm.name = row.name
-  taskForm.type = row.templateId ? 'process' : 'simple'
-  taskForm.templateId = row.templateId
-  taskForm.simpleAction = row.simpleAction || ''
-  taskForm.priority = row.priority
-  taskForm.isGroupTask = row.isGroupTask === 1
-  taskForm.duration = row.duration
-  taskForm.taskType = row.taskType
-  taskForm.cronExpression = row.cronExpression || ''
-  taskForm.scheduledTime = row.scheduledTime
-  taskForm.batteryThreshold = row.batteryThreshold
-  taskForm.idleTime = row.idleTime
-  taskForm.robotId = row.robotId
-  taskForm.robotGroupId = row.robotGroupId
-  // 解析formData（如果需要展示，但编辑时通常不修改表单内容）
-  if (row.formContent) {
-    try {
-      taskForm.formData = JSON.parse(row.formContent) || {}
-    } catch (e) {
-      taskForm.formData = {}
-    }
-  } else {
-    taskForm.formData = {}
-  }
-  dialog.visible = true
-}
-
-// 取消对话框
-const cancelTaskDialog = () => {
-  dialog.visible = false
-  taskFormRef.value?.resetFields()
-}
-
-// 提交任务
-const submitTask = async () => {
-  if (!taskFormRef.value) return
-  await taskFormRef.value.validate(async (valid) => {
-    if (!valid) return
-    dialog.loading = true
-    try {
-      // 构造DTO
-      const dto = {
-        name: taskForm.name,
-        priority: taskForm.priority,
-        isGroupTask: taskForm.isGroupTask ? 1 : 0,
-        duration: taskForm.duration,
-        taskType: taskForm.taskType,
-        cronExpression: taskForm.cronExpression,
-        scheduledTime: taskForm.scheduledTime,
-        batteryThreshold: taskForm.batteryThreshold,
-        idleTime: taskForm.idleTime,
-        robotId: taskForm.isGroupTask ? null : taskForm.robotId,
-        robotGroupId: taskForm.isGroupTask ? taskForm.robotGroupId : null,
-        formContent: JSON.stringify(taskForm.formData) // 将表单值序列化
-      }
-
-      // 如果是流程任务，需要传templateId
-      if (taskForm.type === 'process') {
-        dto.templateId = taskForm.templateId
-      }
-
-      let taskId
-      if (dialog.mode === 'create') {
-        const res = await addTask(dto)
-        taskId = res.data.id
-        ElMessage.success('创建成功')
-      } else {
-        await updateTask(taskForm.id, dto)
-        taskId = taskForm.id
-        ElMessage.success('修改成功')
-      }
-
-      // 如果是新增流程任务，需要创建步骤
-      if (dialog.mode === 'create' && taskForm.type === 'process' && currentTemplate.value) {
-        await createTaskSteps(taskId, currentTemplate.value)
-      }
-
-      dialog.visible = false
-      getList()
-    } catch (error) {
-      console.error(error)
-      ElMessage.error('操作失败')
-    } finally {
-      dialog.loading = false
-    }
-  })
-}
-
-// 根据模板创建任务步骤
-const createTaskSteps = async (taskId, template) => {
-  let steps = []
-  try {
-    if (template.workflow) {
-      const wf = JSON.parse(template.workflow)
-      steps = wf.steps || []
-    }
-  } catch (e) {
-    console.warn('解析workflow失败', e)
-  }
-  if (steps.length === 0) return
-
-  // 构造TaskStepDto列表
-  const stepDtos = steps.map((step, index) => ({
-    stepName: step.name,
-    description: step.description,
-    orderNum: index + 1
-  }))
-  await addTaskSteps(taskId, stepDtos)
-}
-
-// ========== 任务详情对话框 ==========
-const detailDialog = reactive({
-  visible: false
-})
-const detailLoading = ref(false)
-const currentTask = ref(null)
-const taskSteps = ref([])
-const taskLogs = ref([])
-const formFields = ref([]) // 用于展示表单字段定义
-
-const handleView = async (row) => {
-  detailLoading.value = true
-  detailDialog.visible = true
-  try {
-    // 获取任务详情
-    const taskRes = await getTask(row.id)
-    currentTask.value = taskRes.data
-
-    // 解析表单字段定义（从模板）
-    if (currentTask.value.templateId) {
-      const template = templateOptions.value.find(t => t.id === currentTask.value.templateId)
-      if (template && template.formContent) {
-        try {
-          const content = JSON.parse(template.formContent)
-          formFields.value = content.fields || []
-        } catch (e) {
-          formFields.value = []
+        await terminateTask(row.id, reason)
+        this.$message.success('已终止')
+        this.getList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          this.$message.error('操作失败')
         }
-      } else {
-        formFields.value = []
       }
-    } else {
-      formFields.value = [] // 简单任务无模板字段
+    },
+    handleBan(row) {
+      this.$confirm('确认禁用该任务吗？', '警告', { type: 'warning' })
+        .then(() => banTask(row.id))
+        .then(() => {
+          this.$message.success('已禁用')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    handleResume(row) {
+      this.$confirm('确认恢复该任务吗？', '提示', { type: 'info' })
+        .then(() => resumeTask(row.id))
+        .then(() => {
+          this.$message.success('已恢复')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    // 删除任务
+    handleDelete(row) {
+      this.$confirm('确认删除该任务吗？', '警告', { type: 'warning' })
+        .then(() => delTask(row.id))
+        .then(() => {
+          this.$message.success('删除成功')
+          this.getList()
+        })
+        .catch(() => {})
+    },
+    // 下载文件
+    downloadFile(url, fileName) {
+      const fullUrl = url.startsWith('http') ? url : process.env.VUE_APP_BASE_API + url
+      const link = document.createElement('a')
+      link.href = fullUrl
+      link.download = fileName || 'download'
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+    // ==================== 任务对话框方法 ====================
+
+    // 打开新增对话框
+    handleAdd() {
+      this.dialog.mode = 'create'
+      this.dialog.title = '创建任务'
+      this.taskForm = this.getInitialTaskForm()
+      this.generatedSteps = []
+      this.dialog.visible = true
+    },
+    // 打开编辑对话框
+    handleEdit(row) {
+      this.dialog.mode = 'edit'
+      this.dialog.title = '修改任务'
+      this.taskForm = {
+        id: row.id,
+        name: row.name,
+        templateId: row.templateId,
+        priority: row.priority,
+        isGroupTask: row.isGroupTask === 1,
+        duration: row.duration,
+        taskType: row.taskType,
+        cronExpression: row.cronExpression || '',
+        scheduledTime: row.scheduledTime,
+        batteryThreshold: row.batteryThreshold,
+        idleTime: row.idleTime,
+        robotId: row.robotId ? Number(row.robotId) : undefined,
+        robotGroupId: row.robotGroupId ? Number(row.robotGroupId) : undefined,
+        formData: {}
+      }
+      // 解析formData
+      if (row.formContent) {
+        try {
+          const parsed = JSON.parse(row.formContent) || {}
+          // 确保文件字段是数组
+          if (this.currentTemplate && this.currentTemplate.fields) {
+            this.currentTemplate.fields.forEach(field => {
+              if (['image','video','audio','file'].includes(field.type)) {
+                if (parsed[field.id] && typeof parsed[field.id] === 'string') {
+                  parsed[field.id] = [{ name: '已上传文件', url: parsed[field.id] }]
+                } else if (!parsed[field.id]) {
+                  parsed[field.id] = []
+                }
+              }
+            })
+          }
+          this.taskForm.formData = parsed
+        } catch (e) {
+          this.taskForm.formData = {}
+        }
+      }
+      // 生成步骤预览
+      this.$nextTick(() => {
+        this.updateStepPreview()
+      })
+      this.dialog.visible = true
+    },
+    // 取消对话框
+    cancelTaskDialog() {
+      this.dialog.visible = false
+      this.$refs.taskFormRef?.resetFields()
+      this.generatedSteps = []
+    },
+    // 模板变更时初始化formData
+    onTemplateChange(val) {
+      const template = this.templateOptions.find(t => t.id === val)
+      if (template) {
+        const formData = {}
+        template.fields.forEach(field => {
+          if (['image','video','audio','file'].includes(field.type)) {
+            formData[field.id] = []
+          } else {
+            formData[field.id] = ''
+          }
+        })
+        this.taskForm.formData = formData
+        this.taskForm.robotId = undefined
+        this.updateStepPreview()
+      }
+    },
+    // 更新步骤预览 - 用于前端展示
+    updateStepPreview() {
+      if (this.currentTemplate && this.currentTemplate.steps) {
+        this.generatedSteps = this.generateStepsFromTemplate(this.currentTemplate, this.taskForm.formData)
+      } else {
+        this.generatedSteps = []
+      }
+    },
+    // 根据模板和表单数据生成步骤列表（仅用于前端预览）
+    generateStepsFromTemplate(template, formData) {
+      if (!template || !template.steps) return []
+
+      return template.steps.map((step, index) => {
+        let description = step.description || ''
+        if (formData) {
+          Object.entries(formData).forEach(([key, val]) => {
+            const placeholder = new RegExp(`\\{${key}\\}`, 'g')
+            let displayValue = val
+            if (Array.isArray(val)) {
+              displayValue = val.length > 0 ? `[${val.length}个文件]` : ''
+            }
+            description = description.replace(placeholder, displayValue || `{${key}}`)
+          })
+        }
+
+        return {
+          stepName: step.name,
+          description: description,
+          orderNum: index + 1,
+          status: 0
+        }
+      })
+    },
+    // 提交任务
+    async submitTask() {
+      this.$refs.taskFormRef.validate(async (valid) => {
+        if (!valid) return
+
+        // 检查机器人/机器人组选择
+        if (this.taskForm.isGroupTask) {
+          if (!this.taskForm.robotGroupId) {
+            this.$message.error('请选择机器人组')
+            return
+          }
+        } else {
+          if (!this.taskForm.robotId) {
+            this.$message.error('请选择机器人')
+            return
+          }
+        }
+
+        this.dialog.loading = true
+        try {
+          const dto = {
+            name: this.taskForm.name,
+            templateId: this.taskForm.templateId,
+            priority: this.taskForm.priority,
+            isGroupTask: this.taskForm.isGroupTask ? 1 : 0,
+            duration: this.taskForm.duration,
+            taskType: this.taskForm.taskType,
+            cronExpression: this.taskForm.cronExpression,
+            scheduledTime: this.taskForm.scheduledTime,
+            batteryThreshold: this.taskForm.batteryThreshold,
+            idleTime: this.taskForm.idleTime,
+            robotId: this.taskForm.isGroupTask ? null : this.taskForm.robotId,
+            robotGroupId: this.taskForm.isGroupTask ? this.taskForm.robotGroupId : null,
+            formContent: JSON.stringify(this.taskForm.formData)
+          }
+
+          if (this.dialog.mode === 'create') {
+            // 后端已修改：创建任务时自动创建步骤，前端只需调用 addTask
+            await addTask(dto)
+            this.$message.success('创建成功')
+          } else {
+            // 编辑任务：后端 updateTask 也会自动重新生成步骤（仅当任务为 DISABLED 状态时）
+            await updateTask(this.taskForm.id, dto)
+            this.$message.success('修改成功')
+          }
+
+          this.dialog.visible = false
+          this.getList()
+        } catch (error) {
+          console.error(error)
+          this.$message.error(error.message || '操作失败')
+        } finally {
+          this.dialog.loading = false
+        }
+      })
+    },
+    // 查看详情
+    async handleView(row) {
+      this.detailLoading = true
+      this.detailDialog.visible = true
+      try {
+        const [taskRes, stepsRes, logsRes] = await Promise.all([
+          getTask(row.id),
+          getTaskSteps(row.id),
+          listLogByTask(row.id)
+        ])
+
+        this.currentTask = taskRes.data
+
+        // 解析表单数据
+        if (this.currentTask.formContent) {
+          try {
+            this.currentTask.formData = JSON.parse(this.currentTask.formContent)
+          } catch (e) {
+            this.currentTask.formData = {}
+          }
+        } else {
+          this.currentTask.formData = {}
+        }
+
+        // 解析表单字段定义
+        if (this.currentTask.templateId) {
+          const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
+          if (template) {
+            this.formFields = template.fields || []
+            // 确保文件字段格式正确
+            this.formFields.forEach(field => {
+              if (['image','video','audio','file'].includes(field.type)) {
+                const value = this.currentTask.formData[field.id]
+                if (value && typeof value === 'string') {
+                  this.currentTask.formData[field.id] = [{ name: '已上传文件', url: value }]
+                } else if (!value || !Array.isArray(value)) {
+                  this.currentTask.formData[field.id] = []
+                }
+              }
+            })
+          } else {
+            this.formFields = []
+          }
+        } else {
+          this.formFields = []
+        }
+
+        // 处理步骤数据
+        const stepsData = stepsRes.data || []
+        this.taskSteps = stepsData.map(step => ({
+          ...step,
+          orderNum: step.orderNum || 0,
+          stepName: step.stepName || step.name || '未命名步骤',
+          description: step.description || '-',
+          status: step.status || 0,
+          operationName: this.getOperationName(step.operationId)
+        })).sort((a, b) => a.orderNum - b.orderNum)
+
+        this.taskLogs = logsRes.rows || []
+      } catch (error) {
+        console.error('查看详情失败:', error)
+        this.$message.error('获取详情失败: ' + (error.message || '未知错误'))
+        this.detailDialog.visible = false
+      } finally {
+        this.detailLoading = false
+      }
+    },
+    getOperationName(operationId) {
+      if (!operationId) return '-'
+      const op = this.operationList.find(o => o.id === operationId)
+      return op ? op.name : `操作${operationId}`
     }
-
-    // 获取步骤
-    const stepsRes = await getTaskSteps(row.id)
-    taskSteps.value = stepsRes.data || []
-
-    // 获取日志
-    const logsRes = await listLogByTask(row.id)
-    taskLogs.value = logsRes.rows || []
-  } catch (error) {
-    ElMessage.error('获取详情失败')
-    detailDialog.visible = false
-  } finally {
-    detailLoading.value = false
   }
 }
-
-// 格式化表单值展示
-const formatFormValue = (field, value) => {
-  if (value === null || value === undefined) return '-'
-  if (Array.isArray(value)) {
-    return value.map(v => v.name || v).join(', ')
-  }
-  return String(value)
-}
-
-// 步骤状态
-const stepStatusMap = {
-  0: 'pending', 1: 'executing', 2: 'completed', 3: 'paused', 4: 'terminated'
-}
-const stepStatusTextMap = {
-  0: '未开始', 1: '执行中', 2: '已完成', 3: '已暂停', 4: '已终止'
-}
-const getStepStatusText = (status) => stepStatusTextMap[status] || status
-const getStepStatusClass = (status) => stepStatusMap[status] || 'pending'
-
-onMounted(() => {
-  getList()
-  fetchTemplates()
-})
 </script>
 
 <style scoped>
@@ -927,5 +1033,11 @@ onMounted(() => {
   color: #999;
   line-height: 1;
   margin-top: 4px;
+}
+.el-button [class*="fas"] {
+  font-size: 14px;
+}
+.el-table .cell .el-button + .el-button {
+  margin-left: 4px;
 }
 </style>

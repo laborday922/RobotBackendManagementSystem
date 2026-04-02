@@ -64,6 +64,12 @@ public interface RobotsMapper
     @Select("select count(id) from robots where group_id = #{groupId}")
     public Integer countByGroupId(Long categoryId);
 
-    @Select("select count(id) from robots where group_id = #{groupId}")
+    @Select("select count(id) from robots where code = #{code}")
     int selectRobotsByCode(String code);
+
+    @Select("select task_status from robots where id = #{id}")
+    int selectTaskStatusById(Long id);
+
+    @Select("select hardware_status from robots where id = #{id}")
+    int selectHardwareStatusById(Long id);
 }

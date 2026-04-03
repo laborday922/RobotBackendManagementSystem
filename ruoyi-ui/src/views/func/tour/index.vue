@@ -522,15 +522,27 @@ export default {
       contentImportInput: null
     };
   },
-  created() {
-    this.getRobotList();
-    this.loadMaps();
-    this.loadRoutes();
+  // 关键修改：使用 async/await 确保数据加载顺序
+  async created() {
+    // 1. 先获取机器人列表
+    await this.getRobotList();
+
+    // 2. 再获取地图列表
+    await this.loadMaps();
+
+    // 3. 最后获取路线列表（此时 mapList 已存在）
+    await this.loadRoutes();
+
+    // 4. 如果已选择机器人，加载其他数据
+    if (this.selectedRobotId) {
+      this.loadGeneralConfig();
+      this.loadContentList();
+    }
   },
   methods: {
-    // 🔥 关键修改：获取机器人列表 - 只显示 robot_id 为 8 和 9 的机器人
+    // 修改：返回 Promise，支持 await
     getRobotList() {
-      listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
+      return listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
         // 只保留 robot_id 为 8 和 9 的机器人
         this.robotList = response.rows.filter(robot =>
           robot.robotId === 8 || robot.robotId === 9
@@ -538,8 +550,6 @@ export default {
 
         if (this.robotList.length > 0) {
           this.selectedRobotId = this.robotList[0].robotId;
-          this.loadGeneralConfig();
-          this.loadContentList();
         } else {
           this.$message.warning('暂无可用机器人（需要 ID 为 8 或 9 的机器人）');
         }
@@ -567,21 +577,23 @@ export default {
       this.loadContentList();
     },
 
-    // 加载地图列表
+    // 修改：返回 Promise，支持 await
     loadMaps() {
-      getMapList().then(response => {
+      return getMapList().then(response => {
         this.mapList = response.rows || response.data || [];
       }).catch(error => {
         console.error('获取地图列表失败:', error);
+        this.mapList = [];
       });
     },
 
-    // 加载路线列表
+    // 修改：返回 Promise，支持 await
     loadRoutes() {
-      getRouteList().then(response => {
+      return getRouteList().then(response => {
         this.routeList = response.rows || response.data || [];
       }).catch(error => {
         console.error('获取路线列表失败:', error);
+        this.routeList = [];
       });
     },
 
@@ -669,7 +681,7 @@ export default {
       }
     },
 
-    // 获取地图名称
+    // 获取地图名称（此时 mapList 已确保加载完成）
     getMapName(mapId) {
       const map = this.mapList.find(m => m.mapId === mapId);
       return map ? map.mapName : '未知';
@@ -876,7 +888,6 @@ export default {
         try {
           const importedData = JSON.parse(e.target.result);
 
-          // 支持单个对象或数组
           let contentsToImport = Array.isArray(importedData) ? importedData : [importedData];
 
           if (contentsToImport.length === 0) {
@@ -884,7 +895,6 @@ export default {
             return;
           }
 
-          // 验证数据结构
           const isValid = contentsToImport.every(item =>
             item.pointName && typeof item.pointName === 'string'
           );
@@ -906,12 +916,10 @@ export default {
             let successCount = 0;
             let failCount = 0;
 
-            // 逐条保存
             const promises = contentsToImport.map(content => {
               const saveData = {
                 ...content,
                 robotId: this.selectedRobotId,
-                // 移除可能存在的ID，避免覆盖原有数据
                 contentId: undefined
               };
               return saveTourContent(saveData).then(() => {
@@ -929,9 +937,6 @@ export default {
               } else {
                 this.$message.error('导入失败，请检查文件格式');
               }
-            }).catch(err => {
-              console.error('批量导入失败:', err);
-              this.$message.error('批量导入失败');
             });
           }).catch(() => {});
         } catch (error) {
@@ -949,7 +954,6 @@ export default {
         return;
       }
 
-      // 导出时移除不需要的字段
       const exportData = this.contentList.map(item => ({
         pointName: item.pointName,
         pointDesc: item.pointDesc,
@@ -1196,7 +1200,6 @@ export default {
             return;
           }
 
-          // 验证数据结构
           const isValid = routesToImport.every(item =>
             item.routeName && typeof item.routeName === 'string'
           );
@@ -1221,7 +1224,7 @@ export default {
             const promises = routesToImport.map(route => {
               const saveData = {
                 ...route,
-                routeId: undefined  // 移除原有ID，避免冲突
+                routeId: undefined
               };
               return saveRoute(saveData).then(() => {
                 successCount++;
@@ -1255,7 +1258,6 @@ export default {
         return;
       }
 
-      // 导出时移除不必要的字段
       const exportData = this.routeList.map(route => ({
         routeName: route.routeName,
         mapId: route.mapId,

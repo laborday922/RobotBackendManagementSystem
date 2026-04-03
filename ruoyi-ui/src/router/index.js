@@ -120,9 +120,8 @@ export const constantRoutes = [
         meta: { title: '异常处理', icon: 'bug' }
       }
     ]
-  }
-]
- // ========== 模式管理模块 ==========
+  },
+  // ========== 模式管理模块 ==========
   {
     path: '/mode',
     component: Layout,
@@ -130,7 +129,7 @@ export const constantRoutes = [
     name: 'Mode',
     meta: {
       title: '模式管理',
-      icon: 'cascader',
+      icon: 'el-icon-setting',
       roles: ['admin']
     },
     children: [
@@ -140,7 +139,7 @@ export const constantRoutes = [
         name: 'Quick',
         meta: {
           title: '快捷操作',
-          icon: 'flash',
+          icon: 'el-icon-thumb',
           noCache: true
         }
       },
@@ -150,7 +149,7 @@ export const constantRoutes = [
         name: 'Switch',
         meta: {
           title: '模式切换',
-          icon: 'exchange',
+          icon: 'el-icon-refresh',
           noCache: true
         }
       },
@@ -160,7 +159,7 @@ export const constantRoutes = [
         name: 'Schedule',
         meta: {
           title: '模式排程',
-          icon: 'date',
+          icon: 'el-icon-date',
           noCache: true
         }
       },
@@ -170,7 +169,7 @@ export const constantRoutes = [
         name: 'History',
         meta: {
           title: '历史记录',
-          icon: 'history',
+          icon: 'el-icon-time',
           noCache: true
         }
       },
@@ -180,12 +179,13 @@ export const constantRoutes = [
         name: 'Edit',
         meta: {
           title: '编辑模式',
-          icon: 'edit',
+          icon: 'el-icon-edit',
           noCache: true
         }
       }
     ]
   },
+  // ========== 功能管理模块 ==========
   {
     path: '/func',
     component: Layout,
@@ -194,29 +194,39 @@ export const constantRoutes = [
     name: 'FuncManagement',
     meta: {
       title: '功能管理',
-      icon: 'clipboard'
+      icon: 'el-icon-collection'
     },
     children: [
       {
         path: 'reception',
         component: () => import('@/views/func/reception/index.vue'),
         name: 'Reception',
-        meta: { title: '业务接待', icon: 'handshake' }
+        meta: {
+          title: '业务接待',
+          icon: 'el-icon-service'
+        }
       },
       {
         path: 'nav',
         component: () => import('@/views/func/nav/index.vue'),
         name: 'Nav',
-        meta: { title: '导航指引', icon: 'map-signs' }
+        meta: {
+          title: '导航指引',
+          icon: 'el-icon-location'
+        }
       },
       {
         path: 'tour',
         component: () => import('@/views/func/tour/index'),
         name: 'Tour',
-        meta: { title: '智能讲解', icon: 'chalkboard-teacher' }
+        meta: {
+          title: '智能讲解',
+          icon: 'el-icon-microphone'
+        }
       }
     ]
-  },
+  }
+]
 
 // 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [

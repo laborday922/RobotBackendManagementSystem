@@ -1,5 +1,6 @@
 package com.ruoyi.data.metric.controller;
 
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.data.metric.domain.bo.MetricDefinition;
 import com.ruoyi.data.metric.service.MetricDefinitionService;
 import org.springframework.web.bind.annotation.*;
@@ -15,29 +16,39 @@ public class MetricDefinitionController {
     private MetricDefinitionService service;
 
     @PostMapping("/create")
-    public Long create(@RequestBody MetricDefinition metric) {
-        return service.create(metric);
+    public AjaxResult create(@RequestBody MetricDefinition metric) {
+        Long id = service.create(metric);
+        return AjaxResult.success(id);
     }
 
     @GetMapping("/{id}")
-    public MetricDefinition getById(@PathVariable Long id) {
-        return service.getById(id);
+    public AjaxResult getById(@PathVariable Long id) {
+        MetricDefinition metric = service.getById(id);
+        return AjaxResult.success(metric);
     }
 
     @GetMapping("/list")
-    public List<MetricDefinition> listAll() {
-        return service.listAll();
+    public AjaxResult listAll() {
+        List<MetricDefinition> list = service.listAll();
+        return AjaxResult.success(list);
     }
 
     @PutMapping("/update")
-    public String update(@RequestBody MetricDefinition metric) {
+    public AjaxResult update(@RequestBody MetricDefinition metric) {
         service.update(metric);
-        return "success";
+        return AjaxResult.success();
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Long id) {
+    public AjaxResult delete(@PathVariable Long id) {
         service.delete(id);
-        return "success";
+        return AjaxResult.success();
+    }
+
+    //获取数据表字段
+    @GetMapping("/fields")
+    public AjaxResult getFields(@RequestParam String tableName) {
+        List<String> fields = service.getFieldsByTableName(tableName);
+        return AjaxResult.success(fields);
     }
 }

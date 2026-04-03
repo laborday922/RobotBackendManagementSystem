@@ -36,6 +36,7 @@ logging:
   level:
     com.ruoyi: debug
     org.springframework: warn
+    com.ruoyi.taskmgt: ERROR
 
 # 用户配置
 user:
@@ -90,7 +91,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update   # 生产环境用 validate 或 none，开发时可先设为 update 自动建表
-    show-sql: true         # 显示 SQL 日志（便于调试）
+    show-sql: false         # 显示 SQL 日志（便于调试）
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     properties:
       hibernate:
@@ -145,6 +146,6 @@ xss:
 
 #通义
 tongyi:
-  api-key: roiy's apikey
+  api-key: sk-5ac684bcfa7043a48dfa23e1a6c71971
   model: qwen-plus   # 可根据需要选择 qwen-turbo, qwen-plus, qwen-max 等
   enable-search: true

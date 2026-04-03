@@ -35,4 +35,6 @@ public class CleanExecuteHistory {
     private Integer status;
 
     private LocalDateTime createTime;
+
+    private String cronExpression;
 }

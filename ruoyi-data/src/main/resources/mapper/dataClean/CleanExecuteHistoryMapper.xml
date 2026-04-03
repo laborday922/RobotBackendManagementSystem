@@ -17,10 +17,10 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO clean_rule_config
-            (execute_mode, apply_data_source, run_time, config_json, status,cron_expression)
+            (execute_mode, apply_data_source, run_time, config_json, status,create_time,cron_expression)
         VALUES
             (#{executeMode}, #{applyDataSource}, #{runTime},
-             #{configJson}, #{status}, #{cronExpression})
+             #{configJson}, #{status}, #{createTime}, #{cronExpression})
     </insert>
 
     <select id="selectById" resultMap="BaseResultMap">

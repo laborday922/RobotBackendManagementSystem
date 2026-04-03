@@ -105,4 +105,10 @@ public class MetricDefinitionServiceImpl implements MetricDefinitionService {
 
         return bo;
     }
+
+    //获取数据源字段
+    @Override
+    public List<String> getFieldsByTableName(String tableName) {
+        return mapper.selectColumnsByTableName(tableName);
+    }
 }

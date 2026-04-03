@@ -15,4 +15,7 @@ public interface MetricDefinitionService {
     void update(MetricDefinition bo);
 
     void delete(Long id);
+
+    //获取数据源字段
+    List<String> getFieldsByTableName(String tableName);
 }

@@ -56,4 +56,13 @@ public class TongYiService {
             throw new RuntimeException("AI服务暂时不可用，请稍后重试");
         }
     }
+
+    public String generateReport(String reportType, String timeRange, String data) {
+        String prompt = String.format(
+                "请根据以下数据生成一份%s报告。\n时间范围：%s\n数据：%s\n请输出分析+建议。",
+                reportType, timeRange, data
+        );
+
+        return chat(prompt);
+    }
 }

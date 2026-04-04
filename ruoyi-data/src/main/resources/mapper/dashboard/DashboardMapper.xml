@@ -8,10 +8,12 @@
     <select id="selectEvaluationTexts"
             resultType="com.ruoyi.data.dashboard.mapper.po.InteractionEvaluationPo">
 
-        SELECT evaluation_text AS evaluationText
-        FROM t_interaction_history
-        WHERE evaluation_text IS NOT NULL
-        AND evaluation_text != ''
+        SELECT clean_content AS evaluationText
+        FROM clean_interaction_result
+        WHERE clean_content IS NOT NULL
+        AND clean_content != '' AND task_id = (
+        SELECT MAX(task_id) FROM clean_interaction_result
+        )
 
         <if test="startTime != null">
             AND interaction_time &gt;= #{startTime}
@@ -19,10 +21,6 @@
 
         <if test="endTime != null">
             AND interaction_time &lt;= #{endTime}
-        </if>
-
-        <if test="rating != null">
-            AND rating = #{rating}
         </if>
 
     </select>
@@ -49,4 +47,117 @@
 
     </select>
 
+    <!-- 总数 -->
+    <select id="selectRobotTotalCount" resultType="int">
+        SELECT COUNT(*) FROM robots
+    </select>
+
+    <!-- 在线数 -->
+    <select id="selectOnlineRobotCount" resultType="int">
+        SELECT COUNT(*) FROM robots WHERE status = 1
+    </select>
+
+    <select id="selectTodayFeedbackCount" resultType="int">
+        SELECT COUNT(*) FROM t_interaction_history WHERE DATE(interaction_time) = CURDATE()
+    </select>
+    <select id="selectCompletedTaskCount" resultType="int">
+        SELECT COUNT(*) FROM tm_task WHERE status = 2   <!-- 假设2表示已完成 -->
+    </select>
+
+    <!-- 状态分布（饼图） -->
+    <select id="selectStatusDistribution"
+            resultType="com.ruoyi.data.dashboard.mapper.po.RobotStatusCountPo">
+
+        SELECT
+            status,
+            COUNT(*) AS count
+        FROM robots
+        GROUP BY status
+
+    </select>
+
+<!--    任务执行-->
+    <select id="selectTaskExecutions"
+            resultType="com.ruoyi.data.dashboard.mapper.po.TaskExecutionPo">
+
+        SELECT
+        id,
+        name,
+        robot_id AS robotId,
+        status,
+        scheduled_time AS scheduledTime,
+        priority
+        FROM tm_task
+        WHERE 1=1
+
+        <if test="startTime != null">
+            AND create_time &gt;= #{startTime}
+        </if>
+
+        <if test="endTime != null">
+            AND create_time &lt;= #{endTime}
+        </if>
+
+        <!-- 只查执行中 + 待执行 -->
+        AND status IN (0, 1)
+
+        ORDER BY priority DESC, scheduled_time ASC
+
+        LIMIT #{limit} OFFSET #{offset}
+
+    </select>
+
+    <!-- 机器人分组（含在线数和总数） -->
+    <select id="selectAllRobotGroups"
+            resultType="com.ruoyi.data.dashboard.mapper.po.RobotGroupPo">
+        SELECT
+            rg.id,
+            rg.name,
+            rg.description,
+            COUNT(r.id) AS totalCount,
+            COUNT(CASE WHEN r.status = 1 THEN 1 END) AS onlineCount
+        FROM robot_groups rg
+                 LEFT JOIN robots r ON r.group_id = rg.id
+        GROUP BY rg.id, rg.name, rg.description
+        ORDER BY rg.id ASC
+    </select>
+
+<!--    异常趋势-->
+    <!-- 异常趋势 -->
+    <select id="selectAnomalyTrend"
+            resultType="com.ruoyi.data.dashboard.mapper.po.AnomalyTrendPo">
+
+        SELECT
+        <choose>
+            <!-- 按小时 -->
+            <when test="granularity == 'hour'">
+                DATE_FORMAT(created_at, '%Y-%m-%d %H:00')
+            </when>
+
+            <!-- 按天 -->
+            <when test="granularity == 'day'">
+                DATE_FORMAT(created_at, '%Y-%m-%d')
+            </when>
+
+            <!-- 按周（推荐 ISO 周） -->
+            <when test="granularity == 'week'">
+                DATE_FORMAT(created_at, '%x-W%v')
+            </when>
+
+            <!-- 按月 -->
+            <when test="granularity == 'month'">
+                DATE_FORMAT(created_at, '%Y-%m')
+            </when>
+        </choose>
+        AS time,
+
+        COUNT(*) AS count
+
+        FROM robot_warnings
+        WHERE created_at BETWEEN #{startTime} AND #{endTime}
+
+        GROUP BY time
+        ORDER BY time ASC
+
+    </select>
 </mapper>

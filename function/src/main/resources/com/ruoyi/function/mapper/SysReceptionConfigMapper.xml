@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.function.mapper.SysReceptionConfigMapper">
+
+    <resultMap type="com.ruoyi.function.domain.SysReceptionConfig" id="SysReceptionConfigResult">
+        <id property="configId" column="config_id"/>
+        <result property="robotId" column="robot_id"/>
+        <result property="welcome" column="welcome"/>
+        <result property="repeat" column="repeat"/>
+        <result property="idle" column="idle"/>
+        <result property="vipEnabled" column="vip_enabled"/>
+        <result property="vipGreeting" column="vip_greeting"/>
+        <result property="vipMulti" column="vip_multi"/>
+        <result property="strangerEnabled" column="stranger_enabled"/>
+        <result property="strangerGreeting" column="stranger_greeting"/>
+        <result property="strangerMulti" column="stranger_multi"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select config_id, robot_id, welcome, `repeat`, idle, vip_enabled, vip_greeting,
+               vip_multi, stranger_enabled, stranger_greeting, stranger_multi,
+               create_by, create_time, update_by, update_time
+        from sys_reception_config
+    </sql>
+
+    <select id="selectByRobotId" resultMap="SysReceptionConfigResult">
+        <include refid="selectVo"/>
+        where robot_id = #{robotId}
+    </select>
+    <select id="selectList" resultType="com.ruoyi.function.domain.SysReceptionConfig"></select>
+
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysReceptionConfig" useGeneratedKeys="true" keyProperty="configId">
+        insert into sys_reception_config (
+            robot_id, welcome, `repeat`, idle, vip_enabled, vip_greeting,
+            vip_multi, stranger_enabled, stranger_greeting, stranger_multi,
+            create_by, create_time
+        ) values (
+                     #{robotId}, #{welcome}, #{repeat}, #{idle}, #{vipEnabled}, #{vipGreeting},
+                     #{vipMulti}, #{strangerEnabled}, #{strangerGreeting}, #{strangerMulti},
+                     #{createBy}, sysdate()
+                 )
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.function.domain.SysReceptionConfig">
+        update sys_reception_config
+        <set>
+            <if test="welcome != null">welcome = #{welcome},</if>
+            <if test="repeat != null">`repeat` = #{repeat},</if>
+            <if test="idle != null">idle = #{idle},</if>
+            <if test="vipEnabled != null">vip_enabled = #{vipEnabled},</if>
+            <if test="vipGreeting != null">vip_greeting = #{vipGreeting},</if>
+            <if test="vipMulti != null">vip_multi = #{vipMulti},</if>
+            <if test="strangerEnabled != null">stranger_enabled = #{strangerEnabled},</if>
+            <if test="strangerGreeting != null">stranger_greeting = #{strangerGreeting},</if>
+            <if test="strangerMulti != null">stranger_multi = #{strangerMulti},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where config_id = #{configId}
+    </update>
+</mapper>

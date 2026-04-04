@@ -1,5 +1,6 @@
 package com.ruoyi.data.clean.controller;
 
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.data.clean.service.ICleanRuleExecuteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,11 +18,13 @@ public class CleanRuleExecuteController {
     /**
      * 立即执行清洗任务
      */
-    @PostMapping("/{id}")
-    public String execute(@PathVariable("id") Long id) {
-
-        executeService.executeTask(id);
-
-        return "执行成功";
+    @PostMapping("/clean/{id}")
+    public AjaxResult execute(@PathVariable("id") Long id) {
+        try {
+            executeService.executeTask(id);
+            return AjaxResult.success("执行成功");
+        } catch (Exception e) {
+            return AjaxResult.error("执行失败：" + e.getMessage());
+        }
     }
 }

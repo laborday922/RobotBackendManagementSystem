@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.function.mapper.SysTourContentMapper">
+
+    <resultMap type="com.ruoyi.function.domain.SysTourContent" id="SysTourContentResult">
+        <id property="contentId" column="content_id"/>
+        <result property="robotId" column="robot_id"/>
+        <result property="pointId" column="point_id"/>
+        <result property="pointName" column="point_name"/>
+        <result property="pointDesc" column="point_desc"/>
+        <result property="broadcastType" column="broadcast_type"/>
+        <result property="broadcastText" column="broadcast_text"/>
+        <result property="audioFile" column="audio_file"/>
+        <result property="voiceType" column="voice_type"/>
+        <result property="speechRate" column="speech_rate"/>
+        <result property="intervalTime" column="interval_time"/>
+        <result property="contentType" column="content_type"/>
+        <result property="mediaFile" column="media_file"/>
+        <result property="armAction" column="arm_action"/>
+        <result property="chassisAngle" column="chassis_angle"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select content_id, robot_id, point_id, point_name, point_desc,
+               broadcast_type, broadcast_text, audio_file, voice_type,
+               speech_rate, interval_time, content_type, media_file,
+               arm_action, chassis_angle, order_num,
+               create_by, create_time, update_by, update_time
+        from sys_tour_content
+    </sql>
+
+    <select id="selectById" resultMap="SysTourContentResult">
+        <include refid="selectVo"/>
+        where content_id = #{contentId}
+    </select>
+
+    <select id="selectByRobotId" resultMap="SysTourContentResult">
+        <include refid="selectVo"/>
+        where robot_id = #{robotId}
+        order by order_num
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourContent" useGeneratedKeys="true" keyProperty="contentId">
+        insert into sys_tour_content (
+            robot_id, point_id, point_name, point_desc, broadcast_type,
+            broadcast_text, audio_file, voice_type, speech_rate, interval_time,
+            content_type, media_file, arm_action, chassis_angle, order_num,
+            create_by, create_time
+        ) values (
+                     #{robotId}, #{pointId}, #{pointName}, #{pointDesc}, #{broadcastType},
+                     #{broadcastText}, #{audioFile}, #{voiceType}, #{speechRate}, #{intervalTime},
+                     #{contentType}, #{mediaFile}, #{armAction}, #{chassisAngle}, #{orderNum},
+                     #{createBy}, sysdate()
+                 )
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.function.domain.SysTourContent">
+        update sys_tour_content
+        <set>
+            <if test="pointId != null">point_id = #{pointId},</if>
+            <if test="pointName != null">point_name = #{pointName},</if>
+            <if test="pointDesc != null">point_desc = #{pointDesc},</if>
+            <if test="broadcastType != null">broadcast_type = #{broadcastType},</if>
+            <if test="broadcastText != null">broadcast_text = #{broadcastText},</if>
+            <if test="audioFile != null">audio_file = #{audioFile},</if>
+            <if test="voiceType != null">voice_type = #{voiceType},</if>
+            <if test="speechRate != null">speech_rate = #{speechRate},</if>
+            <if test="intervalTime != null">interval_time = #{intervalTime},</if>
+            <if test="contentType != null">content_type = #{contentType},</if>
+            <if test="mediaFile != null">media_file = #{mediaFile},</if>
+            <if test="armAction != null">arm_action = #{armAction},</if>
+            <if test="chassisAngle != null">chassis_angle = #{chassisAngle},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where content_id = #{contentId}
+    </update>
+
+    <delete id="deleteById">
+        delete from sys_tour_content where content_id = #{contentId}
+    </delete>
+</mapper>

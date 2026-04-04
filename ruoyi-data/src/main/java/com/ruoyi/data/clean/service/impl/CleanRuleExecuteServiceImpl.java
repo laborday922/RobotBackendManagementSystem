@@ -5,8 +5,10 @@ import com.ruoyi.data.clean.domain.bo.CleanRule;
 import com.ruoyi.data.clean.domain.context.DataContext;
 import com.ruoyi.data.clean.domain.enums.ExecuteMode;
 import com.ruoyi.data.clean.mapper.CleanRuleMapper;
+import com.ruoyi.data.clean.mapper.po.CleanResultPo;
 import com.ruoyi.data.clean.mapper.po.CleanRulePo;
 import com.ruoyi.data.clean.service.ICleanRuleExecuteService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.support.CronExpression;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
@@ -79,47 +82,45 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
         // 4️⃣ 构建上下文
         DataContext context = new DataContext(rule.getDataSources());
 
+        // 5️⃣ 查原始数据（🔥新增）
+        List<Map<String, Object>> rawData = cleanRuleMapper.selectRawInteractionData();
+
+        context.setRawData(rawData);
+        context.setTaskId(id);
+        context.setConfigId(rule.getId()); // 或你配置ID
+
         // ⭐⭐⭐ 关键新增逻辑 ⭐⭐⭐
         // 5️⃣ 查询每个表的字段（排除id）
-        rule.getDataSources().forEach(source -> {
+//        rule.getDataSources().forEach(source -> {
+//
+//            String tableName = source.getTableName();
+//            System.out.println("正在处理表: " + tableName);
+//
+//            List<String> columns = cleanRuleMapper.getTableColumns(tableName);
+//            System.out.println("表 " + tableName + " 的字段（原始）: " + columns);
+//
+//            if (columns == null || columns.isEmpty()) {
+//                throw new RuntimeException("表 " + tableName + " 未获取到字段信息");
+//            }
+//
+//            context.setTableColumns(tableName, columns);
+//        });
 
-            String tableName = source.getTableName();
-            System.out.println("正在处理表: " + tableName);
-
-            List<String> columns = cleanRuleMapper.getTableColumns(tableName);
-            System.out.println("表 " + tableName + " 的字段（原始）: " + columns);
-
-            if (columns == null || columns.isEmpty()) {
-                throw new RuntimeException("表 " + tableName + " 未获取到字段信息");
-            }
-
-            context.setTableColumns(tableName, columns);
-        });
-
-        // 6️⃣ 领域规则生成SQL
+        // 6️⃣ 规则执行
         rule.execute(context);
 
-        System.out.println("rule.execute 执行完毕，当前 context 中 SQL 数量: " + context.getSqlList().size());
-
-        // 7️⃣ 执行SQL
-        executeSql(context);
-
-        cleanRuleMapper.updateRuntime(id, LocalDateTime.now());//此次可添加try-catch进行执行成功的确认
+        List<CleanResultPo> poList = context.getResultList().stream()
+                .map(r -> {
+                    CleanResultPo ResultPo = new CleanResultPo();
+                    BeanUtils.copyProperties(r, ResultPo);
+                    return ResultPo;
+                })
+                .toList();
+        // 7️⃣ 批量保存结果
+        if (context.getResultList() != null && !context.getResultList().isEmpty()) {
+            cleanRuleMapper.batchInsertResults(poList);
+        }
+        cleanRuleMapper.updateRuntime(id, LocalDateTime.now());
     }
 
-    private void executeSql(DataContext context) {
-        System.out.println("executeSql 被调用，SQL 列表大小: " + (context.getSqlList() == null ? 0 : context.getSqlList().size()));
-        if (context.getSqlList() == null || context.getSqlList().isEmpty()) {
-            return;
-        }
-
-        for (String sql : context.getSqlList()) {
-
-            System.out.println("执行SQL: " + sql); // 建议调试阶段打开
-
-            jdbcTemplate.execute(sql);
-
-            System.out.println("SQL 执行完成");
-        }
-    }
 }

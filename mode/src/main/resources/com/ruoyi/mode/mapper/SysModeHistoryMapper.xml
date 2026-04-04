@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mode.mapper.SysModeHistoryMapper">
+
+    <resultMap type="com.ruoyi.mode.domain.SysModeHistory" id="SysModeHistoryResult">
+        <id     property="historyId"     column="history_id"       />
+        <result property="operationTime" column="operation_time"   />
+        <result property="operationType" column="operation_type"   />
+        <result property="robotId"       column="robot_id"         />
+        <result property="robotName"     column="robot_name"       />
+        <result property="modeId"        column="mode_id"          />
+        <result property="modeName"      column="mode_name"        />
+        <result property="content"       column="content"          />
+        <result property="operator"      column="operator"         />
+        <result property="status"        column="status"           />
+        <result property="createBy"      column="create_by"        />
+        <result property="createTime"    column="create_time"      />
+    </resultMap>
+
+    <sql id="selectHistoryVo">
+        select history_id, operation_time, operation_type, robot_id, robot_name,
+        mode_id, mode_name, content, operator, status,
+        create_by, create_time
+        from sys_mode_history
+    </sql>
+
+    <select id="selectSysModeHistoryList" parameterType="com.ruoyi.mode.domain.SysModeHistory" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        <where>
+            <if test="operationType != null and operationType != ''">
+                AND operation_type = #{operationType}
+            </if>
+            <if test="robotId != null">
+                AND robot_id = #{robotId}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                AND operation_time >= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND operation_time &lt;= #{endTime}
+            </if>
+        </where>
+        order by operation_time desc
+    </select>
+
+    <select id="selectSysModeHistoryListByTypes" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        <where>
+            <if test="types != null and types.length > 0">
+                AND operation_type IN
+                <foreach collection="types" item="type" open="(" separator="," close=")">
+                    #{type}
+                </foreach>
+            </if>
+            <if test="history.robotId != null">
+                AND robot_id = #{history.robotId}
+            </if>
+            <if test="history.beginTime != null and history.beginTime != ''">
+                AND operation_time >= #{history.beginTime}
+            </if>
+            <if test="history.endTime != null and history.endTime != ''">
+                AND operation_time &lt;= #{history.endTime}
+            </if>
+        </where>
+        order by operation_time desc
+    </select>
+
+    <select id="selectSysModeHistoryById" parameterType="Long" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        where history_id = #{historyId}
+    </select>
+
+    <insert id="insertSysModeHistory" parameterType="com.ruoyi.mode.domain.SysModeHistory" useGeneratedKeys="true" keyProperty="historyId">
+        insert into sys_mode_history(
+        <if test="operationTime != null">operation_time,</if>
+        <if test="operationType != null and operationType != ''">operation_type,</if>
+        <if test="robotId != null">robot_id,</if>
+        <if test="robotName != null and robotName != ''">robot_name,</if>
+        <if test="modeId != null">mode_id,</if>
+        <if test="modeName != null and modeName != ''">mode_name,</if>
+        <if test="content != null and content != ''">content,</if>
+        <if test="operator != null and operator != ''">operator,</if>
+        <if test="status != null and status != ''">status,</if>
+        <if test="createBy != null and createBy != ''">create_by,</if>
+        create_time
+        ) values (
+        <if test="operationTime != null">#{operationTime},</if>
+        <if test="operationType != null and operationType != ''">#{operationType},</if>
+        <if test="robotId != null">#{robotId},</if>
+        <if test="robotName != null and robotName != ''">#{robotName},</if>
+        <if test="modeId != null">#{modeId},</if>
+        <if test="modeName != null and modeName != ''">#{modeName},</if>
+        <if test="content != null and content != ''">#{content},</if>
+        <if test="operator != null and operator != ''">#{operator},</if>
+        <if test="status != null and status != ''">#{status},</if>
+        <if test="createBy != null and createBy != ''">#{createBy},</if>
+        sysdate()
+        )
+    </insert>
+
+    <update id="updateSysModeHistory" parameterType="com.ruoyi.mode.domain.SysModeHistory">
+        update sys_mode_history
+        <set>
+            <if test="operationType != null and operationType != ''">operation_type = #{operationType},</if>
+            <if test="robotId != null">robot_id = #{robotId},</if>
+            <if test="robotName != null and robotName != ''">robot_name = #{robotName},</if>
+            <if test="modeId != null">mode_id = #{modeId},</if>
+            <if test="modeName != null and modeName != ''">mode_name = #{modeName},</if>
+            <if test="content != null and content != ''">content = #{content},</if>
+            <if test="operator != null and operator != ''">operator = #{operator},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where history_id = #{historyId}
+    </update>
+
+    <delete id="deleteSysModeHistoryById" parameterType="Long">
+        delete from sys_mode_history where history_id = #{historyId}
+    </delete>
+
+    <delete id="deleteSysModeHistoryByIds" parameterType="String">
+        delete from sys_mode_history where history_id in
+        <foreach item="historyId" collection="array" open="(" separator="," close=")">
+            #{historyId}
+        </foreach>
+    </delete>
+
+    <delete id="clearAllHistory">
+        delete from sys_mode_history
+    </delete>
+
+    <select id="selectRecentHistory" parameterType="Integer" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        order by operation_time desc
+        limit #{limit}
+    </select>
+
+    <select id="selectHistoryByOperatorAndType" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        where operator = #{operator}
+        <if test="operationType != null and operationType != ''">
+            and operation_type = #{operationType}
+        </if>
+        order by operation_time desc
+    </select>
+
+    <select id="selectOperationTypeStats" resultType="java.util.Map">
+        select
+        operation_type as operationType,
+        count(*) as count
+        from sys_mode_history
+        group by operation_type
+        order by count desc
+    </select>
+
+    <select id="selectRobotOperationStats" resultType="java.util.Map">
+        select
+        robot_id as robotId,
+        robot_name as robotName,
+        count(*) as count
+        from sys_mode_history
+        where robot_id is not null
+        group by robot_id, robot_name
+        order by count desc
+    </select>
+
+    <select id="selectDailyOperationStats" parameterType="Integer" resultType="java.util.Map">
+        select
+        date_format(operation_time, '%Y-%m-%d') as date,
+        count(*) as count
+        from sys_mode_history
+        where operation_time >= date_sub(curdate(), interval #{days} day)
+        group by date_format(operation_time, '%Y-%m-%d')
+        order by date desc
+    </select>
+
+    <select id="selectHistoryByTimeRange" resultMap="SysModeHistoryResult">
+        <include refid="selectHistoryVo"/>
+        <where>
+            <if test="beginTime != null and beginTime != ''">
+                and operation_time >= #{beginTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                and operation_time &lt;= #{endTime}
+            </if>
+        </where>
+        order by operation_time desc
+    </select>
+
+</mapper>

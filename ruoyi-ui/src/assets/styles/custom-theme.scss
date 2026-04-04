@@ -1,0 +1,84 @@
+/* ===== 全局变量 ===== */
+:root {
+  --primary-blue: #3976E4;
+  --primary-dark: #5387E4;
+  --success-green: #22A06B;
+  --success-bg: #DCFCE7;
+  --warning-bg: #FEF9C3;
+  --danger-red: #EF4444;
+  --input-bg: #F5F5F5;
+  --input-border: #B3B3B3;
+  --card-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 全局 ===== */
+body {
+  background: #F0F2F5;
+  color: #4D4D4D;
+}
+
+/* ===== 按钮 ===== */
+.el-button {
+  border-radius: 8px !important;
+  font-weight: 500;
+  border: none !important;
+}
+
+.el-button--primary {
+  background: #3976E4 !important;
+  color: #fff !important;
+}
+
+.el-button--primary:hover {
+  background: #5387E4 !important;
+}
+
+.el-button--default {
+  background: #D7E4FA !important;
+  color: #3976E4 !important;
+}
+
+/* ===== 输入框 ===== */
+.el-input__wrapper,
+.el-textarea__inner {
+  background-color: #F5F5F5 !important;
+  border: 1px solid #B3B3B3 !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+/* ===== 表格 ===== */
+.el-table {
+  border: none !important;
+  background: #fff !important;
+}
+
+.el-table th.el-table__cell {
+  background: #F5F5F5 !important;
+  font-weight: 500 !important;
+}
+
+.el-table td.el-table__cell {
+  border-bottom: 1px solid #F0F0F0 !important;
+}
+
+/* ===== 卡片 ===== */
+.app-main {
+  background: transparent;
+}
+
+.el-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+}
+
+/* ===== 标签 ===== */
+.el-tag {
+  border: none !important;
+  border-radius: 4px !important;
+}
+
+.el-tag--success {
+  background: #DCFCE7 !important;
+  color: #166534 !important;
+}

@@ -120,6 +120,111 @@ export const constantRoutes = [
         meta: { title: '异常处理', icon: 'bug' }
       }
     ]
+  },
+  // ========== 模式管理模块 ==========
+  {
+    path: '/mode',
+    component: Layout,
+    redirect: '/mode/quick',
+    name: 'Mode',
+    meta: {
+      title: '模式管理',
+      icon: 'el-icon-setting',
+      roles: ['admin']
+    },
+    children: [
+      {
+        path: 'quick',
+        component: () => import('@/views/mode/quick/index'),
+        name: 'Quick',
+        meta: {
+          title: '快捷操作',
+          icon: 'el-icon-thumb',
+          noCache: true
+        }
+      },
+      {
+        path: 'switch',
+        component: () => import('@/views/mode/switch/index'),
+        name: 'Switch',
+        meta: {
+          title: '模式切换',
+          icon: 'el-icon-refresh',
+          noCache: true
+        }
+      },
+      {
+        path: 'schedule',
+        component: () => import('@/views/mode/schedule/index'),
+        name: 'Schedule',
+        meta: {
+          title: '模式排程',
+          icon: 'el-icon-date',
+          noCache: true
+        }
+      },
+      {
+        path: 'history',
+        component: () => import('@/views/mode/history/index'),
+        name: 'History',
+        meta: {
+          title: '历史记录',
+          icon: 'el-icon-time',
+          noCache: true
+        }
+      },
+      {
+        path: 'edit',
+        component: () => import('@/views/mode/mode/index.vue'),
+        name: 'Edit',
+        meta: {
+          title: '编辑模式',
+          icon: 'el-icon-edit',
+          noCache: true
+        }
+      }
+    ]
+  },
+  // ========== 功能管理模块 ==========
+  {
+    path: '/func',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'FuncManagement',
+    meta: {
+      title: '功能管理',
+      icon: 'el-icon-collection'
+    },
+    children: [
+      {
+        path: 'reception',
+        component: () => import('@/views/func/reception/index.vue'),
+        name: 'Reception',
+        meta: {
+          title: '业务接待',
+          icon: 'el-icon-service'
+        }
+      },
+      {
+        path: 'nav',
+        component: () => import('@/views/func/nav/index.vue'),
+        name: 'Nav',
+        meta: {
+          title: '导航指引',
+          icon: 'el-icon-location'
+        }
+      },
+      {
+        path: 'tour',
+        component: () => import('@/views/func/tour/index'),
+        name: 'Tour',
+        meta: {
+          title: '智能讲解',
+          icon: 'el-icon-microphone'
+        }
+      }
+    ]
   }
 ]
 

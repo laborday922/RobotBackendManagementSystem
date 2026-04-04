@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.function.mapper.SysTourRouteMapper">
+
+    <resultMap type="com.ruoyi.function.domain.SysTourRoute" id="SysTourRouteResult">
+        <id property="routeId" column="route_id"/>
+        <result property="routeName" column="route_name"/>
+        <result property="mapId" column="map_id"/>
+        <result property="pointIds" column="point_ids"/>
+        <result property="pointCount" column="point_count"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap type="com.ruoyi.function.domain.SysRoutePoint" id="SysRoutePointResult">
+        <id property="id" column="id"/>
+        <result property="routeId" column="route_id"/>
+        <result property="pointId" column="point_id"/>
+        <result property="contentId" column="content_id"/>
+        <result property="orderNum" column="order_num"/>
+    </resultMap>
+
+    <sql id="selectRouteVo">
+        select route_id, route_name, map_id, point_ids, point_count, status,
+               create_by, create_time, update_by, update_time
+        from sys_tour_route
+    </sql>
+
+    <select id="selectById" resultMap="SysTourRouteResult">
+        <include refid="selectRouteVo"/>
+        where route_id = #{routeId}
+    </select>
+
+    <select id="selectList" resultMap="SysTourRouteResult">
+        <include refid="selectRouteVo"/>
+        where status = '1'
+        order by create_time desc
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourRoute" useGeneratedKeys="true" keyProperty="routeId">
+        insert into sys_tour_route (
+            route_name, map_id, point_ids, point_count, status,
+            create_by, create_time
+        ) values (
+                     #{routeName}, #{mapId}, #{pointIds}, #{pointCount}, #{status},
+                     #{createBy}, sysdate()
+                 )
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.function.domain.SysTourRoute">
+        update sys_tour_route
+        <set>
+            <if test="routeName != null">route_name = #{routeName},</if>
+            <if test="mapId != null">map_id = #{mapId},</if>
+            <if test="pointIds != null">point_ids = #{pointIds},</if>
+            <if test="pointCount != null">point_count = #{pointCount},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where route_id = #{routeId}
+    </update>
+    <update id="batchInsertRoutePoints"></update>
+
+    <delete id="deleteById">
+        delete from sys_tour_route where route_id = #{routeId}
+    </delete>
+
+    <!-- 路线点位关联操作 -->
+    <select id="selectRoutePoints" resultMap="SysRoutePointResult">
+        select id, route_id, point_id, content_id, order_num
+        from sys_route_point
+        where route_id = #{routeId}
+        order by order_num
+    </select>
+
+    <insert id="insertRoutePoint" parameterType="com.ruoyi.function.domain.SysRoutePoint" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_route_point (route_id, point_id, content_id, order_num)
+        values (#{routeId}, #{pointId}, #{contentId}, #{orderNum})
+    </insert>
+
+    <delete id="deleteRoutePoints">
+        delete from sys_route_point where route_id = #{routeId}
+    </delete>
+</mapper>

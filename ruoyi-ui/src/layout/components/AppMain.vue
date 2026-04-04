@@ -46,27 +46,30 @@ export default {
 
 <style lang="scss" scoped>
 .app-main {
-  /* 50= navbar  50  */
   min-height: calc(100vh - 50px);
   width: 100%;
   position: relative;
-  overflow: hidden;
+
+  /* ❗关键：留出空间给卡片浮起来 */
+  padding: 12px 20px 20px 0;
+
+  /* ❗透明，让背景露出来 */
+  background: transparent;
 }
 
-.fixed-header + .app-main {
-  overflow-y: auto;
-  scrollbar-gutter: auto;
-  height: calc(100vh - 50px);
-  min-height: 0px;
-}
 
 .app-main:has(.copyright) {
   padding-bottom: 36px;
 }
 
 .fixed-header + .app-main {
-  margin-top: 50px;
+  overflow-y: auto;
+  height: calc(100vh - 50px);
+
+  /* 平滑滚动（高级感） */
+  scroll-behavior: smooth;
 }
+
 
 .hasTagsView {
   .app-main {
@@ -75,22 +78,20 @@ export default {
   }
 
   .fixed-header + .app-main {
-    margin-top: 84px;
     height: calc(100vh - 84px);
     min-height: 0px;
   }
 }
 
 /* 移动端fixed-header优化 */
+/* 移动端fixed-header优化 */
 @media screen and (max-width: 991px) {
   .fixed-header + .app-main {
-    padding-bottom: max(60px, calc(constant(safe-area-inset-bottom) + 40px));
     padding-bottom: max(60px, calc(env(safe-area-inset-bottom) + 40px));
     overscroll-behavior-y: none;
   }
 
   .hasTagsView .fixed-header + .app-main {
-    padding-bottom: max(60px, calc(constant(safe-area-inset-bottom) + 40px));
     padding-bottom: max(60px, calc(env(safe-area-inset-bottom) + 40px));
     overscroll-behavior-y: none;
   }
@@ -99,14 +100,12 @@ export default {
 @supports (-webkit-touch-callout: none) {
   @media screen and (max-width: 991px) {
     .fixed-header + .app-main {
-      padding-bottom: max(17px, calc(constant(safe-area-inset-bottom) + 10px));
       padding-bottom: max(17px, calc(env(safe-area-inset-bottom) + 10px));
       height: calc(100svh - 50px);
       height: calc(100dvh - 50px);
     }
 
     .hasTagsView .fixed-header + .app-main {
-      padding-bottom: max(17px, calc(constant(safe-area-inset-bottom) + 10px));
       padding-bottom: max(17px, calc(env(safe-area-inset-bottom) + 10px));
       height: calc(100svh - 84px);
       height: calc(100dvh - 84px);
@@ -121,12 +120,16 @@ export default {
   height: 6px;
 }
 
-::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+::-webkit-scrollbar {
+  width: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c0c0;
-  border-radius: 3px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.35);
 }
 </style>

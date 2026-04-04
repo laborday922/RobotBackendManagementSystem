@@ -1,45 +1,34 @@
 package com.ruoyi.data.clean.cleanExecuteStrategy;
 
 import com.ruoyi.data.clean.domain.context.DataContext;
-import com.ruoyi.data.clean.domain.enums.DataSourceType;
 import com.ruoyi.data.clean.domain.enums.TextCleaningType;
 
 public class TextCleaningStrategy implements CleanStrategy {
 
-    private TextCleaningType type;
+    private final TextCleaningType type;
 
     public TextCleaningStrategy(TextCleaningType type) {
         this.type = type;
     }
 
     @Override
-    public void execute(DataContext context) {
+    public String process(Object input, DataContext context) {
 
-        // 🔥 遍历所有数据源
-        for (DataSourceType source : context.getDataSources()) {
+        String text = (String) input;
 
-            String table = source.getTableName();
+        if (text == null) return null;
 
-            switch (type) {
+        switch (type) {
 
-                case REMOVE_HTML:
-                    String htmlSql =
-                            "UPDATE " + table +
-                                    " SET text_field = REGEXP_REPLACE(text_field, '<[^>]*>', '')";
-                    context.addSql(htmlSql);
-                    break;
+            case REMOVE_HTML:
+                return text.replaceAll("<[^>]*>", "");
 
-                case REMOVE_SPECIAL_CHAR:
-                    String specialSql =
-                            "UPDATE " + table +
-                                    " SET text_field = REGEXP_REPLACE(text_field, '[^a-zA-Z0-9\\u4e00-\\u9fa5]', '')";
-                    context.addSql(specialSql);
-                    break;
+            case REMOVE_SPECIAL_CHAR:
+                return text.replaceAll("[^\\u4e00-\\u9fa5a-zA-Z0-9 ]", "");
 
-                case KEEP_ORIGINAL:
-                    // 不生成SQL
-                    break;
-            }
+            case KEEP_ORIGINAL:
+            default:
+                return text;
         }
     }
 }

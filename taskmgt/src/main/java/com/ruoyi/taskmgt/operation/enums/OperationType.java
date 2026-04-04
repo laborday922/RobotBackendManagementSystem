@@ -1,4 +1,4 @@
-package com.ruoyi.taskmgt.service.operation;
+package com.ruoyi.taskmgt.operation.enums;
 
 public enum OperationType {
     SYNC,       // 同步立即返回

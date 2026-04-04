@@ -56,6 +56,7 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     /** 任务状态（ 0执行中 1准备中 2已暂停 3未开始 4已禁用 5已终止 6已结束 7已删除 ） */
     private Byte status;
 
+    private Long tenantId;
     //任务状态
     public final static Byte EXECUTING = 0;
     public final static Byte PENDING = 1;

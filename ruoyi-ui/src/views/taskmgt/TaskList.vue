@@ -283,8 +283,14 @@
           />
         </template>
 
-        <!-- 步骤预览区域（使用提取的组件） -->
-        <step-preview :steps="generatedSteps" v-if="generatedSteps.length > 0" />
+        <!-- 步骤预览 -->
+        <step-preview
+          :steps="generatedSteps"
+          :is-group-task="taskForm.isGroupTask"
+          :available-robots="availableRobotsForGroup"
+          @robot-change="onStepRobotChange"
+          v-if="generatedSteps.length > 0"
+        />
 
         <el-divider content-position="left">任务设置</el-divider>
         <el-form-item label="任务优先级" prop="priority">
@@ -296,7 +302,7 @@
         </el-form-item>
 
         <el-form-item label="是否为组任务">
-          <el-switch v-model="taskForm.isGroupTask" />
+          <el-switch v-model="taskForm.isGroupTask" @change="onGroupTaskChange"/>
           <span class="el-form-item-msg">组任务可由多个机器人协同完成</span>
         </el-form-item>
 
@@ -432,7 +438,7 @@ import {
   terminateTask,
   getTaskSteps,
   listLogByTask,
-  listOperation
+  updateTaskSteps
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
 import { getToken } from '@/utils/auth'
@@ -496,7 +502,7 @@ export default {
       taskLogs: [],
       formFields: [],
       operationList: [],
-      // 生成的步骤预览（仅用于前端展示）
+      // 生成的步骤预览
       generatedSteps: [],
       // 视频预览
       videoPreview: {
@@ -506,6 +512,16 @@ export default {
     }
   },
   computed: {
+    availableRobotsForGroup() {
+      if (!this.currentTemplate || !this.taskForm.isGroupTask) return []
+      const allowedGroupIds = this.currentTemplate.robotGroupIds || []
+      return this.robotOptions.filter(robot =>
+        allowedGroupIds.includes(robot.groupId) &&
+        robot.status === 1 &&
+        robot.hardwareStatus === 0 &&
+        robot.battery > 20
+      )
+    },
     // 可用机器人：根据当前模板过滤
     availableRobots() {
       if (!this.currentTemplate || !this.currentTemplate.robotGroupIds || this.currentTemplate.robotGroupIds.length === 0) {
@@ -533,7 +549,6 @@ export default {
     this.getRobotGroups()
     this.getTemplates()
     this.getList()
-    this.getOperationList()
     this.debouncedQuery = debounce(this.handleQuery, 500)
   },
   beforeDestroy() {
@@ -566,15 +581,6 @@ export default {
       if (robot.status === 0) return '离线'
       if (robot.status === 2) return '待激活'
       return '未知'
-    },
-    async getOperationList() {
-      try {
-        const res = await listOperation()
-        this.operationList = res.data || []
-      } catch (error) {
-        console.warn('获取操作列表失败', error)
-        this.operationList = []
-      }
     },
     // 获取机器人列表
     async getRobotData() {
@@ -816,6 +822,7 @@ export default {
     onTemplateChange(val) {
       const template = this.templateOptions.find(t => t.id === val)
       if (template) {
+        // 初始化 formData
         const formData = {}
         template.fields.forEach(field => {
           if (['image','video','audio','file'].includes(field.type)) {
@@ -826,10 +833,11 @@ export default {
         })
         this.taskForm.formData = formData
         this.taskForm.robotId = undefined
+        this.taskForm.robotGroupId = undefined
         this.updateStepPreview()
       }
     },
-    // 更新步骤预览 - 用于前端展示
+    // 更新步骤预览
     updateStepPreview() {
       if (this.currentTemplate && this.currentTemplate.steps) {
         this.generatedSteps = this.generateStepsFromTemplate(this.currentTemplate, this.taskForm.formData)
@@ -837,10 +845,9 @@ export default {
         this.generatedSteps = []
       }
     },
-    // 根据模板和表单数据生成步骤列表（仅用于前端预览）
+    // 根据模板和表单数据生成步骤列表
     generateStepsFromTemplate(template, formData) {
       if (!template || !template.steps) return []
-
       return template.steps.map((step, index) => {
         let description = step.description || ''
         if (formData) {
@@ -853,21 +860,29 @@ export default {
             description = description.replace(placeholder, displayValue || `{${key}}`)
           })
         }
-
         return {
           stepName: step.name,
           description: description,
           orderNum: index + 1,
-          status: 0
+          status: 0,
+          assignedRobotId: null
         }
       })
+    },
+    onStepRobotChange({ step, robotId }) {
+      step.assignedRobotId = robotId
+    },
+    onGroupTaskChange(val) {
+      if (!val) {
+        this.generatedSteps.forEach(step => { step.assignedRobotId = null})
+      }
     },
     // 提交任务
     async submitTask() {
       this.$refs.taskFormRef.validate(async (valid) => {
         if (!valid) return
 
-        // 检查机器人/机器人组选择
+        // 校验机器人/组选择
         if (this.taskForm.isGroupTask) {
           if (!this.taskForm.robotGroupId) {
             this.$message.error('请选择机器人组')
@@ -898,14 +913,30 @@ export default {
             formContent: JSON.stringify(this.taskForm.formData)
           }
 
+          let taskId
           if (this.dialog.mode === 'create') {
-            // 后端已修改：创建任务时自动创建步骤，前端只需调用 addTask
-            await addTask(dto)
+            const res = await addTask(dto)
+            taskId = res.data.id
             this.$message.success('创建成功')
           } else {
-            // 编辑任务：后端 updateTask 也会自动重新生成步骤（仅当任务为 DISABLED 状态时）
             await updateTask(this.taskForm.id, dto)
+            taskId = this.taskForm.id
             this.$message.success('修改成功')
+          }
+
+          // 如果是组任务且用户为步骤分配了机器人，则更新步骤机器人分配
+          if (this.taskForm.isGroupTask && this.generatedSteps.some(s => s.assignedRobotId)) {
+            // 只需传递 orderNum 和 assignedRobotId，后端通过 orderNum 匹配步骤
+            const updates = this.generatedSteps
+              .filter(step => step.assignedRobotId)
+              .map(step => ({
+                orderNum: step.orderNum,
+                assignedRobotId: step.assignedRobotId
+              }))
+            if (updates.length > 0) {
+              await updateTaskSteps(taskId, updates)
+              this.$message.success('步骤机器人分配已保存')
+            }
           }
 
           this.dialog.visible = false
@@ -926,7 +957,7 @@ export default {
         const [taskRes, stepsRes, logsRes] = await Promise.all([
           getTask(row.id),
           getTaskSteps(row.id),
-          listLogByTask(row.id)
+          listLogByTask({taskId:row.id})
         ])
 
         this.currentTask = taskRes.data

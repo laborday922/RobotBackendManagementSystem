@@ -21,6 +21,7 @@ public class TaskLogPo extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long tenantId;
     /** 任务ID */
     @Column(nullable = false)
     private Long taskId;

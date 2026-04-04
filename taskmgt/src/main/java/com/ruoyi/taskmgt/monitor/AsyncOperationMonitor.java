@@ -1,7 +1,11 @@
-package com.ruoyi.taskmgt.service.operation;
+package com.ruoyi.taskmgt.monitor;
 
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.operation.OperationHandler;
+import com.ruoyi.taskmgt.operation.OperationRegistry;
+import com.ruoyi.taskmgt.service.StepExecutionEngine;
+import com.ruoyi.taskmgt.operation.model.OperationResult;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +16,7 @@ import javax.annotation.PreDestroy;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -28,6 +33,9 @@ public class AsyncOperationMonitor {
     private final Map<String, ScheduledFuture<?>> pollingTasks = new ConcurrentHashMap<>();
     private final Map<String, PollingContext> pollingContexts = new ConcurrentHashMap<>();
 
+    // 记录已完成的异步任务（防止回调与轮询重复处理）
+    private final Map<String, AtomicBoolean> completedTraceIds = new ConcurrentHashMap<>();
+
     @PostConstruct
     public void init() {
         executor = Executors.newScheduledThreadPool(4);
@@ -42,17 +50,12 @@ public class AsyncOperationMonitor {
         }
     }
 
-    /**
-     * 注册轮询监控（用于ASYNC类型）
-     */
     public void registerPolling(Long stepId, String traceId, Long operationId, Date estimatedFinishTime) {
         OperationHandler handler = operationRegistry.getHandler(operationId);
 
-        // 计算轮询间隔
-        long initialDelay = 1000;  // 1秒后开始
+        long initialDelay = 1000;
         long period = calculatePeriod(estimatedFinishTime);
 
-        // 保存上下文
         PollingContext context = new PollingContext();
         context.setStepId(stepId);
         context.setTraceId(traceId);
@@ -63,6 +66,7 @@ public class AsyncOperationMonitor {
         context.setPollCount(0);
 
         pollingContexts.put(traceId, context);
+        completedTraceIds.put(traceId, new AtomicBoolean(false));
 
         ScheduledFuture<?> future = executor.scheduleAtFixedRate(() -> {
             try {
@@ -73,61 +77,88 @@ public class AsyncOperationMonitor {
         }, initialDelay, period, TimeUnit.MILLISECONDS);
 
         pollingTasks.put(traceId, future);
-
-        log.info("已注册轮询监控: stepId={}, traceId={}, 轮询间隔={}ms",
-                stepId, traceId, period);
+        log.info("已注册轮询监控: stepId={}, traceId={}, 轮询间隔={}ms", stepId, traceId, period);
     }
 
-    /**
-     * 执行轮询
-     */
     private void doPolling(String traceId) {
+        AtomicBoolean completedFlag = completedTraceIds.get(traceId);
+        if (completedFlag != null && completedFlag.get()) {
+            cancelPolling(traceId);
+            return;
+        }
+
         PollingContext context = pollingContexts.get(traceId);
         if (context == null) return;
 
         context.setPollCount(context.getPollCount() + 1);
 
         try {
-            // 查询任务状态
             OperationResult status = queryStatus(context.getHandler(), traceId, context.getRobotId());
-
             if (status == null) {
                 log.warn("轮询返回空状态, traceId={}", traceId);
                 return;
             }
 
-            log.debug("轮询状态: traceId={}, 完成={}, 进度={}",
-                    traceId, status.isCompleted(), status.getProgress());
+            log.debug("轮询状态: traceId={}, 完成={}, 进度={}", traceId, status.isCompleted(), status.getProgress());
 
             if (status.isCompleted()) {
-                // 任务完成
-                log.info("异步任务已完成, traceId={}", traceId);
-                onAsyncComplete(context.getStepId(), status);
-                cancelPolling(traceId);
-
+                if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
+                    log.info("异步任务已完成, traceId={}", traceId);
+                    stepExecutionEngine.onAsyncComplete(context.getStepId(), status);
+                    cancelPolling(traceId);
+                }
             } else if (isTimeout(context)) {
-                // 超时处理
-                log.warn("异步任务超时, traceId={}, 已等待{}秒",
-                        traceId, getElapsedSeconds(context));
-                stepExecutionEngine.onAsyncTimeout(context.getStepId());
-                cancelPolling(traceId);
-
-            } else {
-                // 更新进度（可选）
-                if (status.getProgress() > 0) {
-                    updateStepProgress(context.getStepId(), status.getProgress());
+                if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
+                    log.warn("异步任务超时, traceId={}, 已等待{}秒", traceId, getElapsedSeconds(context));
+                    stepExecutionEngine.onAsyncTimeout(context.getStepId());
+                    cancelPolling(traceId);
                 }
             }
-
         } catch (Exception e) {
             log.error("轮询查询失败, traceId={}", traceId, e);
-            // 连续失败多次后可考虑取消
-            if (context.getPollCount() > 30) { // 30次后放弃
-                log.error("轮询次数过多，放弃监控, traceId={}", traceId);
-                stepExecutionEngine.onAsyncTimeout(context.getStepId());
-                cancelPolling(traceId);
+            if (context.getPollCount() > 30) {
+                if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
+                    log.error("轮询次数过多，放弃监控, traceId={}", traceId);
+                    stepExecutionEngine.onAsyncTimeout(context.getStepId());
+                    cancelPolling(traceId);
+                }
             }
         }
+    }
+
+    public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
+        log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
+
+        AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
+        if (!completedFlag.compareAndSet(false, true)) {
+            log.warn("重复处理回调, traceId={}", traceId);
+            return;
+        }
+
+        TaskStep step = stepRepository.findByTraceId(traceId);
+        if (step == null) {
+            log.error("回调traceId不存在: {}", traceId);
+            return;
+        }
+
+        cancelPolling(traceId);
+
+        if (callbackData.isSuccess()) {
+            stepExecutionEngine.completeStep(step.getId(), callbackData.getData());
+            stepExecutionEngine.onAsyncComplete(step.getId(),
+                    OperationResult.builder().success(true).data(callbackData.getData()).build());
+        } else {
+            stepExecutionEngine.failStep(step.getId(), callbackData.getErrorMsg());
+        }
+    }
+
+    public void cancelPolling(String traceId) {
+        ScheduledFuture<?> future = pollingTasks.remove(traceId);
+        if (future != null) {
+            future.cancel(false);
+            log.debug("已取消轮询: {}", traceId);
+        }
+        pollingContexts.remove(traceId);
     }
 
     /**
@@ -156,44 +187,6 @@ public class AsyncOperationMonitor {
                 .data(result.getData())
                 .build();
     }
-
-    /**
-     * 处理机器人回调（用于CALLBACK类型）
-     */
-    public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
-        log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
-
-        // 查找步骤
-        TaskStep step = stepRepository.findByTraceId(traceId);
-        if (step == null) {
-            log.error("回调traceId不存在: {}", traceId);
-            return;
-        }
-
-        // 根据回调结果处理
-        if (callbackData.isSuccess()) {
-            stepExecutionEngine.completeStep(step, callbackData.getData());
-            // 触发下一步
-            stepExecutionEngine.onAsyncComplete(step.getId(),
-                    OperationResult.builder().success(true).data(callbackData.getData()).build());
-        } else {
-            stepExecutionEngine.failStep(step, callbackData.getErrorMsg());
-        }
-    }
-
-    /**
-     * 取消轮询
-     */
-    public void cancelPolling(String traceId) {
-        ScheduledFuture<?> future = pollingTasks.remove(traceId);
-        if (future != null) {
-            future.cancel(false);
-            log.debug("已取消轮询: {}", traceId);
-        }
-        pollingContexts.remove(traceId);
-    }
-
-    // ========== 辅助方法 ==========
 
     private long calculatePeriod(Date estimatedFinishTime) {
         if (estimatedFinishTime == null) {
@@ -245,11 +238,6 @@ public class AsyncOperationMonitor {
             }
         }
         return result.isSuccess() ? 100 : 0;
-    }
-
-    private void updateStepProgress(Long stepId, int progress) {
-        // 可选：更新步骤进度到数据库或Redis，供前端查询
-        // stepRepository.updateProgress(stepId, progress);
     }
 
     private void onAsyncComplete(Long stepId, OperationResult result) {

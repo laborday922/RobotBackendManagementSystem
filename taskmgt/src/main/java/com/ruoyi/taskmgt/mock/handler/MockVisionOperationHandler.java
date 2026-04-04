@@ -2,9 +2,9 @@ package com.ruoyi.taskmgt.mock.handler;
 
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.mock.sdk.MockRobotSDK;
-import com.ruoyi.taskmgt.service.operation.OperationHandler;
-import com.ruoyi.taskmgt.service.operation.OperationResult;
-import com.ruoyi.taskmgt.service.operation.OperationType;
+import com.ruoyi.taskmgt.operation.OperationHandler;
+import com.ruoyi.taskmgt.operation.model.OperationResult;
+import com.ruoyi.taskmgt.operation.enums.OperationType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

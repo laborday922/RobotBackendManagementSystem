@@ -1,4 +1,4 @@
-package com.ruoyi.taskmgt.service.impl;
+package com.ruoyi.taskmgt.service.trigger;
 
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.utils.StringUtils;
@@ -12,7 +12,8 @@ import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
-import com.ruoyi.taskmgt.service.operation.StepExecutionEngine;
+import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
+import com.ruoyi.taskmgt.service.StepExecutionEngine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,12 +21,11 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @Transactional
-public class TaskTriggerService {
+public class TaskTrigger {
 
     @Autowired
     private TaskRepository taskRepository;
@@ -46,7 +46,7 @@ public class TaskTriggerService {
     private IRobotWarningsService robotWarningsService;
 
     @Autowired
-    private StepExecutionEngine stepExecutionEngine;  // 步骤执行引擎
+    private StepExecutionEngine stepExecutionEngine;
 
     /**
      * 每分钟执行一次触发检查
@@ -134,16 +134,21 @@ public class TaskTriggerService {
             if (robotWarningsService.countUnresolvedByRobotId(task.getRobotId()) != 0)
                 task.setRiskLevel(1);
         } else if (StringUtils.isNotNull(task.getRobotGroupId())) {
-            Robot robot = new Robot();
-            robot.setGroupId(task.getRobotGroupId());
-            List<Robot> robots = robotService.selectRobotsList(robot);
             boolean hasWarning = false;
-            for (Robot bot : robots) {
-                if (robotWarningsService.countUnresolvedByRobotId(bot.getId()) != 0) {
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+            Set<Long> involvedRobotIds = new HashSet<>();
+            for (TaskStep step : steps) {
+                if (step.getAssignedRobotId() != null) {
+                    involvedRobotIds.add(step.getAssignedRobotId());
+                }
+            }
+            for (Long robotId:involvedRobotIds){
+                if(robotWarningsService.countUnresolvedByRobotId(robotId)!=0){
                     hasWarning = true;
                     break;
                 }
             }
+
             if (hasWarning) task.setRiskLevel(1);
         }
 
@@ -174,7 +179,8 @@ public class TaskTriggerService {
                 // 单任务：检查机器人空闲
                 List<Task> executing = taskRepository.getTasks(Task.EXECUTING, 0, null,
                         task.getRobotId(), null, null, null, null);
-                if (executing.isEmpty()) {
+                List<TaskStep> executingStep = stepRepository.getSteps(TaskStep.EXECUTING,null,task.getRobotId());
+                if (executing.isEmpty()&&executingStep.isEmpty()) {
                     startTask(task);
                 }
             } else {
@@ -185,20 +191,17 @@ public class TaskTriggerService {
                 if (!executingGroup.isEmpty()) {
                     continue;
                 }
-                // 检查组内所有机器人是否有执行中的单任务
+                // 检查组内是否有至少一个机器人处于空闲状态
                 Robot robot = new Robot();
                 robot.setGroupId(groupId);
+                robot.setStatus(1);
+                robot.setHardwareStatus(0);
+                robot.setTaskStatus(2);
                 List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
-                boolean hasExecutingNonGroup = false;
-                for (Long rid : robotIds) {
-                    List<Task> executingNonGroup = taskRepository.getTasks(Task.EXECUTING, 0, null,
-                            rid, null, null, null, null);
-                    if (!executingNonGroup.isEmpty()) {
-                        hasExecutingNonGroup = true;
-                        break;
-                    }
-                }
-                if (!hasExecutingNonGroup) {
+                boolean hasIdleRobot = robotIds.stream().anyMatch(rid ->
+                        taskRepository.getTasks(Task.EXECUTING, null, null, rid, null, null, null, null).isEmpty()
+                );
+                if (hasIdleRobot) {
                     startTask(task);
                 }
             }
@@ -230,7 +233,7 @@ public class TaskTriggerService {
                 "任务开始执行", "system");
         log.info("任务 {} 开始执行", task.getId());
 
-        // ========== 核心：触发第一个步骤 ==========
+        // 触发第一个步骤
         triggerFirstStep(task);
     }
 
@@ -333,22 +336,19 @@ public class TaskTriggerService {
         Long groupId = robotService.selectRobotsById(robotId).getGroupId();
         if (groupId != null) {
             List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null);
-            Robot robot = new Robot();
-            robot.setGroupId(groupId);
-            List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
             boolean hasUnresolvedWarning = false;
-            if (robotWarningsService != null) {
-                for (Long rid : robotIds) {
-                    if (robotWarningsService.countUnresolvedByRobotId(rid) > 0) {
-                        hasUnresolvedWarning = true;
-                        break;
+            for (Task task : groupTasks) {
+                boolean isAssigned = stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(robotId,task.getId(),List.of(TaskStep.EXECUTING, TaskStep.WAITING, TaskStep.WAITING_CALLBACK))!=0;
+                if(isAssigned) {
+                    if (robotWarningsService != null) {
+                        if (robotWarningsService.countUnresolvedByRobotId(robotId) != 0) {
+                            hasUnresolvedWarning = true;
+                        }
+                    }
+                    else {
+                        hasUnresolvedWarning = !isResolved || (isResolved && event.isHasRemaining());
                     }
                 }
-            } else {
-                hasUnresolvedWarning = !isResolved || (isResolved && event.isHasRemaining());
-            }
-
-            for (Task task : groupTasks) {
                 if (hasUnresolvedWarning) {
                     Integer riskLevel = 0;
                     if(Objects.equals(task.getStatus(),Task.EXECUTING)) riskLevel = 2;

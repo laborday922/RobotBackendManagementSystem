@@ -29,6 +29,7 @@ public class TaskPo extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long tenantId;
     /** 模板ID */
     private Long templateId;
 

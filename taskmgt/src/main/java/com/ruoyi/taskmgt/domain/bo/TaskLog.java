@@ -24,6 +24,7 @@ public class TaskLog extends BaseEntity implements Serializable {
 
     private Long id;
 
+    private Long tenantId;
     /** 任务ID */
     @NotNull
     private Long taskId;

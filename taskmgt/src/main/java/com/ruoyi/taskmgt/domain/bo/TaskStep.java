@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.persistence.Version;
 import java.io.Serializable;
 import java.util.*;
 
@@ -45,6 +46,9 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
 
     /** 步骤状态（0未开始 1进行中 2已完成 3已暂停 4已终止） */
     private Byte status;
+
+    @Version
+    private Integer version;
 
     //任务状态
     public final static Byte NOTSTART = 0;
@@ -92,6 +96,18 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
                     add(TERMINATED);
                 }
             });
+            put(WAITING, new HashSet<>() {{
+                add(EXECUTING);
+                add(PAUSED);
+                add(TERMINATED);
+                add(FINISHED);
+            }});
+            put(WAITING_CALLBACK, new HashSet<>() {{
+                add(EXECUTING);
+                add(PAUSED);
+                add(TERMINATED);
+                add(FINISHED);
+            }});
             put(FINISHED, new HashSet<>() {
                 {
                     add(NOTSTART);
@@ -140,6 +156,7 @@ public class TaskStep extends BaseEntity implements Serializable, Stateful {
         return STATUSNAMES.get(this.status);
     }
 
+    private Long tenantId;
     private String traceId;
     private String resultData;
     private String errorMsg;

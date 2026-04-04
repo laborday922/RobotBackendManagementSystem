@@ -34,7 +34,6 @@ import java.util.*;
 @CopyNotNullTo({TemplatePo.class})
 public class Template extends BaseEntity  implements Serializable, Stateful {
     private static final long serialVersionUID = 1L;
-
     /** 模板ID */
     private Long id;
 
@@ -44,6 +43,7 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
 
     private Long appId;
 
+    private Long tenantId;
     /** 模板描述 */
     private String description;
 
@@ -59,9 +59,9 @@ public class Template extends BaseEntity  implements Serializable, Stateful {
     /** 状态（0正常 1已禁用 2已删除） */
     private Byte status;
 
-    private List<TAppConstraint> rules;
+    private List<TAppConstraint> rules= new ArrayList<>();;
 
-    private List<Long>ruleIds;
+    private List<Long>ruleIds = new ArrayList<>();
 
     @Setter
     @JsonIgnore

@@ -206,26 +206,26 @@ export function completeTaskSteps(id){
   })
 }
 
-export function listLogByTask(taskId,query){
+export function listLogByTask(query = {}){
   return request({
-    url: '/taskmgt/logs',
+    url: '/taskmgt/logs/tasks',
     method: 'get',
-    params: taskId, ...query
+    params: query
   })
 }
 
 // 获取操作列表
-export function listOperation() {
-  return request({
-    url: '/taskmgt/operation/list',
-    method: 'get'
-  })
-}
-
-// 获取操作详情
-export function getOperation(id) {
-  return request({
-    url: `/taskmgt/operation/` + id,
-    method: 'get'
-  })
-}
+// export function listOperation() {
+//   return request({
+//     url: '/taskmgt/operation/list',
+//     method: 'get'
+//   })
+// }
+//
+// // 获取操作详情
+// export function getOperation(id) {
+//   return request({
+//     url: `/taskmgt/operation/` + id,
+//     method: 'get'
+//   })
+// }

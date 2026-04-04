@@ -300,13 +300,18 @@
         />
         <div style="margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:4px;">
           <div><strong>任务名称：</strong>{{ reassignDialog.task.name }}</div>
-          <div><strong>原机器人：</strong>{{ reassignDialog.task.robotName }}</div>
-          <div><strong>适用组：</strong>{{ getRobotGroupNames(reassignDialog.task.templateId) }}</div>
           <div><strong>任务类型：</strong>{{ reassignDialog.task.isGroupTask === 1 ? '组任务' : '单任务' }}</div>
+          <div v-if="reassignDialog.task.isGroupTask === 0">
+            <strong>原机器人：</strong>{{ reassignDialog.task.robotName }}
+          </div>
+          <div v-else>
+            <strong>原机器人组：</strong>{{ reassignDialog.task.robotGroupName }}
+          </div>
+          <div><strong>适用机器人组：</strong>{{ getRobotGroupNames(reassignDialog.task.templateId) }}</div>
         </div>
 
-        <!-- 单任务：显示可用机器人列表 -->
-        <div v-if="reassignDialog.task.isGroupTask === 0" style="margin-bottom:16px;">
+        <!-- 单任务：显示可用机器人列表（原逻辑） -->
+        <div v-if="reassignDialog.task.isGroupTask === 0">
           <div style="font-weight:bold; margin-bottom:8px;">可用机器人</div>
           <el-radio-group v-model="reassignDialog.selectedRobotId">
             <div
@@ -322,7 +327,6 @@
                     <div style="font-size:12px; color:#666;">
                       <span><i class="el-icon-battery"></i> {{ robot.battery }}%</span>
                       <span style="margin-left:12px;"><i class="el-icon-location"></i> {{ robot.location }}</span>
-                      <span style="margin-left:12px; color:#52c41a;"><i class="el-icon-success" style="font-size:8px;"></i> 在线正常</span>
                     </div>
                   </div>
                 </div>
@@ -335,32 +339,46 @@
           </div>
         </div>
 
-        <!-- 组任务：显示可用组列表（组内所有机器人正常） -->
-        <div v-else style="margin-bottom:16px;">
-          <div style="font-weight:bold; margin-bottom:8px;">可用机器人组（组内所有机器人正常）</div>
-          <el-radio-group v-model="reassignDialog.selectedGroupId">
-            <div
-              v-for="group in availableGroupsForReassign"
-              :key="group.id"
-              class="robot-option"
-            >
-              <el-radio :label="group.id" style="width:100%;">
-                <div style="display:flex; align-items:center;">
-                  <i class="el-icon-s-grid" style="font-size:24px; color:#1890ff; margin-right:12px;"></i>
-                  <div>
-                    <div style="font-weight:bold;">{{ group.name }}</div>
-                    <div style="font-size:12px; color:#666;">
-                      <span><i class="el-icon-odometer"></i> {{ group.robotCount }}个机器人</span>
-                      <span style="margin-left:12px; color:#52c41a;"><i class="el-icon-success" style="font-size:8px;"></i> 全部正常</span>
-                    </div>
-                  </div>
-                </div>
-              </el-radio>
-            </div>
-          </el-radio-group>
-          <div v-if="availableGroupsForReassign.length === 0" class="empty-tip">
-            <i class="el-icon-s-grid" style="font-size:24px; margin-bottom:8px;"></i>
-            <div>没有可用的机器人组（需要组内所有机器人正常）</div>
+        <!-- 组任务：显示步骤列表，每个步骤可单独选择机器人 -->
+        <div v-else>
+          <div style="font-weight:bold; margin-bottom:8px;">步骤机器人分配</div>
+          <el-table :data="reassignDialog.steps" border size="small">
+            <el-table-column label="序号" width="60" align="center">
+              <template slot-scope="scope">{{ scope.row.orderNum }}</template>
+            </el-table-column>
+            <el-table-column prop="stepName" label="步骤名称" min-width="150" />
+            <el-table-column label="当前机器人" width="120">
+              <template slot-scope="scope">
+                {{ getRobotNameById(scope.row.assignedRobotId) || '未分配' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="重新分配" min-width="200">
+              <template slot-scope="scope">
+                <el-select
+                  v-model="scope.row.newRobotId"
+                  placeholder="选择机器人"
+                  clearable
+                  size="small"
+                  style="width:100%"
+                >
+                  <el-option
+                    v-for="robot in availableRobotsForGroupStep"
+                    :key="robot.id"
+                    :label="robot.name"
+                    :value="robot.id"
+                  >
+                    <span>{{ robot.name }}</span>
+                    <span style="float: right; color: #8492a6; font-size: 12px">
+                      电量{{ robot.battery }}%
+                    </span>
+                  </el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+          </el-table>
+          <div v-if="availableRobotsForGroupStep.length === 0" class="empty-tip">
+            <i class="el-icon-odometer" style="font-size:24px; margin-bottom:8px;"></i>
+            <div>没有可用的机器人（模板允许的组内所有机器人不可用）</div>
           </div>
         </div>
       </div>
@@ -445,7 +463,9 @@ import {
   pauseTask,
   resolveTaskRisk,
   terminateTask,
-  updateTask
+  updateTask,
+  getTaskSteps,
+  updateTaskSteps
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
 
@@ -472,7 +492,7 @@ export default {
         visible: false,
         task: null,
         selectedRobotId: null,  // 单任务选中的机器人
-        selectedGroupId: null, // 组任务选中的组
+        steps: [],
         templateInfo: null
       },
       // 记录已执行操作等待解除风险的任务ID集合
@@ -504,10 +524,21 @@ export default {
       const groupIds = this.ensureArray(task.robotGroupIds)
       return this.robotList.filter(r =>
         groupIds.includes(r.groupId) &&
-        r.status === '1' &&
-        r.hardwareStatus === '0' &&
+        r.status === 1 &&
+        r.hardwareStatus === 0 &&
         r.battery > 20 &&
         r.id !== task.robotId
+      )
+    },
+    availableRobotsForGroupStep() {
+      const task = this.reassignDialog.task
+      if (!task || task.isGroupTask !== 1) return []
+      const groupIds = this.ensureArray(task.robotGroupIds)
+      return this.robotList.filter(r =>
+        groupIds.includes(r.groupId) &&
+        r.status === 1 &&
+        r.hardwareStatus === 0 &&
+        r.battery > 20
       )
     },
     // 组任务：可用组（组内所有机器人正常）
@@ -539,11 +570,13 @@ export default {
     },
     // 是否可以确认重新分配
     canConfirmReassign() {
-      if (!this.reassignDialog.task) return false
-      if (this.reassignDialog.task.isGroupTask === 0) {
+      const task = this.reassignDialog.task
+      if (!task) return false
+      if (task.isGroupTask === 0) {
         return !!this.reassignDialog.selectedRobotId
       } else {
-        return !!this.reassignDialog.selectedGroupId
+        // 组任务：至少有一个步骤选择了新机器人
+        return this.reassignDialog.steps.some(step => step.newRobotId)
       }
     }
   },
@@ -633,19 +666,24 @@ export default {
     isTaskPendingResolve(row) {
       return this.pendingResolveTasks.has(row.id)
     },
+    // 获取模板允许的机器人组名称（用于显示）
     getRobotGroupNames(templateId) {
-      if (!this.reassignDialog.templateInfo ||
-        this.reassignDialog.task?.templateId !== templateId) {
+      if (!this.reassignDialog.templateInfo || this.reassignDialog.task?.templateId !== templateId) {
         return '-'
       }
-
-      const ids = this.reassignDialog.templateInfo.robotGroupIds
-      if (!ids || ids.length === 0) return '-'
+      const ids = this.ensureArray(this.reassignDialog.templateInfo.robotGroupIds)
+      if (!ids.length) return '-'
       const names = ids.map(id => {
         const group = this.robotGroupList.find(g => g.id === id)
         return group ? group.name : `组${id}`
       })
-      return names.join(', ') || '-'
+      return names.join(', ')
+    },
+
+    // 根据机器人ID获取名称
+    getRobotNameById(robotId) {
+      const robot = this.robotList.find(r => r.id === robotId)
+      return robot ? robot.name : ''
     },
     getRobotStatusText(status) {
       const map = {
@@ -748,8 +786,10 @@ export default {
     async showReassignDialog(row) {
       this.reassignDialog.task = row
       this.reassignDialog.selectedRobotId = null
-      this.reassignDialog.selectedGroupId = null
+      this.reassignDialog.steps = []
       this.reassignDialog.visible = true
+
+      // 获取模板信息（用于获取允许的机器人组）
       if (row.templateId) {
         try {
           const res = await getTemplate(row.templateId)
@@ -759,31 +799,58 @@ export default {
           this.reassignDialog.templateInfo = null
         }
       }
-    },
-    // 确认重新分配 - 不自动解决风险，添加到等待集合
-    async confirmReassign() {
-      if (!this.canConfirmReassign) return
-      const task = this.reassignDialog.task
 
+      if (row.isGroupTask === 1) {
+        // 组任务：获取步骤列表
+        try {
+          const stepsRes = await getTaskSteps(row.id)
+          const steps = stepsRes.data || []
+          this.reassignDialog.steps = steps.map(step => ({
+            ...step,
+            newRobotId: null   // 存储新分配的机器人ID
+          }))
+        } catch (error) {
+          this.$message.error('获取步骤列表失败')
+          this.reassignDialog.visible = false
+        }
+      }
+    },
+    // 确认重新分配
+    async confirmReassign() {
+      const task = this.reassignDialog.task
       try {
         if (task.isGroupTask === 0) {
-          // 单任务：更新机器人ID
-          const robotId = this.reassignDialog.selectedRobotId
-          await updateTask(task.id, { robotId: Number(robotId) })
+          // 单任务：更新任务机器人
+          await updateTask(task.id, { robotId: Number(this.reassignDialog.selectedRobotId) })
+          this.$message.success('重新分配成功')
         } else {
-          // 组任务：更新组ID
-          const groupId = this.reassignDialog.selectedGroupId
-          await updateTask(task.id, { robotGroupId: Number(groupId) })
+          // 组任务：更新每个步骤的机器人（使用 orderNum）
+          const updates = this.reassignDialog.steps
+            .filter(step => step.newRobotId)
+            .map(step => ({
+              orderNum: step.orderNum,
+              assignedRobotId: step.newRobotId
+            }))
+          if (updates.length === 0) {
+            this.$message.warning('请至少为一个步骤选择机器人')
+            return
+          }
+          await updateTaskSteps(task.id, updates)
+          this.$message.success('步骤机器人分配成功')
         }
-
-        this.$message.success('重新分配成功，请点击"解决风险"按钮移除异常标记')
         // 添加到等待解除风险集合
         this.pendingResolveTasks.add(task.id)
         this.reassignDialog.visible = false
         this.getList()
       } catch (error) {
-        this.$message.error('分配失败')
+        this.$message.error('分配失败：' + (error.message || '未知错误'))
       }
+    },
+    resetReassignDialog() {
+      this.reassignDialog.task = null
+      this.reassignDialog.selectedRobotId = null
+      this.reassignDialog.steps = []
+      this.reassignDialog.templateInfo = null
     },
     getStatusText(status) {
       const map = { 3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止' }

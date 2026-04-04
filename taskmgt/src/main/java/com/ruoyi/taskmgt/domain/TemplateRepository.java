@@ -172,7 +172,7 @@ public class TemplateRepository {
             if (robotGroupId != null) {
                 String groupIdStr = String.valueOf(robotGroupId);
                 Predicate containsGroupId = cb.like(
-                        cb.concat(cb.concat(",", root.get("robotGroupIds")), ","),
+                        cb.concat(cb.concat(",", root.get("robotGroupId")), ","),
                         "%," + groupIdStr + ",%"
                 );
                 predicates.add(containsGroupId);

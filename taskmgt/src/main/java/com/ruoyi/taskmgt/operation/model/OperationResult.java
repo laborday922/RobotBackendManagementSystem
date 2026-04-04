@@ -1,5 +1,6 @@
-package com.ruoyi.taskmgt.service.operation;
+package com.ruoyi.taskmgt.operation.model;
 
+import com.ruoyi.taskmgt.operation.enums.OperationType;
 import lombok.Builder;
 import lombok.Data;
 

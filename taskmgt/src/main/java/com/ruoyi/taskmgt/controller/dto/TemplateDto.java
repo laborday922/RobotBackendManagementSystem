@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -32,5 +33,5 @@ public class TemplateDto {
     private List<Long> robotGroupIds;
     private String formContent;
     private String workflow;
-    private List<TAppConstraint> rules;
+    private List<TAppConstraint> rules = new ArrayList<>();
 }

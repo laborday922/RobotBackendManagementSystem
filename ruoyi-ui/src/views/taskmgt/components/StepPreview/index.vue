@@ -8,6 +8,29 @@
           <span class="step-name">{{ step.stepName || step.name }}</span>
         </div>
         <div class="step-preview-desc">{{ step.description || '暂无描述' }}</div>
+
+        <!-- 组任务时显示机器人选择 -->
+        <div v-if="isGroupTask" class="step-robot-select">
+          <el-select
+            v-model="step.assignedRobotId"
+            placeholder="请选择机器人"
+            size="small"
+            clearable
+            @change="onRobotChange(step, $event)"
+          >
+            <el-option
+              v-for="robot in availableRobots"
+              :key="robot.id"
+              :label="robot.name"
+              :value="robot.id"
+            >
+              <span>{{ robot.name }}</span>
+              <span style="float: right; color: #8492a6; font-size: 12px">
+                电量{{ robot.battery }}%
+              </span>
+            </el-option>
+          </el-select>
+        </div>
       </div>
     </div>
   </div>
@@ -28,6 +51,19 @@ export default {
     maxHeight: {
       type: Number,
       default: 300
+    },
+    isGroupTask: {
+      type: Boolean,
+      default: false
+    },
+    availableRobots: {
+      type: Array,
+      default: () => []
+    }
+  },
+  methods: {
+    onRobotChange(step, robotId) {
+      this.$emit('robot-change', { step, robotId })
     }
   }
 }
@@ -78,5 +114,10 @@ export default {
   font-size: 13px;
   line-height: 1.5;
   padding-left: 28px;
+  margin-bottom: 8px;
+}
+.step-robot-select {
+  padding-left: 28px;
+  margin-top: 8px;
 }
 </style>

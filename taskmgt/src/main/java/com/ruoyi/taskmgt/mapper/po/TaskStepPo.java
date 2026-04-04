@@ -24,6 +24,7 @@ public class TaskStepPo extends BaseEntity {
     /** 所属任务ID */
     private Long taskId;
 
+    private Long tenantId;
     /** 步骤名称 */
     private String stepName;
 

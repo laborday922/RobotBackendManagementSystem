@@ -182,7 +182,7 @@
                   executing: i === (scope.row.completedSteps || 0) + 1 && scope.row.status === 2
                 }]"
               ></div>
-              <span style="margin-left:8px;">{{ scope.row.completedSteps || 0 }}/{{ scope.row.totalSteps || 5 }}</span>
+              <span style="margin-left:8px;">{{ scope.row.completedSteps || 0 }}/{{ scope.row.totalSteps || 0 }}</span>
             </div>
           </template>
         </el-table-column>
@@ -931,7 +931,7 @@ export default {
         const [taskRes, stepsRes, logsRes] = await Promise.all([
           getTask(id),
           getTaskSteps(id),
-          listLogByTask(id)
+          listLogByTask({taskId:id})
         ])
 
         this.currentTask = taskRes.data

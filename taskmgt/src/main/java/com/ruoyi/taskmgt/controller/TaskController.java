@@ -1,6 +1,7 @@
 package com.ruoyi.taskmgt.controller;
 
 import com.ruoyi.common.annotation.Log;
+import com.ruoyi.common.constant.HttpStatus;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -53,6 +54,8 @@ public class TaskController extends BaseController {
         int toIndex = Math.min(fromIndex + pageSize, allData.size());
         List<TaskVo> pageData = allData.subList(fromIndex, toIndex);
         TableDataInfo tableDataInfo = new TableDataInfo();
+        tableDataInfo.setCode(HttpStatus.SUCCESS);
+        tableDataInfo.setMsg("查询成功");
         tableDataInfo.setRows(pageData);
         tableDataInfo.setTotal(allData.size());
         return tableDataInfo;

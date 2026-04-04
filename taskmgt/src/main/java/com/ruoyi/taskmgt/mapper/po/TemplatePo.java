@@ -25,6 +25,7 @@ public class TemplatePo extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long tenantId;
     /** 模板名称 */
     @NotBlank(message = "模板名称不能为空")
     private String name;

@@ -1,13 +1,12 @@
-package com.ruoyi.taskmgt.service.operation;
+package com.ruoyi.taskmgt.operation;
 
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
-import lombok.Builder;
-import lombok.Data;
+import com.ruoyi.taskmgt.operation.model.OperationResult;
 
 import java.util.Map;
 
 /**
- * 操作处理器接口 - 每个operationId对应一个实现
+ * 操作处理器接口
  */
 public interface OperationHandler {
 

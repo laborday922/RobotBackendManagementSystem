@@ -6,16 +6,21 @@ import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.mapper.StepPoMapper;
+import com.ruoyi.taskmgt.mapper.po.TaskPo;
 import com.ruoyi.taskmgt.mapper.po.TaskStepPo;
 import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
+
+import javax.persistence.criteria.Predicate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,7 +92,7 @@ public class StepRepository {
     }
 
     public List<TaskStep> findStepsByTaskId(Long taskId) {
-        List<TaskStepPo>taskStepPos = this.stepPoMapper.findByTaskId(taskId);
+        List<TaskStepPo>taskStepPos = this.stepPoMapper.findByTaskIdOrderByOrderNumAsc(taskId);
         return taskStepPos.stream()
                 .map(po -> build(po, Optional.empty()))
                 .collect(Collectors.toList());
@@ -189,5 +194,48 @@ public class StepRepository {
         TaskStepPo taskStepPo = this.stepPoMapper.findByTraceId(traceId);
         if(StringUtils.isNotNull(taskStepPo))return CloneFactory.copy(new TaskStep(), taskStepPo);
         else return null;
+    }
+
+    public List<TaskStep> getSteps(Byte status, String name, Long assignedRobotId) {
+        Specification<TaskStepPo> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (StringUtils.hasText(name)) {
+                predicates.add(cb.like(root.get("name"), name + "%"));
+            }
+            if (assignedRobotId!=null) {
+                predicates.add(cb.equal(root.get("assignedRobotId"), assignedRobotId));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            predicates.add(cb.notEqual(root.get("status"), Task.DELETED));
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        List<TaskStepPo> stepPos = stepPoMapper.findAll(spec);
+        return stepPos.stream()
+                .map(po -> build(po, Optional.empty()))
+                .collect(Collectors.toList());
+    }
+
+    public long countByAssignedRobotIdAndTaskIdAndStatusIn(Long assignedRobotId, Long taskId,List<Byte> status) {
+        Specification<TaskStepPo> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (assignedRobotId!=null) {
+                predicates.add(cb.equal(root.get("assignedRobotId"), assignedRobotId));
+            }
+            if (taskId!=null){
+                predicates.add(cb.equal(root.get("taskId"),taskId));
+            }
+            if (status != null && !status.isEmpty()) {
+                predicates.add(root.get("status").in(status));
+            }
+
+            predicates.add(cb.notEqual(root.get("status"), Task.DELETED));
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return stepPoMapper.findAll(spec).size();
     }
 }

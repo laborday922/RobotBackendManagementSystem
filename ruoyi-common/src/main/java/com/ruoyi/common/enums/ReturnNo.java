@@ -26,7 +26,7 @@ public enum ReturnNo {
     CATEGORY_IN_USE(23, "ReturnNo.CATEGORY_IN_USE"),
     SOURCE_IN_USE(42, "ReturnNo.SOURCE_IN_USE"),
     ROBOT_STATUS_ABNORMAL(50, "ReturnNo.ROBOT_STATUS_ABNORMAL"),
-    DATA_INVALID(30, "RetrunNo.DATA_INVALID"),
+    DATA_INVALID(30, "ReturnNo.DATA_INVALID"),
     //状态码201
     CREATED(1, "ReturnNo.CREATED"),
 

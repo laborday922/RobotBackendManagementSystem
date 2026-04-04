@@ -1,11 +1,8 @@
 package com.ruoyi.taskmgt.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.app.service.ITAppApiService;
-import com.ruoyi.common.enums.ReturnNo;
-import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
@@ -36,7 +33,8 @@ public class StepReuseService {
         List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
         List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
-            if(Objects.equals(step.getStatus(), TaskStep.EXECUTING)){
+            if(Objects.equals(step.getStatus(), TaskStep.EXECUTING)|| Objects.equals(step.getStatus(), TaskStep.WAITING)
+                    || Objects.equals(step.getStatus(), TaskStep.WAITING_CALLBACK)){
                 step.setStatus(TaskStep.PAUSED);
                 taskLogService.record(
                         taskId,
@@ -54,9 +52,14 @@ public class StepReuseService {
     public List<String> continueStepsByTaskId(Long taskId) {
         List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
         List<String> redisKeys = new ArrayList<>();
-        for(TaskStep step : steps){
-            if(Objects.equals(step.getStatus(), TaskStep.PAUSED)){
-                step.setStatus(TaskStep.EXECUTING);
+        for (TaskStep step : steps) {
+            if (Objects.equals(step.getStatus(), TaskStep.PAUSED)) {
+                // 根据是否有 traceId 判断原等待状态
+                if (StringUtils.isNotBlank(step.getTraceId())) {
+                    step.setStatus(TaskStep.WAITING);
+                } else {
+                    step.setStatus(TaskStep.EXECUTING);
+                }
                 this.taskLogService.record(
                         taskId,
                         step.getId(),
@@ -97,7 +100,7 @@ public class StepReuseService {
         return redisKeys;
     }
 
-    public List<TaskStep> insertSteps(Template template, Map<String, Object> formDataMap, Map<String, Object> appParams) {
+    public List<TaskStep> getStandardSteps(Template template, Map<String, Object> formDataMap, Map<String, Object> appParams) {
         List<TaskStepDefinition> stepDefs = template.getStepDefinitions();
         List<TaskStep> steps = new ArrayList<>();
         for (int i = 0; i < stepDefs.size(); i++) {

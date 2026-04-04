@@ -161,7 +161,7 @@ public class TaskServiceImpl implements ITaskService {
             }
         }
 
-        return stepReuseService.insertSteps(template, formDataMap, finalAppParams);
+        return stepReuseService.getStandardSteps(template, formDataMap, finalAppParams);
     }
 
     /**
@@ -169,36 +169,76 @@ public class TaskServiceImpl implements ITaskService {
      **/
     @Override
     public void updateTask(Task task) {
-        if(Objects.equals(task.getStatus(), Task.EXECUTING)){
-            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString(), task.getStatus().toString()};
-            throw new TaskmgtException(ReturnNo.STATENOTALLOW,args,this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
-        }
-        else {
-            Task originTask = this.taskRepository.findById(task.getId()).orElseThrow(()-> {
-                String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString()};
-                return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        if (Objects.equals(task.getStatus(), Task.EXECUTING)) {
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), task.getId().toString(), task.getStatus().toString()};
+            throw new TaskmgtException(ReturnNo.STATENOTALLOW, args, this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
+        } else {
+            Task originTask = this.taskRepository.findById(task.getId()).orElseThrow(() -> {
+                String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), task.getId().toString()};
+                return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
             });
-            if(StringUtils.isNotNull(task.getRobotId())||StringUtils.isNotNull(task.getRobotGroupId())){
-                if(!isRobotNormal(task)){
-                    String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.toString()};
-                    throw new  TaskmgtException(ReturnNo.ROBOT_STATUS_ABNORMAL, args,this.messageSourceAccessor.getMessage(ReturnNo.ROBOT_STATUS_ABNORMAL.getMessage()));
+
+            // 检查机器人变更
+            boolean robotChanged = (task.getRobotId() != null && !task.getRobotId().equals(originTask.getRobotId()))
+                    || (task.getRobotGroupId() != null && !task.getRobotGroupId().equals(originTask.getRobotGroupId()));
+
+            if (robotChanged) {
+                updateStepAssignedRobotForTask(task);
+            }
+
+            if (StringUtils.isNotNull(task.getRobotId()) || StringUtils.isNotNull(task.getRobotGroupId())) {
+                if (!isRobotNormal(task)) {
+                    String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), task.toString()};
+                    throw new TaskmgtException(ReturnNo.ROBOT_STATUS_ABNORMAL, args, this.messageSourceAccessor.getMessage(ReturnNo.ROBOT_STATUS_ABNORMAL.getMessage()));
                 }
-                if (Objects.equals(originTask.getStatus(), Task.PAUSED)){
-                    if(StringUtils.isNotNull(task.getRobotId())&& !task.getRobotId().equals(originTask.getRobotId())||StringUtils.isNotNull(task.getRobotGroupId())&& !task.getRobotGroupId().equals(originTask.getRobotGroupId())){
+                if (Objects.equals(originTask.getStatus(), Task.PAUSED)) {
+                    if (robotChanged) {
                         task.setStatus(Task.PENDING);
                     }
                 }
             }
-            if(StringUtils.hasText(task.getFormContent())&&StringUtils.isNotNull(task.getTemplateId())&&Objects.equals(originTask.getStatus(), Task.DISABLED)){
+
+            if (StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId()) && Objects.equals(originTask.getStatus(), Task.DISABLED)) {
                 List<TaskStep> steps = retrieveSteps(task);
-                stepService.updateSteps(task.getId(),steps);
+                stepService.updateSteps(task.getId(), steps);
             }
+
             task.setUpdateBy(SecurityUtils.getUsername());
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
         }
     }
 
+    /**
+     * 更新任务步骤的 assignedRobotId
+     */
+    private void updateStepAssignedRobotForTask(Task newTask) {
+        List<TaskStep> steps = stepRepository.findStepsByTaskId(newTask.getId());
+        if (steps.isEmpty()) return;
+
+        if (newTask.getIsGroupTask() == 0 && newTask.getRobotId() != null) {
+            // 单任务：将所有未完成步骤的 assignedRobotId 设置为新机器人
+            Long newRobotId = newTask.getRobotId();
+            for (TaskStep step : steps) {
+                if (!Objects.equals(step.getStatus(), TaskStep.FINISHED)) {
+                    step.setAssignedRobotId(newRobotId);
+                    stepRepository.update(step);
+                }
+            }
+            taskLogService.record(newTask.getId(), null, TaskLogEventType.TASK_UPDATE,
+                    "重新分配机器人至 " + newRobotId, SecurityUtils.getUsername());
+        } else if (newTask.getIsGroupTask() == 1 && newTask.getRobotGroupId() != null) {
+            // 组任务：将所有未完成步骤的 assignedRobotId 置为 null，让后续执行时重新选择
+            for (TaskStep step : steps) {
+                if (!Objects.equals(step.getStatus(), TaskStep.FINISHED)) {
+                    step.setAssignedRobotId(null);
+                    stepRepository.update(step);
+                }
+            }
+            taskLogService.record(newTask.getId(), null, TaskLogEventType.TASK_UPDATE,
+                    "重新分配机器人组至 " + newTask.getRobotGroupId() + "，清空步骤机器人绑定", SecurityUtils.getUsername());
+        }
+    }
     /**
      * @param task   任务
      * @param status 需要更改到的状态1
@@ -386,43 +426,65 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public void continueTask(Long id) {
-        Task task = this.taskRepository.findById(id).orElseThrow(()-> {
-            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
-            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+        Task task = this.taskRepository.findById(id).orElseThrow(() -> {
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), id.toString()};
+            return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
         });
-        List<String> redisKeys;
-        List<Task>tasks = new ArrayList<>();
-        if(task.getIsGroupTask().equals(0)){
-            tasks.addAll(this.taskRepository.findByRobotIdAndStatus(task.getRobotId(),Task.EXECUTING));
+        List<String> redisKeys = new ArrayList<>();
+        // 检查当前机器人/机器人组是否空闲
+        boolean robotAvailable = isRobotAvailableForTask(task);
+        if (!robotAvailable) {
+            // 机器人不可用，任务无法恢复执行，转为准备状态
+            redisKeys = this.updateTaskStatus(task, Task.PENDING);
+            taskLogService.record(id, null, TaskLogEventType.TASK_PENDING,
+                    "恢复任务时机器人不可用，任务转入准备队列", SecurityUtils.getUsername());
         }
-        else{
-            //组任务需确认该组所有的机器人都没有正在执行的任务
-            Robot robot = new Robot();
-            robot.setGroupId(task.getRobotGroupId());
-            List<Robot> robots = this.robotService.selectRobotsList(robot);
-            for(Robot bot : robots){
-                tasks.addAll(this.taskRepository.findByRobotIdAndStatus(bot.getId(),Task.EXECUTING));
-            }
 
-        }
-        if (StringUtils.isEmpty(tasks)){
-            redisKeys = this.updateTaskStatus(task,Task.EXECUTING);
-            this.taskLogService.record(
-                    id,
-                    null,
-                    TaskLogEventType.TASK_RESUME,
-                    " 任务" + task.getName() + "已继续",
-                    SecurityUtils.getUsername()
-            );
-            if(StringUtils.isNotNull(task.getTemplateId())){
+        else{
+            redisKeys = this.updateTaskStatus(task, Task.EXECUTING);
+            this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
+                    "任务" + task.getName() + "已继续", SecurityUtils.getUsername());
+            if (StringUtils.isNotNull(task.getTemplateId())) {
                 List<String> stepRedisKeys = this.stepReuseService.continueStepsByTaskId(id);
                 redisKeys.addAll(stepRedisKeys);
             }
         }
-        else redisKeys = this.updateTaskStatus(task,Task.PENDING);
         this.redisUtil.deleteObject(redisKeys);
     }
 
+    /**
+     * 检查任务当前分配的机器人是否可用（无故障且空闲）
+     */
+    private boolean isRobotAvailableForTask(Task task) {
+        if (task.getIsGroupTask() == 0) {
+            Long robotId = task.getRobotId();
+            if (robotId == null) return false;
+            // 检查机器人是否在线、未禁用、无未解决预警
+            Robot robot = robotService.selectRobotsById(robotId);
+            if (robot == null) return false;
+            if (robotWarningsService.countUnresolvedByRobotId(robotId) > 0) return false;
+            // 检查是否有执行中的任务
+            List<Task> executing = taskRepository.findByRobotIdAndStatus(robotId, Task.EXECUTING);
+            boolean isAvailable = stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(robotId,null,List.of(TaskStep.EXECUTING,TaskStep.WAITING,TaskStep.WAITING_CALLBACK))==0;
+            return executing.isEmpty()&&isAvailable;
+        } else {
+            Long groupId = task.getRobotGroupId();
+            if (groupId == null) return false;
+            // 检查组内是否存在至少一个可用机器人（无故障、无执行任务）
+            Robot robot = new Robot();
+            robot.setGroupId(groupId);
+            List<Robot> robots = robotService.selectRobotsList(robot);
+            for (Robot r : robots) {
+                if (robotWarningsService.countUnresolvedByRobotId(r.getId()) > 0) continue;
+                List<Task> executing = taskRepository.findByRobotIdAndStatus(r.getId(), Task.EXECUTING);
+                boolean isAvailable = stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(r.getId(),null,List.of(TaskStep.EXECUTING,TaskStep.WAITING,TaskStep.WAITING_CALLBACK))==0;
+                if (executing.isEmpty()&&isAvailable) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
     /**
      * 停止任务
      * @param id 任务的id
@@ -484,24 +546,33 @@ public class TaskServiceImpl implements ITaskService {
                 });
 
         if (Objects.equals(task.getStatus(), Task.DELETED)) {
-            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), task.getId().toString(), task.getStatus().toString()};
-            throw new TaskmgtException(ReturnNo.STATENOTALLOW,args,this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
+            String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), task.getId().toString(), task.getStatus().toString()};
+            throw new TaskmgtException(ReturnNo.STATENOTALLOW, args, this.messageSourceAccessor.getMessage(ReturnNo.STATENOTALLOW.getMessage()));
         }
 
         boolean allNormal;
         if (task.getIsGroupTask() == 0) {
             allNormal = this.robotWarningsService.countUnresolvedByRobotId(task.getRobotId()) == 0;
         } else {
-            Robot robot = new Robot();
-            robot.setGroupId(task.getRobotGroupId());
-            List<Robot>robots = this.robotService.selectRobotsList(robot);
-            List<Long> robotIds = robots.stream().map(Robot::getId).toList();
-            allNormal = robotIds.stream()
-                    .allMatch(rid -> robotWarningsService.countUnresolvedByRobotId(rid) == 0);
+            // 组任务：只检查执行步骤的机器人
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+            Set<Long> robotIds = new HashSet<>();
+            for (TaskStep step : steps) {
+                if (step.getAssignedRobotId() != null) {
+                    robotIds.add(step.getAssignedRobotId());
+                }
+            }
+            if (robotIds.isEmpty()) {
+                allNormal = true;
+            } else {
+                allNormal = robotIds.stream()
+                        .allMatch(rid -> robotWarningsService.countUnresolvedByRobotId(rid) == 0);
+            }
         }
 
         if (!allNormal) {
-            if(!(Objects.equals(task.getStatus(), Task.TERMINATED)||Objects.equals(task.getStatus(),Task.NOTSTART)))return false;
+            if (!(Objects.equals(task.getStatus(), Task.TERMINATED) || Objects.equals(task.getStatus(), Task.NOTSTART)))
+                return false;
         }
 
         task.setRiskLevel(0);
@@ -667,16 +738,14 @@ public class TaskServiceImpl implements ITaskService {
     }
 
     private TaskAbnormalVo buildAbnormalVo(Task task) {
-        if(StringUtils.isNull(task)){
-            return new TaskAbnormalVo();
-        }
+        if (task == null) return new TaskAbnormalVo();
         TaskAbnormalVo vo = CloneFactory.copy(new TaskAbnormalVo(), task);
         if (task.getTemplateId() != null) {
             vo.setTemplateName(templateRepository.getTemplateNameById(task.getTemplateId()));
         }
 
         if (task.getIsGroupTask() == 0) {
-            // 单个机器人
+            // 单任务：检查组内机器人
             RobotWarnings robotWarning = new RobotWarnings();
             robotWarning.setRobotId(task.getRobotId());
             List<RobotWarnings> warnings = robotWarningsService.selectRobotWarningsList(robotWarning);
@@ -690,42 +759,46 @@ public class TaskServiceImpl implements ITaskService {
             } else {
                 String summary = warnings.get(0).getWarningType();
                 rs.setStatus(summary);
-                vo.setRobotStatusSummary(summary+"预警级别：" + warnings.get(0).getWarningLevel());
+                vo.setRobotStatusSummary(summary + "预警级别：" + warnings.get(0).getWarningLevel());
             }
             vo.setRobotStatuses(List.of(rs));
             vo.setRobotName(robotService.selectRobotsById(task.getRobotId()).getName());
         } else {
-            // 组任务
-            Robot robot = new Robot();
-            robot.setGroupId(task.getRobotGroupId());
-            List<Robot> robots = this.robotService.selectRobotsList(robot);
-            List<RobotStatus> robotStatuses = new ArrayList<>();
-            boolean groupHasWarning = false;
+            // 组任务：只关注分配了步骤的机器人
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+            Set<Long> involvedRobotIds = new HashSet<>();
+            for (TaskStep step : steps) {
+                if (step.getAssignedRobotId() != null) {
+                    involvedRobotIds.add(step.getAssignedRobotId());
+                }
+            }
 
-            for (Robot bot : robots) {
+            List<RobotStatus> robotStatuses = new ArrayList<>();
+            boolean hasWarning = false;
+            for (Long robotId : involvedRobotIds) {
+                Robot bot = robotService.selectRobotsById(robotId);
+                if (bot == null) continue;
                 RobotWarnings robotWarning = new RobotWarnings();
-                robotWarning.setRobotId(bot.getId());
+                robotWarning.setRobotId(robotId);
                 List<RobotWarnings> warnings = robotWarningsService.selectRobotWarningsList(robotWarning);
                 RobotStatus rs = new RobotStatus();
-                rs.setRobotId(bot.getId());
+                rs.setRobotId(robotId);
                 rs.setRobotName(bot.getName());
-
                 if (warnings.isEmpty()) {
                     rs.setStatus("normal");
                 } else {
-                    groupHasWarning = true;
-                    String summary = warnings.get(0).getWarningType();
-                    rs.setStatus(summary);
+                    hasWarning = true;
+                    rs.setStatus(warnings.get(0).getWarningType());
                 }
                 robotStatuses.add(rs);
             }
 
-            // 组摘要：如果组内有任何预警则显示“组内异常”，否则“正常”
-            vo.setRobotStatusSummary(groupHasWarning ? "组内异常" : "正常");
+            vo.setRobotStatusSummary(hasWarning ? "执行步骤机器人异常" : "正常");
             vo.setRobotStatuses(robotStatuses);
             vo.setRobotGroupName(robotGroupsService.selectRobotGroupsById(task.getRobotGroupId()).getName());
             Integer totalSteps = this.stepRepository.findStepsByTaskId(task.getId()).size();
-            Integer completedSteps = this.stepRepository.findStepsByTaskId(task.getId()).stream().filter(step-> Objects.equals(step.getStatus(), TaskStep.FINISHED)).toList().size();
+            Integer completedSteps = (int) this.stepRepository.findStepsByTaskId(task.getId()).stream()
+                    .filter(step -> Objects.equals(step.getStatus(), TaskStep.FINISHED)).count();
             vo.setTotalSteps(totalSteps);
             vo.setCompletedSteps(completedSteps);
         }

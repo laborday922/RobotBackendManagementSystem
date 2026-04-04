@@ -219,7 +219,7 @@ public class TaskRepository {
                 predicates.add(cb.equal(root.get("isGroupTask"), isGroupTask));
             }
             if (robotIds!=null) {
-                predicates.add(cb.equal(root.get("robotId"), robotIds));
+                predicates.add(root.get("robotId").in(robotIds));
             }
             if (robotGroupId!=null) {
                 predicates.add(cb.equal(root.get("robotGroupId"), robotGroupId));

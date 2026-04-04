@@ -39,7 +39,8 @@ public class StepServiceImpl implements IStepService {
 
     @Override
     public List<TaskStepVo> createSteps(Long taskId, List<TaskStep> steps) {
-        Assert.notEmpty(steps, "steps cannot be empty");
+        if(StringUtils.isEmpty(steps))return List.of();
+        //Assert.notEmpty(steps, "steps cannot be empty");
         Task task = this.taskRepository.findById(taskId).orElseThrow(() -> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -63,6 +64,7 @@ public class StepServiceImpl implements IStepService {
 
     @Override
     public void updateSteps(Long taskId, List<TaskStep> steps) {
+        if (StringUtils.isEmpty(steps))return;
         Task task = this.taskRepository.findById(taskId).orElseThrow(() -> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));

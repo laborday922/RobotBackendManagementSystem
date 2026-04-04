@@ -3,6 +3,7 @@ package com.ruoyi.robots.service.impl;
 import java.util.Date;
 import java.util.List;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.controller.dto.RobotWarningsDto;
 import com.ruoyi.robots.event.RobotWarningEvent;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Service;
 import com.ruoyi.robots.mapper.RobotWarningsMapper;
 import com.ruoyi.robots.domain.RobotWarnings;
 import com.ruoyi.robots.service.IRobotWarningsService;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 /**
  * 机器人状态预警Service业务层处理
@@ -51,6 +54,9 @@ public class RobotWarningsServiceImpl implements IRobotWarningsService
     @Override
     public List<RobotWarnings> selectRobotWarningsList(RobotWarnings robotWarnings)
     {
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            robotWarnings.setTenantId(tenantId);
         return robotWarningsMapper.selectRobotWarningsList(robotWarnings);
     }
 
@@ -63,6 +69,7 @@ public class RobotWarningsServiceImpl implements IRobotWarningsService
     @Override
     public int insertRobotWarnings(RobotWarnings robotWarnings)
     {
+
         // 发布预警创建事件（状态为待处理）
         eventPublisher.publishEvent(new RobotWarningEvent(
                 this,
@@ -72,6 +79,7 @@ public class RobotWarningsServiceImpl implements IRobotWarningsService
                 RobotsConstants.UNRESOLVED,
                 true
         ));
+        robotWarnings.setTenantId(TenantContext.get());
         return robotWarningsMapper.insertRobotWarnings(robotWarnings);
     }
 
@@ -137,6 +145,9 @@ public class RobotWarningsServiceImpl implements IRobotWarningsService
     public List<RobotWarnings> selectRobotWarningsListByStatus(String status) {
         RobotWarnings robotWarnings = new RobotWarnings();
         robotWarnings.setStatus(status);
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            robotWarnings.setTenantId(tenantId);
         return robotWarningsMapper.selectRobotWarningsList(robotWarnings);
     }
 

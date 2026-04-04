@@ -9,7 +9,7 @@ import Layout from '@/layout'
 /**
  * Note: 路由配置项
  *
- * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
+ * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者一些编辑页面/edit/1
  * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
  *                                  // 只有一个时，会将那个子路由当做根路由显示在侧边栏--如引导页面
  *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
@@ -120,6 +120,187 @@ export const constantRoutes = [
         meta: { title: '异常处理', icon: 'bug' }
       }
     ]
+  },
+  // ========== 模式管理模块 ==========
+  {
+    path: '/mode',
+    component: Layout,
+    redirect: '/mode/quick',
+    name: 'Mode',
+    meta: {
+      title: '模式管理',
+      icon: 'el-icon-setting',
+      roles: ['admin']
+    },
+    children: [
+      {
+        path: 'quick',
+        component: () => import('@/views/mode/quick/index'),
+        name: 'Quick',
+        meta: {
+          title: '快捷操作',
+          icon: 'el-icon-thumb',
+          noCache: true
+        }
+      },
+      {
+        path: 'switch',
+        component: () => import('@/views/mode/switch/index'),
+        name: 'Switch',
+        meta: {
+          title: '模式切换',
+          icon: 'el-icon-refresh',
+          noCache: true
+        }
+      },
+      {
+        path: 'schedule',
+        component: () => import('@/views/mode/schedule/index'),
+        name: 'Schedule',
+        meta: {
+          title: '模式排程',
+          icon: 'el-icon-date',
+          noCache: true
+        }
+      },
+      {
+        path: 'history',
+        component: () => import('@/views/mode/history/index'),
+        name: 'History',
+        meta: {
+          title: '历史记录',
+          icon: 'el-icon-time',
+          noCache: true
+        }
+      },
+      {
+        path: 'edit',
+        component: () => import('@/views/mode/mode/index.vue'),
+        name: 'Edit',
+        meta: {
+          title: '编辑模式',
+          icon: 'el-icon-edit',
+          noCache: true
+        }
+      }
+    ]
+  },
+  // ========== 功能管理模块 ==========
+  {
+    path: '/func',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'FuncManagement',
+    meta: {
+      title: '功能管理',
+      icon: 'el-icon-collection'
+    },
+    children: [
+      {
+        path: 'reception',
+        component: () => import('@/views/func/reception/index.vue'),
+        name: 'Reception',
+        meta: {
+          title: '业务接待',
+          icon: 'el-icon-service'
+        }
+      },
+      {
+        path: 'nav',
+        component: () => import('@/views/func/nav/index.vue'),
+        name: 'Nav',
+        meta: {
+          title: '导航指引',
+          icon: 'el-icon-location'
+        }
+      },
+      {
+        path: 'tour',
+        component: () => import('@/views/func/tour/index'),
+        name: 'Tour',
+        meta: {
+          title: '智能讲解',
+          icon: 'el-icon-microphone'
+        }
+      }
+    ]
+  },
+  // ========== 机器人管理模块 ==========
+  {
+    path: '/robots',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'RobotsManagement',
+    meta: {
+      title: '机器人管理',
+      icon: 'el-icon-monitor'
+    },
+    children: [
+      {
+        path: 'robots',
+        component: () => import('@/views/robots/robots/index'),
+        name: 'RobotIndex',
+        meta: { title: '机器人信息', icon: 'el-icon-user-solid' }
+      },
+      {
+        path: 'groups',
+        component: () => import('@/views/robots/groups/index.vue'),
+        name: 'RobotGroups',
+        meta: { title: '机器人分组', icon: 'el-icon-files' }
+      },
+      {
+        path: 'history',
+        component: () => import('@/views/robots/history/index.vue'),
+        name: 'RobotHistory',
+        meta: { title: '运行历史', icon: 'el-icon-time' }
+      },
+      {
+        path: 'warnings',
+        component: () => import('@/views/robots/warnings/index.vue'),
+        name: 'RobotWarnings',
+        meta: { title: '预警信息', icon: 'el-icon-warning' }
+      }
+    ]
+  },
+  // ========== 交互应用管理模块 ==========
+  {
+    path: '/app',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'AppManagement',
+    meta: {
+      title: '交互应用管理',
+      icon: 'el-icon-s-operation'
+    },
+    children: [
+      {
+        path: 'library',
+        component: () => import('@/views/app/appLibrary/index'),
+        name: 'AppLibrary',
+        meta: { title: '应用库管理', icon: 'el-icon-s-grid' }
+      },
+      // {
+      //   path: 'config',
+      //   component: () => import('@/views/app/appConfig/index'),
+      //   name: 'AppConfig',
+      //   meta: { title: '应用配置管理', icon: 'sliders-h' }
+      // },
+      {
+        path: 'update',
+        component: () => import('@/views/app/appUpdate/index'),
+        name: 'AppUpdate',
+        meta: { title: '应用更新管理', icon: 'el-icon-refresh' }
+      },
+      {
+        path: 'intHistory',
+        component: () => import('@/views/app/intHistory/index'),
+        name: 'IntHistory',
+        meta: { title: '交互历史', icon: 'el-icon-document' }
+      }
+    ]
   }
 ]
 
@@ -205,7 +386,7 @@ Router.prototype.push = function push(location) {
   return routerPush.call(this, location).catch(err => err)
 }
 // replace
-Router.prototype.replace = function push(location) {
+Router.prototype.replace = function replace(location) {
   return routerReplace.call(this, location).catch(err => err)
 }
 

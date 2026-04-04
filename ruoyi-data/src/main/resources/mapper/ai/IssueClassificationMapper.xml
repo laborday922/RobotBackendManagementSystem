@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.data.ai.mapper.IssueClassificationMapper">
+
+    <select id="selectRawInteractions" resultType="java.util.Map">
+        SELECT
+        interaction_type,
+        interaction_content,
+        interaction_time,
+        status,
+        evaluation_text
+        FROM t_interaction_history
+        WHERE interaction_time BETWEEN #{startTime} AND #{endTime}
+        LIMIT 1000
+    </select>
+
+    <select id="selectRawByCategory" resultType="java.util.Map">
+        SELECT
+        interaction_content,
+        interaction_time,
+        status,
+        evaluation_text
+        FROM t_interaction_history
+        WHERE interaction_type = #{category}
+        AND interaction_time BETWEEN #{startTime} AND #{endTime}
+        LIMIT 1000
+    </select>
+
+</mapper>

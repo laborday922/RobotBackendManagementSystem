@@ -61,4 +61,12 @@
         DELETE FROM metric_definition WHERE id = #{id}
     </delete>
 
+<!--    获取数据表字段信息-->
+    <select id="selectColumnsByTableName" resultType="string">
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = #{tableName}
+          AND TABLE_SCHEMA = (SELECT DATABASE())
+    </select>
+
 </mapper>

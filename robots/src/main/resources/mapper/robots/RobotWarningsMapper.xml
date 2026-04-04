@@ -26,6 +26,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <where>
             <if test="status != null  and status != ''"> and status = #{status}</if>
             <if test="robotId != null  and robotId != ''"> and robot_id = #{robotId}</if>
+            <if test="tenantId != null  and tenantId != ''"> and tenant_id = #{tenantId}</if>
         </where>
     </select>
     
@@ -46,6 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="resolveUser != null">resolve_user,</if>
             <if test="resolveNote != null">resolve_note,</if>
             <if test="createdAt != null">created_at,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="robotId != null and robotId != ''">#{robotId},</if>
@@ -57,6 +59,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="resolveUser != null">#{resolveUser},</if>
             <if test="resolveNote != null">#{resolveNote},</if>
             <if test="createdAt != null">#{createdAt},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 

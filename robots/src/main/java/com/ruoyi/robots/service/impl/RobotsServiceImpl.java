@@ -3,6 +3,7 @@ package com.ruoyi.robots.service.impl;
 import java.util.Date;
 import java.util.List;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.ruoyi.robots.mapper.RobotsMapper;
 import com.ruoyi.robots.service.IRobotsService;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 import static com.ruoyi.robots.common.RobotsConstants.ROBOT_CODE_HAS_EXISTED;
 
 /**
@@ -51,6 +53,9 @@ public class RobotsServiceImpl implements IRobotsService {
      */
     @Override
     public List<Robot> selectRobotsList(Robot robot) {
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            robot.setTenantId(tenantId);
         return robotsMapper.selectRobotsList(robot);
     }
 
@@ -65,6 +70,7 @@ public class RobotsServiceImpl implements IRobotsService {
         BeanUtils.copyProperties(robotsDto, robot);
         int count = robotsMapper.selectRobotsByCode(robot.getCode());
         if (count > 0) throw new InsertNoAllowedException(ROBOT_CODE_HAS_EXISTED);
+        robot.setTenantId(TenantContext.get());
         return robotsMapper.insertRobots(robot);
     }
 

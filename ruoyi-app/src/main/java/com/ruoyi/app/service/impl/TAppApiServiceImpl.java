@@ -52,6 +52,7 @@ public class TAppApiServiceImpl implements ITAppApiService
     @Override
     public int insertTAppApi(TAppApi tAppApi)
     {
+
         return tAppApiMapper.insertTAppApi(tAppApi);
     }
 

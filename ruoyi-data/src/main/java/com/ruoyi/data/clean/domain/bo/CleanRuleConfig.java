@@ -13,11 +13,11 @@ public class CleanRuleConfig {
 
     private TimeFormatType timeFormatType;
 
-    private TextCleaningType textCleaningType;
+    private TextCleaningType textCleaning;
 
-    private StatusMappingType statusMappingType;
+    private StatusMappingType statusMapping;
 
-    private DuplicateHandlingType duplicateHandlingType;
+    private DuplicateHandlingType duplicateHandling;
 
     // getter / setter
 }

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.function.mapper.SysTourGeneralMapper">
+
+    <resultMap type="com.ruoyi.function.domain.SysTourGeneral" id="SysTourGeneralResult">
+        <id property="configId" column="config_id"/>
+        <result property="robotId" column="robot_id"/>
+        <result property="mapId" column="map_id"/>
+        <result property="routeId" column="route_id"/>
+        <result property="voice" column="voice"/>
+        <result property="voiceInteraction" column="voice_interaction"/>
+        <result property="startCommand" column="start_command"/>
+        <result property="beforeTip" column="before_tip"/>
+        <result property="endTip" column="end_tip"/>
+        <result property="afterAction" column="after_action"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select config_id, robot_id, map_id, route_id, voice, voice_interaction,
+               start_command, before_tip, end_tip, after_action,
+               create_by, create_time, update_by, update_time
+        from sys_tour_general
+    </sql>
+
+    <select id="selectByRobotId" resultMap="SysTourGeneralResult">
+        <include refid="selectVo"/>
+        where robot_id = #{robotId}
+    </select>
+    <select id="selectList" resultType="com.ruoyi.function.domain.SysTourGeneral"></select>
+
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourGeneral" useGeneratedKeys="true" keyProperty="configId">
+        insert into sys_tour_general (
+            robot_id, map_id, route_id, voice, voice_interaction,
+            start_command, before_tip, end_tip, after_action,
+            create_by, create_time
+        ) values (
+                     #{robotId}, #{mapId}, #{routeId}, #{voice}, #{voiceInteraction},
+                     #{startCommand}, #{beforeTip}, #{endTip}, #{afterAction},
+                     #{createBy}, sysdate()
+                 )
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.function.domain.SysTourGeneral">
+        update sys_tour_general
+        <set>
+            <if test="mapId != null">map_id = #{mapId},</if>
+            <if test="routeId != null">route_id = #{routeId},</if>
+            <if test="voice != null">voice = #{voice},</if>
+            <if test="voiceInteraction != null">voice_interaction = #{voiceInteraction},</if>
+            <if test="startCommand != null">start_command = #{startCommand},</if>
+            <if test="beforeTip != null">before_tip = #{beforeTip},</if>
+            <if test="endTip != null">end_tip = #{endTip},</if>
+            <if test="afterAction != null">after_action = #{afterAction},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where config_id = #{configId}
+    </update>
+</mapper>

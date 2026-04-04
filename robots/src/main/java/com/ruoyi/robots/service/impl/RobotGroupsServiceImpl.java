@@ -3,6 +3,7 @@ package com.ruoyi.robots.service.impl;
 import java.util.Date;
 import java.util.List;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.exception.DeleteNoAllowedException;
 import com.ruoyi.robots.exception.InsertNoAllowedException;
@@ -13,6 +14,7 @@ import com.ruoyi.robots.mapper.RobotGroupsMapper;
 import com.ruoyi.robots.domain.RobotGroups;
 import com.ruoyi.robots.service.IRobotGroupsService;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 import static com.ruoyi.robots.common.RobotsConstants.*;
 
 /**
@@ -38,6 +40,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
     @Override
     public RobotGroups selectRobotGroupsById(Long id)
     {
+
         return robotGroupsMapper.selectRobotGroupsById(id);
     }
 
@@ -50,6 +53,9 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
     @Override
     public List<RobotGroups> selectRobotGroupsList(RobotGroups robotGroups)
     {
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            robotGroups.setTenantId(tenantId);
         return robotGroupsMapper.selectRobotGroupsList(robotGroups);
     }
 
@@ -67,6 +73,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
         if(count>0)throw new InsertNoAllowedException(ROBOT_CODE_HAS_EXISTED);
         robotGroups.setCreateTime(new Date());
         robotGroups.setUpdateTime(new Date());
+        robotGroups.setTenantId(TenantContext.get());
         return robotGroupsMapper.insertRobotGroups(robotGroups);
     }
 

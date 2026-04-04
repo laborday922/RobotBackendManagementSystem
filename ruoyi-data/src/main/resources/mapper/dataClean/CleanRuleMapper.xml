@@ -41,4 +41,28 @@
         WHERE id = #{id}
     </update>
 
+    <insert id="batchInsertResults">
+        INSERT INTO clean_interaction_result
+        (source_id, task_id, config_id, raw_content, clean_content, status_label, clean_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.sourceId},
+            #{item.taskId},
+            #{item.configId},
+            #{item.rawContent},
+            #{item.cleanContent},
+            #{item.statusLabel},
+            #{item.cleanTime}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectRawInteractionData" resultType="map">
+        SELECT id, evaluation_text
+        FROM t_interaction_history
+        WHERE evaluation_text IS NOT NULL
+          AND evaluation_text != ''
+    </select>
+
 </mapper>

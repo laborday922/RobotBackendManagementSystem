@@ -95,7 +95,7 @@ export default {
   font-size: 14px;
   line-height: 50px;
   .no-redirect {
-    color: white;
+    color: #f0f7ff;
     cursor: text;
   }
 }

@@ -76,5 +76,6 @@ public class Robot extends BaseEntity
     @Excel(name = "创建时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date createdAt;
 
+    private Long tenantId;
 
 }

@@ -76,7 +76,7 @@ public class RobotPositionHistoryController extends BaseController
 
     /**
      * 新增机器人位置历史信息
-     * todo 系统自动进行
+     *
      */
     @ApiOperation("新增机器人位置历史信息")
     @PreAuthorize("@ss.hasPermi('robots:history:add')")

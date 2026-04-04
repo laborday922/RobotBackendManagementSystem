@@ -24,6 +24,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectRobotPositionHistoryVo"/>
         <where>  
             <if test="robotId != null  and robotId != ''"> and robot_id = #{robotId}</if>
+            <if test="tenantId != null  and tenantId != ''"> and tenant_id = #{tenantId}</if>
         </where>
     </select>
     
@@ -43,6 +44,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="coordinateY != null">coordinate_y,</if>
             <if test="moveSpeed != null">move_speed,</if>
             <if test="statusDesc != null and statusDesc != ''">status_desc,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="robotId != null and robotId != ''">#{robotId},</if>
@@ -53,6 +55,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="coordinateY != null">#{coordinateY},</if>
             <if test="moveSpeed != null">#{moveSpeed},</if>
             <if test="statusDesc != null and statusDesc != ''">#{statusDesc},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 

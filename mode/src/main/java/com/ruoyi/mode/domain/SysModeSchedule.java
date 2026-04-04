@@ -1,0 +1,208 @@
+package com.ruoyi.mode.domain;
+
+import com.ruoyi.common.core.domain.BaseEntity;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 模式排程对象 sys_mode_schedule
+ *
+ * @author ruoyi
+ */
+public class SysModeSchedule extends BaseEntity
+{
+    private static final long serialVersionUID = 1L;
+
+    /** 排程ID */
+    private Long scheduleId;
+
+    /** 排程名称 */
+    private String scheduleName;
+
+    /** 模式ID */
+    private Long modeId;
+
+    /** 模式名称 */
+    private String modeName;
+
+    /** 执行时间描述 */
+    private String executeTime;
+
+    /** 重复类型(once/daily/weekly/monthly/weekdays) */
+    private String repeatType;
+
+    /** 开始日期 */
+    private Date startDate;
+
+    /** 开始时间 */
+    private String startTime;
+
+    /** 持续时间(小时) */
+    private BigDecimal duration;
+
+    /** 状态(running/paused/pending/completed/failed) */
+    private String status;
+
+    /** 上次执行时间 */
+    private Date lastExecuteTime;
+
+    /** 上次执行状态 */
+    private String lastExecuteStatus;
+
+    /** 删除标志（0代表存在 2代表删除） */
+    private String delFlag;
+
+    /** 关联的机器人列表 */
+    private List<SysRobot> robots;
+
+    /** 机器人ID列表（用于接收前端数据） */
+    private Long[] robotIds;
+
+    // Getters and Setters
+    public Long getScheduleId() {
+        return scheduleId;
+    }
+
+    public void setScheduleId(Long scheduleId) {
+        this.scheduleId = scheduleId;
+    }
+
+    public String getScheduleName() {
+        return scheduleName;
+    }
+
+    public void setScheduleName(String scheduleName) {
+        this.scheduleName = scheduleName;
+    }
+
+    public Long getModeId() {
+        return modeId;
+    }
+
+    public void setModeId(Long modeId) {
+        this.modeId = modeId;
+    }
+
+    public String getModeName() {
+        return modeName;
+    }
+
+    public void setModeName(String modeName) {
+        this.modeName = modeName;
+    }
+
+    public String getExecuteTime() {
+        return executeTime;
+    }
+
+    public void setExecuteTime(String executeTime) {
+        this.executeTime = executeTime;
+    }
+
+    public String getRepeatType() {
+        return repeatType;
+    }
+
+    public void setRepeatType(String repeatType) {
+        this.repeatType = repeatType;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public BigDecimal getDuration() {
+        return duration;
+    }
+
+    public void setDuration(BigDecimal duration) {
+        this.duration = duration;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Date getLastExecuteTime() {
+        return lastExecuteTime;
+    }
+
+    public void setLastExecuteTime(Date lastExecuteTime) {
+        this.lastExecuteTime = lastExecuteTime;
+    }
+
+    public String getLastExecuteStatus() {
+        return lastExecuteStatus;
+    }
+
+    public void setLastExecuteStatus(String lastExecuteStatus) {
+        this.lastExecuteStatus = lastExecuteStatus;
+    }
+
+    public String getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag) {
+        this.delFlag = delFlag;
+    }
+
+    public List<SysRobot> getRobots() {
+        return robots;
+    }
+
+    public void setRobots(List<SysRobot> robots) {
+        this.robots = robots;
+    }
+
+    public Long[] getRobotIds() {
+        return robotIds;
+    }
+
+    public void setRobotIds(Long[] robotIds) {
+        this.robotIds = robotIds;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+                .append("scheduleId", getScheduleId())
+                .append("scheduleName", getScheduleName())
+                .append("modeId", getModeId())
+                .append("modeName", getModeName())
+                .append("executeTime", getExecuteTime())
+                .append("repeatType", getRepeatType())
+                .append("startDate", getStartDate())
+                .append("startTime", getStartTime())
+                .append("duration", getDuration())
+                .append("status", getStatus())
+                .append("lastExecuteTime", getLastExecuteTime())
+                .append("lastExecuteStatus", getLastExecuteStatus())
+                .append("delFlag", getDelFlag())
+                .append("createBy", getCreateBy())
+                .append("createTime", getCreateTime())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
+                .toString();
+    }
+}

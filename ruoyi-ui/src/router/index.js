@@ -9,7 +9,7 @@ import Layout from '@/layout'
 /**
  * Note: 路由配置项
  *
- * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
+ * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者一些编辑页面/edit/1
  * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
  *                                  // 只有一个时，会将那个子路由当做根路由显示在侧边栏--如引导页面
  *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
@@ -225,6 +225,82 @@ export const constantRoutes = [
         }
       }
     ]
+  },
+  // ========== 机器人管理模块 ==========
+  {
+    path: '/robots',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'RobotsManagement',
+    meta: {
+      title: '机器人管理',
+      icon: 'el-icon-monitor'
+    },
+    children: [
+      {
+        path: 'robots',
+        component: () => import('@/views/robots/robots/index'),
+        name: 'RobotIndex',
+        meta: { title: '机器人信息', icon: 'el-icon-user-solid' }
+      },
+      {
+        path: 'groups',
+        component: () => import('@/views/robots/groups/index.vue'),
+        name: 'RobotGroups',
+        meta: { title: '机器人分组', icon: 'el-icon-files' }
+      },
+      {
+        path: 'history',
+        component: () => import('@/views/robots/history/index.vue'),
+        name: 'RobotHistory',
+        meta: { title: '运行历史', icon: 'el-icon-time' }
+      },
+      {
+        path: 'warnings',
+        component: () => import('@/views/robots/warnings/index.vue'),
+        name: 'RobotWarnings',
+        meta: { title: '预警信息', icon: 'el-icon-warning' }
+      }
+    ]
+  },
+  // ========== 交互应用管理模块 ==========
+  {
+    path: '/app',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'AppManagement',
+    meta: {
+      title: '交互应用管理',
+      icon: 'el-icon-s-operation'
+    },
+    children: [
+      {
+        path: 'library',
+        component: () => import('@/views/app/appLibrary/index'),
+        name: 'AppLibrary',
+        meta: { title: '应用库管理', icon: 'el-icon-s-grid' }
+      },
+      // {
+      //   path: 'config',
+      //   component: () => import('@/views/app/appConfig/index'),
+      //   name: 'AppConfig',
+      //   meta: { title: '应用配置管理', icon: 'sliders-h' }
+      // },
+      {
+        path: 'update',
+        component: () => import('@/views/app/appUpdate/index'),
+        name: 'AppUpdate',
+        meta: { title: '应用更新管理', icon: 'el-icon-refresh' }
+      },
+      {
+        path: 'intHistory',
+        component: () => import('@/views/app/intHistory/index'),
+        name: 'IntHistory',
+        meta: { title: '交互历史', icon: 'el-icon-document' }
+      }
+    ]
   }
 ]
 
@@ -310,7 +386,7 @@ Router.prototype.push = function push(location) {
   return routerPush.call(this, location).catch(err => err)
 }
 // replace
-Router.prototype.replace = function push(location) {
+Router.prototype.replace = function replace(location) {
   return routerReplace.call(this, location).catch(err => err)
 }
 

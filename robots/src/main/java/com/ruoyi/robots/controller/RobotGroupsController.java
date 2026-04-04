@@ -112,5 +112,5 @@ public class RobotGroupsController extends BaseController
         return toAjax(robotGroupsService.deleteRobotGroupsByIds(ids));
     }
 
-    //todo 开启/关闭机器人分组
+
 }

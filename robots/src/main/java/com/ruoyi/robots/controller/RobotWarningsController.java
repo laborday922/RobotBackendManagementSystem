@@ -98,7 +98,7 @@ public class RobotWarningsController extends BaseController
 
     /**
      * 新增机器人状态预警
-     * todo 拿到机器人状态异常后自动进行
+     *
      */
     @ApiOperation("新增机器人状态预警")
     @PreAuthorize("@ss.hasPermi('robots:warnings:add')")

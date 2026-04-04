@@ -2,20 +2,20 @@
 
   .main-container {
     height: 100%;
-    transition: margin-left .28s;
-    margin-left: $base-sidebar-width;
+    transition: margin-left 0.28s;
+    margin-left: 231px; // 原 $base-sidebar-width 的默认值，可按需调整
     position: relative;
   }
 
   .sidebarHide {
-    margin-left: 0!important;
+    margin-left: 0 !important;
   }
 
   .sidebar-container {
-    -webkit-transition: width .28s;
+    -webkit-transition: width 0.28s;
     transition: width 0.28s;
-    width: $base-sidebar-width !important;
-    //background-color: $base-menu-background;
+    width: 200px !important; // 原 $base-sidebar-width
+    background-color: #E7EDF9; // 浅色侧边栏背景
     height: 100%;
     position: fixed;
     font-size: 0px;
@@ -24,8 +24,9 @@
     left: 0;
     z-index: 1001;
     overflow: hidden;
-    -webkit-box-shadow: 2px 0 6px rgba(0,21,41,.35);
     box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.1);
+    border-radius: 12px; // 增加圆角（可选）
+    margin: 12px 0 12px 31px; // 侧边栏外边距（若需要）
 
     // reset element-ui css
     .horizontal-collapse-transition {
@@ -68,46 +69,110 @@
       border: none;
       height: 100%;
       width: 100% !important;
-      background-color: transparent !important;
+      background-color: transparent !important; // 透出侧边栏背景
     }
 
-    .el-menu-item, .el-submenu__title {
+    .el-menu-item,
+    .el-submenu__title {
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
     }
 
-    // menu hover
+    // 一级菜单项样式
+    .el-menu-item {
+      background-color: transparent !important;
+      color: #4D4D4D !important; // 默认深灰色
+      height: 48px;
+      line-height: 48px;
+
+      &:hover {
+        background-color: rgba(57, 118, 228, 0.08) !important; // 悬停背景浅蓝
+        color: #3976E4 !important; // 悬停字体蓝色
+      }
+
+      &.is-active {
+        // 一级菜单选中样式（例如首页）
+        color: #3976E4 !important;
+        background-color: #E7EDF9 !important; // 选中背景更深蓝
+      }
+    }
+
+    // 子菜单标题
+    .el-submenu__title {
+      background-color: transparent !important;
+      color: #4D4D4D !important;
+      height: 48px;
+      line-height: 48px;
+
+      &:hover {
+        background-color: rgba(57, 118, 228, 0.08) !important;
+        color: #3976E4 !important;
+      }
+    }
+
+    // 子菜单容器（展开区域）
+    .el-submenu .el-menu.el-menu--inline {
+      background-color: #E7EDF9 !important; // 与侧边栏背景一致
+    }
+
+    // 二级菜单项（内联展开）
+    .el-submenu .el-menu-item {
+      background-color: transparent !important;
+      color: #4D4D4D !important;
+      padding-left: 48px !important;
+
+      &:hover {
+        background-color: rgba(57, 118, 228, 0.08) !important;
+        color: #3976E4 !important;
+      }
+
+      &.is-active {
+        color: #FFFFFF !important;
+        background-color: #2a5fcf !important; // 选中背景更深蓝
+      }
+    }
+
+    // 更深层嵌套子菜单（三级及以上）
+    .el-submenu .el-submenu .el-menu-item {
+      padding-left: 72px !important;
+    }
+
+    // 强制覆盖若依深色主题下的子菜单样式
+    .theme-dark {
+      .nest-menu .el-submenu > .el-submenu__title,
+      .el-submenu .el-menu-item {
+        background-color: #E7EDF9 !important;
+        color: #4D4D4D !important;
+
+        &:hover {
+          background-color: rgba(57, 118, 228, 0.08) !important;
+          color: #3976E4 !important;
+        }
+
+        &.is-active {
+          color: #FFFFFF !important;
+          background-color: rgb(184, 200, 244) !important;
+        }
+      }
+    }
+
+    // 菜单悬停通用背景（覆盖原有 rgba(0,0,0,0.02) 规则）
     .submenu-title-noDropdown,
     .el-submenu__title {
       &:hover {
-        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
+        background-color: rgba(57, 118, 228, 0.08) !important;
+        color: #3976E4 !important;
       }
     }
 
+    // 原有 .theme-dark 下的激活标题颜色覆盖（若不需要可保留）
     & .theme-dark .is-active > .el-submenu__title {
-      color: $base-menu-color-active !important;
-    }
-
-    & .nest-menu .el-submenu>.el-submenu__title,
-    & .el-submenu .el-menu-item {
-      min-width: $base-sidebar-width !important;
-
-      &:hover {
-        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
-      }
-    }
-
-    & .theme-dark .nest-menu .el-submenu>.el-submenu__title,
-    & .theme-dark .el-submenu .el-menu-item {
-      background-color: $base-sub-menu-background !important;
-
-      &:hover {
-        background-color: rgba(184, 200, 244) !important;  // 替换为您要的颜色
-      }
+      color: #3976E4 !important;
     }
   }
 
+  // 折叠侧边栏样式
   .hideSidebar {
     .sidebar-container {
       width: 54px !important;
@@ -135,20 +200,19 @@
     .el-submenu {
       overflow: hidden;
 
-      &>.el-submenu__title {
+      & > .el-submenu__title {
         padding: 0 !important;
 
         .svg-icon {
           margin-left: 20px;
         }
-
       }
     }
 
     .el-menu--collapse {
       .el-submenu {
-        &>.el-submenu__title {
-          &>span {
+        & > .el-submenu__title {
+          & > span {
             height: 0;
             width: 0;
             overflow: hidden;
@@ -161,7 +225,7 @@
   }
 
   .el-menu--collapse .el-menu .el-submenu {
-    min-width: $base-sidebar-width !important;
+    min-width: 200px !important;
   }
 
   // mobile responsive
@@ -171,21 +235,20 @@
     }
 
     .sidebar-container {
-      transition: transform .28s;
-      width: $base-sidebar-width !important;
+      transition: transform 0.28s;
+      width: 200px !important;
     }
 
     &.hideSidebar {
       .sidebar-container {
         pointer-events: none;
         transition-duration: 0.3s;
-        transform: translate3d(-$base-sidebar-width, 0, 0);
+        transform: translate3d(-200px, 0, 0);
       }
     }
   }
 
   .withoutAnimation {
-
     .main-container,
     .sidebar-container {
       transition: none;
@@ -195,33 +258,52 @@
 
 // when menu collapsed
 .el-menu--vertical {
-  &>.el-menu {
+  & > .el-menu {
     .svg-icon {
       margin-right: 16px;
     }
   }
 
-  .nest-menu .el-submenu>.el-submenu__title,
+  .nest-menu .el-submenu > .el-submenu__title,
   .el-menu-item {
     &:hover {
-      // you can use $subMenuHover
-      background-color: rgba(0, 0, 0, 0.06) !important;
+      background-color: rgb(184, 200, 244) !important;
+      color: #3976E4 !important;
     }
   }
 
-  // the scroll bar appears when the subMenu is too long
-  >.el-menu--popup {
+  // 弹出式子菜单
+  > .el-menu--popup {
     max-height: 100vh;
     overflow-y: auto;
+    background-color: #E7EDF9 !important; // 弹出菜单背景
+    border-radius: 8px;
+    padding: 4px 0;
+
+    .el-menu-item {
+      background-color: transparent !important;
+      color: #4D4D4D !important;
+      min-width: 160px;
+      height: 40px;
+      line-height: 40px;
+
+      &:hover {
+        background-color: rgba(57, 118, 228, 0.08) !important;
+        color: #3976E4 !important;
+      }
+
+      &.is-active {
+        color: #FFFFFF !important;
+        background-color: rgb(184, 200, 244) !important;
+      }
+    }
 
     &::-webkit-scrollbar-track-piece {
       background: #d3dce6;
     }
-
     &::-webkit-scrollbar {
       width: 6px;
     }
-
     &::-webkit-scrollbar-thumb {
       background: #99a9bf;
       border-radius: 20px;

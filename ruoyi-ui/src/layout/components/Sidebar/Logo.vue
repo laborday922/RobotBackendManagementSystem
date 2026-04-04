@@ -2,10 +2,11 @@
   <div class="sidebar-logo-container" :class="{'collapse':collapse}" :style="{ backgroundColor: sideTheme === 'theme-dark' && navType !== 3 ? variables.menuBackground : variables.menuLightBackground }">
     <transition name="sidebarLogoFade">
       <router-link v-if="collapse" key="collapse" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" />
-        <h1 v-else class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' && navType !== 3 ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
+<!--        <img v-if="logo" :src="logo" class="sidebar-logo" />-->
+        <h1 class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' && navType !== 3 ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
       </router-link>
       <router-link v-else key="expand" class="sidebar-logo-link" to="/">
+<!--        <img v-if="logo" :src="logo" class="sidebar-logo" />-->
         <h1 class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' && navType !== 3 ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
       </router-link>
     </transition>
@@ -14,7 +15,7 @@
 
 <script>
 import logoImg from '@/assets/logo/logo.png'
-import variables from '@/assets/styles/custom-theme.scss'
+import variables from '@/assets/styles/variables.scss'
 
 export default {
   name: 'SidebarLogo',
@@ -37,7 +38,7 @@ export default {
   },
   data() {
     return {
-      title: '机器人管理系统',
+      title: process.env.VUE_APP_TITLE,
       logo: logoImg
     }
   }
@@ -55,36 +56,33 @@ export default {
 }
 
 .sidebar-logo-container {
-  height: 60px;
-
-  /* ❗改成透明玻璃 */
-  background: transparent !important;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  height: 50px;
+  line-height: 50px;
+  background: #2b2f3a;
+  text-align: center;
+  overflow: hidden;
 
   & .sidebar-logo-link {
-    display: flex;
-    align-items: center;      // 保证图片和文字在交叉轴居中
-    justify-content: center;
-    text-decoration: none;
-    line-height: 1;
+    height: 100%;
+    width: 100%;
 
     & .sidebar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      vertical-align: middle;  // 明确图片垂直对齐方式
+      width: 32px;
+      height: 32px;
+      vertical-align: middle;
+      margin-right: 12px;
     }
 
     & .sidebar-title {
-      font-size: 16px;
+      display: inline-block;
+      margin: 0;
+      color: #fff;
       font-weight: 600;
-      color: #3976E4 !important;
-      margin-left: 40px;               // 移除 h1 默认边距
-      line-height: 36px;       // 设置与图片高度相同的行高，保证完全居中
-      white-space: nowrap;     // 防止文字换行（可选）
+      line-height: 50px;
+      font-size: 14px;
+      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
+      vertical-align: middle;
     }
   }
 

@@ -239,65 +239,49 @@ export default {
 
 <style lang="scss" scoped>
 .tags-view-container {
-  height: auto;
+  height: 34px;
   width: 100%;
-
-  /* ❌ 去掉原来的白底 + 边框 */
-  background: transparent !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
-
-  padding-left: 30px ;
-
+  background: #fff;
+  border-bottom: 1px solid #d8dce5;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, .12), 0 0 3px 0 rgba(0, 0, 0, .04);
+  margin-left: 31px;
   .tags-view-wrapper {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 0 10px;
-
     .tags-view-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-
+      display: inline-block;
+      position: relative;
       cursor: pointer;
-
-      height: 28px;
-      line-height: 28px;
-
-      padding: 0 12px;
-
-      font-size: 13px;
-
-      /* ✅ 核心：小方块风格 */
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 8px;
-      border: none;
-
-      color: #555;
-
-      /* ✅ 悬浮感 */
-      backdrop-filter: blur(6px);
-      transition: all 0.2s;
-
-      &:hover {
-        background: rgba(83, 135, 228, 0.15);
-        color: #3976E4;
+      height: 26px;
+      line-height: 26px;
+      border: 1px solid #d8dce5;
+      color: #495060;
+      background: #fff;
+      padding: 0 8px;
+      font-size: 12px;
+      margin-left: 5px;
+      margin-top: 4px;
+      &:first-of-type {
+        margin-left: 15px;
       }
-
-      /* ❌ 去掉默认间距逻辑 */
-      margin: 5px !important;
-
+      &:last-of-type {
+        margin-right: 15px;
+      }
       &.active {
-        background: #3976E4 !important;
-        color: #fff !important;
-
-        box-shadow: 0 2px 6px rgba(57, 118, 228, 0.3);
+        background-color: #42b983;
+        color: #fff;
+        border-color: #42b983;
+        &::before {
+          content: '';
+          background: #fff;
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          position: relative;
+          margin-right: 2px;
+        }
       }
     }
   }
-
 
   .tags-view-item.active.has-icon::before {
     content: none !important;
@@ -305,34 +289,22 @@ export default {
 
   .contextmenu {
     margin: 0;
-    background: rgba(255, 255, 255, 0.95);
-
-    backdrop-filter: blur(10px);
-
+    background: #fff;
     z-index: 3000;
     position: absolute;
-
-    list-style: none;
-
-    padding: 6px 0;
-
-    border-radius: 8px;
-
-    font-size: 13px;
-
+    list-style-type: none;
+    padding: 5px 0;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 400;
     color: #333;
-
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
+    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, .3);
     li {
-      padding: 8px 16px;
+      margin: 0;
+      padding: 7px 16px;
       cursor: pointer;
-
-      transition: all 0.2s;
-
       &:hover {
-        background: rgba(57, 118, 228, 0.1);
-        color: #3976E4;
+        background: #eee;
       }
     }
   }
@@ -344,26 +316,22 @@ export default {
 .tags-view-wrapper {
   .tags-view-item {
     .el-icon-close {
-      width: 14px;
-      height: 14px;
-
+      width: 16px;
+      height: 16px;
+      vertical-align: 2px;
       border-radius: 50%;
-      font-size: 12px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      transition: all 0.2s;
-
+      text-align: center;
+      transition: all .3s cubic-bezier(.645, .045, .355, 1);
+      transform-origin: 100% 50%;
+      &:before {
+        transform: scale(.6);
+        display: inline-block;
+        vertical-align: -3px;
+      }
       &:hover {
-        background: rgba(0, 0, 0, 0.1);
+        background-color: #b4bccc;
         color: #fff;
       }
-    }
-
-    &.active .el-icon-close:hover {
-      background: rgba(255, 255, 255, 0.3);
     }
   }
 }

@@ -17,14 +17,7 @@ export default {
     const vnodes = []
 
     if (icon) {
-      // 判断是否为 Element UI 图标（以 el-icon 开头）
-      if (icon.indexOf('el-icon') === 0) {
-        // 使用 Element UI 图标
-        vnodes.push(<i class={icon} style="margin-right: 8px;"></i>)
-      } else {
-        // 使用自定义 SVG 图标
-        vnodes.push(<svg-icon icon-class={icon}/>)
-      }
+      vnodes.push(<svg-icon icon-class={icon}/>)
     }
 
     if (title) {

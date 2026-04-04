@@ -20,6 +20,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectRobotGroupsVo"/>
         <where>  
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
+            <if test="tenantId != null  and tenantId != ''"> and tenant_id = #{tenantId}</if>
         </where>
     </select>
     
@@ -35,12 +36,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="description != null">description,</if>
             <if test="createdAt != null">created_at,</if>
             <if test="updatedAt != null">updated_at,</if>
+            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="name != null and name != ''">#{name},</if>
             <if test="description != null">#{description},</if>
             <if test="createdAt != null">#{createdAt},</if>
             <if test="updatedAt != null">#{updatedAt},</if>
+            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
          </trim>
     </insert>
 

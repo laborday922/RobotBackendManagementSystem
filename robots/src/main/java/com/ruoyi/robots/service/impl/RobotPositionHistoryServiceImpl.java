@@ -1,11 +1,16 @@
 package com.ruoyi.robots.service.impl;
 
 import java.util.List;
+
+import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.robots.mapper.RobotsMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.robots.mapper.RobotPositionHistoryMapper;
 import com.ruoyi.robots.domain.RobotPositionHistory;
 import com.ruoyi.robots.service.IRobotPositionHistoryService;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 /**
  * 机器人位置历史信息Service业务层处理
@@ -18,6 +23,8 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 {
     @Autowired
     private RobotPositionHistoryMapper robotPositionHistoryMapper;
+    @Autowired
+    private RobotsMapper robotsMapper;
 
     /**
      * 查询机器人位置历史信息
@@ -40,6 +47,9 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     @Override
     public List<RobotPositionHistory> selectRobotPositionHistoryList(RobotPositionHistory robotPositionHistory)
     {
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            robotPositionHistory.setTenantId(tenantId);
         return robotPositionHistoryMapper.selectRobotPositionHistoryList(robotPositionHistory);
     }
 
@@ -52,6 +62,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     @Override
     public int insertRobotPositionHistory(RobotPositionHistory robotPositionHistory)
     {
+        robotPositionHistory.setTenantId(TenantContext.get());
         return robotPositionHistoryMapper.insertRobotPositionHistory(robotPositionHistory);
     }
 

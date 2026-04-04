@@ -3,6 +3,7 @@ package com.ruoyi.robots.domain;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
@@ -14,6 +15,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
  * @author xiaocai
  * @date 2026-03-07
  */
+@Data
 @JsonInclude(JsonInclude.Include.NON_NULL)//仅序列化非空字段
 public class RobotWarnings extends BaseEntity
 {
@@ -60,120 +62,5 @@ public class RobotWarnings extends BaseEntity
     @Excel(name = "预警创建时间", width = 30, dateFormat = "yyyy-MM-dd")
     private Date createdAt;
 
-    public void setId(Long id)
-    {
-        this.id = id;
-    }
-
-    public Long getId()
-    {
-        return id;
-    }
-
-    public void setRobotId(Long robotId)
-    {
-        this.robotId = robotId;
-    }
-
-    public Long getRobotId()
-    {
-        return robotId;
-    }
-
-    public void setWarningType(String warningType) 
-    {
-        this.warningType = warningType;
-    }
-
-    public String getWarningType() 
-    {
-        return warningType;
-    }
-
-    public void setWarningContent(String warningContent) 
-    {
-        this.warningContent = warningContent;
-    }
-
-    public String getWarningContent() 
-    {
-        return warningContent;
-    }
-
-    public void setWarningLevel(String warningLevel) 
-    {
-        this.warningLevel = warningLevel;
-    }
-
-    public String getWarningLevel() 
-    {
-        return warningLevel;
-    }
-
-    public void setStatus(String status) 
-    {
-        this.status = status;
-    }
-
-    public String getStatus() 
-    {
-        return status;
-    }
-
-    public void setResolveTime(Date resolveTime) 
-    {
-        this.resolveTime = resolveTime;
-    }
-
-    public Date getResolveTime() 
-    {
-        return resolveTime;
-    }
-
-    public void setResolveUser(String resolveUser) 
-    {
-        this.resolveUser = resolveUser;
-    }
-
-    public String getResolveUser() 
-    {
-        return resolveUser;
-    }
-
-    public void setResolveNote(String resolveNote) 
-    {
-        this.resolveNote = resolveNote;
-    }
-
-    public String getResolveNote() 
-    {
-        return resolveNote;
-    }
-
-    public void setCreatedAt(Date createdAt) 
-    {
-        this.createdAt = createdAt;
-    }
-
-    public Date getCreatedAt() 
-    {
-        return createdAt;
-    }
-
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
-            .append("id", getId())
-            .append("robotId", getRobotId())
-            .append("warningType", getWarningType())
-            .append("warningContent", getWarningContent())
-            .append("warningLevel", getWarningLevel())
-            .append("status", getStatus())
-            .append("resolveTime", getResolveTime())
-            .append("resolveUser", getResolveUser())
-            .append("resolveNote", getResolveNote())
-            .append("createdAt", getCreatedAt())
-            .toString();
-    }
+    private Long tenantId;
 }

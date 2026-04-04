@@ -192,8 +192,9 @@
               </template>
 
               <!-- 已终止任务显示解决风险按钮 -->
+
+<!--                v-if="scope.row.status === 5 ||scope.row.status === 3"-->
               <el-button
-                v-if="scope.row.status === 5 ||scope.row.status === 3"
                 size="small"
                 type="success"
                 circle
@@ -232,8 +233,9 @@
               </el-button>
 
               <!-- 已取消任务显示解决风险按钮 -->
+
+<!--                v-if="scope.row.status === 5||scope.row.status === 3"-->
               <el-button
-                v-if="scope.row.status === 5||scope.row.status === 3"
                 size="small"
                 type="success"
                 circle
@@ -310,7 +312,7 @@
           <div><strong>适用机器人组：</strong>{{ getRobotGroupNames(reassignDialog.task.templateId) }}</div>
         </div>
 
-        <!-- 单任务：显示可用机器人列表（原逻辑） -->
+        <!-- 单任务：显示可用机器人列表 -->
         <div v-if="reassignDialog.task.isGroupTask === 0">
           <div style="font-weight:bold; margin-bottom:8px;">可用机器人</div>
           <el-radio-group v-model="reassignDialog.selectedRobotId">
@@ -341,45 +343,70 @@
 
         <!-- 组任务：显示步骤列表，每个步骤可单独选择机器人 -->
         <div v-else>
-          <div style="font-weight:bold; margin-bottom:8px;">步骤机器人分配</div>
-          <el-table :data="reassignDialog.steps" border size="small">
-            <el-table-column label="序号" width="60" align="center">
-              <template slot-scope="scope">{{ scope.row.orderNum }}</template>
-            </el-table-column>
-            <el-table-column prop="stepName" label="步骤名称" min-width="150" />
-            <el-table-column label="当前机器人" width="120">
-              <template slot-scope="scope">
-                {{ getRobotNameById(scope.row.assignedRobotId) || '未分配' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="重新分配" min-width="200">
-              <template slot-scope="scope">
-                <el-select
-                  v-model="scope.row.newRobotId"
-                  placeholder="选择机器人"
-                  clearable
-                  size="small"
-                  style="width:100%"
-                >
-                  <el-option
-                    v-for="robot in availableRobotsForGroupStep"
-                    :key="robot.id"
-                    :label="robot.name"
-                    :value="robot.id"
-                  >
-                    <span>{{ robot.name }}</span>
-                    <span style="float: right; color: #8492a6; font-size: 12px">
-                      电量{{ robot.battery }}%
-                    </span>
-                  </el-option>
-                </el-select>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div v-if="availableRobotsForGroupStep.length === 0" class="empty-tip">
-            <i class="el-icon-odometer" style="font-size:24px; margin-bottom:8px;"></i>
-            <div>没有可用的机器人（模板允许的组内所有机器人不可用）</div>
+          <div v-if="reassignDialog.steps === null">
+            <div style="font-weight:bold; margin-bottom:8px;">可用机器人组</div>
+            <el-radio-group v-model="reassignDialog.selectedRobotGroupId">
+              <div
+                v-for="group in availableGroupsForReassign"
+                :key="group.id"
+                class="robot-option"
+              >
+                <el-radio :label="group.id" style="width:100%;">
+                  <div style="display:flex; align-items:center;">
+                    <i class="el-icon-odometer" style="font-size:24px; color:#1890ff; margin-right:12px;"></i>
+                    <div>
+                      <div style="font-weight:bold;">{{ group.name }}</div>
+                    </div>
+                  </div>
+                </el-radio>
+              </div>
+            </el-radio-group>
+            <div v-if="availableGroupsForReassign.length === 0" class="empty-tip">
+              <i class="el-icon-odometer" style="font-size:24px; margin-bottom:8px;"></i>
+              <div>当前没有可用的机器人组</div>
+            </div>
           </div>
+          <div v-else>
+            <div style="font-weight:bold; margin-bottom:8px;">步骤机器人分配</div>
+            <el-table :data="reassignDialog.steps" border size="small">
+              <el-table-column label="序号" width="60" align="center">
+                <template slot-scope="scope">{{ scope.row.orderNum }}</template>
+              </el-table-column>
+              <el-table-column prop="stepName" label="步骤名称" min-width="150" />
+              <el-table-column label="当前机器人" width="120">
+                <template slot-scope="scope">
+                  {{ getRobotNameById(scope.row.assignedRobotId) || '未分配' }}
+                </template>
+              </el-table-column>
+              <el-table-column label="重新分配" min-width="200">
+                <template slot-scope="scope">
+                  <el-select
+                    v-model="scope.row.newRobotId"
+                    placeholder="选择机器人"
+                    clearable
+                    size="small"
+                    style="width:100%"
+                  >
+                    <el-option
+                      v-for="robot in availableRobotsForGroupStep"
+                      :key="robot.id"
+                      :label="robot.name"
+                      :value="robot.id"
+                    >
+                      <span>{{ robot.name }}</span>
+                      <span style="float: right; color: #8492a6; font-size: 12px">
+                        电量{{ robot.battery }}%
+                      </span>
+                    </el-option>
+                  </el-select>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div v-if="availableRobotsForGroupStep.length === 0" class="empty-tip">
+              <i class="el-icon-odometer" style="font-size:24px; margin-bottom:8px;"></i>
+              <div>没有可用的机器人（模板允许的组内所有机器人不可用）</div>
+            </div>
+        </div>
         </div>
       </div>
       <template #footer>
@@ -492,6 +519,7 @@ export default {
         visible: false,
         task: null,
         selectedRobotId: null,  // 单任务选中的机器人
+        selectedRobotGroupId: null,
         steps: [],
         templateInfo: null
       },
@@ -807,7 +835,7 @@ export default {
           const steps = stepsRes.data || []
           this.reassignDialog.steps = steps.map(step => ({
             ...step,
-            newRobotId: null   // 存储新分配的机器人ID
+            newRobotId: null
           }))
         } catch (error) {
           this.$message.error('获取步骤列表失败')
@@ -824,6 +852,10 @@ export default {
           await updateTask(task.id, { robotId: Number(this.reassignDialog.selectedRobotId) })
           this.$message.success('重新分配成功')
         } else {
+          if (this.reassignDialog.steps.isEmpty()){
+            await updateTask(task.id,{robotGroupId:Number(this.reassignDialog.selectedRobotGroupId)})
+            this.$message.success('重新分配成功')
+          }
           // 组任务：更新每个步骤的机器人（使用 orderNum）
           const updates = this.reassignDialog.steps
             .filter(step => step.newRobotId)

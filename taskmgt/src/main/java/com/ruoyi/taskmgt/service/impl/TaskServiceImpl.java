@@ -9,6 +9,7 @@ import com.ruoyi.app.service.ITAppParamService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -40,6 +41,7 @@ import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 import static com.ruoyi.taskmgt.utils.ParamValidator.objectMapper;
 
 @Service
@@ -70,6 +72,8 @@ public class TaskServiceImpl implements ITaskService {
      **/
     @Override
     public TaskVo createTask(Task task) {
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))task.setTenantId(tenantId);
         task.setStatus(Task.NOTSTART);
         task.setRiskLevel(0);
         Task newTask = this.taskRepository.insert(task);
@@ -80,8 +84,8 @@ public class TaskServiceImpl implements ITaskService {
                 null,
                 TaskLogEventType.TASK_CREATE,
                 "创建任务：" + newTask.getName(),
-                SecurityUtils.getUsername()
-        );
+                SecurityUtils.getUsername(),
+                tenantId);
         TaskVo taskVo = CloneFactory.copy(new TaskVo(), newTask);
         taskVo.setTemplateName(this.templateRepository.getTemplateNameById(task.getTemplateId()));
         return taskVo;
@@ -202,7 +206,8 @@ public class TaskServiceImpl implements ITaskService {
                 List<TaskStep> steps = retrieveSteps(task);
                 stepService.updateSteps(task.getId(), steps);
             }
-
+            Long tenantId = TenantContext.get();
+            if(!isAdmin(tenantId))task.setTenantId(tenantId);
             task.setUpdateBy(SecurityUtils.getUsername());
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
@@ -213,6 +218,8 @@ public class TaskServiceImpl implements ITaskService {
      * 更新任务步骤的 assignedRobotId
      */
     private void updateStepAssignedRobotForTask(Task newTask) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         List<TaskStep> steps = stepRepository.findStepsByTaskId(newTask.getId());
         if (steps.isEmpty()) return;
 
@@ -226,7 +233,7 @@ public class TaskServiceImpl implements ITaskService {
                 }
             }
             taskLogService.record(newTask.getId(), null, TaskLogEventType.TASK_UPDATE,
-                    "重新分配机器人至 " + newRobotId, SecurityUtils.getUsername());
+                    "重新分配机器人至 " + newRobotId, SecurityUtils.getUsername(), tenantId);
         } else if (newTask.getIsGroupTask() == 1 && newTask.getRobotGroupId() != null) {
             // 组任务：将所有未完成步骤的 assignedRobotId 置为 null，让后续执行时重新选择
             for (TaskStep step : steps) {
@@ -236,7 +243,7 @@ public class TaskServiceImpl implements ITaskService {
                 }
             }
             taskLogService.record(newTask.getId(), null, TaskLogEventType.TASK_UPDATE,
-                    "重新分配机器人组至 " + newTask.getRobotGroupId() + "，清空步骤机器人绑定", SecurityUtils.getUsername());
+                    "重新分配机器人组至 " + newTask.getRobotGroupId() + "，清空步骤机器人绑定", SecurityUtils.getUsername(), tenantId);
         }
     }
     /**
@@ -250,6 +257,8 @@ public class TaskServiceImpl implements ITaskService {
             if(Objects.equals(status, Task.EXECUTING))task.setRiskLevel(2);
         }
         else if(Objects.nonNull(task) && (Objects.equals(status,Task.PENDING)||Objects.equals(status,Task.PAUSED)))task.setRiskLevel(1);
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))task.setTenantId(tenantId);
         if (Objects.nonNull(task) && task.allowTransitStatus(status)) {
             task.setStatus(status);
             return this.taskRepository.update(task);
@@ -265,6 +274,8 @@ public class TaskServiceImpl implements ITaskService {
      **/
     @Override
     public void deleteTask(Long id) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = this.taskRepository.findById(id).orElseThrow(()-> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -276,8 +287,8 @@ public class TaskServiceImpl implements ITaskService {
                 null,
                 TaskLogEventType.TASK_DELETE,
                 " 任务" + task.getName() + "已删除 终止原因：",
-                SecurityUtils.getUsername()
-        );
+                SecurityUtils.getUsername(),
+                tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
             Set<String> redisStepKeys = this.stepRepository.deleteStepsByTaskId(id);
             redisKeys.addAll(redisStepKeys);
@@ -291,23 +302,26 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public List<TaskVo> retrieveTasks(Byte status, Integer isGroupTask, String name, Long robotId, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId) {
-        Set<Task> tasks = new LinkedHashSet<> (this.taskRepository.getTasks(status, isGroupTask, name, robotId, robotGroupId, taskType, riskLevel, templateId));
+        Long tenantId = TenantContext.get();
+        if(isAdmin(tenantId))tenantId=null;
+        Set<Task> tasks = new LinkedHashSet<> (this.taskRepository.getTasks(status, isGroupTask, name, robotId, robotGroupId, taskType, riskLevel, templateId,tenantId));
         if(StringUtils.isNotEmpty(tasks)){
             if(StringUtils.isNull(isGroupTask)){
                 if (StringUtils.isNotNull(robotId)){
                     Robot robot=this.robotService.selectRobotsById(robotId);
                     robotGroupId= robot.getGroupId();
-                    tasks.addAll(this.taskRepository.getTasks(status,null,name, null, robotGroupId, taskType, riskLevel, templateId));
+                    tasks.addAll(this.taskRepository.getTasks(status,null,name, null, robotGroupId, taskType, riskLevel, templateId,tenantId));
                 }
                 else if(StringUtils.isNotNull(robotGroupId)){
                     List<Long> robotIds = new ArrayList<>();
                     Robot robot=new Robot();
                     robot.setGroupId(robotGroupId);
+                    robot.setTenantId(tenantId);
                     List<Robot> robots=this.robotService.selectRobotsList(robot);
                     for(Robot bot:robots){
                         robotIds.add(bot.getId());
                     }
-                    tasks.addAll(this.taskRepository.getTasksByRobotIds(status,null,name, robotIds, null, taskType, riskLevel, templateId));
+                    tasks.addAll(this.taskRepository.getTasksByRobotIds(status,null,name, robotIds, null, taskType, riskLevel, templateId, tenantId));
                 }
             }
             return tasks.stream()
@@ -401,6 +415,8 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public void pauseTask(Long id) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = taskRepository.findById(id).orElseThrow(()-> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -411,8 +427,8 @@ public class TaskServiceImpl implements ITaskService {
                 null,
                 TaskLogEventType.TASK_PAUSE,
                 " 任务" + task.getName() + "已暂停",
-                SecurityUtils.getUsername()
-        );
+                SecurityUtils.getUsername(),
+                tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
             List<String> stepRedisKeys = this.stepReuseService.pauseStepsByTaskId(id);
             redisKeys.addAll(stepRedisKeys);
@@ -426,6 +442,8 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public void continueTask(Long id) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = this.taskRepository.findById(id).orElseThrow(() -> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), id.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -437,13 +455,13 @@ public class TaskServiceImpl implements ITaskService {
             // 机器人不可用，任务无法恢复执行，转为准备状态
             redisKeys = this.updateTaskStatus(task, Task.PENDING);
             taskLogService.record(id, null, TaskLogEventType.TASK_PENDING,
-                    "恢复任务时机器人不可用，任务转入准备队列", SecurityUtils.getUsername());
+                    "恢复任务时机器人不可用，任务转入准备队列", SecurityUtils.getUsername(), tenantId);
         }
 
         else{
             redisKeys = this.updateTaskStatus(task, Task.EXECUTING);
             this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
-                    "任务" + task.getName() + "已继续", SecurityUtils.getUsername());
+                    "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId);
             if (StringUtils.isNotNull(task.getTemplateId())) {
                 List<String> stepRedisKeys = this.stepReuseService.continueStepsByTaskId(id);
                 redisKeys.addAll(stepRedisKeys);
@@ -491,6 +509,8 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public void terminateTask(Long id,String terminateReason) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = taskRepository.findById(id).orElseThrow(()-> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -502,8 +522,8 @@ public class TaskServiceImpl implements ITaskService {
                 null,
                 TaskLogEventType.TASK_TERMINATE,
                 " 任务" + task.getName() + "已终止 终止原因："+terminateReason,
-                SecurityUtils.getUsername()
-        );
+                SecurityUtils.getUsername(),
+                tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
             List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTaskId(id);
             redisKeys.addAll(stepRedisKeys);
@@ -517,6 +537,8 @@ public class TaskServiceImpl implements ITaskService {
      */
     @Override
     public void cancelTask(Long id) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = taskRepository.findById(id).orElseThrow(()-> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
@@ -527,8 +549,8 @@ public class TaskServiceImpl implements ITaskService {
                 null,
                 TaskLogEventType.TASK_CANCEL,
                 " 任务" + task.getName() + "已取消",
-                SecurityUtils.getUsername()
-        );
+                SecurityUtils.getUsername(),
+                tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
             List<String> stepRedisKeys = this.stepReuseService.cancelStepsByTaskId(id);
             redisKeys.addAll(stepRedisKeys);
@@ -538,6 +560,8 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public boolean resolveRisk(Long taskId) {
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> {
                     String[] args = {messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
@@ -582,7 +606,7 @@ public class TaskServiceImpl implements ITaskService {
             redisUtil.deleteObject(redisKeys);
         }
         taskLogService.record(taskId, null, "RISK_RESOLVED",
-                "管理员手动解决任务风险", SecurityUtils.getUsername());
+                "手动解决任务风险", SecurityUtils.getUsername(), tenantId);
         return true;
     }
 
@@ -599,10 +623,12 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     @Transactional
     public void updateGlobalOrder(List<Long> taskIds) {
+        Long tenantId = TenantContext.get();
+        if(isAdmin(tenantId))tenantId=null;
         if (taskIds == null || taskIds.isEmpty()) return;
 
         // 获取所有准备中任务
-        List<Task> allPendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        List<Task> allPendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null, tenantId);
         Map<Long, Task> taskMap = allPendingTasks.stream().collect(Collectors.toMap(Task::getId, t -> t));
 
         // 校验所有taskId都存在
@@ -665,13 +691,15 @@ public class TaskServiceImpl implements ITaskService {
     @Transactional
     public void updateLocalOrder(Long resourceId, boolean isGroupTask, List<Long> taskIds) {
         if (taskIds == null || taskIds.isEmpty()) return;
+        Long tenantId = TenantContext.get();
+        if(isAdmin(tenantId))tenantId=null;
 
         // 查询该资源下所有准备中任务
         List<Task> tasks;
         if (isGroupTask) {
-            tasks = taskRepository.getTasks(Task.PENDING, 1, null, null, resourceId, null, null, null);
+            tasks = taskRepository.getTasks(Task.PENDING, 1, null, null, resourceId, null, null, null, tenantId);
         } else {
-            tasks = taskRepository.getTasks(Task.PENDING, 0, null, resourceId, null, null, null, null);
+            tasks = taskRepository.getTasks(Task.PENDING, 0, null, resourceId, null, null, null, null, tenantId);
         }
 
         Set<Long> currentIds = tasks.stream().map(Task::getId).collect(Collectors.toSet());
@@ -690,7 +718,7 @@ public class TaskServiceImpl implements ITaskService {
         }
 
         // 获取所有准备中任务
-        List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null, tenantId);
         Set<Long> currentIdsSet = new HashSet<>(taskIds);
 
         // 构建新顺序列表：保持非当前资源任务顺序不变，当前资源任务按新 pendingOrder 顺序插入到原位置
@@ -723,13 +751,15 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public List<TaskAbnormalVo> getAbnormalTasks(Integer riskLevel, Long robotId, Long robotGroupId) {
+        Long tenantId = TenantContext.get();
+        if(isAdmin(tenantId))tenantId=null;
         List<Task> tasks;
         if(riskLevel!=null&&riskLevel!=0){
-            tasks = taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, riskLevel, null);
+            tasks = taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, riskLevel, null, tenantId);
         }
         else if(riskLevel==null){
-            tasks = taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, 1, null);
-            tasks.addAll(taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, 2, null));
+            tasks = taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, 1, null, tenantId);
+            tasks.addAll(taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, 2, null, tenantId));
         }
         else {
             tasks = List.of();
@@ -806,21 +836,23 @@ public class TaskServiceImpl implements ITaskService {
     }
 
     public boolean isRobotNormal(Task task){
-        boolean isNormal = true;
+        boolean isNormal;
         if(StringUtils.isNotNull(task.getRobotId())) {
-            if (this.robotWarningsService.countUnresolvedByRobotId(task.getRobotId())!=0)isNormal=false;
+            isNormal= this.robotWarningsService.countUnresolvedByRobotId(task.getRobotId()) == 0;
         }
         else if(StringUtils.isNotNull(task.getRobotGroupId())){
             Robot robot = new Robot();
             robot.setGroupId(task.getRobotGroupId());
             List<Robot> robots = this.robotService.selectRobotsList(robot);
+            isNormal=false;
             for(Robot bot : robots){
-                if(this.robotWarningsService.countUnresolvedByRobotId(bot.getId())!=0){
-                    isNormal = false;
+                if(this.robotWarningsService.countUnresolvedByRobotId(bot.getId())==0){
+                    isNormal = true;
                     break;
                 }
             }
         }
+        else isNormal=true;
         return isNormal;
     }
     /**

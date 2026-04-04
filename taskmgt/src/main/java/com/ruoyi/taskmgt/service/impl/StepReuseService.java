@@ -41,8 +41,8 @@ public class StepReuseService {
                         step.getId(),
                         TaskLogEventType.STEP_PAUSE,
                         " 步骤" + step.getStepName() + "已暂停",
-                        "system"
-                );
+                        "system",
+                        null);
                 redisKeys.addAll(this.stepRepository.update(step));
             }
         }
@@ -65,8 +65,8 @@ public class StepReuseService {
                         step.getId(),
                         TaskLogEventType.STEP_RESUME,
                         " 步骤" + step.getStepName() + "已继续",
-                        "system"
-                );
+                        "system",
+                        null);
                 redisKeys.addAll(this.stepRepository.update(step));
             }
         }
@@ -83,8 +83,8 @@ public class StepReuseService {
                     step.getId(),
                     TaskLogEventType.STEP_TERMINATE,
                     " 步骤" + step.getStepName() + "已终止",
-                    "system"
-            );
+                    "system",
+                    null);
             redisKeys.addAll(this.stepRepository.update(step));
         }
         return redisKeys;

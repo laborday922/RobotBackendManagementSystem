@@ -83,7 +83,7 @@ public class StepExecutionEngine {
             taskLogService.record(step.getTaskId(), step.getId(),
                     TaskLogEventType.STEP_START,
                     String.format("步骤[%s]开始执行, 操作ID=%d", step.getStepName(), step.getOperationId()),
-                    "system");
+                    "system", null);
 
             // 3. 解析机器人ID（单任务/组任务）
             Long robotId = resolveRobotId(task, step);
@@ -163,7 +163,7 @@ public class StepExecutionEngine {
 
                 taskLogService.record(step.getTaskId(), step.getId(),
                         TaskLogEventType.STEP_ASYNC_SUBMITTED,
-                        "异步任务已提交, traceId=" + result.getTraceId(), "system");
+                        "异步任务已提交, traceId=" + result.getTraceId(), "system", null);
                 break;
 
             case CALLBACK:
@@ -175,7 +175,7 @@ public class StepExecutionEngine {
 
                 taskLogService.record(step.getTaskId(), step.getId(),
                         TaskLogEventType.STEP_WAITING_CALLBACK,
-                        "等待机器人回调, traceId=" + result.getTraceId(), "system");
+                        "等待机器人回调, traceId=" + result.getTraceId(), "system", null);
                 break;
 
             default:
@@ -216,7 +216,7 @@ public class StepExecutionEngine {
 
             // 5. 记录日志
             taskLogService.record(step.getTaskId(), stepId,
-                    TaskLogEventType.STEP_COMPLETE, "步骤执行完成", "system");
+                    TaskLogEventType.STEP_COMPLETE, "步骤执行完成", "system", null);
             log.info("步骤{}已完成", stepId);
 
         } catch (OptimisticLockingFailureException e) {
@@ -249,7 +249,7 @@ public class StepExecutionEngine {
             stepRepository.update(step);
 
             taskLogService.record(step.getTaskId(), stepId,
-                    TaskLogEventType.STEP_FAILED, "执行失败: " + errorMsg, "system");
+                    TaskLogEventType.STEP_FAILED, "执行失败: " + errorMsg, "system", null);
             log.warn("步骤{}已失败: {}", stepId, errorMsg);
 
         } catch (OptimisticLockingFailureException e) {

@@ -63,7 +63,7 @@ public class TaskTrigger {
      * 检查定时任务触发条件
      */
     private void checkScheduledTasks() {
-        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 1, null, null);
+        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 1, null, null, null);
         Date now = new Date();
         for (Task task : tasks) {
             if (task.getScheduledTime() != null && !task.getScheduledTime().after(now)) {
@@ -76,7 +76,7 @@ public class TaskTrigger {
      * 检查电量任务触发条件
      */
     private void checkBatteryTasks() {
-        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 2, null, null);
+        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 2, null, null, null);
         for (Task task : tasks) {
             Integer battery = robotService.selectRobotsById(task.getRobotId()).getBattery();
             if (battery != null && battery >= task.getBatteryThreshold()) {
@@ -89,7 +89,7 @@ public class TaskTrigger {
      * 检查闲时任务触发条件
      */
     private void checkIdleTasks() {
-        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null);
+        List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null,null);
         for (Task task : tasks) {
             Integer taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
             Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
@@ -114,18 +114,18 @@ public class TaskTrigger {
         // 设置局部顺序 pendingOrder
         if (task.getIsGroupTask() == 0) {
             List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, 0, null,
-                    task.getRobotId(), null, null, null, null);
+                    task.getRobotId(), null, null, null, null, null);
             int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(-1);
             task.setPendingOrder(maxOrder + 1);
         } else {
             List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, 1, null,
-                    null, task.getRobotGroupId(), null, null, null);
+                    null, task.getRobotGroupId(), null, null, null, null);
             int maxOrder = pendingTasks.stream().mapToInt(Task::getPendingOrder).max().orElse(-1);
             task.setPendingOrder(maxOrder + 1);
         }
 
         // 设置全局顺序 globalPendingOrder
-        List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        List<Task> allPending = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null, null);
         int maxGlobal = allPending.stream().mapToInt(Task::getGlobalPendingOrder).max().orElse(-1);
         task.setGlobalPendingOrder(maxGlobal + 1);
 
@@ -160,7 +160,7 @@ public class TaskTrigger {
         }
 
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_PENDING,
-                "任务达到触发条件，进入准备队列", "system");
+                "任务达到触发条件，进入准备队列", "system", null);
         log.info("任务 {} 已触发进入准备队列", task.getId());
     }
 
@@ -172,13 +172,13 @@ public class TaskTrigger {
         log.debug("检查准备中的任务是否可以开始执行");
 
         // 获取所有准备中任务，已按 globalPendingOrder 排序
-        List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null);
+        List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null, null);
 
         for (Task task : pendingTasks) {
             if (task.getIsGroupTask() == 0) {
                 // 单任务：检查机器人空闲
                 List<Task> executing = taskRepository.getTasks(Task.EXECUTING, 0, null,
-                        task.getRobotId(), null, null, null, null);
+                        task.getRobotId(), null, null, null, null, null);
                 List<TaskStep> executingStep = stepRepository.getSteps(TaskStep.EXECUTING,null,task.getRobotId());
                 if (executing.isEmpty()&&executingStep.isEmpty()) {
                     startTask(task);
@@ -187,7 +187,7 @@ public class TaskTrigger {
                 // 组任务：检查组内所有机器人空闲且无组任务执行
                 Long groupId = task.getRobotGroupId();
                 List<Task> executingGroup = taskRepository.getTasks(Task.EXECUTING, 1, null,
-                        null, groupId, null, null, null);
+                        null, groupId, null, null, null, null);
                 if (!executingGroup.isEmpty()) {
                     continue;
                 }
@@ -199,7 +199,7 @@ public class TaskTrigger {
                 robot.setTaskStatus(2);
                 List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
                 boolean hasIdleRobot = robotIds.stream().anyMatch(rid ->
-                        taskRepository.getTasks(Task.EXECUTING, null, null, rid, null, null, null, null).isEmpty()
+                        taskRepository.getTasks(Task.EXECUTING, null, null, rid, null, null, null, null, null).isEmpty()
                 );
                 if (hasIdleRobot) {
                     startTask(task);
@@ -230,7 +230,7 @@ public class TaskTrigger {
         }
 
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_START,
-                "任务开始执行", "system");
+                "任务开始执行", "system", null);
         log.info("任务 {} 开始执行", task.getId());
 
         // 触发第一个步骤
@@ -314,7 +314,7 @@ public class TaskTrigger {
         }
 
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
-                "任务执行完成", "system");
+                "任务执行完成", "system", null);
         log.info("任务 {} 已完成", task.getId());
     }
 
@@ -327,7 +327,7 @@ public class TaskTrigger {
         boolean isResolved = RobotsConstants.RESOLVED.equals(warningStatus);
 
         // 处理非组任务
-        List<Task> tasks = taskRepository.getTasks(null, 0, null, robotId, null, null, null, null);
+        List<Task> tasks = taskRepository.getTasks(null, 0, null, robotId, null, null, null, null, null);
         for (Task task : tasks) {
             updateTaskRiskByWarning(task, robotId, isResolved);
         }
@@ -335,7 +335,7 @@ public class TaskTrigger {
         // 处理组任务
         Long groupId = robotService.selectRobotsById(robotId).getGroupId();
         if (groupId != null) {
-            List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null);
+            List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null, null);
             boolean hasUnresolvedWarning = false;
             for (Task task : groupTasks) {
                 boolean isAssigned = stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(robotId,task.getId(),List.of(TaskStep.EXECUTING, TaskStep.WAITING, TaskStep.WAITING_CALLBACK))!=0;
@@ -355,11 +355,11 @@ public class TaskTrigger {
                     else if(Objects.equals(task.getStatus(),Task.PAUSED)||Objects.equals(task.getStatus(),Task.PENDING)) riskLevel = 1;
                     task.setRiskLevel(riskLevel);
                     taskLogService.record(task.getId(), null, TaskLogEventType.ROBOT_STATUS_CHANGE,
-                            String.format("组内机器人存在未解决预警，任务标记为%s", riskLevel == 2 ? "高风险" : "风险"), "system");
+                            String.format("组内机器人存在未解决预警，任务标记为%s", riskLevel == 2 ? "高风险" : "风险"), "system", null);
                 } else {
                     task.setRiskLevel(0);
                     taskLogService.record(task.getId(), null, TaskLogEventType.ROBOT_STATUS_CHANGE,
-                            "组内机器人预警已全部解决，任务风险清除", "system");
+                            "组内机器人预警已全部解决，任务风险清除", "system", null);
                 }
                 task.setUpdateBy("system");
                 List<String> redisKeys = taskRepository.update(task);
@@ -392,11 +392,11 @@ public class TaskTrigger {
             int riskLevel = (Objects.equals(task.getStatus(), Task.EXECUTING)) ? 2 : 1;
             task.setRiskLevel(riskLevel);
             taskLogService.record(task.getId(), null, TaskLogEventType.ROBOT_STATUS_CHANGE,
-                    String.format("机器人存在未解决预警，任务标记为%s", riskLevel == 2 ? "高风险" : "风险"), "system");
+                    String.format("机器人存在未解决预警，任务标记为%s", riskLevel == 2 ? "高风险" : "风险"), "system", null);
         } else {
             task.setRiskLevel(0);
             taskLogService.record(task.getId(), null, TaskLogEventType.ROBOT_STATUS_CHANGE,
-                    "机器人预警已全部解决，任务风险清除", "system");
+                    "机器人预警已全部解决，任务风险清除", "system", null);
         }
 
         task.setUpdateBy("system");

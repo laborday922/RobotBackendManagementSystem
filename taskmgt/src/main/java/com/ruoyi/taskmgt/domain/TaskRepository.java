@@ -10,7 +10,6 @@ import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.mapper.TaskPoMapper;
 import com.ruoyi.taskmgt.mapper.po.TaskPo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -155,7 +154,7 @@ public class TaskRepository {
         return keys;
     }
 
-    public List<Task> getTasks(Byte status, Integer isGroupTask, String name, Long robotId, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId) {
+    public List<Task> getTasks(Byte status, Integer isGroupTask, String name, Long robotId, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId, Long tenantId) {
         Specification<TaskPo> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (StringUtils.hasText(name)) {
@@ -203,7 +202,7 @@ public class TaskRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<Task> getTasksByRobotIds(Byte status, Integer isGroupTask, String name, List<Long> robotIds, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId) {
+    public List<Task> getTasksByRobotIds(Byte status, Integer isGroupTask, String name, List<Long> robotIds, Long robotGroupId, Integer taskType, Integer riskLevel, Long templateId, Long tenantId) {
         Sort sort = Sort.by(
                 Sort.Order.asc("status"),
                 Sort.Order.asc("pendingOrder"),

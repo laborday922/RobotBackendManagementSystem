@@ -16,7 +16,7 @@ import javax.transaction.Transactional;
 public class TaskLogReuseService {
     private final TaskLogRepository taskLogRepository;
     @Async
-    public void record(Long taskId, Long stepId, String eventType, String content, String operator) {
+    public void record(Long taskId, Long stepId, String eventType, String content, String operator, Long tenantId) {
         try {
             TaskLog taskLog = TaskLog.builder()
                     .taskId(taskId)
@@ -24,6 +24,7 @@ public class TaskLogReuseService {
                     .eventType(eventType)
                     .content(content)
                     .operator(operator)
+                    .tenantId(tenantId)
                     .build();
             taskLogRepository.insert(taskLog);
         } catch (Exception e) {

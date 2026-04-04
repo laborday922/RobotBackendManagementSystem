@@ -61,7 +61,7 @@ public class TaskLogRepository {
         return taskLogPoMapper.findById(id).map(po -> build(po, Optional.of(key)));
     }
 
-    public List<TaskLog> findTaskLogs(TaskLog query, Date beginTime,Date endTime) {
+    public List<TaskLog> findTaskLogs(TaskLog query, Date beginTime, Date endTime, Long tenantId) {
         Specification<TaskLogPo> spec = (root, criteriaQuery, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (query.getTaskId() != null) {

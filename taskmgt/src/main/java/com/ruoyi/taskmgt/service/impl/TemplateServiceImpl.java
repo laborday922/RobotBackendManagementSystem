@@ -7,6 +7,7 @@ import com.ruoyi.app.service.ITAppLibraryService;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.robots.domain.RobotGroups;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
+
 @Service
 @Transactional
 @Slf4j
@@ -41,6 +44,8 @@ public class TemplateServiceImpl implements ITemplateService {
 
     @Override
     public TemplateVo createTemplate(Template template) {
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId))template.setTenantId(tenantId);
         TAppLibrary app = this.appLibraryService.selectTAppLibraryById(template.getAppId());
         template.setStatus(Template.ENABLED);
         List<Long>ruleIds = new ArrayList<>();
@@ -57,6 +62,8 @@ public class TemplateServiceImpl implements ITemplateService {
 
     @Override
     public void updateTemplate(Template template) {
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId))template.setTenantId(tenantId);
         Template existing = templateRepository.findById(template.getId())
                 .orElseThrow(() -> {
                     String[] args = {messageSourceAccessor.getMessage("Template.name", LocaleContextHolder.getLocale()), template.getId().toString()};
@@ -135,6 +142,8 @@ public class TemplateServiceImpl implements ITemplateService {
     }
 
     private List<String> updateTemplateStatus(Template template, Byte newStatus) {
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId))template.setTenantId(tenantId);
         if (Objects.nonNull(template) && template.allowTransitStatus(newStatus)) {
             template.setStatus(newStatus);
             return templateRepository.update(template);
@@ -148,7 +157,9 @@ public class TemplateServiceImpl implements ITemplateService {
 
     @Override
     public List<TemplateVo> retrieveTemplates(Long appId, String name, Byte status, Long robotGroupId) {
-        List<Template> templates = templateRepository.getTemplates(appId,name, status, robotGroupId);
+        Long tenantId = TenantContext.get();
+        if (isAdmin(tenantId))tenantId=null;
+        List<Template> templates = templateRepository.getTemplates(appId,name, status, robotGroupId,tenantId);
         return templates.stream()
                 .map(template -> {
                     TemplateVo vo = CloneFactory.copy(new TemplateVo(), template);

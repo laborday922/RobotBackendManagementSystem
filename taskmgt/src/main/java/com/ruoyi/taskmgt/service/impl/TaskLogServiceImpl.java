@@ -3,6 +3,7 @@ package com.ruoyi.taskmgt.service.impl;
 import com.github.pagehelper.PageHelper;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
@@ -25,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -38,11 +41,13 @@ public class TaskLogServiceImpl implements ITaskLogService {
 
     @Override
     public List<TaskLogVo> queryLogs(TaskLog query,String beginTime,String endTime) {
+        Long tenantId = TenantContext.get();
+        if(isAdmin(tenantId))tenantId=null;
         Date beginTimeDate = new Date();
         Date endTimeDate = new Date();
         if(!StringUtils.isEmpty(beginTime)) beginTimeDate = DateUtils.parseDate(beginTime);
         if(!StringUtils.isEmpty(endTime)) endTimeDate = DateUtils.parseDate(endTime);
-        List<TaskLog> logs = taskLogRepository.findTaskLogs(query,beginTimeDate,endTimeDate);
+        List<TaskLog> logs = taskLogRepository.findTaskLogs(query,beginTimeDate,endTimeDate,tenantId);
         PageHelper.clearPage();
         return logs.stream().map(taskLog -> {
             TaskLogVo vo = CloneFactory.copy(new TaskLogVo(), taskLog);

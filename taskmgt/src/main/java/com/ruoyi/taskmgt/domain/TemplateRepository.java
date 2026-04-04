@@ -157,7 +157,7 @@ public class TemplateRepository {
         return key;
     }
 
-    public List<Template> getTemplates(Long appId, String name, Byte status, Long robotGroupId) {
+    public List<Template> getTemplates(Long appId, String name, Byte status, Long robotGroupId, Long tenantId) {
         Specification<TemplatePo> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (appId != null) {
@@ -168,6 +168,9 @@ public class TemplateRepository {
             }
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
+            }
+            if (tenantId != null){
+                predicates.add(cb.equal(root.get("tenantId"),tenantId));
             }
             if (robotGroupId != null) {
                 String groupIdStr = String.valueOf(robotGroupId);

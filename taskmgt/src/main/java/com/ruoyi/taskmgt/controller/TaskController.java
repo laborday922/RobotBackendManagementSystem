@@ -6,7 +6,6 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
-import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.validation.NewGroup;
 import com.ruoyi.taskmgt.controller.dto.TaskDto;
@@ -18,11 +17,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -66,7 +65,8 @@ public class TaskController extends BaseController {
     @PostMapping("task")
     public AjaxResult createTask(@Validated(value = NewGroup.class) @RequestBody TaskDto dto)
     {
-        Task task = CloneFactory.copy(new Task(),dto);
+        Task task = new Task();
+        BeanUtils.copyProperties(dto, task);
         TaskVo result = this.taskService.createTask(task);
         return success(result);
     }
@@ -75,7 +75,8 @@ public class TaskController extends BaseController {
     @PutMapping("tasks/{id}")
     public AjaxResult updateTask(@PathVariable Long id,@Validated @RequestBody TaskDto dto)
     {
-        Task task = CloneFactory.copy(new Task(),dto);
+        Task task = new Task();
+        BeanUtils.copyProperties(dto, task, "id");
         task.setId(id);
         this.taskService.updateTask(task);
         return success();

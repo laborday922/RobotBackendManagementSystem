@@ -9,7 +9,7 @@
         <version>3.9.1</version>
     </parent>
 
-    <artifactId>ruoyi-data</artifactId>
+    <artifactId>datamgt</artifactId>
 
     <description>
         数据模块

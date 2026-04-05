@@ -775,11 +775,14 @@ export default {
           cancelButtonText: '取消',
           type: 'info'
         })
-        await resolveTaskRisk(row.id)
-        this.resolvedToday += 1
-        // 从等待集合中移除
-        this.pendingResolveTasks.delete(row.id)
-        this.$message.success('风险已解决')
+        const enableResolve= (await resolveTaskRisk(row.id)).data
+        if(enableResolve===true){
+          this.resolvedToday += 1
+          // 从等待集合中移除
+          this.pendingResolveTasks.delete(row.id)
+          this.$message.success('风险已解决')
+        }
+        else this.$message.error('风险不可被解决')
         this.getList()
       } catch (error) {
         if (error !== 'cancel') this.$message.error('操作失败')

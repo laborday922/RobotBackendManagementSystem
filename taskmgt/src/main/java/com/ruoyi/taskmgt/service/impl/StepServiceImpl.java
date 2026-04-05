@@ -40,7 +40,13 @@ public class StepServiceImpl implements IStepService {
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogReuseService;
     private final RedisCache redisUtil;
+    private final TaskReuseService taskReuseService;
 
+    /**
+     * 创建步骤
+     * @param taskId 任务Id
+     * @return 步骤Vo列表
+     */
     @Override
     public List<TaskStepVo> createSteps(Long taskId, List<TaskStep> steps) {
         Long tenantId = TenantContext.get();
@@ -70,6 +76,11 @@ public class StepServiceImpl implements IStepService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 修改步骤
+     * @param taskId 任务Id
+     * @param steps 修改的步骤
+     */
     @Override
     public void updateSteps(Long taskId, List<TaskStep> steps) {
         Long tenantId = TenantContext.get();
@@ -101,6 +112,11 @@ public class StepServiceImpl implements IStepService {
 
     }
 
+    /**
+     * 获取步骤
+     * @param taskId 任务Id
+     * @return 步骤Vo列表
+     */
     @Override
     public List<TaskStepVo> retrieveSteps(Long taskId) {
         Task task = this.taskRepository.findById(taskId).orElseThrow(() -> {
@@ -158,28 +174,7 @@ public class StepServiceImpl implements IStepService {
                         String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), step.getTaskId().toString()};
                         return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
                     });
-            Date nextTime = calculateNextScheduledTime(task);
-            if(task.allowTransitStatus(Task.FINISHED))task.setStatus(Task.FINISHED);
-            if(task.getTaskType()!=1||nextTime!=null) {
-                task.setScheduledTime(nextTime);
-                if(task.allowTransitStatus(Task.NOTSTART))task.setStatus(Task.NOTSTART);
-                for (TaskStep s : steps) {
-                    if(step.allowTransitStatus(TaskStep.NOTSTART))s.setStatus(TaskStep.NOTSTART);
-                    s.setStartTime(null);
-                    s.setEndTime(null);
-                    List<String> stepRedisKeys = stepRepository.update(s);
-                    if (stepRedisKeys != null && !stepRedisKeys.isEmpty()) {
-                        redisUtil.deleteObject(stepRedisKeys);
-                    }
-                }
-            }
-            task.setUpdateBy("system");
-            List<String> taskRedisKeys = taskRepository.update(task);
-            if (taskRedisKeys != null && !taskRedisKeys.isEmpty()) {
-                redisUtil.deleteObject(taskRedisKeys);
-            }
-            taskLogReuseService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
-                    "任务所有步骤完成，下一次执行时间：" + (nextTime != null ? nextTime : "无"), "system", null);
+            taskReuseService.completeTask(task);
         }
     }
 
@@ -193,29 +188,5 @@ public class StepServiceImpl implements IStepService {
         }
         taskLogReuseService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
                 "步骤 " + step.getStepName() + " 开始执行", "system", null);
-    }
-
-    private Date calculateNextScheduledTime(Task task) {
-        String cron = task.getCronExpression();
-        if (cron == null || cron.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            CronExpression cronExp = CronExpression.parse(cron);
-            Date baseTime = task.getScheduledTime();
-            if (baseTime == null) {
-                baseTime = new Date();
-            }
-            ZonedDateTime baseZdt = baseTime.toInstant().atZone(ZoneId.systemDefault());
-            ZonedDateTime nextZdt = cronExp.next(baseZdt);
-            if (nextZdt != null) {
-                return Date.from(nextZdt.toInstant());
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            log.error("Invalid cron expression for task {}: {}", task.getId(), cron);
-            return null;
-        }
     }
 }

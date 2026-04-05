@@ -558,6 +558,11 @@ public class TaskServiceImpl implements ITaskService {
         this.redisUtil.deleteObject(redisKeys);
     }
 
+    /**
+     * 解决风险
+     * @param taskId 任务Id
+     * @return 是否可解决
+     */
     @Override
     public boolean resolveRisk(Long taskId) {
         Long tenantId = TenantContext.get();
@@ -620,6 +625,10 @@ public class TaskServiceImpl implements ITaskService {
     }
 
 
+    /**
+     * 修改任务全局准备中排序
+     * @param taskIds 所有准备中任务Id列表
+     */
     @Override
     @Transactional
     public void updateGlobalOrder(List<Long> taskIds) {
@@ -687,6 +696,12 @@ public class TaskServiceImpl implements ITaskService {
         }
     }
 
+    /**
+     * 修改任务资源内准备中排序
+     * @param resourceId 资源Id（RobotId或RobotGroupId）
+     * @param isGroupTask 是否是组任务
+     * @param taskIds 资源内准备中任务Id列表
+     */
     @Override
     @Transactional
     public void updateLocalOrder(Long resourceId, boolean isGroupTask, List<Long> taskIds) {
@@ -749,6 +764,13 @@ public class TaskServiceImpl implements ITaskService {
         }
     }
 
+    /**
+     * 获取异常任务列表
+     * @param riskLevel 风险等级
+     * @param robotId 机器人Id
+     * @param robotGroupId 机器人组Id
+     * @return 异常任务列表
+     */
     @Override
     public List<TaskAbnormalVo> getAbnormalTasks(Integer riskLevel, Long robotId, Long robotGroupId) {
         Long tenantId = TenantContext.get();
@@ -767,6 +789,11 @@ public class TaskServiceImpl implements ITaskService {
         return tasks.stream().map(this::buildAbnormalVo).collect(Collectors.toList());
     }
 
+    /**
+     * 构建异常任务Vo
+     * @param task 任务Bo对象
+     * @return 构建好的Vo对象
+     */
     private TaskAbnormalVo buildAbnormalVo(Task task) {
         if (task == null) return new TaskAbnormalVo();
         TaskAbnormalVo vo = CloneFactory.copy(new TaskAbnormalVo(), task);
@@ -835,6 +862,11 @@ public class TaskServiceImpl implements ITaskService {
         return vo;
     }
 
+    /**
+     * 判断任务分配的机器人是否正常
+     * @param task 任务
+     * @return 是否正常
+     */
     public boolean isRobotNormal(Task task){
         boolean isNormal;
         if(StringUtils.isNotNull(task.getRobotId())) {

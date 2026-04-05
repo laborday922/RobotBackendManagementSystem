@@ -192,29 +192,20 @@ public class StepExecutionEngine {
     @Transactional
     public void completeStep(Long stepId, Object resultData) {
         try {
-            // 1. 查询步骤（不带锁，乐观锁由 version 保证）
+            // 查询步骤（不带锁，乐观锁由 version 保证）
             TaskStep step = stepRepository.findById(stepId)
                     .orElseThrow(() -> new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
                             new String[]{"步骤", stepId.toString()}, "步骤不存在"));
-
-            // 2. 状态校验
             if (!(Objects.equals(step.getStatus(), TaskStep.EXECUTING) ||
                     Objects.equals(step.getStatus(), TaskStep.WAITING) ||
                     Objects.equals(step.getStatus(), TaskStep.WAITING_CALLBACK))) {
                 log.warn("步骤 {} 当前状态 {} 不允许完成", stepId, step.getStatus());
                 return;
             }
-
-            // 3. 修改状态
             step.setStatus(TaskStep.FINISHED);
             step.setEndTime(new Date());
             step.setResultData(convertToJson(resultData));
-            // JPA 会自动检查 version，如果版本冲突抛出 OptimisticLockingFailureException
-
-            // 4. 保存
             stepRepository.update(step);
-
-            // 5. 记录日志
             taskLogService.record(step.getTaskId(), stepId,
                     TaskLogEventType.STEP_COMPLETE, "步骤执行完成", "system", null);
             log.info("步骤{}已完成", stepId);
@@ -238,7 +229,6 @@ public class StepExecutionEngine {
                     .orElseThrow(() -> new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
                             new String[]{"步骤", stepId.toString()}, "步骤不存在"));
 
-            // 状态校验：不能从已完成或终止状态转为失败
             if (Objects.equals(step.getStatus(), TaskStep.FINISHED) || Objects.equals(step.getStatus(), TaskStep.TERMINATED)) {
                 log.warn("步骤 {} 状态 {} 不允许转为失败", stepId, step.getStatus());
                 return;
@@ -314,7 +304,7 @@ public class StepExecutionEngine {
             return step.getAssignedRobotId();
         }
 
-        // 组任务：需要实现负载均衡或调度策略
+        // 组任务使用负载均衡调度策略
         Long groupId = task.getRobotGroupId();
         if (groupId == null) {
             log.error("组任务缺少 robotGroupId, taskId={}", task.getId());

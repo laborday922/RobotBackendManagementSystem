@@ -14,6 +14,7 @@ import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
 import com.ruoyi.taskmgt.service.StepExecutionEngine;
+import com.ruoyi.taskmgt.service.impl.TaskReuseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -47,6 +48,9 @@ public class TaskTrigger {
 
     @Autowired
     private StepExecutionEngine stepExecutionEngine;
+
+    @Autowired
+    private TaskReuseService taskService;
 
     /**
      * 每分钟执行一次触发检查
@@ -243,8 +247,7 @@ public class TaskTrigger {
     private void triggerFirstStep(Task task) {
         if (task.getTemplateId() == null) {
             log.info("任务 {} 无模板，无需执行步骤", task.getId());
-            // 无步骤的任务直接标记完成
-            completeTask(task);
+            taskService.completeTask(task);
             return;
         }
 
@@ -264,12 +267,12 @@ public class TaskTrigger {
             stepExecutionEngine.executeStep(step, task);
         } else {
             log.info("任务 {} 所有步骤已完成", task.getId());
-            completeTask(task);
+            taskService.completeTask(task);
         }
     }
 
     /**
-     * 触发指定任务的下一个步骤（由StepExecutionEngine调用）
+     * 触发指定任务的下一个步骤
      */
     public void triggerNextStep(Long taskId) {
         Task task = taskRepository.findById(taskId).orElse(null);
@@ -293,29 +296,8 @@ public class TaskTrigger {
         } else {
             // 没有更多步骤，任务完成
             log.info("任务 {} 所有步骤执行完毕", taskId);
-            completeTask(task);
+            taskService.completeTask(task);
         }
-    }
-
-    /**
-     * 完成任务
-     */
-    private void completeTask(Task task) {
-        if (!task.allowTransitStatus(Task.FINISHED)) {
-            log.warn("任务 {} 无法转为已完成", task.getId());
-            return;
-        }
-
-        task.setStatus(Task.FINISHED);
-        task.setUpdateBy("system");
-        List<String> redisKeys = taskRepository.update(task);
-        if (redisKeys != null && !redisKeys.isEmpty()) {
-            redisUtil.deleteObject(redisKeys);
-        }
-
-        taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
-                "任务执行完成", "system", null);
-        log.info("任务 {} 已完成", task.getId());
     }
 
     /**
@@ -336,8 +318,8 @@ public class TaskTrigger {
         Long groupId = robotService.selectRobotsById(robotId).getGroupId();
         if (groupId != null) {
             List<Task> groupTasks = taskRepository.getTasks(null, 1, null, null, groupId, null, null, null, null);
-            boolean hasUnresolvedWarning = false;
             for (Task task : groupTasks) {
+                boolean hasUnresolvedWarning = false;
                 boolean isAssigned = stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(robotId,task.getId(),List.of(TaskStep.EXECUTING, TaskStep.WAITING, TaskStep.WAITING_CALLBACK))!=0;
                 if(isAssigned) {
                     if (robotWarningsService != null) {

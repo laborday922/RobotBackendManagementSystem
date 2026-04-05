@@ -16,7 +16,7 @@ public class TaskmgtException extends BaseException {
      *
      * @param returnNo 返回码枚举
      * @param args     国际化消息参数
-     * @param message
+     * @param message 返回消息
      */
     public TaskmgtException(ReturnNo returnNo, Object[] args, String message) {
         super("taskmgt", returnNo.getMessage(), args, message);

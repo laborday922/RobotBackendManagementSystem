@@ -582,12 +582,14 @@ export default {
 <style scoped>
 .data-dashboard {
   padding: 0 24px;
+  margin-bottom: 20px;
 }
 
 /* ===== 顶部玻璃条 ===== */
 .glass-bar {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
   margin-bottom: 20px;
   border-radius: 12px;
   backdrop-filter: blur(12px);

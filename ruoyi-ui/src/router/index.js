@@ -1,10 +1,9 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-
-Vue.use(Router)
-
 /* Layout */
 import Layout from '@/layout'
+
+Vue.use(Router)
 
 /**
  * Note: 路由配置项
@@ -299,6 +298,44 @@ export const constantRoutes = [
         component: () => import('@/views/app/intHistory/index'),
         name: 'IntHistory',
         meta: { title: '交互历史', icon: 'el-icon-document' }
+      }
+    ]
+  },
+  // ========== 数据管理分析模块 ==========
+  {
+    path: '/data',
+    component: Layout,
+    hidden: false,
+    redirect: 'noredirect',
+    name: 'DataManagementAndAnalyze',
+    meta: {
+      title: '数据管理与分析',
+      icon: 'chart'
+    },
+    children: [
+      {
+        path: 'dataClean',
+        component: () => import('@/views/data/dataClean/index2.vue'),
+        name: 'DataClean',
+        meta: { title: '数据清洗配置', icon: 'build' }
+      },
+      {
+        path: 'dataDashboard',
+        component: () => import('@/views/data/dataDashboard/index.vue'),
+        name: 'Dashboard',
+        meta: { title: '数据仪表盘', icon: 'dashboard' }
+      },
+      {
+        path: 'dataMetrics',
+        component: () => import('@/views/data/metrics/index2.vue'),
+        name: 'Metrics',
+        meta: { title: '指标分析', icon: 'number' }
+      },
+      {
+        path: 'dataAi',
+        component: () => import('@/views/data/ai/index2.vue'),
+        name: 'AiAnalyze',
+        meta: { title: 'Ai分析', icon: 'log' }
       }
     ]
   }

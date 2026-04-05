@@ -386,6 +386,7 @@ export default {
 }
 
 .glass-card {
+  margin-top: 20px;
   margin-bottom: 24px;
   border-radius: 16px;
   backdrop-filter: blur(12px);

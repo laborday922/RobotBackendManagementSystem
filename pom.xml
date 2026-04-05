@@ -264,7 +264,7 @@
         <module>ruoyi-generator</module>
         <module>ruoyi-common</module>
         <module>taskmgt</module>
-        <module>ruoyi-data</module>
+        <module>datamgt</module>
         <module>robots</module>
         <module>ruoyi-app</module>
         <module>function</module>

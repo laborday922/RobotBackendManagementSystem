@@ -19,6 +19,9 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 
+import java.time.LocalDate;
+import java.util.Map;
+
 /**
  * 模式排程Controller
  *
@@ -131,16 +134,13 @@ public class SysModeScheduleController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:schedule:list')")
     @GetMapping("/calendar")
-    public AjaxResult getCalendarData(@RequestParam(required = false) Integer year)
+    public AjaxResult getCalendarData(@RequestParam(required = false) Integer year,
+                                      @RequestParam(required = false) Integer month)
     {
         if (year == null) {
-            year = 2026; // 默认从2026年开始
+            year = LocalDate.now().getYear();
         }
-        // TODO: 从数据库查询该年份的任务完成情况
-        // 返回数据格式示例：
-        // {
-        //   "2026-01-01": {"success": 2, "partial": 1, "failed": 0, "tasks": [...]}
-        // }
-        return success();
+        Map<String, Object> calendarData = sysModeScheduleService.getCalendarData(year, month);
+        return success(calendarData);
     }
 }

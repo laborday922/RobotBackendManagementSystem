@@ -217,7 +217,7 @@
               :value="robot.robotId">
               <span style="float: left">{{ robot.robotName }}</span>
               <span style="float: right; color: #8492a6">
-                {{ robot.status }} | {{ robot.battery }}%
+                {{ getStatusText(robot.status) }} | {{ robot.battery }}%
               </span>
             </el-option>
           </el-select>
@@ -364,10 +364,9 @@ export default {
         method: 'get'
       }).then(response => {
         if (response.code === 200) {
-          // 确保每个机器人都有状态文本
+          // 确保每个机器人都有状态文本和类型，用于显示
           this.robotOptions = (response.data || []).map(robot => ({
             ...robot,
-            // 添加状态文本和类型，用于显示
             statusText: this.getStatusText(robot.status),
             statusType: this.getStatusType(robot.status)
           }));
@@ -406,7 +405,7 @@ export default {
       return map[statusNum] || 'info';
     },
 
-    // 获取状态文本（用于显示）
+    // 获取状态文本（用于显示）- 处理数字状态码
     getStatusText(status) {
       const statusNum = parseInt(status);
       const map = {
@@ -438,39 +437,6 @@ export default {
       this.selectedRobots = [];
     },
 
-    getStatusType(status) {
-      const map = {
-        'online': 'success',
-        'low_battery': 'warning',
-        'offline': 'info',
-        'restarting': 'warning',
-        'charging': 'primary',
-        'maintenance': 'warning',
-        'standby': 'info'
-      };
-      return map[status] || 'info';
-    },
-
-    getStatusText(status) {
-      const map = {
-        'online': '在线',
-        'low_battery': '低电量',
-        'offline': '离线',
-        'restarting': '重启中',
-        'charging': '充电中',
-        'maintenance': '维护中',
-        'standby': '待机中'
-      };
-      return map[status] || status;
-    },
-
-    getBatteryClass(battery) {
-      if (battery >= 80) return 'battery-high';
-      if (battery >= 30) return 'battery-medium';
-      if (battery >= 15) return 'battery-low';
-      return 'battery-danger';
-    },
-
     selectAllRobots() {
       this.selectedRobots = this.robotOptions.map(r => r.robotId);
       this.addDebugLog(`全选机器人: ${this.selectedRobots.length}个`, this.selectedRobots, 'info');
@@ -482,8 +448,9 @@ export default {
     },
 
     selectOnlineRobots() {
+      // 筛选状态为 1（在线）的机器人
       this.selectedRobots = this.robotOptions
-        .filter(r => r.status === 'online')
+        .filter(r => parseInt(r.status) === 1)
         .map(r => r.robotId);
       this.addDebugLog(`选择在线机器人: ${this.selectedRobots.length}个`, this.selectedRobots, 'info');
     },
@@ -600,7 +567,7 @@ export default {
         robotIds.forEach(robotId => {
           const robot = this.robotOptions.find(r => r.robotId === robotId);
           if (robot) {
-            robot.status = 'restarting';
+            robot.status = 3; // 使用数字 3 表示重启中
           }
         });
       }
@@ -766,13 +733,14 @@ export default {
         this.addDebugLog(`第${retryCount}次轮询检查`, null, 'info');
 
         this.getRobotList().then(() => {
+          // 注意：状态码 3 表示重启中
           const stillRestarting = this.robotOptions.filter(
-            r => robotIds.includes(r.robotId) && r.status === 'restarting'
+            r => robotIds.includes(r.robotId) && parseInt(r.status) === 3
           );
 
           const completedRobots = this.robotOptions.filter(r => robotIds.includes(r.robotId));
-          const onlineCount = completedRobots.filter(r => r.status === 'online').length;
-          const offlineCount = completedRobots.filter(r => r.status === 'offline').length;
+          const onlineCount = completedRobots.filter(r => parseInt(r.status) === 1).length;
+          const offlineCount = completedRobots.filter(r => parseInt(r.status) === 0).length;
 
           this.addDebugLog(`轮询结果: 重启中=${stillRestarting.length}, 在线=${onlineCount}, 离线=${offlineCount}`,
             completedRobots.map(r => ({ name: r.robotName, status: r.status, battery: r.battery })),
@@ -790,7 +758,7 @@ export default {
             if (offlineCount > 0) {
               this.$message.warning(`重启完成：${onlineCount}个在线，${offlineCount}个离线`);
               this.addDebugLog(`警告: ${offlineCount}个机器人重启后仍为离线状态`,
-                completedRobots.filter(r => r.status === 'offline'), 'warning');
+                completedRobots.filter(r => parseInt(r.status) === 0), 'warning');
             } else if (onlineCount === completedRobots.length && onlineCount > 0) {
               this.$message.success(`所有机器人重启完成，当前全部在线`);
               this.addDebugLog(`重启成功: 所有机器人已恢复在线`, null, 'success');
@@ -937,7 +905,7 @@ export default {
           method: 'put',
           data: {
             robotId: this.debugRobotId,
-            status: 'online',
+            status: 1,  // 使用数字 1 表示在线
             battery: 100
           }
         });
@@ -1020,7 +988,7 @@ export default {
 
           const robot = this.robotOptions.find(r => r.robotId === this.debugRobotId);
           if (robot) {
-            robot.status = 'restarting';
+            robot.status = 3; // 使用数字 3 表示重启中
           }
 
           this.startPollingRestartStatus([this.debugRobotId]);

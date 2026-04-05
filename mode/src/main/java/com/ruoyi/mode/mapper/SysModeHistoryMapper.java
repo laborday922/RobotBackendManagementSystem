@@ -131,4 +131,12 @@ public interface SysModeHistoryMapper
      * @return 结果
      */
     public int updateSysModeHistory(SysModeHistory sysModeHistory);
+
+    /**
+     * 删除指定时间之前的记录
+     *
+     * @param expireTime 过期时间
+     * @return 结果
+     */
+    public int deleteHistoryBefore(@Param("expireTime") String expireTime);
 }

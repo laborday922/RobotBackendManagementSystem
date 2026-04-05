@@ -6,6 +6,7 @@ import com.ruoyi.mode.domain.SysRobot;
 import com.ruoyi.mode.mapper.SysRobotMapper;
 import com.ruoyi.mode.mapper.SysModeHistoryMapper;
 import com.ruoyi.mode.service.ISysRobotService;
+import com.ruoyi.mode.service.ISysRobotOperationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ public class SysRobotServiceImpl implements ISysRobotService
 
     @Autowired
     private SysModeHistoryMapper sysModeHistoryMapper;
+
+    @Autowired
+    private ISysRobotOperationService robotOperationService;
 
     // ==================== 基础CRUD方法 ====================
 
@@ -114,6 +118,11 @@ public class SysRobotServiceImpl implements ISysRobotService
         if (result > 0) {
             logger.info("机器人模式切换成功: robotId={}, oldMode={}, newMode={}",
                     robotId, robot.getCurrentMode(), modeId);
+
+            // 记录操作历史
+            recordOperation(robotId, robot.getRobotName(), "mode_switch",
+                    "success", null,
+                    "模式切换: " + robot.getCurrentMode() + " -> " + modeId);
         }
 
         return result;
@@ -128,7 +137,7 @@ public class SysRobotServiceImpl implements ISysRobotService
         logger.info("机器人ID列表: {}", Arrays.toString(robotIds));
 
         int submittedCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (Long robotId : robotIds) {
             try {
@@ -180,7 +189,7 @@ public class SysRobotServiceImpl implements ISysRobotService
         logger.info("机器人ID列表: {}", Arrays.toString(robotIds));
 
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (Long robotId : robotIds) {
             try {
@@ -349,7 +358,7 @@ public class SysRobotServiceImpl implements ISysRobotService
                 sysRobotMapper.updateSysRobot(robot);
                 logger.warn("机器人重启失败，设置为离线: robotId={}", robotId);
                 recordOperation(robotId, robotName, "batch_restart_failed",
-                        "fail", SecurityUtils.getUsername(), "重启失败");
+                        "fail", getCurrentUsername(), "重启失败");
             }
         } catch (Exception ex) {
             logger.error("更新状态失败: robotId={}", robotId, ex);
@@ -362,7 +371,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("执行紧急停止: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (Long robotId : robotIds) {
             SysRobot robot = sysRobotMapper.selectSysRobotById(robotId);
@@ -385,7 +394,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("刷新机器人状态: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (Long robotId : robotIds) {
             SysRobot robot = sysRobotMapper.selectSysRobotById(robotId);
@@ -418,7 +427,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("测试告警: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (int i = 0; i < robotIds.length && i < 2; i++) {
             Long robotId = robotIds[i];
@@ -443,7 +452,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("清除告警: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
 
         for (Long robotId : robotIds) {
             SysRobot robot = sysRobotMapper.selectSysRobotById(robotId);
@@ -489,7 +498,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("切换待机模式: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
         Long standbyModeId = getModeIdByName("待机模式");
 
         for (Long robotId : robotIds) {
@@ -519,7 +528,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("切换维护模式: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
         Long maintenanceModeId = getModeIdByName("维护模式");
 
         for (Long robotId : robotIds) {
@@ -548,7 +557,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("切换充电模式: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
         Long chargeModeId = getModeIdByName("充电模式");
 
         for (Long robotId : robotIds) {
@@ -577,7 +586,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     {
         logger.info("返回充电: robotIds={}", robotIds);
         int successCount = 0;
-        String operator = SecurityUtils.getUsername();
+        String operator = getCurrentUsername();
         Long chargeModeId = getModeIdByName("充电模式");
 
         for (Long robotId : robotIds) {
@@ -607,6 +616,8 @@ public class SysRobotServiceImpl implements ISysRobotService
     public int saveRobotModeConfig(Long robotId, Long modeId, Map<String, Object> config)
     {
         logger.info("保存机器人模式配置: robotId={}, modeId={}, config={}", robotId, modeId, config);
+        recordOperation(robotId, null, "save_config", "success",
+                getCurrentUsername(), "保存模式配置: modeId=" + modeId);
         return 1;
     }
 
@@ -626,6 +637,8 @@ public class SysRobotServiceImpl implements ISysRobotService
     public int deleteRobotModeConfig(Long robotId, Long modeId)
     {
         logger.info("删除机器人模式配置: robotId={}, modeId={}", robotId, modeId);
+        recordOperation(robotId, null, "delete_config", "success",
+                getCurrentUsername(), "删除模式配置: modeId=" + modeId);
         return 1;
     }
 
@@ -637,19 +650,53 @@ public class SysRobotServiceImpl implements ISysRobotService
                 sourceRobotId, targetRobotId, modeId);
         Map<String, Object> config = getRobotModeConfig(sourceRobotId, modeId);
         if (config != null && !config.isEmpty()) {
-            return saveRobotModeConfig(targetRobotId, modeId, config);
+            int result = saveRobotModeConfig(targetRobotId, modeId, config);
+            recordOperation(targetRobotId, null, "copy_config", "success",
+                    getCurrentUsername(), "从机器人" + sourceRobotId + "复制模式配置");
+            return result;
         }
         return 0;
     }
 
     // ==================== 私有辅助方法 ====================
 
+    /**
+     * 获取当前用户名（可被子类覆盖，便于测试）
+     */
+    protected String getCurrentUsername() {
+        try {
+            String username = SecurityUtils.getUsername();
+            if (username != null && !username.isEmpty()) {
+                return username;
+            }
+        } catch (Exception e) {
+            logger.warn("获取当前用户失败，使用默认用户", e);
+        }
+        // 测试环境下返回默认用户
+        return "system";
+    }
+
+    /**
+     * 记录操作（实际写入数据库）
+     */
     private void recordOperation(Long robotId, String robotName, String operationType,
                                  String result, String operator, String remark)
     {
         try {
-            logger.info("操作记录: robotId={}, robotName={}, operationType={}, result={}, operator={}, remark={}",
-                    robotId, robotName, operationType, result, operator, remark);
+            // 如果没有传入操作人，则获取当前用户
+            String currentUser = operator;
+            if (currentUser == null || currentUser.isEmpty()) {
+                currentUser = getCurrentUsername();
+            }
+
+            if (robotOperationService != null) {
+                robotOperationService.recordOperation(robotId, robotName, operationType,
+                        result, currentUser, remark);
+                logger.info("操作记录已保存: robotId={}, operationType={}", robotId, operationType);
+            } else {
+                logger.info("操作记录(未保存): robotId={}, robotName={}, operationType={}, result={}, operator={}, remark={}",
+                        robotId, robotName, operationType, result, currentUser, remark);
+            }
         } catch (Exception e) {
             logger.error("记录操作失败", e);
         }

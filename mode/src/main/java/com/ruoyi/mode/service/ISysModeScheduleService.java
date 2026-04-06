@@ -3,6 +3,7 @@ package com.ruoyi.mode.service;
 import com.ruoyi.mode.domain.SysModeSchedule;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 模式排程Service接口
@@ -66,4 +67,13 @@ public interface ISysModeScheduleService
      * @return 结果
      */
     public int toggleScheduleStatus(Long scheduleId);
+
+    /**
+     * 获取日历数据
+     *
+     * @param year 年份
+     * @param month 月份（可选）
+     * @return 日历数据
+     */
+    public Map<String, Object> getCalendarData(Integer year, Integer month);
 }

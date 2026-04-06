@@ -130,6 +130,10 @@
         delete from sys_mode_history
     </delete>
 
+    <delete id="deleteHistoryBefore" parameterType="String">
+        delete from sys_mode_history where create_time &lt; #{expireTime}
+    </delete>
+
     <select id="selectRecentHistory" parameterType="Integer" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         order by operation_time desc

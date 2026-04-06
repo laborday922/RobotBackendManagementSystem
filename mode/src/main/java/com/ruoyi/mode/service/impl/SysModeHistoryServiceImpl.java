@@ -174,6 +174,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
      * @param limit 限制数量
      * @return 历史记录集合
      */
+    @Override
     public List<SysModeHistory> selectRecentHistory(Integer limit)
     {
         return sysModeHistoryMapper.selectRecentHistory(limit);
@@ -186,6 +187,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
      * @param operationType 操作类型
      * @return 历史记录集合
      */
+    @Override
     public List<SysModeHistory> selectHistoryByOperatorAndType(String operator, String operationType)
     {
         return sysModeHistoryMapper.selectHistoryByOperatorAndType(operator, operationType);
@@ -196,6 +198,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
      *
      * @return 统计结果
      */
+    @Override
     public List<Map<String, Object>> selectOperationTypeStats()
     {
         return sysModeHistoryMapper.selectOperationTypeStats();
@@ -206,6 +209,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
      *
      * @return 统计结果
      */
+    @Override
     public List<Map<String, Object>> selectRobotOperationStats()
     {
         return sysModeHistoryMapper.selectRobotOperationStats();
@@ -217,8 +221,20 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
      * @param days 最近几天
      * @return 统计结果
      */
+    @Override
     public List<Map<String, Object>> selectDailyOperationStats(Integer days)
     {
         return sysModeHistoryMapper.selectDailyOperationStats(days);
+    }
+
+    /**
+     * 删除指定时间之前的记录
+     *
+     * @param expireTime 过期时间
+     * @return 结果
+     */
+    public int deleteHistoryBefore(String expireTime)
+    {
+        return sysModeHistoryMapper.deleteHistoryBefore(expireTime);
     }
 }

@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import javax.validation.constraints.*;
 import java.util.List;
 
 /**
@@ -20,14 +21,19 @@ public class SysMode extends BaseEntity
 
     /** 模式ID */
     @ApiModelProperty(value = "模式ID", example = "1")
+    @NotNull(message = "模式ID不能为空", groups = {UpdateGroup.class})
     private Long modeId;
 
     /** 模式名称 */
     @ApiModelProperty(value = "模式名称", required = true, example = "巡检模式")
+    @NotBlank(message = "模式名称不能为空")
+    @Size(min = 1, max = 50, message = "模式名称长度必须在1-50之间")
     private String modeName;
 
     /** 模式类型(system系统/custom自定义) */
     @ApiModelProperty(value = "模式类型", allowableValues = "system,custom", example = "system", notes = "system-系统模式，custom-自定义模式")
+    @NotBlank(message = "模式类型不能为空")
+    @Pattern(regexp = "^(system|custom)$", message = "模式类型只能是system或custom")
     private String modeType;
 
     /** 分类ID */
@@ -36,22 +42,27 @@ public class SysMode extends BaseEntity
 
     /** 模式颜色 */
     @ApiModelProperty(value = "模式颜色", example = "#FF5733", notes = "十六进制颜色代码")
+    @Pattern(regexp = "^$|^#[0-9A-Fa-f]{6}$", message = "颜色格式错误，应为#加6位十六进制数")
     private String modeColor;
 
     /** 模式图标 */
     @ApiModelProperty(value = "模式图标", example = "fa fa-robot", notes = "FontAwesome图标类名或自定义图标标识")
+    @Size(max = 100, message = "图标名称长度不能超过100")
     private String modeIcon;
 
     /** 模式描述 */
     @ApiModelProperty(value = "模式描述", example = "用于日常巡检工作的模式")
+    @Size(max = 500, message = "描述长度不能超过500")
     private String description;
 
     /** 是否启用(0禁用 1启用) */
     @ApiModelProperty(value = "是否启用", allowableValues = "0,1", example = "1", notes = "0-禁用，1-启用")
+    @Pattern(regexp = "^[01]$", message = "启用状态只能是0或1")
     private String enabled;
 
     /** 使用次数 */
     @ApiModelProperty(value = "使用次数", example = "128")
+    @Min(value = 0, message = "使用次数不能为负数")
     private Long usageCount;
 
     /** 关联机器人数量 */
@@ -60,6 +71,8 @@ public class SysMode extends BaseEntity
 
     /** 显示顺序 */
     @ApiModelProperty(value = "显示顺序", example = "1")
+    @Min(value = 0, message = "显示顺序不能小于0")
+    @Max(value = 999, message = "显示顺序不能大于999")
     private Integer orderNum;
 
     /** 删除标志（0代表存在 2代表删除） */
@@ -71,9 +84,14 @@ public class SysMode extends BaseEntity
     private String categoryName;
 
     // 非数据库字段 - 参数列表（用于接收前端传递的参数）
-    // 改名避免与 BaseEntity 的 params 冲突
     @ApiModelProperty(value = "参数列表", notes = "模式关联的参数配置列表（非数据库字段）")
     private List<SysModeParam> modeParams;
+
+    // 分组校验接口
+    public interface AddGroup {}
+    public interface UpdateGroup {}
+
+    // ==================== Getters and Setters ====================
 
     public Long getModeId() {
         return modeId;

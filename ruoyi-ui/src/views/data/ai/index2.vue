@@ -597,6 +597,7 @@ export default {
 
 <style scoped>
 .data-ai {
+  margin-top: 20px;
   padding: 0 20px;
 }
 
@@ -607,6 +608,7 @@ export default {
 }
 
 .ai-section {
+
   background: #fff;
   border-radius: 8px;
   padding: 20px;

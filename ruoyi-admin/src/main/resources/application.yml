@@ -97,6 +97,7 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: true
+
 # token配置
 token:
   # 令牌自定义标识
@@ -144,7 +145,23 @@ xss:
   # 匹配链接
   urlPatterns: /system/*,/monitor/*,/tool/*
 
-#通义
+# 模式模块配置
+mode:
+  # 历史记录保留天数
+  history:
+    retention-days: 90
+  # 排程配置
+  schedule:
+    enabled: true
+    max-concurrent: 5
+  # 机器人配置
+  robot:
+    low-battery-threshold: 20
+    critical-battery-threshold: 10
+    charge-battery-threshold: 30
+    status-sync-interval: 300000  # 5分钟，单位毫秒
+
+# 通义千问配置
 tongyi:
   api-key: sk-5ac684bcfa7043a48dfa23e1a6c71971
   model: qwen-plus   # 可根据需要选择 qwen-turbo, qwen-plus, qwen-max 等

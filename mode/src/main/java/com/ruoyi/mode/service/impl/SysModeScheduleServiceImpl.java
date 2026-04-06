@@ -4,11 +4,17 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysModeSchedule;
 import com.ruoyi.mode.mapper.SysModeScheduleMapper;
 import com.ruoyi.mode.service.ISysModeScheduleService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 模式排程Service业务层处理
@@ -18,6 +24,8 @@ import java.util.List;
 @Service
 public class SysModeScheduleServiceImpl implements ISysModeScheduleService
 {
+    private static final Logger logger = LoggerFactory.getLogger(SysModeScheduleServiceImpl.class);
+
     @Autowired
     private SysModeScheduleMapper sysModeScheduleMapper;
 
@@ -149,5 +157,51 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
             return sysModeScheduleMapper.updateScheduleStatus(scheduleId, newStatus);
         }
         return 0;
+    }
+
+    /**
+     * 获取日历数据
+     *
+     * @param year 年份
+     * @param month 月份（可选）
+     * @return 日历数据
+     */
+    @Override
+    public Map<String, Object> getCalendarData(Integer year, Integer month)
+    {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            result.put("year", year);
+            result.put("success", true);
+
+            if (month != null) {
+                // 查询指定月份的数据
+                String beginTime = year + "-" + String.format("%02d", month) + "-01 00:00:00";
+                String endTime = year + "-" + String.format("%02d", month) + "-31 23:59:59";
+
+                // 获取该月份有排程的日期
+                Map<String, Object> monthData = new HashMap<>();
+                monthData.put("year", year);
+                monthData.put("month", month);
+                monthData.put("beginTime", beginTime);
+                monthData.put("endTime", endTime);
+
+                // TODO: 从数据库查询该月份的执行记录
+                // List<SysModeHistory> histories = historyService.selectHistoryByTimeRange(beginTime, endTime);
+
+                result.put("monthData", monthData);
+                result.put("message", "获取月份数据成功");
+            } else {
+                // 返回全年概览
+                result.put("message", "获取年度数据成功");
+            }
+        } catch (Exception e) {
+            logger.error("获取日历数据失败", e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+
+        return result;
     }
 }

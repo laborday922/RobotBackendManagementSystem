@@ -68,7 +68,7 @@
         <!-- 数据管理分析-->
         <dependency>
             <groupId>com.ruoyi</groupId>
-            <artifactId>ruoyi-data</artifactId>
+            <artifactId>datamgt</artifactId>
             <version>${ruoyi.version}</version>
         </dependency>
 

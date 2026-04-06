@@ -92,6 +92,10 @@ public interface ISysModeHistoryService
      */
     public List<SysModeHistory> selectHistoryByTimeRange(String beginTime, String endTime);
 
+    List<SysModeHistory> selectRecentHistory(Integer limit);
+
+    List<SysModeHistory> selectHistoryByOperatorAndType(String operator, String operationType);
+
     List<Map<String, Object>> selectOperationTypeStats();
 
     List<Map<String, Object>> selectRobotOperationStats();

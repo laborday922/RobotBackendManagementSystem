@@ -150,15 +150,7 @@
         WHERE point_id = #{pointId}
     </update>
 
-    <!-- 批量逻辑删除 -->
-    <update id="logicDeleteByIds">
-        UPDATE sys_point
-        SET del_flag = '2'
-        WHERE point_id IN
-        <foreach collection="pointIds" item="pointId" open="(" separator="," close=")">
-            #{pointId}
-        </foreach>
-    </update>
+
 
     <!-- 更新点位状态 -->
     <update id="updateStatus">
@@ -185,5 +177,22 @@
             AND point_id != #{pointId}
         </if>
     </select>
+
+    <!-- 批量逻辑删除 -->
+    <update id="logicDeleteByIds" parameterType="java.util.List">
+        UPDATE sys_point
+        SET del_flag = '2'
+        WHERE point_id IN
+        <foreach collection="pointIds" item="pointId" open="(" separator="," close=")">
+            #{pointId}
+        </foreach>
+    </update>
+
+    <!-- 根据地图ID逻辑删除 -->
+    <update id="logicDeleteByMapId">
+        UPDATE sys_point
+        SET del_flag = '2'
+        WHERE map_id = #{mapId}
+    </update>
 
 </mapper>

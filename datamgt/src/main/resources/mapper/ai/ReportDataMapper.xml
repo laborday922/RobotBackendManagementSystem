@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.data.ai.mapper.ReportDataMapper">
+
+    <!-- 任务统计：按状态分组 -->
+    <select id="getTaskStatistics" resultType="java.util.HashMap">
+        SELECT
+            status,
+            COUNT(*) AS count
+        FROM tm_task
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
+        GROUP BY status
+    </select>
+
+    <!-- 告警统计：按类型、级别分组，支持时间范围 -->
+    <select id="getWarningStatistics" resultType="java.util.HashMap">
+        SELECT warning_type, warning_level, COUNT(*) AS count
+        FROM robot_warnings
+        <where>
+
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+
+            <if test="startDate != null and startDate != ''">
+                <![CDATA[AND DATE(created_at) >= #{startDate} ]]>
+            </if>
+            <if test="endDate != null and endDate != ''">
+                <![CDATA[AND DATE(created_at) <= #{endDate}]]>
+            </if>
+
+        </where>
+        GROUP BY warning_type, warning_level
+    </select>
+
+    <!-- 获取最新清洗任务中的所有用户评价交互文本（取最大task_id） -->
+    <select id="getLatestCleanedInteractions" resultType="java.lang.String">
+        SELECT clean_content
+        FROM clean_interaction_result
+
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
+
+        AND task_id = (
+        SELECT MAX(task_id)
+        FROM clean_interaction_result
+
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
+        )
+    </select>
+
+    <!-- 按时间范围获取交互文本（使用 clean_time） -->
+    <select id="getCleanedInteractionsByTime" resultType="java.lang.String">
+        SELECT clean_content
+        FROM clean_interaction_result
+        <where>
+
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+
+            <if test="startDate != null and startDate != ''">
+                <![CDATA[ AND DATE(clean_time) >= #{startDate} ]]>
+            </if>
+            <if test="endDate != null and endDate != ''">
+                <![CDATA[ AND DATE(clean_time) <= #{endDate} ]]>
+            </if>
+
+        </where>
+    </select>
+
+</mapper>

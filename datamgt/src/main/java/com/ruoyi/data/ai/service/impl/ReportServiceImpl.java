@@ -1,5 +1,7 @@
 package com.ruoyi.data.ai.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.data.ai.controller.dto.ReportQueryDto;
 import com.ruoyi.data.ai.mapper.ReportContentMapper;
 import com.ruoyi.data.ai.mapper.ReportDataMapper;
@@ -40,6 +42,17 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private ReportDataMapper reportDataMapper;
 
+    /**
+     * 动态获取当前租户ID（根据用户权限决定是否过滤）
+     * 管理员传 null 表示查所有租户，普通用户传自己的租户ID
+     */
+    private Long getQueryTenantId() {
+        Long tenantId = TenantContext.get();
+        Long userId = SecurityUtils.getUserId();
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        return isAdmin ? null : tenantId;
+    }
+
     @Override
     public String generateReport(String reportType,
                                  String startDate,
@@ -56,8 +69,14 @@ public class ReportServiceImpl implements ReportService {
             reportDepth = "standard"; // 默认标准版
         }
 
+        // 获取当前租户 ID（写入操作必须强制获取，不能为 null）
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
+            throw new RuntimeException("无法获取租户信息，请重新登录");
+        }
+
         // 1️⃣ 获取真实数据（从数据库）
-        String rawData = fetchRawData(analysisDimension, startDate, endDate);
+        String rawData = fetchRawData(analysisDimension, startDate, endDate, tenantId);
 
         // 2️⃣ 构建 AI 生成的完整 prompt（融合自定义要求、深度类型）
         String aiPrompt = buildAIPrompt(reportType, startDate, endDate, analysisDimension,
@@ -113,6 +132,8 @@ public class ReportServiceImpl implements ReportService {
 
         // 若依自带分页
         //startPage(query.getPage(), query.getSize());
+        Long tenantId = getQueryTenantId();
+        query.setTenantId(tenantId);   // 将租户 ID 设置到 query 对象中，供 Mapper 使用
 
         List<ReportPo> list = reportMapper.selectReportList(query);
 
@@ -131,13 +152,14 @@ public class ReportServiceImpl implements ReportService {
     //报告文件下载
     @Override
     public void downloadReport(Long id, String format, HttpServletResponse response) {
+        Long tenantId = getQueryTenantId();   // 查询可用 null（管理员可下载任何报告）
+        ReportPo report = reportMapper.selectById(id, tenantId);
 
-        ReportPo report = reportMapper.selectById(id);
         if (report == null) {
             throw new RuntimeException("报告不存在");
         }
 
-        ReportContentPo contentPO = contentMapper.selectContentByReportId(id);
+        ReportContentPo contentPO = contentMapper.selectContentByReportId(id, tenantId);
         String markdown = contentPO.getContent();
 
         try {
@@ -226,12 +248,14 @@ public class ReportServiceImpl implements ReportService {
      */
     @Override
     public ReportDetailVo getDetailById(Long id) {
-        ReportPo report = reportMapper.selectById(id);
+        Long tenantId = getQueryTenantId();
+        ReportPo report = reportMapper.selectById(id, tenantId);
+
         if (report == null) {
             return null;
         }
 
-        ReportContentPo contentPo = contentMapper.selectContentByReportId(id);
+        ReportContentPo contentPo = contentMapper.selectContentByReportId(id, tenantId);
 
         ReportDetailVo vo = new ReportDetailVo();
 
@@ -256,20 +280,21 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public int deleteById(Long id) {
-        return reportMapper.deleteById(id);
+        Long tenantId = TenantContext.get();
+        return reportMapper.deleteById(id,tenantId);
     }
 
     /**
      * 根据分析维度和时间范围获取原始数据（文本格式）
      */
-    private String fetchRawData(String analysisDimension, String startDate, String endDate) {
+    private String fetchRawData(String analysisDimension, String startDate, String endDate,Long tenantId) {
         if ("user_satisfaction".equals(analysisDimension)) {
             // 获取交互文本（优先使用时间范围，否则取最新）
             List<String> interactions;
             if (startDate != null && endDate != null) {
-                interactions = reportDataMapper.getCleanedInteractionsByTime(startDate, endDate);
+                interactions = reportDataMapper.getCleanedInteractionsByTime(startDate, endDate, tenantId);
             } else {
-                interactions = reportDataMapper.getLatestCleanedInteractions();
+                interactions = reportDataMapper.getLatestCleanedInteractions(tenantId);
             }
 
             if (interactions == null || interactions.isEmpty()) {
@@ -283,7 +308,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if ("task_completion_rate".equals(analysisDimension)) {
-            List<Map<String, Object>> taskStats = reportDataMapper.getTaskStatistics();
+            List<Map<String, Object>> taskStats = reportDataMapper.getTaskStatistics(tenantId);
             if (taskStats.isEmpty()) {
                 return "没有任务数据。";
             }
@@ -298,7 +323,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if ("exception_rate".equals(analysisDimension)) {
-            List<Map<String, Object>> warnStats = reportDataMapper.getWarningStatistics(startDate, endDate);
+            List<Map<String, Object>> warnStats = reportDataMapper.getWarningStatistics(startDate, endDate, tenantId);
             if (warnStats.isEmpty()) {
                 return "时间范围内无告警记录。";
             }

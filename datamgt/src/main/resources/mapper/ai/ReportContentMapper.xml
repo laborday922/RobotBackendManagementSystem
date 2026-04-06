@@ -7,14 +7,17 @@
 
     <insert id="insertContent" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO data_report_content (
-            report_id, content, summary, highlights, created_at
+            report_id, content, summary, highlights, created_at, tenant_id
         ) VALUES (
-                     #{reportId}, #{content}, #{summary}, #{highlights}, NOW()
+                     #{reportId}, #{content}, #{summary}, #{highlights}, NOW(), #{tenantId}
                  )
     </insert>
 
     <select id="selectContentByReportId" resultType="com.ruoyi.data.ai.mapper.po.ReportContentPo">
         SELECT * FROM data_report_content WHERE report_id = #{reportId}
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
     </select>
 
 </mapper>

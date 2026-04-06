@@ -17,4 +17,6 @@ public class CleanResultPo {
     private String statusLabel;
 
     private LocalDateTime cleanTime;
+
+    private Long tenantId;
 }

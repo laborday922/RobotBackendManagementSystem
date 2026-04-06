@@ -37,4 +37,6 @@ public class CleanExecuteHistory {
     private LocalDateTime createTime;
 
     private String cronExpression;
+
+    private Long tenantId;
 }

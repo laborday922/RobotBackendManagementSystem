@@ -11,23 +11,29 @@
             status,
             COUNT(*) AS count
         FROM tm_task
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
         GROUP BY status
     </select>
 
     <!-- 告警统计：按类型、级别分组，支持时间范围 -->
     <select id="getWarningStatistics" resultType="java.util.HashMap">
-        SELECT
-        warning_type,
-        warning_level,
-        COUNT(*) AS count
+        SELECT warning_type, warning_level, COUNT(*) AS count
         FROM robot_warnings
         <where>
+
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+
             <if test="startDate != null and startDate != ''">
                 <![CDATA[AND DATE(created_at) >= #{startDate} ]]>
             </if>
             <if test="endDate != null and endDate != ''">
                 <![CDATA[AND DATE(created_at) <= #{endDate}]]>
             </if>
+
         </where>
         GROUP BY warning_type, warning_level
     </select>
@@ -36,7 +42,19 @@
     <select id="getLatestCleanedInteractions" resultType="java.lang.String">
         SELECT clean_content
         FROM clean_interaction_result
-        WHERE task_id = (SELECT MAX(task_id) FROM clean_interaction_result)
+
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
+
+        AND task_id = (
+        SELECT MAX(task_id)
+        FROM clean_interaction_result
+
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
+        )
     </select>
 
     <!-- 按时间范围获取交互文本（使用 clean_time） -->
@@ -44,12 +62,18 @@
         SELECT clean_content
         FROM clean_interaction_result
         <where>
+
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+
             <if test="startDate != null and startDate != ''">
                 <![CDATA[ AND DATE(clean_time) >= #{startDate} ]]>
             </if>
             <if test="endDate != null and endDate != ''">
                 <![CDATA[ AND DATE(clean_time) <= #{endDate} ]]>
             </if>
+
         </where>
     </select>
 

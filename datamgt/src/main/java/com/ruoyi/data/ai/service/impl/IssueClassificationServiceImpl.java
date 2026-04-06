@@ -1,6 +1,8 @@
 package com.ruoyi.data.ai.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.data.ai.domain.bo.CategoryCount;
 import com.ruoyi.data.ai.domain.bo.TimeSeriesData;
 import com.ruoyi.data.ai.mapper.IssueClassificationMapper;
@@ -25,13 +27,26 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
     @Autowired
     private TongYiService tongYiService;
 
+    /**
+     * 动态获取当前租户ID（根据用户权限决定是否过滤）
+     * 管理员传 null 表示查所有租户，普通用户传自己的租户ID
+     */
+    private Long getQueryTenantId() {
+        Long tenantId = TenantContext.get();
+        Long userId = SecurityUtils.getUserId();
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
+        return isAdmin ? null : tenantId;
+    }
+
     @Override
     public List<CategoryCount> getIssueDistribution(String timeRange) {
         Date[] range = parseTimeRange(timeRange);
+        Long tenantId = getQueryTenantId();   // 获取租户ID（可能为null）
 
-        List<Map<String, Object>> raw = mapper.selectRawInteractions(range[0], range[1]);
+        // 传入 tenantId
+        List<Map<String, Object>> raw = mapper.selectRawInteractions(range[0], range[1], tenantId);
         String data = JSON.toJSONString(raw);
-        System.out.print("问题分析数据："+data);
+        System.out.print("问题分析数据：" + data);
 
         String prompt = "你是数据分析专家，请对以下机器人交互数据进行问题分类统计。\n" +
                 "要求：\n" +
@@ -56,10 +71,11 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
     @Override
     public TimeSeriesData getIssueTrend(String category, String granularity, String timeRange) {
         Date[] range = parseTimeRange(timeRange);
-
         Integer type = mapCategory(category);
-        List<Map<String, Object>> raw = mapper.selectRawByCategory(type, range[0], range[1]);
+        Long tenantId = getQueryTenantId();   // 获取租户ID
 
+        // 传入 tenantId
+        List<Map<String, Object>> raw = mapper.selectRawByCategory(type, range[0], range[1], tenantId);
         String data = JSON.toJSONString(raw);
 
         String prompt = String.format(
@@ -116,5 +132,4 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
             default: return 0;
         }
     }
-
 }

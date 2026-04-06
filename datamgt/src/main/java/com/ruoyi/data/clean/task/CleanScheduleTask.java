@@ -1,5 +1,6 @@
 package com.ruoyi.data.clean.task;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.data.clean.mapper.CleanRuleMapper;
 import com.ruoyi.data.clean.mapper.po.CleanRulePo;
 import com.ruoyi.data.clean.service.ICleanRuleExecuteService;
@@ -26,19 +27,29 @@ public class CleanScheduleTask {
     @Scheduled(fixedDelay = 60000)
     public void scan() {
 
-        List<CleanRulePo> rules = cleanRuleMapper.selectScheduledRules();
+        // 管理员视角：查所有租户任务
+        List<CleanRulePo> rules = cleanRuleMapper.selectScheduledRules(null);
 
         for (CleanRulePo rule : rules) {
 
-            CronExpression cron = CronExpression.parse(rule.getCronExpression());
+            try {
+                // 设置当前租户上下文
+                TenantContext.set(rule.getTenantId());
 
-            LocalDateTime now = LocalDateTime.now();
+                CronExpression cron = CronExpression.parse(rule.getCronExpression());
 
-            LocalDateTime last = cron.next(now.minusMinutes(1));
+                LocalDateTime now = LocalDateTime.now();
 
-            if (last != null && last.isBefore(now)) {
+                LocalDateTime last = cron.next(now.minusMinutes(1));
 
-                executeService.executeTask(rule.getId());
+                if (last != null && last.isBefore(now)) {
+
+                    executeService.executeTask(rule.getId());
+                }
+
+            } finally {
+                // 清理（防线程污染）
+                TenantContext.clear();
             }
         }
     }

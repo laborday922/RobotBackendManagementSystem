@@ -14,6 +14,9 @@
         evaluation_text
         FROM t_interaction_history
         WHERE interaction_time BETWEEN #{startTime} AND #{endTime}
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
         LIMIT 1000
     </select>
 
@@ -26,6 +29,9 @@
         FROM t_interaction_history
         WHERE interaction_type = #{category}
         AND interaction_time BETWEEN #{startTime} AND #{endTime}
+        <if test="tenantId != null">
+            WHERE tenant_id = #{tenantId}
+        </if>
         LIMIT 1000
     </select>
 

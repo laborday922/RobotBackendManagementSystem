@@ -10,4 +10,5 @@ public class ReportQueryDto {
     private String startDate;
     private String endDate;
     private String reportName;
+    private Long tenantId;
 }

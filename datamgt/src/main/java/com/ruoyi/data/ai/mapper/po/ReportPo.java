@@ -15,4 +15,5 @@ public class ReportPo {
     private String taskId;
     private String fileUrl;
     private Date createdAt;
+    private Long tenantId;
 }

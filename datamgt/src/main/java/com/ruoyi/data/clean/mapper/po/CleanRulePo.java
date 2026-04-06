@@ -22,5 +22,5 @@ public class CleanRulePo extends BaseEntity {
 
     private String cronExpression;
 
-    // getter / setter
+    private Long tenantId;
 }

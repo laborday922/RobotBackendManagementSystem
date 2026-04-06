@@ -9,13 +9,16 @@ public interface MetricDefinitionMapper {
 
     int insert(MetricDefinitionPo po);
 
-    MetricDefinitionPo selectById(Long id);
+    MetricDefinitionPo selectById(@Param("id") Long id,
+                                  @Param("tenantId") Long tenantId);
 
-    List<MetricDefinitionPo> selectAll();
+    List<MetricDefinitionPo> selectAll(@Param("tenantId") Long tenantId);
 
-    int update(MetricDefinitionPo po);
+    int update(@Param("metric") MetricDefinitionPo metric,
+               @Param("tenantId") Long tenantId);
 
-    int delete(Long id);
+    int delete(@Param("id") Long id,
+               @Param("tenantId") Long tenantId);
 
     //获取数据源字段
     List<String> selectColumnsByTableName(@Param("tableName") String tableName);

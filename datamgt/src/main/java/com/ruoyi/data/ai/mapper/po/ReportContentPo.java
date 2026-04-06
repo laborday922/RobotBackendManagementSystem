@@ -12,4 +12,5 @@ public class ReportContentPo {
     private String summary;      // 新增
     private String highlights;   // 新增
     private Date createdAt;
+    private Long tenantId;
 }

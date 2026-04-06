@@ -38,4 +38,6 @@ public class MetricDefinitionPo extends BaseEntity {
 
     private Date updateTime;
 
+    private Long tenantId;
+
 }

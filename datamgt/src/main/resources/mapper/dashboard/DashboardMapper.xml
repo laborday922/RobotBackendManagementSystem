@@ -11,7 +11,11 @@
         SELECT clean_content AS evaluationText
         FROM clean_interaction_result
         WHERE clean_content IS NOT NULL
-        AND clean_content != '' AND task_id = (
+        AND clean_content != ''
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
+        AND task_id = (
         SELECT MAX(task_id) FROM clean_interaction_result
         )
 
@@ -40,28 +44,45 @@
                  INNER JOIN (
             SELECT robot_id, MAX(record_time) AS max_time
             FROM robot_position_history
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
             GROUP BY robot_id
         ) latest
-                            ON r.robot_id = latest.robot_id
-                                AND r.record_time = latest.max_time
-
+        ON r.robot_id = latest.robot_id
+            AND r.record_time = latest.max_time
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <!-- 总数 -->
     <select id="selectRobotTotalCount" resultType="int">
         SELECT COUNT(*) FROM robots
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <!-- 在线数 -->
     <select id="selectOnlineRobotCount" resultType="int">
         SELECT COUNT(*) FROM robots WHERE status = 1
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <select id="selectTodayFeedbackCount" resultType="int">
         SELECT COUNT(*) FROM t_interaction_history WHERE DATE(interaction_time) = CURDATE()
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
     <select id="selectCompletedTaskCount" resultType="int">
         SELECT COUNT(*) FROM tm_task WHERE status = 2   <!-- 假设2表示已完成 -->
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <!-- 状态分布（饼图） -->
@@ -72,6 +93,9 @@
             status,
             COUNT(*) AS count
         FROM robots
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
         GROUP BY status
 
     </select>
@@ -89,6 +113,9 @@
         priority
         FROM tm_task
         WHERE 1=1
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
 
         <if test="startTime != null">
             AND create_time &gt;= #{startTime}
@@ -117,7 +144,15 @@
             COUNT(r.id) AS totalCount,
             COUNT(CASE WHEN r.status = 1 THEN 1 END) AS onlineCount
         FROM robot_groups rg
-                 LEFT JOIN robots r ON r.group_id = rg.id
+            LEFT JOIN robots r
+            ON r.group_id = rg.id
+            <if test="tenantId != null">
+                AND r.tenant_id = #{tenantId}
+            </if>
+
+        <if test="tenantId != null">
+            WHERE rg.tenant_id = #{tenantId}
+        </if>
         GROUP BY rg.id, rg.name, rg.description
         ORDER BY rg.id ASC
     </select>
@@ -155,6 +190,9 @@
 
         FROM robot_warnings
         WHERE created_at BETWEEN #{startTime} AND #{endTime}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
 
         GROUP BY time
         ORDER BY time ASC

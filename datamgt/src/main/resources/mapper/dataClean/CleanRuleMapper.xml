@@ -5,17 +5,20 @@
 
 <mapper namespace="com.ruoyi.data.clean.mapper.CleanRuleMapper">
 
-    <!-- 查询任务 -->
+    <!-- 查询清洗任务 -->
     <select id="selectById" resultType="com.ruoyi.data.clean.mapper.po.CleanRulePo">
         SELECT id,
-               execute_mode,
-               run_time,
-               apply_data_source,
-               config_json,
-               status,
-               cron_expression
+        execute_mode,
+        run_time,
+        apply_data_source,
+        config_json,
+        status,
+        cron_expression
         FROM clean_rule_config
         WHERE id = #{id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <!-- 查询表字段（排除主键） -->
@@ -32,18 +35,24 @@
         SELECT *
         FROM clean_rule_config
         WHERE execute_mode = 'SCHEDULED'
-          AND status = 1
+        AND status = 1
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <update id="updateRuntime">
         UPDATE clean_rule_config
         SET run_time = #{runTime}
         WHERE id = #{id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </update>
 
     <insert id="batchInsertResults">
         INSERT INTO clean_interaction_result
-        (source_id, task_id, config_id, raw_content, clean_content, status_label, clean_time)
+        (source_id, task_id, config_id, raw_content, clean_content, status_label, clean_time, tenant_id)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
@@ -53,7 +62,8 @@
             #{item.rawContent},
             #{item.cleanContent},
             #{item.statusLabel},
-            #{item.cleanTime}
+            #{item.cleanTime},
+            #{item.tenantId}
             )
         </foreach>
     </insert>
@@ -62,7 +72,10 @@
         SELECT id, evaluation_text
         FROM t_interaction_history
         WHERE evaluation_text IS NOT NULL
-          AND evaluation_text != ''
+        AND evaluation_text != ''
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
 </mapper>

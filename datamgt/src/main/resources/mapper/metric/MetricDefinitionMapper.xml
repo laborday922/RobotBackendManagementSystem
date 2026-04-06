@@ -23,42 +23,64 @@
 
     <insert id="insert">
         INSERT INTO metric_definition
-        (metric_name,category,description,data_sources,selected_fields,
-        calculation_expression,update_frequency,chart_type,
-        enable_alert,alert_threshold,tags)
+        (metric_name, category, description, data_sources, selected_fields,
+         calculation_expression, update_frequency, chart_type,
+         enable_alert, alert_threshold, tags, tenant_id)
         VALUES
-        (#{metricName},#{category},#{description},#{dataSources},#{selectedFields},
-        #{calculationExpression},#{updateFrequency},#{chartType},
-        #{enableAlert},#{alertThreshold},#{tags})
+            (#{metricName}, #{category}, #{description}, #{dataSources}, #{selectedFields},
+             #{calculationExpression}, #{updateFrequency}, #{chartType},
+             #{enableAlert}, #{alertThreshold}, #{tags}, #{tenantId})
     </insert>
 
     <select id="selectById" resultMap="BaseResultMap">
-        SELECT * FROM metric_definition WHERE id = #{id}
+        SELECT * FROM metric_definition
+        WHERE id = #{id}
+
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
-        SELECT * FROM metric_definition ORDER BY create_time DESC
+        SELECT * FROM metric_definition
+
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+        </where>
+
+        ORDER BY create_time DESC
     </select>
 
     <update id="update">
-        UPDATE metric_definition
-        SET
-        metric_name = #{metricName},
-        category = #{category},
-        description = #{description},
-        data_sources = #{dataSources},
-        selected_fields = #{selectedFields},
-        calculation_expression = #{calculationExpression},
-        update_frequency = #{updateFrequency},
-        chart_type = #{chartType},
-        enable_alert = #{enableAlert},
-        alert_threshold = #{alertThreshold},
-        tags = #{tags}
-        WHERE id = #{id}
-    </update>
+    UPDATE metric_definition
+    SET
+    metric_name = #{metricName},
+    category = #{category},
+    description = #{description},
+    data_sources = #{dataSources},
+    selected_fields = #{selectedFields},
+    calculation_expression = #{calculationExpression},
+    update_frequency = #{updateFrequency},
+    chart_type = #{chartType},
+    enable_alert = #{enableAlert},
+    alert_threshold = #{alertThreshold},
+    tags = #{tags}
+    WHERE id = #{id}
+
+    <if test="tenantId != null">
+        AND tenant_id = #{tenantId}
+    </if>
+</update>
 
     <delete id="delete">
-        DELETE FROM metric_definition WHERE id = #{id}
+        DELETE FROM metric_definition
+        WHERE id = #{id}
+
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </delete>
 
 <!--    获取数据表字段信息-->

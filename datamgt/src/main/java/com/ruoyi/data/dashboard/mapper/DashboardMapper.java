@@ -8,39 +8,63 @@ import java.util.List;
 
 public interface DashboardMapper {
 
+    //获取用户评价文本
     List<InteractionEvaluationPo> selectEvaluationTexts(
+            @Param("tenantId") Long tenantId,
             @Param("startTime") Date startTime,
             @Param("endTime") Date endTime,
             @Param("rating") Integer rating
     );
 
-    List<RobotPositionLatestPo> selectRobotLatestPositions();
+    //获取机器人当前位置
+    List<RobotPositionLatestPo> selectRobotLatestPositions(
+            @Param("tenantId") Long tenantId
+    );
 
-    Integer selectRobotTotalCount();//机器人总数
+    //获取机器人总数
+    Integer selectRobotTotalCount(
+            @Param("tenantId") Long tenantId
+    );
 
-    Integer selectOnlineRobotCount();//机器人在线总数
+    //获取机器人在线数
+    Integer selectOnlineRobotCount(
+            @Param("tenantId") Long tenantId
+    );
 
-    List<RobotStatusCountPo> selectStatusDistribution();//机器人状态列表
+    //获取机器人状态总数
+    List<RobotStatusCountPo> selectStatusDistribution(
+            @Param("tenantId") Long tenantId
+    );
 
-    //任务执行情况
+    //获取任务执行情况
     List<TaskExecutionPo> selectTaskExecutions(
+            @Param("tenantId") Long tenantId,
             @Param("startTime") Date startTime,
             @Param("endTime") Date endTime,
             @Param("limit") Integer limit,
             @Param("offset") Integer offset
     );
 
-    List<RobotGroupPo> selectAllRobotGroups();//机器人分组列表
+    //获取所有分组
+    List<RobotGroupPo> selectAllRobotGroups(
+            @Param("tenantId") Long tenantId
+    );
 
-    //异常趋势统计
+    //获取异常趋势数据
     List<AnomalyTrendPo> selectAnomalyTrend(
+            @Param("tenantId") Long tenantId,
             @Param("startTime") Date startTime,
             @Param("endTime") Date endTime,
             @Param("granularity") String granularity
     );
 
-    Integer selectTodayFeedbackCount();
+    //获取今日反馈总数
+    Integer selectTodayFeedbackCount(
+            @Param("tenantId") Long tenantId
+    );
 
-    Integer selectCompletedTaskCount();
-
+    //获取任务完成总数
+    Integer selectCompletedTaskCount(
+            @Param("tenantId") Long tenantId
+    );
 }

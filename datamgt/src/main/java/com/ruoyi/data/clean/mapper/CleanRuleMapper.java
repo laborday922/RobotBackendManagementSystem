@@ -15,15 +15,33 @@ public interface CleanRuleMapper {
     /**
      * 根据ID查询任务
      */
-    CleanRulePo selectById(@Param("id") Long id);
+    CleanRulePo selectById(@Param("id") Long id,
+                           @Param("tenantId") Long tenantId);
 
+    /**
+     * 系统表，不需要 tenant
+     */
     List<String> getTableColumns(@Param("tableName") String tableName);
 
-    List<CleanRulePo> selectScheduledRules();
+    /**
+     * 查询定时任务（按租户隔离）
+     */
+    List<CleanRulePo> selectScheduledRules(@Param("tenantId") Long tenantId);
 
-    int updateRuntime(@Param("id") Long id, @Param("runTime") LocalDateTime runTime);
+    /**
+     * 更新运行时间（必须防串租户）
+     */
+    int updateRuntime(@Param("id") Long id,
+                      @Param("runTime") LocalDateTime runTime,
+                      @Param("tenantId") Long tenantId);
 
+    /**
+     * 批量插入（tenant 在对象里）
+     */
     void batchInsertResults(List<CleanResultPo> list);
 
-    List<Map<String, Object>> selectRawInteractionData();
+    /**
+     * 查询原始数据（建议加 tenant）
+     */
+    List<Map<String, Object>> selectRawInteractionData(@Param("tenantId") Long tenantId);
 }

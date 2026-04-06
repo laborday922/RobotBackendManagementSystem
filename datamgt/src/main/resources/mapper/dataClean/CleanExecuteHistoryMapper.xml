@@ -13,23 +13,34 @@
         <result property="configJson" column="config_json"/>
         <result property="status" column="status"/>
         <result property="createTime" column="create_time"/>
+        <result property="tenantId" column="tenant_id"/>
     </resultMap>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO clean_rule_config
-            (execute_mode, apply_data_source, run_time, config_json, status,create_time,cron_expression)
+        (execute_mode, apply_data_source, run_time,
+         config_json, status, create_time, cron_expression, tenant_id)
         VALUES
             (#{executeMode}, #{applyDataSource}, #{runTime},
-             #{configJson}, #{status}, #{createTime}, #{cronExpression})
+             #{configJson}, #{status}, #{createTime}, #{cronExpression}, #{tenantId})
     </insert>
 
+<!--    查询数据清洗记录-->
     <select id="selectById" resultMap="BaseResultMap">
         SELECT * FROM clean_rule_config
         WHERE id = #{id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT * FROM clean_rule_config
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+        </where>
         ORDER BY create_time DESC
     </select>
 
@@ -37,11 +48,17 @@
         UPDATE clean_rule_config
         SET status = #{status}
         WHERE id = #{id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </update>
 
     <delete id="deleteById">
         DELETE FROM clean_rule_config
         WHERE id = #{id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
     </delete>
 
 </mapper>

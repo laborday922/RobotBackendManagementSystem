@@ -1,10 +1,9 @@
 package com.ruoyi.taskmgt.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.app.service.ITAppApiService;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.ParamBinding;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
@@ -28,7 +27,6 @@ public class StepReuseService {
     private final TaskLogReuseService taskLogService;
     private final ITAppApiService apiService;
     private final ExpressionEvaluator expressionEvaluator;
-    private final ObjectMapper objectMapper;
     public List<String> pauseStepsByTaskId(Long taskId) {
         List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
         List<String> redisKeys = new ArrayList<>();

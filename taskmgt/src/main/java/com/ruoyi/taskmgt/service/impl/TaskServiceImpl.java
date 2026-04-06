@@ -18,7 +18,7 @@ import com.ruoyi.robots.domain.RobotWarnings;
 import com.ruoyi.robots.service.IRobotGroupsService;
 import com.ruoyi.robots.service.IRobotWarningsService;
 import com.ruoyi.robots.service.IRobotsService;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.TemplateRepository;

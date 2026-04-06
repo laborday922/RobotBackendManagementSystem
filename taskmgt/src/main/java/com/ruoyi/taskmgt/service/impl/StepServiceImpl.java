@@ -1,5 +1,4 @@
 package com.ruoyi.taskmgt.service.impl;
-
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
@@ -8,7 +7,7 @@ import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
@@ -19,12 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,7 +34,7 @@ public class StepServiceImpl implements IStepService {
     private final TaskRepository taskRepository;
     private final MessageSourceAccessor messageSourceAccessor;
     private final StepRepository stepRepository;
-    private final TaskLogReuseService taskLogReuseService;
+    private final TaskLogReuseService taskLogService;
     private final RedisCache redisUtil;
     private final TaskReuseService taskReuseService;
 
@@ -154,7 +150,7 @@ public class StepServiceImpl implements IStepService {
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
-        taskLogReuseService.record(step.getTaskId(), stepId, TaskLogEventType.STEP_COMPLETE,
+        taskLogService.record(step.getTaskId(), stepId, TaskLogEventType.STEP_COMPLETE,
                 "步骤 " + step.getStepName() + " 完成" + "开始时间:" + step.getStartTime()+
                         "结束时间:" + step.getEndTime(), "system", null);
 
@@ -186,7 +182,7 @@ public class StepServiceImpl implements IStepService {
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
-        taskLogReuseService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
+        taskLogService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
                 "步骤 " + step.getStepName() + " 开始执行", "system", null);
     }
 }

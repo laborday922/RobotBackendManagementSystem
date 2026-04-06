@@ -86,13 +86,17 @@
             <version>8.0.33</version>
             <scope>test</scope>
         </dependency>
-
         <!-- 数据库连接池（测试用） -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid-spring-boot-starter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>3.12.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
 </project>

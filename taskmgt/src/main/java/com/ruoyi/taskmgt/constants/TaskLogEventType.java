@@ -1,4 +1,4 @@
-package com.ruoyi.taskmgt.common.constants;
+package com.ruoyi.taskmgt.constants;
 
 /**
  * 任务日志事件类型常量

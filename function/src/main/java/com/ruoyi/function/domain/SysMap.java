@@ -25,6 +25,9 @@ public class SysMap extends BaseEntity {
     @ApiModelProperty("状态(0禁用 1启用)")
     private String status;
 
+    // 非数据库字段，用于前端展示
+    private Integer pointCountTemp;
+
     public Long getMapId() { return mapId; }
     public void setMapId(Long mapId) { this.mapId = mapId; }
 
@@ -34,9 +37,14 @@ public class SysMap extends BaseEntity {
     public String getMapFile() { return mapFile; }
     public void setMapFile(String mapFile) { this.mapFile = mapFile; }
 
-    public Integer getPointCount() { return pointCount; }
+    public Integer getPointCount() {
+        return pointCount != null ? pointCount : pointCountTemp;
+    }
     public void setPointCount(Integer pointCount) { this.pointCount = pointCount; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Integer getPointCountTemp() { return pointCountTemp; }
+    public void setPointCountTemp(Integer pointCountTemp) { this.pointCountTemp = pointCountTemp; }
 }

@@ -62,3 +62,12 @@ export function getPointListByMap(mapId) {
     method: 'get'
   })
 }
+
+// 获取地图图片（通过接口返回blob）
+export function getMapImage(mapId) {
+  return request({
+    url: '/func/map/image/' + mapId,
+    method: 'get',
+    responseType: 'blob'
+  })
+}

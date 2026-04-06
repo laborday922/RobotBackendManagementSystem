@@ -181,6 +181,9 @@ public class TaskRepository {
             if (templateId != null) {
                 predicates.add(cb.equal(root.get("templateId"), templateId));
             }
+            if (tenantId!=null) {
+                predicates.add(cb.equal(root.get("tenantId"), tenantId));
+            }
             predicates.add(cb.notEqual(root.get("status"), Task.DELETED));
             query.orderBy(cb.asc(root.get("status")),
                     cb.asc(root.get("globalPendingOrder")),
@@ -234,6 +237,9 @@ public class TaskRepository {
             }
             if (templateId != null) {
                 predicates.add(cb.equal(root.get("templateId"), templateId));
+            }
+            if (tenantId != null) {
+                predicates.add(cb.equal(root.get("tenantId"), tenantId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

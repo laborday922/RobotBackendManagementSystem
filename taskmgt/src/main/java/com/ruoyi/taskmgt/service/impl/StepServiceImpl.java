@@ -47,7 +47,7 @@ public class StepServiceImpl implements IStepService {
     public List<TaskStepVo> createSteps(Long taskId, List<TaskStep> steps) {
         Long tenantId = TenantContext.get();
         if(isAdmin(tenantId))tenantId=null;
-        if(StringUtils.isEmpty(steps))return List.of();
+        if(StringUtils.isEmpty(steps))return new ArrayList<>();
         //Assert.notEmpty(steps, "steps cannot be empty");
         Task task = this.taskRepository.findById(taskId).orElseThrow(() -> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};

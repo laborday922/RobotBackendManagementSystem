@@ -355,7 +355,7 @@ public class TaskServiceImpl implements ITaskService {
                     })
                     .collect(Collectors.toList());
         }
-        else return List.of();
+        else return new ArrayList<>();
     }
 
     /**
@@ -784,7 +784,7 @@ public class TaskServiceImpl implements ITaskService {
             tasks.addAll(taskRepository.getTasks(null, null, null, robotId, robotGroupId, null, 2, null, tenantId));
         }
         else {
-            tasks = List.of();
+            tasks = new ArrayList<>();
         }
         return tasks.stream().map(this::buildAbnormalVo).collect(Collectors.toList());
     }

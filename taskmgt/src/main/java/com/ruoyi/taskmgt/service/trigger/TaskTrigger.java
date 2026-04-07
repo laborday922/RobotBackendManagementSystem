@@ -7,16 +7,19 @@ import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.event.RobotWarningEvent;
 import com.ruoyi.robots.service.IRobotWarningsService;
 import com.ruoyi.robots.service.IRobotsService;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.event.ExecuteStepEvent;
+import com.ruoyi.taskmgt.event.StepCompletedEvent;
 import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
-import com.ruoyi.taskmgt.service.StepExecutionEngine;
 import com.ruoyi.taskmgt.service.impl.TaskReuseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -47,10 +50,10 @@ public class TaskTrigger {
     private IRobotWarningsService robotWarningsService;
 
     @Autowired
-    private StepExecutionEngine stepExecutionEngine;
+    private TaskReuseService taskService;
 
     @Autowired
-    private TaskReuseService taskService;
+    private ApplicationEventPublisher eventPublisher;
 
     /**
      * 每分钟执行一次触发检查
@@ -263,24 +266,31 @@ public class TaskTrigger {
             TaskStep step = firstStep.get();
             log.info("任务 {} 开始执行第一个步骤: {}", task.getId(), step.getId());
 
-            // 使用步骤执行引擎执行
-            stepExecutionEngine.executeStep(step, task);
+            eventPublisher.publishEvent(new ExecuteStepEvent(this, step, task));
         } else {
             log.info("任务 {} 所有步骤已完成", task.getId());
             taskService.completeTask(task);
         }
     }
 
-    /**
-     * 触发指定任务的下一个步骤
-     */
-    public void triggerNextStep(Long taskId) {
+    @EventListener
+    public void onStepCompleted(StepCompletedEvent event) {
+        Long taskId = event.getTaskId();
         Task task = taskRepository.findById(taskId).orElse(null);
         if (task == null || !Objects.equals(task.getStatus(), Task.EXECUTING)) {
             log.warn("任务 {} 不存在或不在执行中，无法触发下一步", taskId);
             return;
         }
-
+        if (!event.isSuccess()) {
+            log.warn("步骤 {} 执行失败，任务 {} 停止", event.getStepId(), event.getTaskId());
+            task.setStatus(Task.PAUSED);
+            task.setRiskLevel(2);
+            List<String> redisKeys = taskRepository.update(task);
+            if (redisKeys != null && !redisKeys.isEmpty()) {
+                redisUtil.deleteObject(redisKeys);
+            }
+            return;
+        }
         List<TaskStep> steps = stepRepository.findStepsByTaskId(taskId);
 
         // 找到下一个未完成的步骤
@@ -292,14 +302,12 @@ public class TaskTrigger {
         if (nextStep.isPresent()) {
             TaskStep step = nextStep.get();
             log.info("任务 {} 触发下一步骤: {}", taskId, step.getId());
-            stepExecutionEngine.executeStep(step, task);
+            eventPublisher.publishEvent(new ExecuteStepEvent(this, step, task));
         } else {
-            // 没有更多步骤，任务完成
             log.info("任务 {} 所有步骤执行完毕", taskId);
             taskService.completeTask(task);
         }
     }
-
     /**
      * 处理机器人预警事件，更新相关任务的风险等级
      */

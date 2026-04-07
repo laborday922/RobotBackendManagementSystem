@@ -514,9 +514,9 @@ export default {
   computed: {
     availableRobotsForGroup() {
       if (!this.currentTemplate || !this.taskForm.isGroupTask) return []
-      const allowedGroupIds = this.currentTemplate.robotGroupIds || []
+      const groupId = this.taskForm.robotGroupId
       return this.robotOptions.filter(robot =>
-        allowedGroupIds.includes(robot.groupId) &&
+        robot.groupId === groupId &&
         robot.status === 1 &&
         robot.hardwareStatus === 0 &&
         robot.battery > 20
@@ -537,6 +537,21 @@ export default {
         const bHealthy = (b.status === 1 && b.hardwareStatus === 0) ? 1 : 0
         return bHealthy - aHealthy
       })
+    },
+    watch: {
+      'taskForm.robotGroupId': {
+        handler(newVal, oldVal) {
+          // 仅在组任务模式下且机器人组发生变化时，清空所有步骤的机器人分配
+          if (this.taskForm.isGroupTask && newVal !== oldVal && this.generatedSteps.length) {
+            this.generatedSteps.forEach(step => {
+              step.assignedRobotId = null
+            })
+            if (oldVal !== undefined) {
+              this.$message.info('机器人组已变更，已清空步骤机器人分配，请重新分配')
+            }
+          }
+        }
+      }
     },
     // 当前选中的模板
     currentTemplate() {
@@ -765,8 +780,7 @@ export default {
       this.generatedSteps = []
       this.dialog.visible = true
     },
-    // 打开编辑对话框
-    handleEdit(row) {
+    async handleEdit(row) {
       this.dialog.mode = 'edit'
       this.dialog.title = '修改任务'
       this.taskForm = {
@@ -789,7 +803,6 @@ export default {
       if (row.formContent) {
         try {
           const parsed = JSON.parse(row.formContent) || {}
-          // 确保文件字段是数组
           if (this.currentTemplate && this.currentTemplate.fields) {
             this.currentTemplate.fields.forEach(field => {
               if (['image','video','audio','file'].includes(field.type)) {
@@ -806,10 +819,14 @@ export default {
           this.taskForm.formData = {}
         }
       }
+
       // 生成步骤预览
       this.$nextTick(() => {
         this.updateStepPreview()
+        // 生成预览后立即校验步骤机器人的有效性（依赖于已选的机器人组）
+        this.validateStepRobotsBelongToGroup()
       })
+
       this.dialog.visible = true
     },
     // 取消对话框
@@ -874,10 +891,36 @@ export default {
     },
     onGroupTaskChange(val) {
       if (!val) {
-        this.generatedSteps.forEach(step => { step.assignedRobotId = null})
+        this.taskForm.robotGroupId = undefined
+        this.generatedSteps.forEach(step => { step.assignedRobotId = null })
+      } else {
+        this.generatedSteps.forEach(step => { step.assignedRobotId = null })
       }
     },
-    // 提交任务
+    validateStepRobotsBelongToGroup() {
+      if (!this.taskForm.isGroupTask || !this.taskForm.robotGroupId) {
+        // 非组任务或未选组时，不应该有步骤分配，清空所有
+        if (this.generatedSteps.some(s => s.assignedRobotId)) {
+          this.generatedSteps.forEach(step => { step.assignedRobotId = null })
+          if (this.taskForm.isGroupTask && !this.taskForm.robotGroupId) {
+            this.$message.warning('请先选择机器人组，再分配步骤机器人')
+          }
+        }
+        return
+      }
+
+      const validRobotIds = this.availableRobotsForGroup.map(r => r.id)
+      let hasInvalid = false
+      this.generatedSteps.forEach(step => {
+        if (step.assignedRobotId && !validRobotIds.includes(step.assignedRobotId)) {
+          step.assignedRobotId = null
+          hasInvalid = true
+        }
+      })
+      if (hasInvalid) {
+        this.$message.warning('检测到部分步骤分配的机器人不在当前机器人组内，已自动清空')
+      }
+    },
     async submitTask() {
       this.$refs.taskFormRef.validate(async (valid) => {
         if (!valid) return
@@ -886,6 +929,15 @@ export default {
         if (this.taskForm.isGroupTask) {
           if (!this.taskForm.robotGroupId) {
             this.$message.error('请选择机器人组')
+            return
+          }
+          // 【新增】组任务模式下，确保步骤分配的机器人都在该组内
+          const validRobotIds = this.availableRobotsForGroup.map(r => r.id)
+          const invalidSteps = this.generatedSteps.filter(
+            step => step.assignedRobotId && !validRobotIds.includes(step.assignedRobotId)
+          )
+          if (invalidSteps.length) {
+            this.$message.error('存在步骤分配的机器人不在所选机器人组内，请重新分配')
             return
           }
         } else {
@@ -897,6 +949,7 @@ export default {
 
         this.dialog.loading = true
         try {
+          // 构造DTO (保持不变)
           const dto = {
             name: this.taskForm.name,
             templateId: this.taskForm.templateId,
@@ -924,9 +977,8 @@ export default {
             this.$message.success('修改成功')
           }
 
-          // 如果是组任务且用户为步骤分配了机器人，则更新步骤机器人分配
+          // 组任务且用户分配了步骤机器人，则更新
           if (this.taskForm.isGroupTask && this.generatedSteps.some(s => s.assignedRobotId)) {
-            // 只需传递 orderNum 和 assignedRobotId，后端通过 orderNum 匹配步骤
             const updates = this.generatedSteps
               .filter(step => step.assignedRobotId)
               .map(step => ({

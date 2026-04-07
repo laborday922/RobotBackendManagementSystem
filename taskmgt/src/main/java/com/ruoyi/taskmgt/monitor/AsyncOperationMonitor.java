@@ -2,13 +2,16 @@ package com.ruoyi.taskmgt.monitor;
 
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
+import com.ruoyi.taskmgt.event.AsyncTaskCompletedEvent;
+import com.ruoyi.taskmgt.event.AsyncTaskTimeoutEvent;
+import com.ruoyi.taskmgt.event.RobotCallbackEvent;
 import com.ruoyi.taskmgt.operation.OperationHandler;
 import com.ruoyi.taskmgt.operation.OperationRegistry;
-import com.ruoyi.taskmgt.service.StepExecutionEngine;
 import com.ruoyi.taskmgt.operation.model.OperationResult;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -20,19 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AsyncOperationMonitor {
-
-    @Autowired
-    private OperationRegistry operationRegistry;
-    @Autowired
-    private StepRepository stepRepository;
-    @Autowired
-    private StepExecutionEngine stepExecutionEngine;
-
+    private final OperationRegistry operationRegistry;
+    private final StepRepository stepRepository;
     private ScheduledExecutorService executor;
     private final Map<String, ScheduledFuture<?>> pollingTasks = new ConcurrentHashMap<>();
     private final Map<String, PollingContext> pollingContexts = new ConcurrentHashMap<>();
-
+    private final ApplicationEventPublisher eventPublisher;
     // 记录已完成的异步任务（防止回调与轮询重复处理）
     private final Map<String, AtomicBoolean> completedTraceIds = new ConcurrentHashMap<>();
 
@@ -104,13 +102,13 @@ public class AsyncOperationMonitor {
             if (status.isCompleted()) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
                     log.info("异步任务已完成, traceId={}", traceId);
-                    stepExecutionEngine.onAsyncComplete(context.getStepId(), status);
+                    eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, context.getStepId(), status));
                     cancelPolling(traceId);
                 }
             } else if (isTimeout(context)) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
                     log.warn("异步任务超时, traceId={}, 已等待{}秒", traceId, getElapsedSeconds(context));
-                    stepExecutionEngine.onAsyncTimeout(context.getStepId());
+                    eventPublisher.publishEvent(new AsyncTaskTimeoutEvent(this, context.getStepId()));
                     cancelPolling(traceId);
                 }
             }
@@ -119,7 +117,7 @@ public class AsyncOperationMonitor {
             if (context.getPollCount() > 30) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
                     log.error("轮询次数过多，放弃监控, traceId={}", traceId);
-                    stepExecutionEngine.onAsyncTimeout(context.getStepId());
+                    eventPublisher.publishEvent(new AsyncTaskTimeoutEvent(this, context.getStepId()));
                     cancelPolling(traceId);
                 }
             }
@@ -128,28 +126,19 @@ public class AsyncOperationMonitor {
 
     public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
         log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
-
         AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
         if (!completedFlag.compareAndSet(false, true)) {
             log.warn("重复处理回调, traceId={}", traceId);
             return;
         }
-
         TaskStep step = stepRepository.findByTraceId(traceId);
         if (step == null) {
             log.error("回调traceId不存在: {}", traceId);
             return;
         }
-
+        eventPublisher.publishEvent(new RobotCallbackEvent(this, traceId, callbackData));
         cancelPolling(traceId);
 
-        if (callbackData.isSuccess()) {
-            stepExecutionEngine.completeStep(step.getId(), callbackData.getData());
-            stepExecutionEngine.onAsyncComplete(step.getId(),
-                    OperationResult.builder().success(true).data(callbackData.getData()).build());
-        } else {
-            stepExecutionEngine.failStep(step.getId(), callbackData.getErrorMsg());
-        }
     }
 
     public void cancelPolling(String traceId) {
@@ -239,12 +228,6 @@ public class AsyncOperationMonitor {
         }
         return result.isSuccess() ? 100 : 0;
     }
-
-    private void onAsyncComplete(Long stepId, OperationResult result) {
-        stepExecutionEngine.onAsyncComplete(stepId, result);
-    }
-
-    // ========== 内部类 ==========
 
     @Data
     public static class PollingContext {

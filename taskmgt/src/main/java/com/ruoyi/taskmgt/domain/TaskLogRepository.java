@@ -82,6 +82,9 @@ public class TaskLogRepository {
             if (endTime != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createTime"), endTime));
             }
+            if (tenantId != null ) {
+                predicates.add(cb.equal(root.get("tenantId"), tenantId));
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
         List<TaskLogPo> taskLogPos = taskLogPoMapper.findAll(spec);

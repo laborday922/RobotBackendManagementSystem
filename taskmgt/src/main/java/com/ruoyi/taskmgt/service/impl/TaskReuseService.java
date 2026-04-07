@@ -2,7 +2,7 @@ package com.ruoyi.taskmgt.service.impl;
 
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;

@@ -27,7 +27,7 @@ public class RobotPositionHistory extends BaseEntity
 
     /** 机器人ID */
     @Excel(name = "机器人ID")
-    private String robotId;
+    private Long robotId;
 
     /** 记录时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")

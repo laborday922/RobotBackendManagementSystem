@@ -39,7 +39,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 查询交互历史记录列表
      */
-    @PreAuthorize("@ss.hasPermi('app:intHistory:list')")
+//    @PreAuthorize("@ss.hasPermi('app:intHistory:list')")
     @GetMapping("/list")
     @ApiOperation("查询交互历史记录列表")
     public TableDataInfo list(TInteractionHistory tInteractionHistory)
@@ -52,7 +52,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 导出交互历史记录列表
      */
-    @PreAuthorize("@ss.hasPermi('app:intHistory:export')")
+//    @PreAuthorize("@ss.hasPermi('app:intHistory:export')")
     @Log(title = "交互历史记录", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TInteractionHistory tInteractionHistory)
@@ -65,7 +65,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 获取交互历史记录详细信息
      */
-    @PreAuthorize("@ss.hasPermi('app:intHistory:query')")
+//    @PreAuthorize("@ss.hasPermi('app:intHistory:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -76,7 +76,7 @@ public class TInteractionHistoryController extends BaseController
      * 新增交互历史记录
      */
     @ApiOperation("新增交互历史记录列表")
-    @PreAuthorize("@ss.hasPermi('app:intHistory:add')")
+//    @PreAuthorize("@ss.hasPermi('app:intHistory:add')")
     @Log(title = "交互历史记录", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TInteractionHistory tInteractionHistory)

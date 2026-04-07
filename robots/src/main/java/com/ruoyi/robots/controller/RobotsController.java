@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.controller.dto.RobotsDto;
 import com.ruoyi.robots.domain.Robot;
+import com.ruoyi.robots.domain.RobotPositionHistory;
+import com.ruoyi.robots.service.IRobotPositionHistoryService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,9 @@ public class RobotsController extends BaseController
 {
     @Autowired
     private IRobotsService robotsService;
+
+    @Autowired
+    private IRobotPositionHistoryService robotPositionHistoryService;
 
     /**
      * 查询机器人基础信息列表
@@ -123,6 +128,7 @@ public class RobotsController extends BaseController
     @ApiOperation("机器人状态上传")
     public AjaxResult upload(@Validated @RequestBody RobotStatusDto robotStatusDto)
     {
+        robotPositionHistoryService.loadPosToRedis(robotStatusDto);
         return toAjax(robotsService.updateRobotStatus(robotStatusDto));
     }
 }

@@ -125,6 +125,7 @@ public class SecurityConfig
                             "/dev-api/v3/api-docs/**",          // OpenAPI 3 规范文档
                             "/dev-api/doc.html"                  // Knife4j 增强文档（如果有）
                     ).permitAll()
+                        .antMatchers("/robots/robots/upload").permitAll()
                         .antMatchers("/taskmgt/**").permitAll()//临时放行taskmgt的接口用于测试
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();

@@ -40,7 +40,7 @@ public class RobotPositionHistoryController extends BaseController
      * 查询机器人位置历史信息列表
      */
     @ApiOperation("查询机器人位置历史信息列表")
-    @PreAuthorize("@ss.hasPermi('robots:history:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:history:list')")
     @GetMapping("/list")
     public TableDataInfo list(RobotPositionHistory robotPositionHistory)
     {
@@ -52,7 +52,7 @@ public class RobotPositionHistoryController extends BaseController
     /**
      * 导出机器人位置历史信息列表
      */
-    @PreAuthorize("@ss.hasPermi('robots:history:export')")
+//    @PreAuthorize("@ss.hasPermi('robots:history:export')")
     @Log(title = "机器人位置历史信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, RobotPositionHistory robotPositionHistory)
@@ -67,7 +67,7 @@ public class RobotPositionHistoryController extends BaseController
      *
      */
     @ApiOperation("获取机器人位置历史信息详细信息")
-    @PreAuthorize("@ss.hasPermi('robots:history:query')")
+//    @PreAuthorize("@ss.hasPermi('robots:history:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -79,7 +79,7 @@ public class RobotPositionHistoryController extends BaseController
      *
      */
     @ApiOperation("新增机器人位置历史信息")
-    @PreAuthorize("@ss.hasPermi('robots:history:add')")
+//    @PreAuthorize("@ss.hasPermi('robots:history:add')")
     @Log(title = "机器人位置历史信息", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody RobotPositionHistory robotPositionHistory)

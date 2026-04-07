@@ -41,7 +41,7 @@ public class RobotGroupsController extends BaseController
      * 查询机器人分组列表
      */
     @ApiOperation("查询机器人分组列表")
-    @PreAuthorize("@ss.hasPermi('robots:groups:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:groups:list')")
     @GetMapping("/list")
     public TableDataInfo list(RobotGroups robotGroups)
     {
@@ -53,7 +53,7 @@ public class RobotGroupsController extends BaseController
     /**
      * 导出机器人分组列表
      */
-    @PreAuthorize("@ss.hasPermi('robots:groups:export')")
+//    @PreAuthorize("@ss.hasPermi('robots:groups:export')")
     @Log(title = "机器人分组", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, RobotGroups robotGroups)
@@ -66,7 +66,7 @@ public class RobotGroupsController extends BaseController
     /**
      * 获取机器人分组详细信息
      */
-    @PreAuthorize("@ss.hasPermi('robots:groups:query')")
+//    @PreAuthorize("@ss.hasPermi('robots:groups:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -78,7 +78,7 @@ public class RobotGroupsController extends BaseController
      * 前端只接受两个参数，分组名称(name)和分组描述(description)
      */
     @ApiOperation("新增机器人分组")
-    @PreAuthorize("@ss.hasPermi('robots:groups:add')")
+//    @PreAuthorize("@ss.hasPermi('robots:groups:add')")
     @Log(title = "机器人分组", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody RobotGroups robotGroups)
@@ -104,7 +104,7 @@ public class RobotGroupsController extends BaseController
      * 删除机器人分组
      */
     @ApiOperation("删除机器人分组")
-    @PreAuthorize("@ss.hasPermi('robots:groups:remove')")
+//    @PreAuthorize("@ss.hasPermi('robots:groups:remove')")
     @Log(title = "机器人分组", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

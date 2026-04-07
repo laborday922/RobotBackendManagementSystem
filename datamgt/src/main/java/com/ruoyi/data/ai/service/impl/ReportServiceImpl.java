@@ -71,7 +71,10 @@ public class ReportServiceImpl implements ReportService {
 
         // 获取当前租户 ID（写入操作必须强制获取，不能为 null）
         Long tenantId = TenantContext.get();
-        if (tenantId == null) {
+        Long userId = SecurityUtils.getUserId();
+        boolean isAdmin = SecurityUtils.isAdmin(userId);
+
+        if (tenantId == null && !isAdmin) {
             throw new RuntimeException("无法获取租户信息，请重新登录");
         }
 

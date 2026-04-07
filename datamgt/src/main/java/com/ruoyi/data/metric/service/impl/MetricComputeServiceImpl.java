@@ -12,6 +12,8 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
+
 @Service
 public class MetricComputeServiceImpl implements MetricComputeService {
 
@@ -30,6 +32,10 @@ public class MetricComputeServiceImpl implements MetricComputeService {
         Long tenantId = TenantContext.get();
 
         // ✅ 1. 查询指标（带租户）
+        // 如果是管理员，清空租户限制
+        if (isAdmin()) {
+            tenantId = null;
+        }
         MetricDefinitionPo metric = definitionMapper.selectById(metricId, tenantId);
 
         if (metric == null) {
@@ -63,6 +69,10 @@ public class MetricComputeServiceImpl implements MetricComputeService {
         Long tenantId = TenantContext.get();
 
         // ✅ 1. 查询指标（带租户）
+        // 如果是管理员，清空租户限制
+        if (isAdmin()) {
+            tenantId = null;
+        }
         MetricDefinitionPo metric = definitionMapper.selectById(metricId, tenantId);
 
         if (metric == null) {

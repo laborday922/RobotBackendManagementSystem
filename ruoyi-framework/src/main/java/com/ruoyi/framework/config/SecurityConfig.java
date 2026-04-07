@@ -114,6 +114,10 @@ public class SecurityConfig
                 requests.antMatchers("/login", "/register", "/captchaImage").permitAll()
                     // 静态资源，可匿名访问
                     .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
+                        // 添加地图上传文件的静态资源访问权限
+                        .antMatchers("/uploads/**").permitAll()
+                        // 添加地图图片接口匿名访问
+                        .antMatchers("/func/map/image/**").permitAll()
                     .antMatchers("/swagger-ui.html",
                             "/swagger-resources/**",
                             "/webjars/**",

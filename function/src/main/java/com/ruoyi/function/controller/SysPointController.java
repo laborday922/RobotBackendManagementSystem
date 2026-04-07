@@ -3,13 +3,12 @@ package com.ruoyi.function.controller;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
-import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.controller.dto.request.PointCreateRequest;
 import com.ruoyi.function.controller.dto.request.PointUpdateRequest;
 import com.ruoyi.function.controller.dto.response.PointResponse;
-import com.ruoyi.function.enums.PointTypeEnum;
+import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.enums.MapStatusEnum;
+import com.ruoyi.function.enums.PointTypeEnum;
 import com.ruoyi.function.exception.FunctionException;
 import com.ruoyi.function.service.ISysPointService;
 import io.swagger.annotations.Api;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Api(tags = "点位管理")
 @RestController

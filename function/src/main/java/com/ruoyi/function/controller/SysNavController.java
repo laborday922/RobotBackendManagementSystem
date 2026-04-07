@@ -2,9 +2,9 @@ package com.ruoyi.function.controller;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.function.domain.SysNavConfig;
 import com.ruoyi.function.controller.dto.request.NavigationRequest;
 import com.ruoyi.function.controller.dto.response.NavigationResponse;
+import com.ruoyi.function.domain.SysNavConfig;
 import com.ruoyi.function.enums.NavVoiceTypeEnum;
 import com.ruoyi.function.service.ISysNavConfigService;
 import io.swagger.annotations.Api;

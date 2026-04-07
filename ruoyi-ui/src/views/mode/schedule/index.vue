@@ -214,7 +214,7 @@
                   :type="getRobotTagType(robot.status)"
                   style="margin-right: 5px; margin-bottom: 5px;"
                 >
-                  {{ robot.robotName || `机器人${robot.robotId}` }}
+                  {{ robot.name || `机器人${robot.robotId}` }}
                 </el-tag>
               </div>
               <div v-else-if="scope.row.robotIds && scope.row.robotIds.length > 0">

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ruoyi.common.annotation.Excel;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -26,4 +27,21 @@ public class RobotStatusDto {
     /** 备注 */
     private String note;
 
+
+    private String locationArea;
+
+    /** 具体位置（如：药房存储区、1号楼3层走廊） */
+    private String specificLocation;
+
+    /** 坐标X */
+    private BigDecimal coordinateX;
+
+    /** 坐标Y */
+    private BigDecimal coordinateY;
+
+    /** 移动速度（单位：m/s） */
+    private BigDecimal moveSpeed;
+
+    /** 状态描述（含主状态和子状态，如：待命 准备执行配送任务） */
+    private String statusDesc;
 }

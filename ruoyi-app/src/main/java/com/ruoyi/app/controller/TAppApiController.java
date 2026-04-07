@@ -37,7 +37,7 @@ public class TAppApiController extends BaseController
     /**
      * 查询支持的API列表
      */
-    @PreAuthorize("@ss.hasPermi('app:api:list')")
+//    @PreAuthorize("@ss.hasPermi('app:api:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppApi tAppApi)
     {
@@ -49,7 +49,7 @@ public class TAppApiController extends BaseController
     /**
      * 导出支持的API列表
      */
-    @PreAuthorize("@ss.hasPermi('app:api:export')")
+//    @PreAuthorize("@ss.hasPermi('app:api:export')")
     @Log(title = "支持的API", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TAppApi tAppApi)
@@ -62,7 +62,7 @@ public class TAppApiController extends BaseController
     /**
      * 获取支持的API详细信息
      */
-    @PreAuthorize("@ss.hasPermi('app:api:query')")
+//    @PreAuthorize("@ss.hasPermi('app:api:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -83,7 +83,7 @@ public class TAppApiController extends BaseController
     /**
      * 修改支持的API
      */
-    @PreAuthorize("@ss.hasPermi('app:api:edit')")
+//    @PreAuthorize("@ss.hasPermi('app:api:edit')")
     @Log(title = "支持的API", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TAppApi tAppApi)
@@ -94,7 +94,7 @@ public class TAppApiController extends BaseController
     /**
      * 删除支持的API
      */
-    @PreAuthorize("@ss.hasPermi('app:api:remove')")
+//    @PreAuthorize("@ss.hasPermi('app:api:remove')")
     @Log(title = "支持的API", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

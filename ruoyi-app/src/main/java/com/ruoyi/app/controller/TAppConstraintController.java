@@ -37,7 +37,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 查询应用级约束规则列表
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:list')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppConstraint tAppConstraint)
     {
@@ -49,7 +49,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 导出应用级约束规则列表
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:export')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:export')")
     @Log(title = "应用级约束规则", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TAppConstraint tAppConstraint)
@@ -62,7 +62,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 获取应用级约束规则详细信息
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:query')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -72,7 +72,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 新增应用级约束规则
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:add')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:add')")
     @Log(title = "应用级约束规则", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TAppConstraint tAppConstraint)
@@ -83,7 +83,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 修改应用级约束规则
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:edit')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:edit')")
     @Log(title = "应用级约束规则", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TAppConstraint tAppConstraint)
@@ -94,7 +94,7 @@ public class TAppConstraintController extends BaseController
     /**
      * 删除应用级约束规则
      */
-    @PreAuthorize("@ss.hasPermi('app:constraint:remove')")
+//    @PreAuthorize("@ss.hasPermi('app:constraint:remove')")
     @Log(title = "应用级约束规则", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

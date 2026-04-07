@@ -7,6 +7,8 @@ import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.robots.domain.Robot;
+import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
@@ -37,6 +39,7 @@ public class StepServiceImpl implements IStepService {
     private final TaskLogReuseService taskLogService;
     private final RedisCache redisUtil;
     private final TaskReuseService taskReuseService;
+    private final IRobotsService robotsService;
 
     /**
      * 创建步骤
@@ -90,6 +93,18 @@ public class StepServiceImpl implements IStepService {
         List<String> redisKeys = new ArrayList<>();
         for (TaskStep step : steps) {
             step.setTenantId(tenantId);
+            if(step.getAssignedRobotId()!=null){
+                if (Integer.valueOf(1).equals(task.getIsGroupTask()) && task.getRobotGroupId() != null){
+                    Robot robot1 = new Robot();
+                    robot1.setGroupId(task.getRobotGroupId());
+                    List<Robot> robots = this.robotsService.selectRobotsList(robot1);
+                    Robot robot2 = this.robotsService.selectRobotsById(step.getAssignedRobotId());
+                    if(!robots.contains(robot2))throw new TaskmgtException(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT,new String[]{"Step.name",step.getId().toString(),"步骤分配的执行机器人不属于任务机器人组"},this.messageSourceAccessor.getMessage(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT.getMessage()));
+                }
+                else if (Integer.valueOf(0).equals(task.getIsGroupTask()) && task.getRobotId() != null){
+                    if(!task.getRobotId().equals(step.getAssignedRobotId()))throw new TaskmgtException(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT,new String[]{"Step.name",step.getId().toString(),"步骤分配的执行机器人与任务机器人不同"},this.messageSourceAccessor.getMessage(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT.getMessage()));
+                }
+            }
             if(step.getAssignedRobotId()!=null&&this.stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(step.getAssignedRobotId(),null,List.of(TaskStep.EXECUTING,TaskStep.WAITING,TaskStep.WAITING_CALLBACK))!=0)
             {
                 task.setStatus(Task.PENDING);

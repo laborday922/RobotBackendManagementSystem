@@ -82,7 +82,7 @@ public class TaskLogServiceImpl implements ITaskLogService {
         });
         vo.setTaskName(task.getName());
         if(StringUtils.isNotNull(taskLog.getStepId())){
-            TaskStep taskStep = this.stepRepository.findById(taskLog.getTaskId()).orElseThrow(()-> {
+            TaskStep taskStep = this.stepRepository.findById(taskLog.getStepId()).orElseThrow(()-> {
                 String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()), id.toString()};
                 return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
             });

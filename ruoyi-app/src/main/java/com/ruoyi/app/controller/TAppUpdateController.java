@@ -39,7 +39,7 @@ public class TAppUpdateController extends BaseController
     /**
      * 查询应用更新记录列表
      */
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:list')")
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:list')")
     @GetMapping("/list")
     @ApiOperation("查询应用更新记录列表")
     public TableDataInfo list(TAppUpdate tAppUpdate)
@@ -52,7 +52,7 @@ public class TAppUpdateController extends BaseController
     /**
      * 导出应用更新记录列表
      */
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:export')")
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:export')")
     @Log(title = "应用更新记录", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TAppUpdate tAppUpdate)
@@ -66,7 +66,7 @@ public class TAppUpdateController extends BaseController
      * 获取应用更新记录详细信息
      */
     @ApiOperation("获取应用更新记录详细信息")
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:query')")
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -76,7 +76,7 @@ public class TAppUpdateController extends BaseController
     /**
      * 新增应用更新记录
      */
-    @PreAuthorize("@ss.hasPermi('app:appUpdate:add')")
+//    @PreAuthorize("@ss.hasPermi('app:appUpdate:add')")
     @ApiOperation("新增应用更新记录")
     @Log(title = "应用更新记录", businessType = BusinessType.INSERT)
     @PostMapping

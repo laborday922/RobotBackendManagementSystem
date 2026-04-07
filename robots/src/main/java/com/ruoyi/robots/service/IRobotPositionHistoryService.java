@@ -1,6 +1,8 @@
 package com.ruoyi.robots.service;
 
 import java.util.List;
+
+import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.domain.RobotPositionHistory;
 
 /**
@@ -58,4 +60,6 @@ public interface IRobotPositionHistoryService
      * @return 结果
      */
     public int deleteRobotPositionHistoryById(Long id);
+
+    void loadPosToRedis(RobotStatusDto robotStatusDto);
 }

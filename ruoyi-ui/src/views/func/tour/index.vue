@@ -5,9 +5,9 @@
         <i class="fas fa-chalkboard-teacher"></i> 智能讲解
       </div>
       <div class="robot-selector">
-        <span class="badge"><i class="fas fa-robot"></i> 当前配置机器人：</span>
-        <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:180px;" @change="loadAllData">
-          <el-option v-for="r in robotList" :key="r.robotId" :label="r.robotName" :value="r.robotId" />
+        <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
+        <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="loadAllData">
+          <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
         </el-select>
       </div>
     </div>
@@ -438,9 +438,11 @@ import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTour
 import { getRouteList, saveRoute, deleteRoute } from "@/api/func/tour";
 import { listRobot } from "@/api/mode/robot";
 import { getMapList, getPointListByMap } from "@/api/func/map";
+import Pagination from "@/components/Pagination";
 
 export default {
   name: "Tour",
+  components: { Pagination },
   data() {
     return {
       // 机器人选择
@@ -515,22 +517,17 @@ export default {
         selectedPoints: [],
         associationList: [],
         warningMessage: ''
-      },
-
-      // 文件上传引用
-      routeImportInput: null,
-      contentImportInput: null
+      }
     };
   },
-  // 关键修改：使用 async/await 确保数据加载顺序
   async created() {
-    // 1. 先获取机器人列表
-    await this.getRobotList();
+    // 1. 先加载导览组机器人
+    await this.loadRobotsByGroup();
 
     // 2. 再获取地图列表
     await this.loadMaps();
 
-    // 3. 最后获取路线列表（此时 mapList 已存在）
+    // 3. 获取路线列表
     await this.loadRoutes();
 
     // 4. 如果已选择机器人，加载其他数据
@@ -540,23 +537,26 @@ export default {
     }
   },
   methods: {
-    // 修改：返回 Promise，支持 await
-    getRobotList() {
-      return listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        // 只保留 robot_id 为 8 和 9 的机器人
-        this.robotList = response.rows.filter(robot =>
-          robot.robotId === 8 || robot.robotId === 9
-        );
+    // 加载导览组机器人（groupId=4）
+    loadRobotsByGroup() {
+      return listRobot({ groupId: 4, pageNum: 1, pageSize: 100 }).then(response => {
+        this.robotList = response.rows || [];
 
         if (this.robotList.length > 0) {
-          this.selectedRobotId = this.robotList[0].robotId;
+          this.selectedRobotId = this.robotList[0].id;
         } else {
-          this.$message.warning('暂无可用机器人（需要 ID 为 8 或 9 的机器人）');
+          this.$message.warning('导览组下没有可用机器人');
         }
       }).catch(error => {
         console.error('获取机器人列表失败:', error);
         this.$message.error('获取机器人列表失败');
       });
+    },
+
+    // 加载所有数据（切换机器人时）
+    loadAllData() {
+      this.loadGeneralConfig();
+      this.loadContentList();
     },
 
     // 加载通用配置
@@ -571,13 +571,7 @@ export default {
       });
     },
 
-    // 加载所有数据（切换机器人时）
-    loadAllData() {
-      this.loadGeneralConfig();
-      this.loadContentList();
-    },
-
-    // 修改：返回 Promise，支持 await
+    // 加载地图列表
     loadMaps() {
       return getMapList().then(response => {
         this.mapList = response.rows || response.data || [];
@@ -587,7 +581,7 @@ export default {
       });
     },
 
-    // 修改：返回 Promise，支持 await
+    // 加载路线列表
     loadRoutes() {
       return getRouteList().then(response => {
         this.routeList = response.rows || response.data || [];
@@ -618,13 +612,11 @@ export default {
 
     // 地图选择变化时的处理
     onMapChange(mapId) {
-      // 清空已选择的点位
       this.routeConfigForm.selectedPoints = [];
       this.routeConfigForm.associationList = [];
       this.routeConfigForm.selectAll = false;
       this.routeConfigForm.warningMessage = '';
 
-      // 加载新地图的点位
       if (mapId) {
         this.loadMapPoints(mapId);
       } else {
@@ -681,7 +673,7 @@ export default {
       }
     },
 
-    // 获取地图名称（此时 mapList 已确保加载完成）
+    // 获取地图名称
     getMapName(mapId) {
       const map = this.mapList.find(m => m.mapId === mapId);
       return map ? map.mapName : '未知';
@@ -1294,7 +1286,6 @@ export default {
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .card {
   background: white;
   border-radius: 10px;

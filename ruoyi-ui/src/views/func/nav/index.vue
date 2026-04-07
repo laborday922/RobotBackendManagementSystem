@@ -1,35 +1,40 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-map-signs"></i> 导航指引
-      </div>
-      <div class="header-actions">
-        <el-button type="success" size="small" @click="showAddPointDialog = true">
-          <i class="fas fa-plus"></i> 添加点位
+  <div class="app-container">
+    <el-card class="box-card">
+      <div slot="header" class="clearfix">
+        <span><i class="el-icon-location"></i> 导航指引</span>
+        <el-button style="float: right; margin-left: 10px" type="success" size="small" @click="showAddPointDialog = true">
+          <i class="el-icon-plus"></i> 添加点位
         </el-button>
-        <input type="file" ref="fileInput" style="display: none;" accept="image/*" @change="handleMapUpload">
-        <el-button type="primary" size="small" @click="triggerFileUpload">
-          <i class="fas fa-upload"></i> 上传地图
+        <el-button style="float: right;" type="primary" size="small" @click="triggerFileUpload">
+          <i class="el-icon-upload"></i> 上传新地图
+        </el-button>
+        <el-button style="float: right; margin-right: 10px;" type="danger" size="small" plain :disabled="!navConfig.mapId" @click="deleteCurrentMap">
+          <i class="el-icon-delete"></i> 删除地图
         </el-button>
       </div>
-    </div>
 
-    <div class="card-body">
+      <!-- 隐藏的文件上传输入框 -->
+      <input
+        type="file"
+        ref="fileInput"
+        style="display: none;"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+        @change="handleMapUpload"
+      >
+
       <el-row :gutter="20">
         <!-- 左侧：地图和点位 -->
         <el-col :span="16">
-          <div class="sub-card">
-            <div class="form-row">
-              <div class="form-group" style="flex: 1;">
-                <label>当前地图</label>
-                <el-select v-model="navConfig.mapId" placeholder="请选择地图" @change="changeMap">
-                  <el-option v-for="map in mapList" :key="map.mapId" :label="map.mapName" :value="map.mapId">
-                    <span>{{ map.mapName }}</span>
-                    <span style="float: right; color: #8492a6;">{{ map.pointCount }}个点位</span>
-                  </el-option>
-                </el-select>
-              </div>
+          <el-card class="sub-card" shadow="never">
+            <div class="form-group">
+              <label>当前地图</label>
+              <el-select v-model="navConfig.mapId" placeholder="请选择地图" @change="changeMap" style="width: 100%">
+                <el-option v-for="map in mapList" :key="map.mapId" :label="map.mapName" :value="map.mapId">
+                  <span>{{ map.mapName }}</span>
+                  <span style="float: right; color: #8492a6;">{{ map.pointCount || 0 }}个点位</span>
+                </el-option>
+              </el-select>
             </div>
 
             <!-- 地图预览 -->
@@ -40,14 +45,15 @@
                 class="map-image"
                 alt="地图预览"
                 @error="handleImageError"
+                @load="handleImageLoad"
               />
               <div v-else class="map-placeholder">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span>点击上传实际地图</span>
-                <span class="upload-hint">支持 jpg、png 格式，不超过10MB</span>
+                <i class="el-icon-upload"></i>
+                <span>点击上传地图</span>
+                <span class="upload-hint">支持 jpg、png、gif、webp 格式，不超过20MB</span>
               </div>
               <div v-if="uploadLoading" class="upload-loading">
-                <i class="fas fa-spinner fa-spin"></i>
+                <i class="el-icon-loading"></i>
                 <span>上传中...</span>
               </div>
             </div>
@@ -56,14 +62,15 @@
             <div class="point-section">
               <div class="point-header">
                 <div class="point-header-left">
-                  <i class="fas fa-map-pin"></i>
+                  <i class="el-icon-location-information"></i>
                   <strong>点位列表</strong>
                   <span class="point-count">(共 {{ pointList.length }} 个点位)</span>
                 </div>
                 <el-button type="text" size="small" @click="showAddPointDialog = true" class="add-point-btn">
-                  <i class="fas fa-plus-circle"></i> 添加点位
+                  <i class="el-icon-plus"></i> 添加点位
                 </el-button>
               </div>
+
               <div class="point-list-container">
                 <div
                   v-for="point in pointList"
@@ -80,32 +87,33 @@
                     <div class="point-code" v-if="point.pointCode">{{ point.pointCode }}</div>
                   </div>
                   <div class="point-status" v-if="point.status === '0'">
-                    <el-tag type="info" size="mini" effect="plain">禁用</el-tag>
+                    <el-tag type="info" size="mini">禁用</el-tag>
                   </div>
                   <div class="point-actions">
                     <el-button type="text" size="small" @click.stop="editPoint(point)">
-                      <i class="fas fa-edit"></i>
+                      <i class="el-icon-edit"></i>
                     </el-button>
                     <el-button type="text" size="small" @click.stop="deletePoint(point)">
-                      <i class="fas fa-trash-alt"></i>
+                      <i class="el-icon-delete"></i>
                     </el-button>
                   </div>
                   <div class="point-nav-icon" v-if="selectedPoint === point.pointName">
-                    <i class="fas fa-arrow-right"></i>
+                    <i class="el-icon-right"></i>
                   </div>
                 </div>
+
                 <div v-if="pointList.length === 0" class="empty-points">
-                  <i class="fas fa-map-marked-alt"></i>
+                  <i class="el-icon-location-outline"></i>
                   <span>暂无点位，请点击上方"添加点位"按钮添加</span>
                 </div>
               </div>
             </div>
-          </div>
+          </el-card>
         </el-col>
 
         <!-- 右侧：导航设置 -->
         <el-col :span="8">
-          <div class="sub-card">
+          <el-card class="sub-card" shadow="never">
             <div class="form-group">
               <label>播报方式</label>
               <el-radio-group v-model="navConfig.voiceType">
@@ -134,7 +142,7 @@
 
             <!-- 当前导航任务 -->
             <div class="current-task">
-              <i class="fas fa-flag-checkered" style="color: #409eff;"></i>
+              <i class="el-icon-flag"></i>
               <span><strong>当前导航任务：</strong> {{ currentTask || '无' }}</span>
               <el-button
                 size="small"
@@ -144,17 +152,17 @@
                 @click="emergencyStop"
                 style="margin-left: auto;"
               >
-                <i class="fas fa-stop-circle"></i> 急停
+                <i class="el-icon-circle-close"></i> 急停
               </el-button>
             </div>
 
             <el-button type="primary" style="width: 100%; margin-top: 20px;" @click="saveNavConfig">
-              <i class="fas fa-save"></i> 保存导航设置
+              <i class="el-icon-check"></i> 保存导航设置
             </el-button>
-          </div>
+          </el-card>
         </el-col>
       </el-row>
-    </div>
+    </el-card>
 
     <!-- 添加/编辑点位对话框 -->
     <el-dialog
@@ -172,18 +180,10 @@
         </el-form-item>
         <el-form-item label="点位类型" prop="pointType">
           <el-select v-model="pointForm.pointType" placeholder="请选择点位类型" style="width: 100%">
-            <el-option label="普通点位" value="normal">
-              <i class="fas fa-location-dot"></i> 普通点位
-            </el-option>
-            <el-option label="VIP点位" value="vip">
-              <i class="fas fa-crown"></i> VIP点位
-            </el-option>
-            <el-option label="服务点位" value="service">
-              <i class="fas fa-concierge-bell"></i> 服务点位
-            </el-option>
-            <el-option label="出口点位" value="exit">
-              <i class="fas fa-door-open"></i> 出口点位
-            </el-option>
+            <el-option label="普通点位" value="normal" />
+            <el-option label="VIP点位" value="vip" />
+            <el-option label="服务点位" value="service" />
+            <el-option label="出口点位" value="exit" />
           </el-select>
         </el-form-item>
         <el-form-item label="X坐标" prop="coordinateX">
@@ -210,16 +210,29 @@
         <el-button type="primary" @click="submitPointForm" :loading="pointSubmitting">确定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 地图名称编辑对话框 -->
+    <el-dialog title="编辑地图名称" :visible.sync="showMapNameDialog" width="400px">
+      <el-form :model="mapForm" label-width="80px">
+        <el-form-item label="地图名称">
+          <el-input v-model="mapForm.mapName" placeholder="请输入地图名称" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="showMapNameDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveMapName">确定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { getNavConfig, saveNavConfig, startNavigation, emergencyStop as stopNavigation } from "@/api/func/nav";
-import { getMapList, getPointListByMap, uploadMap, getMap } from "@/api/func/map";
+import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/func/map";
 import { addPoint, updatePoint, deletePoint } from "@/api/func/point";
 
 export default {
-  name: "Nav",
+  name: "Navigation",
   data() {
     return {
       navConfig: {
@@ -236,6 +249,12 @@ export default {
       mapImageUrl: '',
       uploadLoading: false,
       showAddPointDialog: false,
+      showMapNameDialog: false,
+      isSavingConfig: false,
+      mapForm: {
+        mapId: null,
+        mapName: ''
+      },
       pointForm: {
         pointId: null,
         pointName: '',
@@ -256,12 +275,18 @@ export default {
         pointType: [
           { required: true, message: '请选择点位类型', trigger: 'change' }
         ]
-      }
+      },
+      tempImageUrl: null
     };
   },
   computed: {
     dialogTitle() {
       return this.pointForm.pointId ? '编辑点位' : '添加点位';
+    }
+  },
+  beforeDestroy() {
+    if (this.tempImageUrl) {
+      URL.revokeObjectURL(this.tempImageUrl);
     }
   },
   created() {
@@ -277,16 +302,21 @@ export default {
     }
   },
   methods: {
-    // 获取点位图标
     getPointIcon(pointType) {
       const icons = {
-        'normal': 'fas fa-location-dot',
-        'vip': 'fas fa-crown',
-        'service': 'fas fa-concierge-bell',
-        'exit': 'fas fa-door-open',
-        'default': 'fas fa-map-pin'
+        'normal': 'el-icon-location',
+        'vip': 'el-icon-star-off',
+        'service': 'el-icon-service',
+        'exit': 'el-icon-back',
+        'default': 'el-icon-place'
       };
       return icons[pointType] || icons.default;
+    },
+
+    triggerFileUpload() {
+      if (this.$refs.fileInput) {
+        this.$refs.fileInput.click();
+      }
     },
 
     loadNavConfig() {
@@ -301,83 +331,132 @@ export default {
         console.error('加载导航配置失败:', error);
       });
     },
+
     loadMaps() {
-      getMapList().then(response => {
+      getMapList({}).then(response => {
+        console.log('地图列表响应:', response);
         this.mapList = response.rows || response.data || [];
-        if (this.mapList.length > 0 && !this.navConfig.mapId) {
-          this.navConfig.mapId = this.mapList[0].mapId;
-          this.loadPoints();
+        // 加载每个地图的点位数量
+        this.mapList.forEach(map => {
+          this.loadPointCount(map);
+        });
+        if (this.navConfig.mapId) {
           this.loadMapImage();
         }
       }).catch(error => {
         console.error('加载地图列表失败:', error);
-        this.$message.error('加载地图列表失败');
+        this.mapList = [];
       });
     },
-    changeMap() {
-      this.loadPoints();
-    },
-    loadPoints() {
-      if (!this.navConfig.mapId) return;
-      getPointListByMap(this.navConfig.mapId).then(response => {
-        const points = response.data || response.rows || [];
-        this.pointList = points;
 
-        // 更新地图列表中的点位数量
-        const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
-        if (currentMap) {
-          currentMap.pointCount = points.length;
-        }
-      }).catch(error => {
-        console.error('加载点位列表失败:', error);
-        this.pointList = [];
+    loadPointCount(map) {
+      getPointListByMap(map.mapId).then(response => {
+        const points = response.data || response.rows || [];
+        map.pointCount = points.length;
+      }).catch(() => {
+        map.pointCount = 0;
       });
     },
+
     loadMapImage() {
       if (!this.navConfig.mapId) {
         this.mapImageUrl = '';
         return;
       }
 
+      console.log('加载地图图片，地图ID:', this.navConfig.mapId);
+
+      // 先从地图列表中查找Base64数据
+      const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+      if (currentMap && currentMap.mapBase64) {
+        this.mapImageUrl = currentMap.mapBase64;
+        console.log('使用列表中的Base64图片数据，长度:', this.mapImageUrl.length);
+        return;
+      }
+      if (currentMap && currentMap.mapUrl && currentMap.mapUrl.startsWith('data:image')) {
+        this.mapImageUrl = currentMap.mapUrl;
+        console.log('使用列表中的Base64图片URL，长度:', this.mapImageUrl.length);
+        return;
+      }
+
+      // 如果列表中没有，调用接口获取
       getMap(this.navConfig.mapId).then(response => {
         const mapData = response.data;
-        if (mapData && mapData.mapFile) {
-          if (mapData.mapFile.startsWith('http')) {
-            this.mapImageUrl = mapData.mapFile;
+        if (mapData) {
+          if (mapData.mapBase64) {
+            this.mapImageUrl = mapData.mapBase64;
+            console.log('从接口获取Base64图片数据，长度:', this.mapImageUrl.length);
+          } else if (mapData.mapUrl && mapData.mapUrl.startsWith('data:image')) {
+            this.mapImageUrl = mapData.mapUrl;
+            console.log('从接口获取Base64图片URL，长度:', this.mapImageUrl.length);
           } else {
-            this.mapImageUrl = mapData.mapFile;
+            console.warn('地图没有图片数据');
+            this.mapImageUrl = '';
           }
         } else {
           this.mapImageUrl = '';
         }
       }).catch(error => {
-        console.error('加载地图图片失败:', error);
+        console.error('获取地图详情失败:', error);
         this.mapImageUrl = '';
       });
     },
-    triggerFileUpload() {
-      this.$refs.fileInput.click();
+
+    changeMap() {
+      this.loadPoints();
+      this.loadMapImage();
+      this.saveNavConfig();
     },
+
+    loadPoints() {
+      if (!this.navConfig.mapId) {
+        this.pointList = [];
+        return;
+      }
+      getPointListByMap(this.navConfig.mapId).then(response => {
+        this.pointList = response.data || response.rows || [];
+        console.log('加载点位列表:', this.pointList.length);
+        const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+        if (currentMap) {
+          currentMap.pointCount = this.pointList.length;
+        }
+      }).catch(error => {
+        console.error('加载点位列表失败:', error);
+        this.pointList = [];
+      });
+    },
+
     handleMapUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
-      if (!file.type.startsWith('image/')) {
-        this.$message.error('请上传图片文件（jpg、png、jpeg等格式）');
+      console.log('开始上传地图:', file.name, file.size, file.type);
+
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        this.$message.error('请上传图片文件（jpg、png、gif、webp等格式）');
         event.target.value = '';
         return;
       }
 
-      if (file.size > 10 * 1024 * 1024) {
-        this.$message.error('文件大小不能超过10MB');
+      if (file.size > 20 * 1024 * 1024) {
+        this.$message.error('文件大小不能超过20MB');
         event.target.value = '';
         return;
       }
+
+      // 本地预览
+      if (this.tempImageUrl) {
+        URL.revokeObjectURL(this.tempImageUrl);
+      }
+      this.tempImageUrl = URL.createObjectURL(file);
+      this.mapImageUrl = this.tempImageUrl;
 
       this.uploadLoading = true;
 
       const formData = new FormData();
       formData.append('file', file);
+
       if (this.navConfig.mapId) {
         formData.append('mapId', this.navConfig.mapId);
       }
@@ -385,19 +464,41 @@ export default {
       uploadMap(formData).then(response => {
         this.uploadLoading = false;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.mapImageUrl = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        console.log('上传响应:', response);
 
-        if (response.data && response.data.url) {
-          this.mapImageUrl = response.data.url;
+        const mapData = response.data;
+
+        if (mapData && mapData.mapId) {
+          // 直接使用后端返回的Base64数据作为图片URL
+          if (mapData.mapUrl && mapData.mapUrl.startsWith('data:image')) {
+            this.mapImageUrl = mapData.mapUrl;
+            console.log('使用Base64图片数据，长度:', this.mapImageUrl.length);
+          } else if (mapData.mapBase64) {
+            this.mapImageUrl = mapData.mapBase64;
+            console.log('使用Base64图片数据，长度:', this.mapImageUrl.length);
+          }
+
+          // 更新地图列表
+          const existingIndex = this.mapList.findIndex(m => m.mapId === mapData.mapId);
+          if (existingIndex !== -1) {
+            this.mapList[existingIndex] = mapData;
+          } else {
+            this.mapList.unshift(mapData);
+          }
+
+          this.navConfig.mapId = mapData.mapId;
+          this.loadPoints();
+          this.saveNavConfig();
+
+          // 显示地图名称编辑对话框
+          this.mapForm.mapId = mapData.mapId;
+          this.mapForm.mapName = mapData.mapName;
+          this.showMapNameDialog = true;
+
+          this.$message.success('地图上传成功');
+        } else {
+          this.$message.error('上传失败：返回数据格式错误');
         }
-
-        this.$message.success('地图上传成功');
-        this.loadMaps();
-
       }).catch(error => {
         this.uploadLoading = false;
         console.error('地图上传失败:', error);
@@ -406,21 +507,95 @@ export default {
 
       event.target.value = '';
     },
-    handleImageError() {
-      console.warn('图片加载失败');
-      this.mapImageUrl = '';
+
+    saveMapName() {
+      if (!this.mapForm.mapName.trim()) {
+        this.$message.warning('请输入地图名称');
+        return;
+      }
+
+      updateMap({
+        mapId: this.mapForm.mapId,
+        mapName: this.mapForm.mapName
+      }).then(() => {
+        this.$message.success('地图名称保存成功');
+        this.showMapNameDialog = false;
+        const map = this.mapList.find(m => m.mapId === this.mapForm.mapId);
+        if (map) {
+          map.mapName = this.mapForm.mapName;
+        }
+      }).catch(error => {
+        console.error('保存地图名称失败:', error);
+        this.$message.error('保存地图名称失败');
+      });
     },
+
+    deleteCurrentMap() {
+      if (!this.navConfig.mapId) {
+        this.$message.warning('请先选择要删除的地图');
+        return;
+      }
+
+      const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+      if (!currentMap) return;
+
+      this.$confirm(`确定要删除地图"${currentMap.mapName}"吗？删除后该地图下的所有点位也将被删除！`, '警告', {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        delMap(this.navConfig.mapId).then(() => {
+          this.$message.success('地图删除成功');
+          this.loadMaps();
+          this.navConfig.mapId = null;
+          this.pointList = [];
+          this.mapImageUrl = '';
+          this.selectedPoint = '';
+          this.currentTask = '';
+          this.saveNavConfig();
+        }).catch(error => {
+          console.error('删除地图失败:', error);
+          this.$message.error('删除地图失败');
+        });
+      }).catch(() => {});
+    },
+
+    handleImageLoad() {
+      console.log('图片加载成功');
+    },
+
+    handleImageError() {
+      console.error('图片加载失败');
+
+      if (this.mapImageUrl && this.mapImageUrl.startsWith('blob:')) {
+        console.log('本地预览URL加载失败，忽略');
+        return;
+      }
+
+      if (this.mapImageUrl && this.mapImageUrl.startsWith('data:image')) {
+        console.error('Base64图片加载失败，可能是数据损坏');
+        this.$message.error('图片数据加载失败，请重新上传');
+      } else {
+        this.$message.warning('地图图片加载失败');
+      }
+    },
+
     selectPoint(point) {
+      if (point.status === '0') {
+        this.$message.warning('该点位已禁用，无法导航');
+        return;
+      }
       this.selectedPoint = point.pointName;
       this.currentTask = point.pointName;
 
-      startNavigation(point.pointName).then(() => {
+      startNavigation({ pointName: point.pointName }).then(() => {
         this.$message.success(`开始导航：带我去 ${point.pointName}`);
       }).catch(error => {
         console.error('开始导航失败:', error);
         this.$message.error('开始导航失败');
       });
     },
+
     emergencyStop() {
       stopNavigation().then(() => {
         this.$message.warning(`已紧急停止：${this.currentTask}`);
@@ -431,16 +606,25 @@ export default {
         this.$message.error('紧急停止失败');
       });
     },
+
     saveNavConfig() {
+      if (this.isSavingConfig) {
+        return;
+      }
+
+      this.isSavingConfig = true;
+
       saveNavConfig(this.navConfig).then(() => {
-        this.$message.success('导航配置已保存');
+        console.log('导航配置已保存');
       }).catch(error => {
         console.error('保存导航配置失败:', error);
-        this.$message.error('保存导航配置失败');
+      }).finally(() => {
+        setTimeout(() => {
+          this.isSavingConfig = false;
+        }, 500);
       });
     },
 
-    // 点位管理方法
     editPoint(point) {
       this.pointForm = {
         pointId: point.pointId,
@@ -455,6 +639,7 @@ export default {
       };
       this.showAddPointDialog = true;
     },
+
     deletePoint(point) {
       this.$confirm(`确定要删除点位"${point.pointName}"吗？`, '提示', {
         confirmButtonText: '确定',
@@ -463,13 +648,14 @@ export default {
       }).then(() => {
         deletePoint(point.pointId).then(() => {
           this.$message.success('删除成功');
-          this.loadPoints(); // 重新加载点位列表
+          this.loadPoints();
         }).catch(error => {
           console.error('删除点位失败:', error);
           this.$message.error('删除失败');
         });
       }).catch(() => {});
     },
+
     resetPointForm() {
       this.pointForm = {
         pointId: null,
@@ -486,6 +672,7 @@ export default {
         this.$refs.pointForm.resetFields();
       }
     },
+
     submitPointForm() {
       this.$refs.pointForm.validate((valid) => {
         if (!valid) return;
@@ -501,7 +688,7 @@ export default {
         apiCall.then(() => {
           this.$message.success(this.pointForm.pointId ? '更新成功' : '添加成功');
           this.showAddPointDialog = false;
-          this.loadPoints(); // 重新加载点位列表
+          this.loadPoints();
         }).catch(error => {
           console.error('保存点位失败:', error);
           this.$message.error('保存失败');
@@ -515,70 +702,18 @@ export default {
 </script>
 
 <style scoped>
-/* ========== 卡片样式 ========== */
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
-  overflow: hidden;
-  transition: box-shadow 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.card-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fafafa;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2f3d;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.card-title i {
-  font-size: 18px;
-  color: #409eff;
-}
-
-.card-body {
-  padding: 24px;
-}
-
-/* 子卡片样式 */
-.sub-card {
-  background: #ffffff;
-  border-radius: 12px;
+.app-container {
   padding: 20px;
+}
+
+.box-card {
+  border-radius: 8px;
+}
+
+.sub-card {
+  margin-bottom: 0;
   border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-}
-
-.sub-card:hover {
-  border-color: #d0d7de;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.form-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 24px;
+  border-radius: 8px;
 }
 
 .form-group {
@@ -593,11 +728,10 @@ export default {
   font-size: 14px;
 }
 
-/* 地图预览区域 */
 .map-preview {
   background: #f8f9fa;
   height: 280px;
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -667,7 +801,6 @@ export default {
   margin-bottom: 12px;
 }
 
-/* 点位区域样式 */
 .point-section {
   margin-top: 8px;
 }
@@ -712,12 +845,11 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
   padding: 4px;
 }
 
-/* 自定义滚动条 */
 .point-list-container::-webkit-scrollbar {
   width: 6px;
 }
@@ -736,14 +868,13 @@ export default {
   background: #a8a8a8;
 }
 
-/* 点位卡片样式 */
 .point-item {
   display: flex;
   align-items: center;
   padding: 12px 16px;
   background: #ffffff;
   border: 1px solid #e9ecef;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
@@ -927,31 +1058,10 @@ export default {
   border-left: 3px solid #409eff;
 }
 
-.mb-2 {
-  margin-bottom: 10px;
-}
-
-/* 响应式调整 */
 @media (max-width: 768px) {
   .el-col {
     width: 100% !important;
     margin-bottom: 20px;
-  }
-
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
   }
 
   .point-item {

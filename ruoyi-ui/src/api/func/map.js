@@ -1,3 +1,4 @@
+// src/api/func/map.js
 import request from '@/utils/request'
 
 // 获取地图列表
@@ -51,7 +52,8 @@ export function uploadMap(data) {
     data: data,
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 60000
   })
 }
 
@@ -62,3 +64,5 @@ export function getPointListByMap(mapId) {
     method: 'get'
   })
 }
+
+// 注意：不再需要 getMapImage 方法，因为使用静态资源

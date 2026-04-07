@@ -2,13 +2,13 @@ package com.ruoyi.function.controller;
 
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.function.domain.SysTourGeneral;
 import com.ruoyi.function.domain.SysTourContent;
+import com.ruoyi.function.domain.SysTourGeneral;
 import com.ruoyi.function.domain.SysTourRoute;
 import com.ruoyi.function.service.ISysTourService;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

@@ -5,9 +5,9 @@
         <i class="fas fa-handshake"></i> 业务接待 · 话术配置
       </div>
       <div class="robot-selector">
-        <span class="badge"><i class="fas fa-robot"></i> 当前配置机器人：</span>
+        <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
         <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="loadConfig">
-          <el-option v-for="r in robotList" :key="r.robotId" :label="r.robotName" :value="r.robotId" />
+          <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
         </el-select>
       </div>
     </div>
@@ -148,22 +148,20 @@ export default {
     };
   },
   created() {
-    this.getRobotList();
+    // 直接加载导览组（groupId=4）下的机器人
+    this.loadRobotsByGroup();
   },
   methods: {
-    // 🔥 关键修改：获取机器人列表 - 只显示 robot_id 为 8 和 9 的机器人
-    getRobotList() {
-      listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        // 只保留 robot_id 为 8 和 9 的机器人
-        this.robotList = response.rows.filter(robot =>
-          robot.robotId === 8 || robot.robotId === 9
-        );
+    // 加载导览组机器人（groupId=4）
+    loadRobotsByGroup() {
+      listRobot({ groupId: 4, pageNum: 1, pageSize: 100 }).then(response => {
+        this.robotList = response.rows || [];
 
         if (this.robotList.length > 0) {
-          this.selectedRobotId = this.robotList[0].robotId;
+          this.selectedRobotId = this.robotList[0].id;
           this.loadConfig();
         } else {
-          this.$message.warning('暂无可用机器人（需要 ID 为 8 或 9 的机器人）');
+          this.$message.warning('导览组下没有可用机器人');
         }
       }).catch(error => {
         console.error('获取机器人列表失败:', error);
@@ -200,6 +198,10 @@ export default {
     },
 
     resetConfig() {
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        return;
+      }
       this.$confirm('确定要重置为默认话术吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -218,6 +220,10 @@ export default {
     },
 
     saveConfig() {
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        return;
+      }
       const data = {
         robotId: this.selectedRobotId,
         ...this.config,
@@ -236,7 +242,7 @@ export default {
 </script>
 
 <style scoped>
-/* ========== 卡片样式（遵循tasks.html风格） ========== */
+/* 样式保持不变 */
 .card {
   background: white;
   border-radius: 10px;

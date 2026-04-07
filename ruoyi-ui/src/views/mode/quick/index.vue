@@ -360,15 +360,21 @@ export default {
     getRobotList() {
       this.addDebugLog('开始获取机器人列表', null, 'info');
       return request({
-        url: '/system/robot/debug/simple',
+        url: '/mode/robots/list',  // 改为正确的路径
         method: 'get'
       }).then(response => {
         if (response.code === 200) {
-          // 确保每个机器人都有状态文本和类型，用于显示
-          this.robotOptions = (response.data || []).map(robot => ({
-            ...robot,
+          // 注意：list接口返回的是分页数据，在 rows 中
+          const rows = response.rows || [];
+          this.robotOptions = rows.map(robot => ({
+            robotId: robot.id,        // Robot类中使用的是 id
+            robotName: robot.name,    // Robot类中使用的是 name
+            robotCode: robot.code,
+            status: robot.status,
             statusText: this.getStatusText(robot.status),
-            statusType: this.getStatusType(robot.status)
+            statusType: this.getStatusType(robot.status),
+            battery: robot.battery,
+            area: robot.area
           }));
           this.addDebugLog(`获取机器人列表成功，共${this.robotOptions.length}个机器人`,
             this.robotOptions.map(r => ({

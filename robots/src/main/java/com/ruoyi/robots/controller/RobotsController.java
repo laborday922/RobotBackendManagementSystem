@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.controller.dto.RobotsDto;
 import com.ruoyi.robots.domain.Robot;
+import com.ruoyi.robots.domain.RobotPositionHistory;
+import com.ruoyi.robots.service.IRobotPositionHistoryService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,12 +41,15 @@ public class RobotsController extends BaseController
     @Autowired
     private IRobotsService robotsService;
 
+    @Autowired
+    private IRobotPositionHistoryService robotPositionHistoryService;
+
     /**
      * 查询机器人基础信息列表
      * groupId status hardwareStatus taskStatus
      */
 
-    @PreAuthorize("@ss.hasPermi('robots:robots:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:list')")
     @GetMapping("/list")
     @ApiOperation("查询机器人列表")
     public TableDataInfo list(Robot robot)
@@ -57,7 +62,7 @@ public class RobotsController extends BaseController
     /**
      * 导出机器人基础信息列表
      */
-    @PreAuthorize("@ss.hasPermi('robots:robots:export')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:export')")
     @Log(title = "机器人基础信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, Robot robot)
@@ -72,7 +77,7 @@ public class RobotsController extends BaseController
      * todo 机器人的基础信息有一部分是通过外部调用得到的，暂时设定为从数据库读取
      */
     @ApiOperation("机器人基础信息详细信息")
-    @PreAuthorize("@ss.hasPermi('robots:robots:query')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -84,7 +89,7 @@ public class RobotsController extends BaseController
      *
      */
     @ApiOperation("新增机器人基础信息")
-    @PreAuthorize("@ss.hasPermi('robots:robots:add')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:add')")
     @Log(title = "机器人基础信息", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody RobotsDto robotsDto)
@@ -96,7 +101,7 @@ public class RobotsController extends BaseController
      * 修改机器人基础信息
      */
     @ApiOperation("修改机器人基础信息")
-    @PreAuthorize("@ss.hasPermi('robots:robots:edit')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:edit')")
     @Log(title = "机器人基础信息", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody RobotsDto robotsDto)
@@ -108,7 +113,7 @@ public class RobotsController extends BaseController
      * 删除机器人基础信息
      */
     @ApiOperation("删除机器人基础信息")
-    @PreAuthorize("@ss.hasPermi('robots:robots:remove')")
+//    @PreAuthorize("@ss.hasPermi('robots:robots:remove')")
     @Log(title = "机器人基础信息", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable String[] ids)
@@ -123,6 +128,7 @@ public class RobotsController extends BaseController
     @ApiOperation("机器人状态上传")
     public AjaxResult upload(@Validated @RequestBody RobotStatusDto robotStatusDto)
     {
+        robotPositionHistoryService.loadPosToRedis(robotStatusDto);
         return toAjax(robotsService.updateRobotStatus(robotStatusDto));
     }
 }

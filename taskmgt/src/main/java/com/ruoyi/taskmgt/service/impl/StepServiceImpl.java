@@ -1,5 +1,4 @@
 package com.ruoyi.taskmgt.service.impl;
-
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
@@ -8,7 +7,9 @@ import com.ruoyi.common.utils.CloneFactory;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.StringUtils;
-import com.ruoyi.taskmgt.common.constants.TaskLogEventType;
+import com.ruoyi.robots.domain.Robot;
+import com.ruoyi.robots.service.IRobotsService;
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
@@ -19,12 +20,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,9 +36,10 @@ public class StepServiceImpl implements IStepService {
     private final TaskRepository taskRepository;
     private final MessageSourceAccessor messageSourceAccessor;
     private final StepRepository stepRepository;
-    private final TaskLogReuseService taskLogReuseService;
+    private final TaskLogReuseService taskLogService;
     private final RedisCache redisUtil;
     private final TaskReuseService taskReuseService;
+    private final IRobotsService robotsService;
 
     /**
      * 创建步骤
@@ -51,7 +50,7 @@ public class StepServiceImpl implements IStepService {
     public List<TaskStepVo> createSteps(Long taskId, List<TaskStep> steps) {
         Long tenantId = TenantContext.get();
         if(isAdmin(tenantId))tenantId=null;
-        if(StringUtils.isEmpty(steps))return List.of();
+        if(StringUtils.isEmpty(steps))return new ArrayList<>();
         //Assert.notEmpty(steps, "steps cannot be empty");
         Task task = this.taskRepository.findById(taskId).orElseThrow(() -> {
             String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), taskId.toString()};
@@ -94,6 +93,18 @@ public class StepServiceImpl implements IStepService {
         List<String> redisKeys = new ArrayList<>();
         for (TaskStep step : steps) {
             step.setTenantId(tenantId);
+            if(step.getAssignedRobotId()!=null){
+                if (Integer.valueOf(1).equals(task.getIsGroupTask()) && task.getRobotGroupId() != null){
+                    Robot robot1 = new Robot();
+                    robot1.setGroupId(task.getRobotGroupId());
+                    List<Robot> robots = this.robotsService.selectRobotsList(robot1);
+                    Robot robot2 = this.robotsService.selectRobotsById(step.getAssignedRobotId());
+                    if(!robots.contains(robot2))throw new TaskmgtException(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT,new String[]{"Step.name",step.getId().toString(),"步骤分配的执行机器人不属于任务机器人组"},this.messageSourceAccessor.getMessage(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT.getMessage()));
+                }
+                else if (Integer.valueOf(0).equals(task.getIsGroupTask()) && task.getRobotId() != null){
+                    if(!task.getRobotId().equals(step.getAssignedRobotId()))throw new TaskmgtException(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT,new String[]{"Step.name",step.getId().toString(),"步骤分配的执行机器人与任务机器人不同"},this.messageSourceAccessor.getMessage(ReturnNo.INVALID_STEP_ROBOT_ASSIGNMENT.getMessage()));
+                }
+            }
             if(step.getAssignedRobotId()!=null&&this.stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(step.getAssignedRobotId(),null,List.of(TaskStep.EXECUTING,TaskStep.WAITING,TaskStep.WAITING_CALLBACK))!=0)
             {
                 task.setStatus(Task.PENDING);
@@ -154,7 +165,7 @@ public class StepServiceImpl implements IStepService {
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
-        taskLogReuseService.record(step.getTaskId(), stepId, TaskLogEventType.STEP_COMPLETE,
+        taskLogService.record(step.getTaskId(), stepId, TaskLogEventType.STEP_COMPLETE,
                 "步骤 " + step.getStepName() + " 完成" + "开始时间:" + step.getStartTime()+
                         "结束时间:" + step.getEndTime(), "system", null);
 
@@ -186,7 +197,7 @@ public class StepServiceImpl implements IStepService {
         if (redisKeys != null && !redisKeys.isEmpty()) {
             redisUtil.deleteObject(redisKeys);
         }
-        taskLogReuseService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
+        taskLogService.record(step.getTaskId(), step.getId(), TaskLogEventType.STEP_START,
                 "步骤 " + step.getStepName() + " 开始执行", "system", null);
     }
 }

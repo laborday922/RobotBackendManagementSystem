@@ -1,29 +1,34 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="在线状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择在线状态" clearable>
-          <el-option label="离线" value="0"></el-option>
-          <el-option label="在线" value="1"></el-option>
-          <el-option label="待激活" value="2"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="所属分组" prop="groupId">
-        <el-select v-model="queryParams.groupId" placeholder="请选择所属分组" clearable>
-          <el-option
-            v-for="group in groupsList"
-            :key="group.id"
-            :label="group.name"
-            :value="group.id"
-          ></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
 
+    <!-- 搜索栏：卡片化美化 + 逻辑整洁 -->
+    <el-card class="search-panel" shadow="hover">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
+        <el-form-item label="在线状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择在线状态" clearable>
+            <el-option label="离线" value="0"></el-option>
+            <el-option label="在线" value="1"></el-option>
+            <el-option label="待激活" value="2"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="所属分组" prop="groupId">
+          <el-select v-model="queryParams.groupId" placeholder="请选择所属分组" clearable>
+            <el-option
+              v-for="group in groupsList"
+              :key="group.id"
+              :label="group.name"
+              :value="group.id"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 工具栏 -->
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
@@ -70,79 +75,89 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="robotsList" @selection-change="handleSelectionChange" style="width: 100%">
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="ID" align="center" prop="id" width="60" show-overflow-tooltip />
-      <el-table-column label="编号" align="center" prop="code" width="100" show-overflow-tooltip />
-      <el-table-column label="名称" align="center" prop="name" width="120" show-overflow-tooltip />
-      <el-table-column label="分组" align="center" prop="groupId" width="100" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ getGroupName(scope.row.groupId) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="厂家" align="center" prop="manufacturer" width="100" show-overflow-tooltip />
-      <el-table-column label="生产日期" align="center" prop="productionDate" width="110" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.productionDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="区域" align="center" prop="area" width="100" show-overflow-tooltip />
-      <el-table-column label="在线" align="center" prop="status" width="70">
-        <template slot-scope="scope">
-          <el-tag :type="getStatusTagType(scope.row.status)">{{ getStatusText(scope.row.status) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="硬件" align="center" prop="hardwareStatus" width="70">
-        <template slot-scope="scope">
-          <el-tag :type="getHardwareTagType(scope.row.hardwareStatus)">{{ getHardwareStatusText(scope.row.hardwareStatus) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="任务" align="center" prop="taskStatus" width="70">
-        <template slot-scope="scope">
-          <el-tag :type="getTaskTagType(scope.row.taskStatus)">{{ getTaskStatusText(scope.row.taskStatus) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="电量" align="center" prop="battery" width="60" />
-      <el-table-column label="创建时间" align="center" prop="createdAt" width="110" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleViewHistory(scope.row)"
-          >查看</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['robots:robots:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['robots:robots:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <!-- 表格卡片 -->
+    <el-card class="table-card" shadow="never">
+      <div slot="header" class="clearfix card-header">
+        <span><i class="el-icon-robot"></i> 机器人管理列表</span>
+      </div>
+      <el-table v-loading="loading" :data="robotsList" @selection-change="handleSelectionChange" style="width: 100%" border stripe>
+        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column label="ID" align="center" prop="id" width="60" show-overflow-tooltip />
+        <el-table-column label="编号" align="center" prop="code" width="100" show-overflow-tooltip />
+        <el-table-column label="名称" align="center" prop="name" width="120" show-overflow-tooltip />
+        <el-table-column label="分组" align="center" prop="groupId" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ getGroupName(scope.row.groupId) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="厂家" align="center" prop="manufacturer" width="100" show-overflow-tooltip />
+        <el-table-column label="生产日期" align="center" prop="productionDate" width="110" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.productionDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="区域" align="center" prop="area" width="100" show-overflow-tooltip />
+        <el-table-column label="在线" align="center" prop="status" width="70">
+          <template slot-scope="scope">
+            <el-tag :type="getStatusTagType(scope.row.status)" effect="light">{{ getStatusText(scope.row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="硬件" align="center" prop="hardwareStatus" width="70">
+          <template slot-scope="scope">
+            <el-tag :type="getHardwareTagType(scope.row.hardwareStatus)" effect="light">{{ getHardwareStatusText(scope.row.hardwareStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="任务" align="center" prop="taskStatus" width="70">
+          <template slot-scope="scope">
+            <el-tag :type="getTaskTagType(scope.row.taskStatus)" effect="light">{{ getTaskStatusText(scope.row.taskStatus) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="电量" align="center" prop="battery" width="60" />
+        <el-table-column label="创建时间" align="center" prop="createdAt" width="110" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-view"
+              @click="handleViewHistory(scope.row)"
+            >查看</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['robots:robots:edit']"
+            >修改</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['robots:robots:remove']"
+            >删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+    <!-- 分页 -->
+    <div class="pagination-box">
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </div>
+
+    <!-- 弹窗：统一美化 -->
+    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body class="global-dialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="机器人编号" prop="code">
           <el-input v-model="form.code" placeholder="请输入机器人编号" />
@@ -198,8 +213,8 @@ export default {
       showSearch: true,
       total: 0,
       robotsList: [],
-      groupsList: [], // 分组列表缓存
-      groupsMap: {}, // 分组ID-名称映射表
+      groupsList: [],
+      groupsMap: {},
       title: "",
       open: false,
       queryParams: {
@@ -228,34 +243,21 @@ export default {
         '3': '维护'
       },
       rules: {
-        code: [
-          { required: true, message: "机器人编号不能为空", trigger: "blur" }
-        ],
-        name: [
-          { required: true, message: "机器人名称不能为空", trigger: "blur" }
-        ],
-        groupId: [
-          { required: true, message: "所属分组不能为空", trigger: "change" }
-        ],
-        manufacturer: [
-          { required: true, message: "生产厂家不能为空", trigger: "blur" }
-        ],
-        productionDate: [
-          { required: true, message: "生产日期不能为空", trigger: "blur" }
-        ],
-        area: [
-          { required: true, message: "所属区域不能为空", trigger: "blur" }
-        ]
+        code: [{ required: true, message: "机器人编号不能为空", trigger: "blur" }],
+        name: [{ required: true, message: "机器人名称不能为空", trigger: "blur" }],
+        groupId: [{ required: true, message: "所属分组不能为空", trigger: "change" }],
+        manufacturer: [{ required: true, message: "生产厂家不能为空", trigger: "blur" }],
+        productionDate: [{ required: true, message: "生产日期不能为空", trigger: "blur" }],
+        area: [{ required: true, message: "所属区域不能为空", trigger: "blur" }]
       },
-      groupsLoaded: false // 分组数据加载标识
+      groupsLoaded: false
     }
   },
   created() {
     this.getList()
-    this.getGroupsList() // 初始化加载分组列表
+    this.getGroupsList()
   },
   methods: {
-    /** 查询机器人基础信息列表 */
     getList() {
       this.loading = true
       listRobots(this.queryParams).then(response => {
@@ -264,144 +266,69 @@ export default {
         this.loading = false
       })
     },
-
-    /** 查询分组列表（带缓存） */
     getGroupsList() {
-      // 如果已经加载过分组数据，直接返回缓存
       if (this.groupsLoaded && this.groupsList.length > 0) {
         return Promise.resolve(this.groupsList)
       }
-      
       return listGroups({}).then(response => {
         const groups = response.rows || response
         this.groupsList = groups
-        // 构建分组ID-名称映射表，优化查询性能
         this.groupsMap = groups.reduce((map, group) => {
-          // 确保ID类型统一（避免数字/字符串类型不匹配导致的回显问题）
           map[String(group.id)] = group.name
           return map
         }, {})
-        this.groupsLoaded = true // 标记为已加载
+        this.groupsLoaded = true
         return groups
-      }).catch(error => {
-        console.error('获取分组列表失败:', error)
-        return []
-      })
+      }).catch(() => [])
     },
-
-    /** 根据分组ID获取分组名称 */
     getGroupName(groupId) {
       if (!groupId) return '未分组'
-      // 统一转换为字符串，避免类型不匹配问题
       return this.groupsMap[String(groupId)] || `未知分组(${groupId})`
     },
-
-    /** 获取在线状态文本 */
-    getStatusText(status) {
-      return this.statusMap[status] || '未知状态'
-    },
-
-    /** 获取硬件状态文本 */
-    getHardwareStatusText(hardwareStatus) {
-      return this.hardwareStatusMap[hardwareStatus] || '未知状态'
-    },
-
-    /** 获取任务状态文本 */
-    getTaskStatusText(taskStatus) {
-      return this.taskStatusMap[taskStatus] || '未知状态'
-    },
-
-    /** 获取在线状态标签类型 */
+    getStatusText(status) { return this.statusMap[status] || '未知状态' },
+    getHardwareStatusText(hardwareStatus) { return this.hardwareStatusMap[hardwareStatus] || '未知状态' },
+    getTaskStatusText(taskStatus) { return this.taskStatusMap[taskStatus] || '未知状态' },
     getStatusTagType(status) {
-      // 0: 离线(红), 1: 在线(绿), 2: 待激活(蓝)
       switch (String(status)) {
-        case '0':
-          return 'danger'
-        case '1':
-          return 'success'
-        case '2':
-          return 'info'
-        default:
-          return 'warning'
+        case '0': return 'danger'
+        case '1': return 'success'
+        case '2': return 'info'
+        default: return 'warning'
       }
     },
-
-    /** 获取硬件状态标签类型 */
     getHardwareTagType(hardwareStatus) {
-      // 0: 正常(绿), 1: 警告(黄), 2: 故障(红)
       switch (String(hardwareStatus)) {
-        case '0':
-          return 'success'
-        case '1':
-          return 'warning'
-        case '2':
-          return 'danger'
-        default:
-          return 'info'
+        case '0': return 'success'
+        case '1': return 'warning'
+        case '2': return 'danger'
+        default: return 'info'
       }
     },
-
-    /** 获取任务状态标签类型 */
     getTaskTagType(taskStatus) {
-      // 0: 执行中(蓝), 1: 充电中(橙), 2: 闲置(灰), 3: 维护(红)
       switch (String(taskStatus)) {
-        case '0':
-          return 'primary'
-        case '1':
-          return 'warning'
-        case '2':
-          return 'info'
-        case '3':
-          return 'danger'
-        default:
-          return 'info'
+        case '0': return 'primary'
+        case '1': return 'warning'
+        case '2': return 'info'
+        case '3': return 'danger'
+        default: return 'info'
       }
     },
-
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-
-    // 表单重置
+    cancel() { this.open = false; this.reset() },
     reset() {
       this.form = {
-        id: null,
-        code: null,
-        name: null,
-        groupId: null,
-        manufacturer: null,
-        productionDate: null,
-        area: null,
-        status: null,
-        hardwareStatus: null,
-        taskStatus: null,
-        battery: null
+        id: null, code: null, name: null, groupId: null, manufacturer: null,
+        productionDate: null, area: null, status: null, hardwareStatus: null,
+        taskStatus: null, battery: null
       }
       this.resetForm("form")
     },
-
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-
-    // 多选框选中数据
+    handleQuery() { this.queryParams.pageNum = 1; this.getList() },
+    resetQuery() { this.resetForm("queryForm"); this.handleQuery() },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset()
       this.getGroupsList().then(() => {
@@ -409,52 +336,34 @@ export default {
         this.title = "添加机器人基础信息"
       })
     },
-
-    /** 修改按钮操作 - 核心修复 */
     handleUpdate(row) {
       this.reset()
-      // 先加载分组列表（使用缓存），确保下拉框有数据后再回显
       this.getGroupsList().then(() => {
         const id = row.id || this.ids
         getRobots(id).then(response => {
-          // 确保groupId的类型与下拉框的value类型一致（统一为字符串）
-          this.form = {
-            ...response.data,
-            groupId: response.data.groupId ? String(response.data.groupId) : null
-          }
+          this.form = { ...response.data, groupId: String(response.data.groupId||null) }
           this.open = true
           this.title = "修改机器人基础信息"
         })
       })
     },
-
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const d = this.form
           const submitData = {
-            id: this.form.id,
-            code: this.form.code,
-            name: this.form.name,
-            // 提交时可根据后端需求转换类型（如果需要数字类型）
-            groupId: this.form.groupId ? (isNaN(Number(this.form.groupId)) ? this.form.groupId : Number(this.form.groupId)) : null,
-            manufacturer: this.form.manufacturer,
-            productionDate: this.form.productionDate,
-            area: this.form.area,
-            status: this.form.status,
-            hardwareStatus: this.form.hardwareStatus,
-            taskStatus: this.form.taskStatus,
-            battery: this.form.battery
+            id: d.id, code:d.code, name:d.name, groupId: Number(d.groupId)||null,
+            manufacturer:d.manufacturer, productionDate:d.productionDate, area:d.area,
+            status:d.status, hardwareStatus:d.hardwareStatus, taskStatus:d.taskStatus, battery:d.battery
           }
-          
-          if (this.form.id != null) {
-            updateRobots(submitData).then(response => {
+          if (this.form.id) {
+            updateRobots(submitData).then(() => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addRobots(submitData).then(response => {
+            addRobots(submitData).then(() => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -463,32 +372,85 @@ export default {
         }
       })
     },
-
-    /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除机器人基础信息编号为"' + ids + '"的数据项？').then(function() {
-        return delRobots(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
+      this.$modal.confirm('是否确认删除所选机器人数据？').then(() => delRobots(ids))
+        .then(() => { this.getList(); this.$modal.msgSuccess("删除成功") })
     },
-
-    /** 导出按钮操作 */
     handleExport() {
-      this.download('robots/robots/export', {
-        ...this.queryParams
-      }, `robots_${new Date().getTime()}.xlsx`)
+      this.download('robots/robots/export', {...this.queryParams}, `robots_${new Date().getTime()}.xlsx`)
     },
-
-    /** 查看运行历史 */
     handleViewHistory(row) {
-      this.$router.push({
-        name: 'RobotHistory',
-        query: { robotId: row.id }
-      })
+      this.$router.push({ path: "/robots/history", query: { robotId: row.id } });
     }
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.app-container {
+  padding: 20px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 84px);
+}
+
+/* 搜索栏卡片美化 */
+.search-panel {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 表格卡片 */
+.table-card {
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 15px;
+
+  ::v-deep .el-card__header {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  ::v-deep .el-card__body {
+    padding: 0;
+  }
+}
+
+/* 分页 */
+.pagination-box {
+  text-align: right;
+  margin-top: 10px;
+}
+
+/* 表格样式 */
+::v-deep .el-table {
+  border: none;
+  --el-table-row-hover-bg-color: #ecf5ff;
+}
+::v-deep .el-table th {
+  background-color: #f5f7fa !important;
+  font-weight: 600;
+}
+
+/* 全局弹窗美化：所有弹窗统一渐变头部 */
+::v-deep .global-dialog .el-dialog__header {
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  color: #fff;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+::v-deep .global-dialog .el-dialog__title {
+  color: #fff;
+  font-weight: 500;
+}
+::v-deep .global-dialog .el-dialog__close {
+  color: #fff !important;
+}
+::v-deep .global-dialog .el-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+}
+</style>

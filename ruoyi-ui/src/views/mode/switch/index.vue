@@ -16,9 +16,9 @@
           <el-option
             v-for="robot in robotOptions"
             :key="robot.robotId"
-            :label="robot.robotName"
+            :label="robot.name"
             :value="robot.robotId">
-            <span style="float: left">{{ robot.robotName }}</span>
+            <span style="float: left">{{ robot.name }}</span>
             <span style="float: right; color: #8492a6; font-size: 13px">
               <el-tag :type="getStatusType(robot.status)" size="mini">
                 {{ getStatusText(robot.status) }}

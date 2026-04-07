@@ -19,6 +19,15 @@ public class SysMap extends BaseEntity {
     @ApiModelProperty("地图文件路径")
     private String mapFile;
 
+    @ApiModelProperty("地图Base64数据")
+    private String mapBase64;
+
+    @ApiModelProperty("地图URL（非数据库字段）")
+    private String mapUrl;
+
+    @ApiModelProperty("是否有图片")
+    private Boolean hasImage;
+
     @ApiModelProperty("点位数量")
     private Integer pointCount;
 
@@ -36,6 +45,15 @@ public class SysMap extends BaseEntity {
 
     public String getMapFile() { return mapFile; }
     public void setMapFile(String mapFile) { this.mapFile = mapFile; }
+
+    public String getMapBase64() { return mapBase64; }
+    public void setMapBase64(String mapBase64) { this.mapBase64 = mapBase64; }
+
+    public String getMapUrl() { return mapUrl; }
+    public void setMapUrl(String mapUrl) { this.mapUrl = mapUrl; }
+
+    public Boolean getHasImage() { return hasImage; }
+    public void setHasImage(Boolean hasImage) { this.hasImage = hasImage; }
 
     public Integer getPointCount() {
         return pointCount != null ? pointCount : pointCountTemp;

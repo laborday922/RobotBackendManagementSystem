@@ -5,8 +5,8 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.function.domain.SysReceptionConfig;
 import com.ruoyi.function.service.ISysReceptionConfigService;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

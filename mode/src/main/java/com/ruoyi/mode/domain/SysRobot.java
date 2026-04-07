@@ -1,85 +1,70 @@
 package com.ruoyi.mode.domain;
 
-import com.ruoyi.common.core.domain.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import javax.validation.constraints.*;
+import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 机器人对象 robots
+ * 机器人模式扩展对象
+ * 注意：基础信息请使用 Robot 类
  *
  * @author ruoyi
  */
-public class SysRobot extends BaseEntity
+public class SysRobot implements Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    /** 机器人ID */
+    /** 机器人ID（关联robots表） */
     private Long robotId;
 
-    /** 机器人编码 */
-    @NotBlank(message = "机器人编码不能为空")
-    @Size(min = 1, max = 50, message = "机器人编码长度必须在1-50之间")
-    private String robotCode;
+    private String name;           // 对应 name 字段
 
-    /** 机器人名称 */
-    @NotBlank(message = "机器人名称不能为空")
-    @Size(min = 1, max = 100, message = "机器人名称长度必须在1-100之间")
-    private String robotName;
+    private String code;           // 对应 code 字段
 
-    /** 所属分组 */
-    private Long groupId;
+    /** 组ID */
+    private Long groupId;          // 对应 group_id 字段
 
-    /** 生产厂家 */
-    @Size(max = 200, message = "生产厂家名称长度不能超过200")
-    private String manufacturer;
+    /** 状态 */
+    private Integer status;        // 对应 status 字段
 
-    /** 生产日期 */
-    private Date productionDate;
+    /** 电池电量 */
+    private Integer battery;       // 对应 battery 字段
 
-    /** 所属区域 */
-    @Size(max = 100, message = "区域名称长度不能超过100")
-    private String area;
-
-    /** 在线状态（0-离线，1-在线，2-待激活） */
-    @Min(value = 0, message = "状态值无效")
-    @Max(value = 2, message = "状态值无效")
-    private Integer status;
-
-    /** 硬件状态（0-正常，1-警告，2-故障） */
-    @Min(value = 0, message = "硬件状态值无效")
-    @Max(value = 2, message = "硬件状态值无效")
-    private Integer hardwareStatus;
-
-    /** 任务状态（0-执行中，1-充电中，2-闲置，3-维护） */
-    @Min(value = 0, message = "任务状态值无效")
-    @Max(value = 3, message = "任务状态值无效")
-    private Integer taskStatus;
-
-    /** 电量百分比 */
-    @Min(value = 0, message = "电量不能小于0")
-    @Max(value = 100, message = "电量不能大于100")
-    private Long battery;
+    /** 区域 */
+    private String area;           // 对应 area 字段
 
     /** 当前模式ID */
     private Long currentMode;
 
-    /** 空闲开始时间 */
-    private Date idleStartTime;
-
-    /** 删除标志 */
-    private String delFlag;
-
-    // 以下字段保留用于兼容旧代码
-    private String runtime;
-    private String speed;
-    private String temperature;
-    private Long tasksCompleted;
-
-    // 非数据库字段
+    /** 当前模式名称（非数据库字段） */
     private String currentModeName;
+
+    /** 最后模式切换时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date lastModeSwitchTime;
+
+    /** 模式切换次数 */
+    private Integer modeSwitchCount;
+
+    /** 创建者 */
+    private String createBy;
+
+    /** 创建时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date createTime;
+
+    /** 更新者 */
+    private String updateBy;
+
+    /** 更新时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date updateTime;
+
+    /** 删除标志（0代表存在 2代表删除） */
+    private String delFlag;
 
     // ==================== Getters and Setters ====================
 
@@ -91,20 +76,20 @@ public class SysRobot extends BaseEntity
         this.robotId = robotId;
     }
 
-    public String getRobotCode() {
-        return robotCode;
+    public String getName() {
+        return name;
     }
 
-    public void setRobotCode(String robotCode) {
-        this.robotCode = robotCode;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getRobotName() {
-        return robotName;
+    public String getCode() {
+        return code;
     }
 
-    public void setRobotName(String robotName) {
-        this.robotName = robotName;
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public Long getGroupId() {
@@ -115,20 +100,20 @@ public class SysRobot extends BaseEntity
         this.groupId = groupId;
     }
 
-    public String getManufacturer() {
-        return manufacturer;
+    public Integer getStatus() {
+        return status;
     }
 
-    public void setManufacturer(String manufacturer) {
-        this.manufacturer = manufacturer;
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
-    public Date getProductionDate() {
-        return productionDate;
+    public Integer getBattery() {
+        return battery;
     }
 
-    public void setProductionDate(Date productionDate) {
-        this.productionDate = productionDate;
+    public void setBattery(Integer battery) {
+        this.battery = battery;
     }
 
     public String getArea() {
@@ -139,100 +124,12 @@ public class SysRobot extends BaseEntity
         this.area = area;
     }
 
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
-    }
-
-    public Integer getHardwareStatus() {
-        return hardwareStatus;
-    }
-
-    public void setHardwareStatus(Integer hardwareStatus) {
-        this.hardwareStatus = hardwareStatus;
-    }
-
-    public Integer getTaskStatus() {
-        return taskStatus;
-    }
-
-    public void setTaskStatus(Integer taskStatus) {
-        this.taskStatus = taskStatus;
-    }
-
-    public Long getBattery() {
-        return battery;
-    }
-
-    public void setBattery(Long battery) {
-        this.battery = battery;
-    }
-
     public Long getCurrentMode() {
         return currentMode;
     }
 
     public void setCurrentMode(Long currentMode) {
         this.currentMode = currentMode;
-    }
-
-    public Date getIdleStartTime() {
-        return idleStartTime;
-    }
-
-    public void setIdleStartTime(Date idleStartTime) {
-        this.idleStartTime = idleStartTime;
-    }
-
-    public String getDelFlag() {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag) {
-        this.delFlag = delFlag;
-    }
-
-    public String getLocation() {
-        return area;
-    }
-
-    public void setLocation(String location) {
-        this.area = location;
-    }
-
-    public String getRuntime() {
-        return runtime;
-    }
-
-    public void setRuntime(String runtime) {
-        this.runtime = runtime;
-    }
-
-    public String getSpeed() {
-        return speed;
-    }
-
-    public void setSpeed(String speed) {
-        this.speed = speed;
-    }
-
-    public String getTemperature() {
-        return temperature;
-    }
-
-    public void setTemperature(String temperature) {
-        this.temperature = temperature;
-    }
-
-    public Long getTasksCompleted() {
-        return tasksCompleted;
-    }
-
-    public void setTasksCompleted(Long tasksCompleted) {
-        this.tasksCompleted = tasksCompleted;
     }
 
     public String getCurrentModeName() {
@@ -243,27 +140,98 @@ public class SysRobot extends BaseEntity
         this.currentModeName = currentModeName;
     }
 
+    public Date getLastModeSwitchTime() {
+        return lastModeSwitchTime;
+    }
+
+    public void setLastModeSwitchTime(Date lastModeSwitchTime) {
+        this.lastModeSwitchTime = lastModeSwitchTime;
+    }
+
+    public Integer getModeSwitchCount() {
+        return modeSwitchCount;
+    }
+
+    public void setModeSwitchCount(Integer modeSwitchCount) {
+        this.modeSwitchCount = modeSwitchCount;
+    }
+
+    public String getCreateBy() {
+        return createBy;
+    }
+
+    public void setCreateBy(String createBy) {
+        this.createBy = createBy;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getUpdateBy() {
+        return updateBy;
+    }
+
+    public void setUpdateBy(String updateBy) {
+        this.updateBy = updateBy;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public String getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag) {
+        this.delFlag = delFlag;
+    }
+
+    // 兼容前端的 robotName 和 robotCode
+    public String getRobotName() {
+        return this.name;
+    }
+
+    public void setRobotName(String robotName) {
+        this.name = robotName;
+    }
+
+    public String getRobotCode() {
+        return this.code;
+    }
+
+    public void setRobotCode(String robotCode) {
+        this.code = robotCode;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
                 .append("robotId", getRobotId())
-                .append("robotCode", getRobotCode())
-                .append("robotName", getRobotName())
+                .append("name", getName())
+                .append("code", getCode())
                 .append("groupId", getGroupId())
-                .append("manufacturer", getManufacturer())
-                .append("productionDate", getProductionDate())
-                .append("area", getArea())
                 .append("status", getStatus())
-                .append("hardwareStatus", getHardwareStatus())
-                .append("taskStatus", getTaskStatus())
                 .append("battery", getBattery())
+                .append("area", getArea())
                 .append("currentMode", getCurrentMode())
-                .append("idleStartTime", getIdleStartTime())
-                .append("delFlag", getDelFlag())
+                .append("currentModeName", getCurrentModeName())
+                .append("lastModeSwitchTime", getLastModeSwitchTime())
+                .append("modeSwitchCount", getModeSwitchCount())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())
                 .append("updateTime", getUpdateTime())
+                .append("delFlag", getDelFlag())
                 .toString();
     }
 }

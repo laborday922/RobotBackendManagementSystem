@@ -15,6 +15,7 @@
         <result property="updateBy"         column="update_by"         />
         <result property="updateTime"       column="update_time"       />
         <result property="delFlag"          column="del_flag"          />
+        <result property="tenantId"         column="tenant_id"         />
     </resultMap>
 
     <!-- 基础字段列表 -->
@@ -27,25 +28,24 @@
         create_time,
         update_by,
         update_time,
-        del_flag
+        del_flag,
+        tenant_id
     </sql>
 
-    <!-- 查询条件 -->
     <sql id="selectSysRobotCondition">
         <where>
-            <if test="robotId != null"> and robot_id = #{robotId}</if>
-            <if test="currentMode != null"> and current_mode = #{currentMode}</if>
-            <if test="delFlag != null"> and del_flag = #{delFlag}</if>
-            <if test="createTime != null"> and create_time >= #{createTime}</if>
-            <if test="updateTime != null"> and update_time >= #{updateTime}</if>
+            AND tenant_id = #{sysRobot.tenantId}
+            <if test="sysRobot.robotId != null"> and robot_id = #{sysRobot.robotId}</if>
+            <if test="sysRobot.currentMode != null"> and current_mode = #{sysRobot.currentMode}</if>
+            <if test="sysRobot.delFlag != null"> and del_flag = #{sysRobot.delFlag}</if>
         </where>
     </sql>
 
-    <!-- 查询机器人模式扩展信息 -->
-    <select id="selectSysRobotById" parameterType="Long" resultMap="SysRobotResult">
+    <select id="selectSysRobotById" parameterType="com.ruoyi.mode.domain.SysRobot" resultMap="SysRobotResult">
         SELECT <include refid="BaseColumnList" />
         FROM sys_robot_ext
-        WHERE robot_id = #{robotId}
+        WHERE robot_id = #{sysRobot.robotId}
+        AND tenant_id = #{sysRobot.tenantId}
         AND del_flag = '0'
     </select>
 
@@ -65,14 +65,14 @@
         <if test="modeSwitchCount != null">mode_switch_count,</if>
         <if test="createBy != null">create_by,</if>
         <if test="delFlag != null">del_flag,</if>
-        create_time
+        tenant_id, create_time
         ) VALUES (
         <if test="robotId != null">#{robotId},</if>
         <if test="currentMode != null">#{currentMode},</if>
         <if test="modeSwitchCount != null">#{modeSwitchCount},</if>
         <if test="createBy != null">#{createBy},</if>
         <if test="delFlag != null">#{delFlag},</if>
-        NOW()
+        #{tenantId}, NOW()
         )
     </insert>
 
@@ -97,6 +97,7 @@
         mode_switch_count = mode_switch_count + 1,
         update_time = NOW()
         WHERE robot_id = #{robotId}
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </update>
 
@@ -111,10 +112,11 @@
         <foreach collection="robotIds" item="robotId" open="(" separator="," close=")">
             #{robotId}
         </foreach>
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </update>
 
-    <!-- 批量更新扩展信息状态（如果需要） -->
+    <!-- 批量更新扩展信息状态 -->
     <update id="batchUpdateExtStatus">
         UPDATE sys_robot_ext
         SET update_time = NOW()
@@ -122,6 +124,7 @@
         <foreach collection="robotIds" item="robotId" open="(" separator="," close=")">
             #{robotId}
         </foreach>
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </update>
 
@@ -156,16 +159,17 @@
     </delete>
 
     <!-- 检查机器人是否存在扩展信息 -->
-    <select id="checkSysRobotExists" parameterType="Long" resultType="int">
+    <select id="checkSysRobotExists" parameterType="com.ruoyi.mode.domain.SysRobot" resultType="int">
         SELECT COUNT(1) FROM sys_robot_ext
         WHERE robot_id = #{robotId}
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </select>
 
     <!-- 保存机器人模式配置（JSON格式） -->
     <insert id="saveRobotModeConfig">
-        INSERT INTO sys_robot_mode_config (robot_id, mode_id, config, create_time, update_time)
-        VALUES (#{robotId}, #{modeId}, #{config}, NOW(), NOW())
+        INSERT INTO sys_robot_mode_config (robot_id, mode_id, config, tenant_id, create_time, update_time)
+        VALUES (#{robotId}, #{modeId}, #{config}, #{tenantId}, NOW(), NOW())
         ON DUPLICATE KEY UPDATE
         config = #{config},
         update_time = NOW()
@@ -177,6 +181,7 @@
         FROM sys_robot_mode_config
         WHERE robot_id = #{robotId}
         AND mode_id = #{modeId}
+        AND tenant_id = #{tenantId}
         LIMIT 1
     </select>
 
@@ -185,6 +190,7 @@
         DELETE FROM sys_robot_mode_config
         WHERE robot_id = #{robotId}
         AND mode_id = #{modeId}
+        AND tenant_id = #{tenantId}
     </delete>
 
     <!-- 统计各模式机器人数量 -->
@@ -194,6 +200,7 @@
         COUNT(*) as "count"
         FROM sys_robot_ext
         WHERE del_flag = '0'
+        AND tenant_id = #{tenantId}
         GROUP BY current_mode
         ORDER BY current_mode
     </select>
@@ -203,24 +210,27 @@
         SELECT <include refid="BaseColumnList" />
         FROM sys_robot_ext
         WHERE del_flag = '0'
+        AND tenant_id = #{tenantId}
         AND last_mode_switch_time IS NOT NULL
         ORDER BY last_mode_switch_time DESC
         LIMIT #{limit}
     </select>
 
     <!-- 更新最后模式切换时间 -->
-    <update id="updateLastModeSwitchTime" parameterType="Long">
+    <update id="updateLastModeSwitchTime" parameterType="com.ruoyi.mode.domain.SysRobot">
         UPDATE sys_robot_ext
         SET last_mode_switch_time = NOW(), update_time = NOW()
         WHERE robot_id = #{robotId}
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </update>
 
     <!-- 增加模式切换次数 -->
-    <update id="incrementModeSwitchCount" parameterType="Long">
+    <update id="incrementModeSwitchCount" parameterType="com.ruoyi.mode.domain.SysRobot">
         UPDATE sys_robot_ext
         SET mode_switch_count = mode_switch_count + 1, update_time = NOW()
         WHERE robot_id = #{robotId}
+        AND tenant_id = #{tenantId}
         AND del_flag = '0'
     </update>
 

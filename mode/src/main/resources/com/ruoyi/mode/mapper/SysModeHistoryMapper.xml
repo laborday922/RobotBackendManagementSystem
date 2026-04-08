@@ -15,29 +15,31 @@
         <result property="status"        column="status"           />
         <result property="createBy"      column="create_by"        />
         <result property="createTime"    column="create_time"      />
+        <result property="tenantId"      column="tenant_id"        />
     </resultMap>
 
     <sql id="selectHistoryVo">
         select history_id, operation_time, operation_type, robot_id, robot_name,
         mode_id, mode_name, content, operator, status,
-        create_by, create_time
+        create_by, create_time, tenant_id
         from sys_mode_history
     </sql>
 
     <select id="selectSysModeHistoryList" parameterType="com.ruoyi.mode.domain.SysModeHistory" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         <where>
-            <if test="operationType != null and operationType != ''">
-                AND operation_type = #{operationType}
+            AND tenant_id = #{sysModeHistory.tenantId}
+            <if test="sysModeHistory.operationType != null and sysModeHistory.operationType != ''">
+                AND operation_type = #{sysModeHistory.operationType}
             </if>
-            <if test="robotId != null">
-                AND robot_id = #{robotId}
+            <if test="sysModeHistory.robotId != null">
+                AND robot_id = #{sysModeHistory.robotId}
             </if>
-            <if test="beginTime != null and beginTime != ''">
-                AND operation_time >= #{beginTime}
+            <if test="sysModeHistory.beginTime != null and sysModeHistory.beginTime != ''">
+                AND operation_time >= #{sysModeHistory.beginTime}
             </if>
-            <if test="endTime != null and endTime != ''">
-                AND operation_time &lt;= #{endTime}
+            <if test="sysModeHistory.endTime != null and sysModeHistory.endTime != ''">
+                AND operation_time &lt;= #{sysModeHistory.endTime}
             </if>
         </where>
         order by operation_time desc
@@ -46,6 +48,7 @@
     <select id="selectSysModeHistoryListByTypes" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         <where>
+            AND tenant_id = #{history.tenantId}
             <if test="types != null and types.length > 0">
                 AND operation_type IN
                 <foreach collection="types" item="type" open="(" separator="," close=")">
@@ -65,9 +68,10 @@
         order by operation_time desc
     </select>
 
-    <select id="selectSysModeHistoryById" parameterType="Long" resultMap="SysModeHistoryResult">
+    <select id="selectSysModeHistoryById" parameterType="com.ruoyi.mode.domain.SysModeHistory" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
-        where history_id = #{historyId}
+        where history_id = #{sysModeHistory.historyId}
+        and tenant_id = #{sysModeHistory.tenantId}
     </select>
 
     <insert id="insertSysModeHistory" parameterType="com.ruoyi.mode.domain.SysModeHistory" useGeneratedKeys="true" keyProperty="historyId">
@@ -82,7 +86,7 @@
         <if test="operator != null and operator != ''">operator,</if>
         <if test="status != null and status != ''">status,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
-        create_time
+        tenant_id, create_time
         ) values (
         <if test="operationTime != null">#{operationTime},</if>
         <if test="operationType != null and operationType != ''">#{operationType},</if>
@@ -94,7 +98,7 @@
         <if test="operator != null and operator != ''">#{operator},</if>
         <if test="status != null and status != ''">#{status},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
-        sysdate()
+        #{tenantId}, sysdate()
         )
     </insert>
 
@@ -134,8 +138,9 @@
         delete from sys_mode_history where create_time &lt; #{expireTime}
     </delete>
 
-    <select id="selectRecentHistory" parameterType="Integer" resultMap="SysModeHistoryResult">
+    <select id="selectRecentHistory" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
+        where tenant_id = #{tenantId}
         order by operation_time desc
         limit #{limit}
     </select>
@@ -143,6 +148,7 @@
     <select id="selectHistoryByOperatorAndType" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         where operator = #{operator}
+        and tenant_id = #{tenantId}
         <if test="operationType != null and operationType != ''">
             and operation_type = #{operationType}
         </if>
@@ -154,6 +160,7 @@
         operation_type as operationType,
         count(*) as count
         from sys_mode_history
+        where tenant_id = #{tenantId}
         group by operation_type
         order by count desc
     </select>
@@ -165,16 +172,18 @@
         count(*) as count
         from sys_mode_history
         where robot_id is not null
+        and tenant_id = #{tenantId}
         group by robot_id, robot_name
         order by count desc
     </select>
 
-    <select id="selectDailyOperationStats" parameterType="Integer" resultType="java.util.Map">
+    <select id="selectDailyOperationStats" resultType="java.util.Map">
         select
         date_format(operation_time, '%Y-%m-%d') as date,
         count(*) as count
         from sys_mode_history
         where operation_time >= date_sub(curdate(), interval #{days} day)
+        and tenant_id = #{tenantId}
         group by date_format(operation_time, '%Y-%m-%d')
         order by date desc
     </select>
@@ -182,6 +191,7 @@
     <select id="selectHistoryByTimeRange" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         <where>
+            tenant_id = #{tenantId}
             <if test="beginTime != null and beginTime != ''">
                 and operation_time >= #{beginTime}
             </if>

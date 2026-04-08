@@ -179,10 +179,21 @@ export default {
       await this.getModeList();
       await this.getRobotList();
     },
-    /** 查询机器人列表 */
+    /** 查询机器人列表 - 修复版 */
     getRobotList() {
       return listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        this.robotOptions = response.rows;
+        console.log('原始机器人数据:', response.rows);
+
+        // 确保每个机器人都有正确的 robotId
+        this.robotOptions = response.rows.map(robot => ({
+          ...robot,
+          robotId: robot.robotId || robot.id,  // 兼容两种字段名
+          robotName: robot.robotName || robot.name,
+          name: robot.robotName || robot.name
+        }));
+
+        console.log('处理后的机器人列表:', this.robotOptions);
+
         // 更新每个机器人的当前模式名称
         this.updateRobotModeNames();
       }).catch(error => {
@@ -237,26 +248,20 @@ export default {
     /** 获取状态类型 */
     getStatusType(status) {
       const map = {
-        'online': 'success',
-        'low_battery': 'warning',
-        'offline': 'info',
-        'charging': 'primary',
-        'maintenance': 'warning',
-        'standby': 'info'
+        0: 'info',      // 离线
+        1: 'success',   // 在线
+        2: 'warning'    // 忙碌/待机
       };
       return map[status] || 'info';
     },
     /** 获取状态文本 */
     getStatusText(status) {
       const map = {
-        'online': '在线',
-        'low_battery': '低电量',
-        'offline': '离线',
-        'charging': '充电中',
-        'maintenance': '维护中',
-        'standby': '待机中'
+        0: '离线',
+        1: '在线',
+        2: '待机中'
       };
-      return map[status] || status;
+      return map[status] || '未知';
     },
     /** 选择模式 */
     selectMode(mode) {
@@ -286,7 +291,7 @@ export default {
     },
     /** 获取切换警告信息 */
     getSwitchWarning() {
-      if (!this.selectedMode) return '请先选择目标模式和机器人';
+      if (!this.selectedMode) return '请先选择目标机器人和模式';
 
       const warnings = {
         1: '切换到待机模式将降低功耗，等待手动或定时唤醒',
@@ -308,7 +313,6 @@ export default {
     },
     /** 保存配置 */
     saveConfig() {
-      // 这里应该调用保存配置的API，将参数配置保存到机器人或模式的配置中
       this.savedConfigData = JSON.parse(JSON.stringify(this.configData));
       this.$message.success('配置保存成功');
 
@@ -318,6 +322,9 @@ export default {
     },
     /** 确认切换 */
     confirmSwitch() {
+      console.log('当前选中的机器人ID:', this.selectedRobotId);
+      console.log('机器人列表:', this.robotOptions);
+
       if (!this.selectedModeId || !this.selectedRobotId) {
         this.$message.warning('请选择目标机器人和模式');
         return;
@@ -329,7 +336,7 @@ export default {
         robotName = '所有机器人';
       } else {
         const robot = this.robotOptions.find(r => r.robotId === this.selectedRobotId);
-        robotName = robot ? robot.robotName : '未知';
+        robotName = robot ? robot.name : '未知';
       }
 
       const modeName = this.selectedMode.modeName;
@@ -353,7 +360,7 @@ export default {
 
       const robotNames = this.selectedRobotId === 'all'
         ? '所有机器人'
-        : this.robotOptions.find(r => r.robotId === this.selectedRobotId)?.robotName;
+        : this.robotOptions.find(r => r.robotId === this.selectedRobotId)?.name;
 
       // 显示加载状态
       const loadingInstance = this.$loading({
@@ -365,7 +372,7 @@ export default {
 
       // 调用更新机器人模式API
       const promises = robotIds.map(robotId =>
-        updateRobotMode({ robotId: robotId, currentMode: this.selectedModeId })
+        updateRobotMode({ robotId: robotId, modeId: this.selectedModeId })
       );
 
       Promise.all(promises)
@@ -375,13 +382,12 @@ export default {
           // 记录操作历史
           this.recordHistory('mode-switch', `切换为${this.selectedMode.modeName}`);
 
-          // 关键：刷新机器人列表以更新显示
+          // 刷新机器人列表以更新显示
           this.getRobotList().then(() => {
-            // 如果有选中的单个机器人，在下拉框中显示更新后的模式
             if (this.selectedRobotId !== 'all') {
               const updatedRobot = this.robotOptions.find(r => r.robotId === this.selectedRobotId);
               if (updatedRobot) {
-                console.log(`机器人 ${updatedRobot.robotName} 模式已更新为: ${updatedRobot.currentModeName}`);
+                console.log(`机器人 ${updatedRobot.name} 模式已更新为: ${updatedRobot.currentModeName}`);
               }
             }
           });
@@ -406,7 +412,7 @@ export default {
         operationType: type,
         robotId: this.selectedRobotId !== 'all' ? this.selectedRobotId : null,
         robotName: this.selectedRobotId === 'all' ? '所有机器人' :
-          this.robotOptions.find(r => r.robotId === this.selectedRobotId)?.robotName,
+          this.robotOptions.find(r => r.robotId === this.selectedRobotId)?.name,
         content: content,
         operator: this.$store.state.user?.name || this.$store.state.user?.nickName || '系统',
         status: status
@@ -440,7 +446,7 @@ export default {
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-light, #E5E7EB);
+  border-bottom: 1px solid #E5E7EB;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -458,7 +464,7 @@ export default {
 }
 
 .card-title i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
 }
 
 .card-body {
@@ -475,7 +481,7 @@ export default {
   background-color: #f8f9fa;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid var(--border-light, #E5E7EB);
+  border: 1px solid #E5E7EB;
 }
 
 .filter-bar span {
@@ -485,7 +491,7 @@ export default {
 }
 
 .filter-bar span i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   margin-right: 6px;
 }
 
@@ -498,7 +504,7 @@ export default {
   background: #ffffff;
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid var(--border-light, #E5E7EB);
+  border: 1px solid #E5E7EB;
   margin-bottom: 20px;
 }
 
@@ -510,7 +516,7 @@ export default {
 }
 
 .sub-card-header i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   margin-right: 8px;
 }
 
@@ -543,14 +549,14 @@ export default {
 
 .mode-btn-inner:hover {
   transform: translateY(-5px);
-  border-color: var(--primary-blue, #3976E4);
+  border-color: #3976E4;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .mode-btn-inner.active {
   color: white;
-  background-color: var(--primary-blue, #3976E4);
-  border-color: var(--primary-blue, #3976E4);
+  background-color: #3976E4;
+  border-color: #3976E4;
 }
 
 .mode-btn-inner i {
@@ -627,13 +633,13 @@ export default {
   gap: 12px;
   padding: 16px;
   background-color: #ecf5ff;
-  border-left: 4px solid var(--primary-blue, #3976E4);
+  border-left: 4px solid #3976E4;
   border-radius: 4px;
   margin-bottom: 20px;
 }
 
 .switch-info i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   font-size: 18px;
 }
 

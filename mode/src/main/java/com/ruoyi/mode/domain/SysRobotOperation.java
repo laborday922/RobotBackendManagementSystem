@@ -39,6 +39,12 @@ public class SysRobotOperation extends BaseEntity
     /** 备注 */
     private String remark;
 
+    /** 租户ID */
+    private Long tenantId;
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+
     public Long getOperationId() {
         return operationId;
     }

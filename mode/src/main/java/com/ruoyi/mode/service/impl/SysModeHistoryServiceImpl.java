@@ -1,5 +1,6 @@
 package com.ruoyi.mode.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysModeHistory;
 import com.ruoyi.mode.mapper.SysModeHistoryMapper;
@@ -23,6 +24,14 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     private SysModeHistoryMapper sysModeHistoryMapper;
 
     /**
+     * 获取当前租户ID
+     */
+    private Long getCurrentTenantId() {
+        Long tenantId = TenantContext.get();
+        return tenantId == null ? 0L : tenantId;
+    }
+
+    /**
      * 查询历史记录
      *
      * @param historyId 历史ID
@@ -31,7 +40,10 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public SysModeHistory selectSysModeHistoryById(Long historyId)
     {
-        return sysModeHistoryMapper.selectSysModeHistoryById(historyId);
+        SysModeHistory query = new SysModeHistory();
+        query.setHistoryId(historyId);
+        query.setTenantId(getCurrentTenantId());
+        return sysModeHistoryMapper.selectSysModeHistoryById(query);
     }
 
     /**
@@ -43,12 +55,15 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectSysModeHistoryList(SysModeHistory sysModeHistory)
     {
+        if (sysModeHistory == null) {
+            sysModeHistory = new SysModeHistory();
+        }
+        sysModeHistory.setTenantId(getCurrentTenantId());
+
         // 如果 operationType 包含逗号，说明是多个类型
         if (sysModeHistory.getOperationType() != null &&
                 sysModeHistory.getOperationType().contains(",")) {
-            // 分割字符串，转换为数组
             String[] types = sysModeHistory.getOperationType().split(",");
-            // 调用新的 Mapper 方法
             return sysModeHistoryMapper.selectSysModeHistoryListByTypes(types, sysModeHistory);
         }
         return sysModeHistoryMapper.selectSysModeHistoryList(sysModeHistory);
@@ -64,10 +79,9 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Transactional
     public int insertSysModeHistory(SysModeHistory sysModeHistory)
     {
-        // 设置创建时间
         sysModeHistory.setCreateTime(DateUtils.getNowDate());
+        sysModeHistory.setTenantId(getCurrentTenantId());
 
-        // 如果操作时间为空，设置为当前时间
         if (sysModeHistory.getOperationTime() == null) {
             sysModeHistory.setOperationTime(DateUtils.getNowDate());
         }
@@ -138,6 +152,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     {
         SysModeHistory history = new SysModeHistory();
         history.setOperationType(operationType);
+        history.setTenantId(getCurrentTenantId());
         return sysModeHistoryMapper.selectSysModeHistoryList(history);
     }
 
@@ -152,6 +167,7 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     {
         SysModeHistory history = new SysModeHistory();
         history.setRobotId(robotId);
+        history.setTenantId(getCurrentTenantId());
         return sysModeHistoryMapper.selectSysModeHistoryList(history);
     }
 
@@ -165,7 +181,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectHistoryByTimeRange(String beginTime, String endTime)
     {
-        return sysModeHistoryMapper.selectHistoryByTimeRange(beginTime, endTime);
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectHistoryByTimeRange(beginTime, endTime, tenantId);
     }
 
     /**
@@ -177,7 +194,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectRecentHistory(Integer limit)
     {
-        return sysModeHistoryMapper.selectRecentHistory(limit);
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectRecentHistory(limit, tenantId);
     }
 
     /**
@@ -190,7 +208,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectHistoryByOperatorAndType(String operator, String operationType)
     {
-        return sysModeHistoryMapper.selectHistoryByOperatorAndType(operator, operationType);
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectHistoryByOperatorAndType(operator, operationType, tenantId);
     }
 
     /**
@@ -201,7 +220,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<Map<String, Object>> selectOperationTypeStats()
     {
-        return sysModeHistoryMapper.selectOperationTypeStats();
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectOperationTypeStats(tenantId);
     }
 
     /**
@@ -212,7 +232,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<Map<String, Object>> selectRobotOperationStats()
     {
-        return sysModeHistoryMapper.selectRobotOperationStats();
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectRobotOperationStats(tenantId);
     }
 
     /**
@@ -224,7 +245,8 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<Map<String, Object>> selectDailyOperationStats(Integer days)
     {
-        return sysModeHistoryMapper.selectDailyOperationStats(days);
+        Long tenantId = getCurrentTenantId();
+        return sysModeHistoryMapper.selectDailyOperationStats(days, tenantId);
     }
 
     /**

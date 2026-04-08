@@ -1,5 +1,6 @@
 package com.ruoyi.mode.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysRobotOperation;
 import com.ruoyi.mode.mapper.SysRobotOperationMapper;
@@ -21,6 +22,14 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     private SysRobotOperationMapper sysRobotOperationMapper;
 
     /**
+     * 获取当前租户ID
+     */
+    private Long getCurrentTenantId() {
+        Long tenantId = TenantContext.get();
+        return tenantId == null ? 0L : tenantId;
+    }
+
+    /**
      * 查询操作记录
      *
      * @param operationId 操作ID
@@ -29,7 +38,10 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     @Override
     public SysRobotOperation selectSysRobotOperationById(Long operationId)
     {
-        return sysRobotOperationMapper.selectSysRobotOperationById(operationId);
+        SysRobotOperation query = new SysRobotOperation();
+        query.setOperationId(operationId);
+        query.setTenantId(getCurrentTenantId());
+        return sysRobotOperationMapper.selectSysRobotOperationById(query);
     }
 
     /**
@@ -41,6 +53,10 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     @Override
     public List<SysRobotOperation> selectSysRobotOperationList(SysRobotOperation sysRobotOperation)
     {
+        if (sysRobotOperation == null) {
+            sysRobotOperation = new SysRobotOperation();
+        }
+        sysRobotOperation.setTenantId(getCurrentTenantId());
         return sysRobotOperationMapper.selectSysRobotOperationList(sysRobotOperation);
     }
 
@@ -53,6 +69,7 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     @Override
     public int insertSysRobotOperation(SysRobotOperation sysRobotOperation)
     {
+        sysRobotOperation.setTenantId(getCurrentTenantId());
         sysRobotOperation.setOperationTime(DateUtils.getNowDate());
         return sysRobotOperationMapper.insertSysRobotOperation(sysRobotOperation);
     }
@@ -104,6 +121,7 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
         operation.setOperationTime(DateUtils.getNowDate());
         operation.setOperator(operator);
         operation.setRemark(remark);
+        operation.setTenantId(getCurrentTenantId());
         return sysRobotOperationMapper.insertSysRobotOperation(operation);
     }
 }

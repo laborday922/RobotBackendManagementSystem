@@ -54,25 +54,24 @@
     </select>
 
     <update id="update">
-    UPDATE metric_definition
-    SET
-    metric_name = #{metricName},
-    category = #{category},
-    description = #{description},
-    data_sources = #{dataSources},
-    selected_fields = #{selectedFields},
-    calculation_expression = #{calculationExpression},
-    update_frequency = #{updateFrequency},
-    chart_type = #{chartType},
-    enable_alert = #{enableAlert},
-    alert_threshold = #{alertThreshold},
-    tags = #{tags}
-    WHERE id = #{id}
-
-    <if test="tenantId != null">
-        AND tenant_id = #{tenantId}
-    </if>
-</update>
+        UPDATE metric_definition
+        SET
+        metric_name = #{metric.metricName},
+        category = #{metric.category},
+        description = #{metric.description},
+        data_sources = #{metric.dataSources},
+        selected_fields = #{metric.selectedFields},
+        calculation_expression = #{metric.calculationExpression},
+        update_frequency = #{metric.updateFrequency},
+        chart_type = #{metric.chartType},
+        enable_alert = #{metric.enableAlert},
+        alert_threshold = #{metric.alertThreshold},
+        tags = #{metric.tags}
+        WHERE id = #{metric.id}
+        <if test="tenantId != null">
+            AND tenant_id = #{tenantId}
+        </if>
+    </update>
 
     <delete id="delete">
         DELETE FROM metric_definition

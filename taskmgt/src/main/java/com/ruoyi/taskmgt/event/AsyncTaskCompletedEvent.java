@@ -1,7 +1,6 @@
-// AsyncTaskCompletedEvent.java
 package com.ruoyi.taskmgt.event;
 
-import com.ruoyi.taskmgt.operation.model.OperationResult;
+import com.ruoyi.taskmgt.operation.dto.OperationResult;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

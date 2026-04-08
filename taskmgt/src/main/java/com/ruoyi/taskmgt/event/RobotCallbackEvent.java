@@ -1,6 +1,5 @@
 package com.ruoyi.taskmgt.event;
-
-import com.ruoyi.taskmgt.monitor.AsyncOperationMonitor.RobotCallbackData;
+import com.ruoyi.taskmgt.monitor.dto.RobotCallbackData;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

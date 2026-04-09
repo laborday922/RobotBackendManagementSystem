@@ -43,6 +43,22 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectSysModeHistoryList(SysModeHistory sysModeHistory)
     {
+        // ========== 修复日期范围查询 ==========
+        // 将开始日期添加时间部分 "00:00:00"
+        if (sysModeHistory.getBeginTime() != null && !sysModeHistory.getBeginTime().isEmpty()) {
+            // 如果日期已经包含时间部分，不重复添加
+            if (!sysModeHistory.getBeginTime().contains(":")) {
+                sysModeHistory.setBeginTime(sysModeHistory.getBeginTime() + " 00:00:00");
+            }
+        }
+        // 将结束日期添加时间部分 "23:59:59"
+        if (sysModeHistory.getEndTime() != null && !sysModeHistory.getEndTime().isEmpty()) {
+            if (!sysModeHistory.getEndTime().contains(":")) {
+                sysModeHistory.setEndTime(sysModeHistory.getEndTime() + " 23:59:59");
+            }
+        }
+        // ========== 修复日期范围查询结束 ==========
+
         // 如果 operationType 包含逗号，说明是多个类型
         if (sysModeHistory.getOperationType() != null &&
                 sysModeHistory.getOperationType().contains(",")) {
@@ -165,6 +181,13 @@ public class SysModeHistoryServiceImpl implements ISysModeHistoryService
     @Override
     public List<SysModeHistory> selectHistoryByTimeRange(String beginTime, String endTime)
     {
+        // 修复：添加时间部分
+        if (beginTime != null && !beginTime.isEmpty() && !beginTime.contains(":")) {
+            beginTime = beginTime + " 00:00:00";
+        }
+        if (endTime != null && !endTime.isEmpty() && !endTime.contains(":")) {
+            endTime = endTime + " 23:59:59";
+        }
         return sysModeHistoryMapper.selectHistoryByTimeRange(beginTime, endTime);
     }
 

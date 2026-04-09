@@ -5,6 +5,9 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
+import com.ruoyi.mode.domain.SysMode;
+import com.ruoyi.mode.domain.SysRobot;
+import com.ruoyi.mode.service.ISysModeService;
 import com.ruoyi.mode.service.ISysRobotService;
 import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.service.IRobotsService;
@@ -39,6 +42,10 @@ public class SysRobotController extends BaseController
     @Autowired
     private IRobotsService robotsService;  // 复用已有的机器人服务
 
+    @Autowired
+    private ISysModeService sysModeService;  // 新增：注入模式服务
+
+
     /**
      * 查询机器人基础信息列表（复用robot模块）
      */
@@ -49,6 +56,25 @@ public class SysRobotController extends BaseController
     {
         startPage();
         List<Robot> list = robotsService.selectRobotsList(robot);
+
+        // 获取所有模式（缓存起来）
+        SysMode queryParam = new SysMode();
+        queryParam.setDelFlag("0");
+        List<SysMode> allModes = sysModeService.selectSysModeList(queryParam);
+        Map<Long, String> modeMap = new HashMap<>();
+        for (SysMode mode : allModes) {
+            modeMap.put(mode.getModeId(), mode.getModeName());
+        }
+
+        for (Robot r : list) {
+            if (r.getCurrentMode() != null) {
+                String modeName = modeMap.get(r.getCurrentMode());
+                r.setCurrentModeName(modeName != null ? modeName : "未知");
+            } else {
+                r.setCurrentModeName("未设置");
+            }
+        }
+
         return getDataTable(list);
     }
 
@@ -100,9 +126,11 @@ public class SysRobotController extends BaseController
     @PutMapping("/batchRestart")
     public AjaxResult batchRestart(@RequestBody Long[] robotIds)
     {
+        System.out.println("==================== Controller: 收到批量重启请求 ====================");
         logger.info("收到批量重启请求: robotIds={}", Arrays.toString(robotIds));
 
         int submittedCount = sysRobotService.batchRestartAsync(robotIds);
+        System.out.println("==================== Controller: submittedCount=" + submittedCount + " ====================");
 
         Map<String, Object> result = new HashMap<>();
         result.put("submitted", submittedCount);
@@ -110,6 +138,48 @@ public class SysRobotController extends BaseController
         result.put("message", "已提交 " + submittedCount + " 个机器人的重启任务");
 
         return submittedCount > 0 ? success(result) : error("没有成功提交任何重启任务");
+    }
+
+    /**
+     * 刷新机器人状态
+     */
+    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
+    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
+    @ApiOperation(value = "刷新机器人状态", notes = "刷新指定机器人的状态信息")
+    @PutMapping("/refreshStatus")
+    public AjaxResult refreshStatus(@RequestBody Long[] robotIds)
+    {
+        logger.info("收到刷新状态请求: robotIds={}", Arrays.toString(robotIds));
+        int result = sysRobotService.refreshStatus(robotIds);
+        return result > 0 ? success(result) : error("刷新状态失败");
+    }
+
+    /**
+     * 测试告警
+     */
+    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
+    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
+    @ApiOperation(value = "测试告警", notes = "触发机器人的测试告警")
+    @PutMapping("/testAlert")
+    public AjaxResult testAlert(@RequestBody Long[] robotIds)
+    {
+        logger.info("收到测试告警请求: robotIds={}", Arrays.toString(robotIds));
+        int result = sysRobotService.testAlert(robotIds);
+        return result > 0 ? success(result) : error("测试告警失败");
+    }
+
+    /**
+     * 清除告警
+     */
+    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
+    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
+    @ApiOperation(value = "清除告警", notes = "清除机器人的告警状态")
+    @PutMapping("/clearAlerts")
+    public AjaxResult clearAlerts(@RequestBody Long[] robotIds)
+    {
+        logger.info("收到清除告警请求: robotIds={}", Arrays.toString(robotIds));
+        int result = sysRobotService.clearAlerts(robotIds);
+        return result > 0 ? success(result) : error("清除告警失败");
     }
 
     /**

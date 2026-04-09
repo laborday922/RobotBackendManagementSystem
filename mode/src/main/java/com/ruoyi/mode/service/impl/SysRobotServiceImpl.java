@@ -8,10 +8,12 @@ import com.ruoyi.mode.service.ISysRobotOperationService;
 import com.ruoyi.mode.service.ISysRobotService;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.domain.Robot;
+import com.ruoyi.robots.mapper.RobotsMapper;
 import com.ruoyi.robots.service.IRobotsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
@@ -34,11 +36,14 @@ public class SysRobotServiceImpl implements ISysRobotService
     @Autowired
     private IRobotsService robotsService;
 
+    @Autowired
+    private RobotsMapper robotsMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     // ==================== 辅助方法 ====================
 
-    /**
-     * 将 Robot 转换为 RobotStatusDto（用于更新动态状态）
-     */
     private RobotStatusDto convertToRobotStatusDto(Robot robot) {
         if (robot == null) {
             return null;
@@ -54,9 +59,6 @@ public class SysRobotServiceImpl implements ISysRobotService
         return dto;
     }
 
-    /**
-     * 获取或创建机器人扩展信息
-     */
     private SysRobot getOrCreateSysRobot(Long robotId) {
         SysRobot sysRobot = sysRobotMapper.selectSysRobotById(robotId);
         if (sysRobot == null) {
@@ -65,6 +67,7 @@ public class SysRobotServiceImpl implements ISysRobotService
             sysRobot.setCreateTime(DateUtils.getNowDate());
             sysRobot.setDelFlag("0");
             sysRobotMapper.insertSysRobot(sysRobot);
+            logger.info("创建机器人扩展信息: robotId={}", robotId);
         }
         return sysRobot;
     }
@@ -116,6 +119,9 @@ public class SysRobotServiceImpl implements ISysRobotService
         return sysRobotMapper.deleteSysRobotById(robotId);
     }
 
+    /**
+     * 更新机器人当前模式 - 同时增加模式使用次数
+     */
     @Override
     @Transactional
     public int updateRobotMode(Long robotId, Long modeId)
@@ -125,16 +131,53 @@ public class SysRobotServiceImpl implements ISysRobotService
         SysRobot sysRobot = getOrCreateSysRobot(robotId);
         Long oldMode = sysRobot.getCurrentMode();
 
+        // 1. 更新扩展表 sys_robot_ext
         int result = sysRobotMapper.updateRobotMode(robotId, modeId);
+
+        // 2. 直接更新 robots 表的 current_mode
+        if (result > 0) {
+            try {
+                jdbcTemplate.update("UPDATE robots SET current_mode = ? WHERE id = ?", modeId, robotId);
+                logger.info("同步更新 robots 表成功: robotId={}, modeId={}", robotId, modeId);
+            } catch (Exception e) {
+                logger.error("同步更新 robots 表失败: robotId={}, error={}", robotId, e.getMessage());
+            }
+
+            // ========== 新增：增加模式使用次数 ==========
+            incrementModeUsageCount(modeId);
+            // ========================================
+        }
 
         if (result > 0) {
             logger.info("机器人模式切换成功: robotId={}, oldMode={}, newMode={}",
                     robotId, oldMode, modeId);
             recordOperation(robotId, null, "mode_switch",
                     "success", null, "模式切换: " + oldMode + " -> " + modeId);
+        } else {
+            logger.warn("机器人模式切换失败: robotId={}, modeId={}", robotId, modeId);
         }
 
         return result;
+    }
+
+    /**
+     * 增加模式使用次数
+     * @param modeId 模式ID
+     */
+    private void incrementModeUsageCount(Long modeId) {
+        if (modeId == null) {
+            return;
+        }
+        try {
+            int updated = jdbcTemplate.update("UPDATE sys_mode SET usage_count = usage_count + 1 WHERE mode_id = ?", modeId);
+            if (updated > 0) {
+                logger.debug("模式使用次数增加成功: modeId={}", modeId);
+            } else {
+                logger.warn("模式不存在，无法增加使用次数: modeId={}", modeId);
+            }
+        } catch (Exception e) {
+            logger.error("增加模式使用次数失败: modeId={}", modeId, e);
+        }
     }
 
     // ==================== 快捷操作方法 ====================
@@ -150,7 +193,7 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot == null) {
                     logger.warn("机器人不存在: robotId={}", robotId);
                     continue;
@@ -159,10 +202,9 @@ public class SysRobotServiceImpl implements ISysRobotService
                 String robotName = robot.getName();
                 logger.info("提交重启任务: robotId={}, robotName={}", robotId, robotName);
 
-                // 使用 RobotStatusDto 更新动态状态
                 RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-                statusDto.setStatus(2);  // 待激活状态
-                statusDto.setTaskStatus(3);  // 维护状态
+                statusDto.setStatus(2);
+                statusDto.setTaskStatus(3);
                 robotsService.updateRobotStatus(statusDto);
 
                 getOrCreateSysRobot(robotId);
@@ -180,23 +222,22 @@ public class SysRobotServiceImpl implements ISysRobotService
             }
         }
 
-        logger.info("异步批量重启完成: 已提交={}", submittedCount);
+        logger.info("异步批量重启完成: 已提交={}, 总数={}", submittedCount, robotIds.length);
         return submittedCount;
     }
 
     @Async
     public void asyncRestartRobot(Long robotId, String robotName, String operator) {
-        logger.info("异步重启线程开始: robotId={}", robotId);
+        logger.info("异步重启线程开始: robotId={}, robotName={}", robotId, robotName);
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(500);
 
-            Robot robot = robotsService.selectRobotsById(robotId);
+            Robot robot = robotsMapper.selectRobotsById(robotId);
             if (robot != null) {
-                // 使用 RobotStatusDto 更新动态状态
                 RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-                statusDto.setStatus(1);  // 在线状态
-                statusDto.setTaskStatus(2);  // 闲置状态
+                statusDto.setStatus(1);
+                statusDto.setTaskStatus(2);
                 robotsService.updateRobotStatus(statusDto);
 
                 logger.info("机器人重启成功: robotId={}, robotName={}", robotId, robotName);
@@ -217,11 +258,10 @@ public class SysRobotServiceImpl implements ISysRobotService
 
     private void updateRobotToOffline(Long robotId, String robotName) {
         try {
-            Robot robot = robotsService.selectRobotsById(robotId);
+            Robot robot = robotsMapper.selectRobotsById(robotId);
             if (robot != null) {
-                // 使用 RobotStatusDto 更新动态状态
                 RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-                statusDto.setStatus(0);  // 离线状态
+                statusDto.setStatus(0);
                 robotsService.updateRobotStatus(statusDto);
                 logger.warn("机器人重启失败，设置为离线: robotId={}", robotId);
                 recordOperation(robotId, robotName, "batch_restart_failed",
@@ -243,7 +283,7 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot == null) {
                     logger.warn("机器人不存在: robotId={}", robotId);
                     continue;
@@ -252,7 +292,6 @@ public class SysRobotServiceImpl implements ISysRobotService
                 String robotName = robot.getName();
                 logger.info("处理机器人: robotId={}, robotName={}", robotId, robotName);
 
-                // 使用 RobotStatusDto 更新动态状态
                 RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                 statusDto.setStatus(2);
                 statusDto.setTaskStatus(3);
@@ -261,7 +300,7 @@ public class SysRobotServiceImpl implements ISysRobotService
                 recordOperation(robotId, robotName, "batch_restart_start",
                         "success", operator, "开始重启");
 
-                Thread.sleep(1000);
+                Thread.sleep(2000);
 
                 statusDto.setStatus(1);
                 statusDto.setTaskStatus(2);
@@ -295,9 +334,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setStatus(0);
                     statusDto.setTaskStatus(2);
@@ -324,9 +362,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
 
                     int change = (int)(Math.random() * 10) - 3;
@@ -364,9 +401,8 @@ public class SysRobotServiceImpl implements ISysRobotService
         for (int i = 0; i < robotIds.length && i < 2; i++) {
             Long robotId = robotIds[i];
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setTaskStatus(1);
                     statusDto.setBattery(15);
@@ -395,9 +431,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setHardwareStatus(0);
                     if (statusDto.getBattery() < 15) {
@@ -447,7 +482,6 @@ public class SysRobotServiceImpl implements ISysRobotService
     public List<SysRobot> selectLowBatteryRobots(Integer threshold)
     {
         logger.debug("查询低电量机器人扩展信息: threshold={}", threshold);
-        // 从robot模块获取低电量机器人列表
         Robot condition = new Robot();
         condition.setStatus(1);
         List<Robot> allRobots = robotsService.selectRobotsList(condition);
@@ -456,7 +490,6 @@ public class SysRobotServiceImpl implements ISysRobotService
             return new ArrayList<>();
         }
 
-        // 过滤低电量机器人
         List<Robot> lowBatteryRobots = new ArrayList<>();
         for (Robot robot : allRobots) {
             if (robot.getBattery() != null && robot.getBattery() <= threshold) {
@@ -492,9 +525,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setStatus(2);
                     statusDto.setTaskStatus(2);
@@ -525,9 +557,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setTaskStatus(3);
                     robotsService.updateRobotStatus(statusDto);
@@ -557,9 +588,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setTaskStatus(1);
                     robotsService.updateRobotStatus(statusDto);
@@ -589,9 +619,8 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         for (Long robotId : robotIds) {
             try {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
-                    // 使用 RobotStatusDto 更新动态状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setTaskStatus(1);
                     robotsService.updateRobotStatus(statusDto);
@@ -683,7 +712,7 @@ public class SysRobotServiceImpl implements ISysRobotService
             }
 
             if (robotName == null || robotName.isEmpty()) {
-                Robot robot = robotsService.selectRobotsById(robotId);
+                Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null) {
                     robotName = robot.getName();
                 }

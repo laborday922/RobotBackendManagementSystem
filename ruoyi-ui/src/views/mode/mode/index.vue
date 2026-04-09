@@ -530,12 +530,22 @@ export default {
       this.handleQuery();
     },
 
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset();
-      this.open = true;
-      this.title = "添加模式";
-    },
+/** 新增按钮操作 */
+handleAdd() {
+  this.reset();
+
+  // 自动计算排序值：取现有模式中最大的 orderNum + 1
+  let maxOrderNum = 0;
+  if (this.modeList && this.modeList.length > 0) {
+    // 找出所有模式中最大的排序值
+    const orderNums = this.modeList.map(mode => mode.orderNum || 0);
+    maxOrderNum = Math.max(...orderNums);
+  }
+  this.form.orderNum = maxOrderNum + 1;
+
+  this.open = true;
+  this.title = "添加模式";
+},
 
     /** 修改按钮操作 */
     handleUpdate(row) {

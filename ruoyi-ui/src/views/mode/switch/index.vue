@@ -183,7 +183,11 @@ export default {
     getRobotList() {
       return listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
         console.log('原始机器人数据:', response.rows);
-
+if (response.rows && response.rows[0]) {
+      console.log('第一个机器人的所有字段:', Object.keys(response.rows[0]));
+      console.log('currentMode:', response.rows[0].currentMode);
+      console.log('current_mode:', response.rows[0].current_mode);
+    }
         // 确保每个机器人都有正确的 robotId
         this.robotOptions = response.rows.map(robot => ({
           ...robot,

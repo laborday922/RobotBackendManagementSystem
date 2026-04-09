@@ -9,6 +9,9 @@ import java.util.Date;
 
 /**
  * 机器人模式扩展对象
+ * 注意：基础信息请使用 Robot 类
+ *
+ * @author ruoyi
  */
 public class SysRobot implements Serializable
 {
@@ -17,23 +20,21 @@ public class SysRobot implements Serializable
     /** 机器人ID（关联robots表） */
     private Long robotId;
 
-    /** 机器人名称 */
-    private String name;
+    private String name;           // 对应 name 字段
 
-    /** 机器人编码 */
-    private String code;
+    private String code;           // 对应 code 字段
 
     /** 组ID */
-    private Long groupId;
+    private Long groupId;          // 对应 group_id 字段
 
-    /** 状态 0-离线 1-在线 2-待机 */
-    private Integer status;
+    /** 状态 */
+    private Integer status;        // 对应 status 字段
 
     /** 电池电量 */
-    private Integer battery;
+    private Integer battery;       // 对应 battery 字段
 
     /** 区域 */
-    private String area;
+    private String area;           // 对应 area 字段
 
     /** 当前模式ID */
     private Long currentMode;
@@ -62,68 +63,175 @@ public class SysRobot implements Serializable
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
 
-    /** 删除标志 */
+    /** 删除标志（0代表存在 2代表删除） */
     private String delFlag;
 
-    /** 租户ID */
-    private Long tenantId;
+    // ==================== Getters and Setters ====================
 
-    // Getters and Setters
-    public Long getRobotId() { return robotId; }
-    public void setRobotId(Long robotId) { this.robotId = robotId; }
+    public Long getRobotId() {
+        return robotId;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
+    }
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    public String getName() {
+        return name;
+    }
 
-    public Long getGroupId() { return groupId; }
-    public void setGroupId(Long groupId) { this.groupId = groupId; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public Integer getStatus() { return status; }
-    public void setStatus(Integer status) { this.status = status; }
+    public String getCode() {
+        return code;
+    }
 
-    public Integer getBattery() { return battery; }
-    public void setBattery(Integer battery) { this.battery = battery; }
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-    public String getArea() { return area; }
-    public void setArea(String area) { this.area = area; }
+    public Long getGroupId() {
+        return groupId;
+    }
 
-    public Long getCurrentMode() { return currentMode; }
-    public void setCurrentMode(Long currentMode) { this.currentMode = currentMode; }
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
+    }
 
-    public String getCurrentModeName() { return currentModeName; }
-    public void setCurrentModeName(String currentModeName) { this.currentModeName = currentModeName; }
+    public Integer getStatus() {
+        return status;
+    }
 
-    public Date getLastModeSwitchTime() { return lastModeSwitchTime; }
-    public void setLastModeSwitchTime(Date lastModeSwitchTime) { this.lastModeSwitchTime = lastModeSwitchTime; }
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
 
-    public Integer getModeSwitchCount() { return modeSwitchCount; }
-    public void setModeSwitchCount(Integer modeSwitchCount) { this.modeSwitchCount = modeSwitchCount; }
+    public Integer getBattery() {
+        return battery;
+    }
 
-    public String getCreateBy() { return createBy; }
-    public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public void setBattery(Integer battery) {
+        this.battery = battery;
+    }
 
-    public Date getCreateTime() { return createTime; }
-    public void setCreateTime(Date createTime) { this.createTime = createTime; }
+    public String getArea() {
+        return area;
+    }
 
-    public String getUpdateBy() { return updateBy; }
-    public void setUpdateBy(String updateBy) { this.updateBy = updateBy; }
+    public void setArea(String area) {
+        this.area = area;
+    }
 
-    public Date getUpdateTime() { return updateTime; }
-    public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
+    public Long getCurrentMode() {
+        return currentMode;
+    }
 
-    public String getDelFlag() { return delFlag; }
-    public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
+    public void setCurrentMode(Long currentMode) {
+        this.currentMode = currentMode;
+    }
 
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getCurrentModeName() {
+        return currentModeName;
+    }
 
-    // 兼容前端字段
-    public String getRobotName() { return this.name; }
-    public void setRobotName(String robotName) { this.name = robotName; }
+    public void setCurrentModeName(String currentModeName) {
+        this.currentModeName = currentModeName;
+    }
 
-    public String getRobotCode() { return this.code; }
-    public void setRobotCode(String robotCode) { this.code = robotCode; }
+    public Date getLastModeSwitchTime() {
+        return lastModeSwitchTime;
+    }
+
+    public void setLastModeSwitchTime(Date lastModeSwitchTime) {
+        this.lastModeSwitchTime = lastModeSwitchTime;
+    }
+
+    public Integer getModeSwitchCount() {
+        return modeSwitchCount;
+    }
+
+    public void setModeSwitchCount(Integer modeSwitchCount) {
+        this.modeSwitchCount = modeSwitchCount;
+    }
+
+    public String getCreateBy() {
+        return createBy;
+    }
+
+    public void setCreateBy(String createBy) {
+        this.createBy = createBy;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getUpdateBy() {
+        return updateBy;
+    }
+
+    public void setUpdateBy(String updateBy) {
+        this.updateBy = updateBy;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public String getDelFlag() {
+        return delFlag;
+    }
+
+    public void setDelFlag(String delFlag) {
+        this.delFlag = delFlag;
+    }
+
+    // 兼容前端的 robotName 和 robotCode
+    public String getRobotName() {
+        return this.name;
+    }
+
+    public void setRobotName(String robotName) {
+        this.name = robotName;
+    }
+
+    public String getRobotCode() {
+        return this.code;
+    }
+
+    public void setRobotCode(String robotCode) {
+        this.code = robotCode;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+                .append("robotId", getRobotId())
+                .append("name", getName())
+                .append("code", getCode())
+                .append("groupId", getGroupId())
+                .append("status", getStatus())
+                .append("battery", getBattery())
+                .append("area", getArea())
+                .append("currentMode", getCurrentMode())
+                .append("currentModeName", getCurrentModeName())
+                .append("lastModeSwitchTime", getLastModeSwitchTime())
+                .append("modeSwitchCount", getModeSwitchCount())
+                .append("createBy", getCreateBy())
+                .append("createTime", getCreateTime())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
+                .append("delFlag", getDelFlag())
+                .toString();
+    }
 }

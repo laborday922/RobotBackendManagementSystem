@@ -1,6 +1,5 @@
 package com.ruoyi.mode.service.impl;
 
-import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysModeSchedule;
 import com.ruoyi.mode.mapper.SysModeScheduleMapper;
@@ -11,8 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +28,6 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     private SysModeScheduleMapper sysModeScheduleMapper;
 
     /**
-     * 获取当前租户ID
-     */
-    private Long getCurrentTenantId() {
-        Long tenantId = TenantContext.get();
-        return tenantId == null ? 0L : tenantId;
-    }
-
-    /**
      * 查询排程
      *
      * @param scheduleId 排程ID
@@ -47,13 +36,9 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Override
     public SysModeSchedule selectSysModeScheduleById(Long scheduleId)
     {
-        SysModeSchedule query = new SysModeSchedule();
-        query.setScheduleId(scheduleId);
-        query.setTenantId(getCurrentTenantId());
-
-        SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(query);
+        SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(scheduleId);
         if (schedule != null) {
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId, getCurrentTenantId()));
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId));
         }
         return schedule;
     }
@@ -67,15 +52,10 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Override
     public List<SysModeSchedule> selectSysModeScheduleList(SysModeSchedule sysModeSchedule)
     {
-        if (sysModeSchedule == null) {
-            sysModeSchedule = new SysModeSchedule();
-        }
-        sysModeSchedule.setTenantId(getCurrentTenantId());
-
         List<SysModeSchedule> list = sysModeScheduleMapper.selectSysModeScheduleList(sysModeSchedule);
-        Long tenantId = getCurrentTenantId();
+        // 为每个排程加载关联的机器人
         for (SysModeSchedule schedule : list) {
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId(), tenantId));
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId()));
         }
         return list;
     }
@@ -90,20 +70,16 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Transactional
     public int insertSysModeSchedule(SysModeSchedule sysModeSchedule)
     {
-        sysModeSchedule.setTenantId(getCurrentTenantId());
         sysModeSchedule.setCreateTime(DateUtils.getNowDate());
-
+        // 生成执行时间描述
         String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
                 + " " + sysModeSchedule.getStartTime();
         sysModeSchedule.setExecuteTime(executeTime);
 
         int rows = sysModeScheduleMapper.insertSysModeSchedule(sysModeSchedule);
+        // 插入机器人关联
         if (sysModeSchedule.getRobotIds() != null && sysModeSchedule.getRobotIds().length > 0) {
-            sysModeScheduleMapper.insertScheduleRobots(
-                    sysModeSchedule.getScheduleId(),
-                    sysModeSchedule.getRobotIds(),
-                    getCurrentTenantId()
-            );
+            sysModeScheduleMapper.insertScheduleRobots(sysModeSchedule.getScheduleId(), sysModeSchedule.getRobotIds());
         }
         return rows;
     }
@@ -119,7 +95,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     public int updateSysModeSchedule(SysModeSchedule sysModeSchedule)
     {
         sysModeSchedule.setUpdateTime(DateUtils.getNowDate());
-
+        // 更新执行时间描述
         String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
                 + " " + sysModeSchedule.getStartTime();
         sysModeSchedule.setExecuteTime(executeTime);
@@ -128,11 +104,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         sysModeScheduleMapper.deleteScheduleRobots(sysModeSchedule.getScheduleId());
         // 再插入新的机器人关联
         if (sysModeSchedule.getRobotIds() != null && sysModeSchedule.getRobotIds().length > 0) {
-            sysModeScheduleMapper.insertScheduleRobots(
-                    sysModeSchedule.getScheduleId(),
-                    sysModeSchedule.getRobotIds(),
-                    getCurrentTenantId()
-            );
+            sysModeScheduleMapper.insertScheduleRobots(sysModeSchedule.getScheduleId(), sysModeSchedule.getRobotIds());
         }
         return sysModeScheduleMapper.updateSysModeSchedule(sysModeSchedule);
     }
@@ -177,10 +149,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Override
     public int toggleScheduleStatus(Long scheduleId)
     {
-        SysModeSchedule query = new SysModeSchedule();
-        query.setScheduleId(scheduleId);
-        query.setTenantId(getCurrentTenantId());
-        SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(query);
+        SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(scheduleId);
         if (schedule != null) {
             String newStatus = "running".equals(schedule.getStatus()) ? "paused" : "running";
             return sysModeScheduleMapper.updateScheduleStatus(scheduleId, newStatus);
@@ -216,9 +185,13 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
                 monthData.put("beginTime", beginTime);
                 monthData.put("endTime", endTime);
 
+                // TODO: 从数据库查询该月份的执行记录
+                // List<SysModeHistory> histories = historyService.selectHistoryByTimeRange(beginTime, endTime);
+
                 result.put("monthData", monthData);
                 result.put("message", "获取月份数据成功");
             } else {
+                // 返回全年概览
                 result.put("message", "获取年度数据成功");
             }
         } catch (Exception e) {

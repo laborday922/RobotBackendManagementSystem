@@ -49,12 +49,6 @@ public class SysModeParam extends BaseEntity
     /** 删除标志（0代表存在 2代表删除） */
     private String delFlag;
 
-    /** 租户ID */
-    private Long tenantId;
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-
     // 非数据库字段 - 模式名称
     private String modeName;
 

@@ -1,6 +1,5 @@
 package com.ruoyi.mode.config;
 
-import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.mode.constants.ModeConstants;
 import com.ruoyi.mode.domain.SysMode;
 import com.ruoyi.mode.service.ISysModeService;
@@ -21,14 +20,6 @@ public class ModeConfig implements CommandLineRunner {
     @Autowired
     private ISysModeService sysModeService;
 
-    /**
-     * 获取当前租户ID
-     */
-    private Long getCurrentTenantId() {
-        Long tenantId = TenantContext.get();
-        return tenantId == null ? 0L : tenantId;
-    }
-
     @Override
     public void run(String... args) throws Exception {
         logger.info("初始化模式模块配置...");
@@ -41,22 +32,12 @@ public class ModeConfig implements CommandLineRunner {
      */
     private void initDefaultModes() {
         try {
-            Long tenantId = getCurrentTenantId();
-
-            // 系统租户（0）不自动初始化默认模式，由各租户自行初始化
-            if (tenantId == 0) {
-                logger.info("系统租户，跳过默认模式初始化");
-                return;
-            }
-
             SysMode query = new SysMode();
             query.setDelFlag(ModeConstants.DEL_FLAG_NORMAL);
-            query.setTenantId(tenantId);
-
             java.util.List<SysMode> modes = sysModeService.selectSysModeList(query);
 
             if (modes == null || modes.isEmpty()) {
-                logger.info("租户 {} 未检测到模式数据，开始初始化默认模式...", tenantId);
+                logger.info("未检测到模式数据，开始初始化默认模式...");
 
                 // 待机模式
                 SysMode standby = new SysMode();
@@ -67,7 +48,6 @@ public class ModeConfig implements CommandLineRunner {
                 standby.setDescription("机器人待机状态，低功耗运行");
                 standby.setEnabled(ModeConstants.ENABLED);
                 standby.setOrderNum(1);
-                standby.setTenantId(tenantId);
                 sysModeService.insertSysMode(standby);
 
                 // 维护模式
@@ -79,7 +59,6 @@ public class ModeConfig implements CommandLineRunner {
                 maintenance.setDescription("机器人维护检修状态");
                 maintenance.setEnabled(ModeConstants.ENABLED);
                 maintenance.setOrderNum(2);
-                maintenance.setTenantId(tenantId);
                 sysModeService.insertSysMode(maintenance);
 
                 // 充电模式
@@ -91,10 +70,9 @@ public class ModeConfig implements CommandLineRunner {
                 charge.setDescription("机器人充电状态");
                 charge.setEnabled(ModeConstants.ENABLED);
                 charge.setOrderNum(3);
-                charge.setTenantId(tenantId);
                 sysModeService.insertSysMode(charge);
 
-                logger.info("租户 {} 默认模式初始化完成", tenantId);
+                logger.info("默认模式初始化完成");
             }
         } catch (Exception e) {
             logger.error("初始化默认模式失败", e);

@@ -22,25 +22,27 @@
         <result property="createTime"       column="create_time"        />
         <result property="updateBy"         column="update_by"          />
         <result property="updateTime"       column="update_time"        />
-        <result property="tenantId"         column="tenant_id"          />
     </resultMap>
 
-    <!-- 机器人结果映射 -->
+    <!-- 机器人结果映射 - 根据实际表 robots 的字段 -->
     <resultMap type="com.ruoyi.mode.domain.SysRobot" id="SysRobotResult">
         <id     property="robotId"          column="id"                 />
-        <result property="name"             column="name"               />
-        <result property="code"             column="code"               />
+        <result property="robotName"        column="name"               />
+        <result property="robotCode"        column="code"               />
         <result property="groupId"          column="group_id"           />
         <result property="battery"          column="battery"            />
         <result property="status"           column="status"             />
-        <result property="area"             column="area"               />
+        <result property="location"         column="area"               />
         <result property="currentMode"      column="current_mode"       />
+        <result property="runtime"          column="runtime"            />
+        <result property="speed"            column="speed"              />
+        <result property="temperature"      column="temperature"        />
+        <result property="tasksCompleted"   column="tasks_completed"    />
         <result property="delFlag"          column="del_flag"           />
         <result property="createBy"         column="create_by"          />
         <result property="createTime"       column="created_at"         />
         <result property="updateBy"         column="update_by"          />
         <result property="updateTime"       column="updated_at"         />
-        <result property="tenantId"         column="tenant_id"          />
     </resultMap>
 
     <sql id="selectScheduleVo">
@@ -61,40 +63,37 @@
         create_by,
         create_time,
         update_by,
-        update_time,
-        tenant_id
+        update_time
         from sys_mode_schedule
     </sql>
 
-    <!-- 查询排程列表 - 使用 sysModeSchedule. 前缀 -->
+    <!-- 查询排程列表 -->
     <select id="selectSysModeScheduleList" parameterType="com.ruoyi.mode.domain.SysModeSchedule" resultMap="SysModeScheduleResult">
         <include refid="selectScheduleVo"/>
         <where>
-            AND tenant_id = #{sysModeSchedule.tenantId}
-            <if test="sysModeSchedule.scheduleName != null and sysModeSchedule.scheduleName != ''">
-                AND schedule_name like concat('%', #{sysModeSchedule.scheduleName}, '%')
+            <if test="scheduleName != null and scheduleName != ''">
+                AND schedule_name like concat('%', #{scheduleName}, '%')
             </if>
-            <if test="sysModeSchedule.modeId != null">
-                AND mode_id = #{sysModeSchedule.modeId}
+            <if test="modeId != null">
+                AND mode_id = #{modeId}
             </if>
-            <if test="sysModeSchedule.status != null and sysModeSchedule.status != ''">
-                AND status = #{sysModeSchedule.status}
+            <if test="status != null and status != ''">
+                AND status = #{status}
             </if>
             AND del_flag = '0'
         </where>
         order by create_time desc
     </select>
 
-    <!-- 根据ID查询排程 - 使用 sysModeSchedule. 前缀 -->
-    <select id="selectSysModeScheduleById" parameterType="com.ruoyi.mode.domain.SysModeSchedule" resultMap="SysModeScheduleResult">
+    <!-- 根据ID查询排程 -->
+    <select id="selectSysModeScheduleById" parameterType="Long" resultMap="SysModeScheduleResult">
         <include refid="selectScheduleVo"/>
-        where schedule_id = #{sysModeSchedule.scheduleId}
-        and tenant_id = #{sysModeSchedule.tenantId}
+        where schedule_id = #{scheduleId}
         and del_flag = '0'
     </select>
 
-    <!-- 查询排程关联的机器人 -->
-    <select id="selectRobotsByScheduleId" resultMap="SysRobotResult">
+    <!-- 查询排程关联的机器人 - 使用正确的表名 robots -->
+    <select id="selectRobotsByScheduleId" parameterType="Long" resultMap="SysRobotResult">
         select
         r.id,
         r.name,
@@ -102,7 +101,7 @@
         r.group_id,
         r.battery,
         r.status,
-        r.area,
+        r.area as location,
         r.current_mode,
         r.del_flag,
         r.create_by,
@@ -112,7 +111,6 @@
         from robots r
         inner join sys_schedule_robot sr on r.id = sr.robot_id
         where sr.schedule_id = #{scheduleId}
-        and sr.tenant_id = #{tenantId}
         and r.del_flag = '0'
         order by r.id
     </select>
@@ -130,8 +128,8 @@
         <if test="duration != null">duration,</if>
         <if test="status != null and status != ''">status,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
-        tenant_id, create_time
-        ) values (
+        create_time
+        )values(
         <if test="scheduleName != null and scheduleName != ''">#{scheduleName},</if>
         <if test="modeId != null">#{modeId},</if>
         <if test="modeName != null and modeName != ''">#{modeName},</if>
@@ -142,7 +140,7 @@
         <if test="duration != null">#{duration},</if>
         <if test="status != null and status != ''">#{status},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
-        #{tenantId}, sysdate()
+        sysdate()
         )
     </insert>
 
@@ -191,10 +189,10 @@
         </foreach>
     </update>
 
-    <!-- 批量插入排程机器人关联 -->
+    <!-- 批量插入排程机器人关联 - 使用正确的表名 robots -->
     <insert id="insertScheduleRobots">
-        INSERT INTO sys_schedule_robot (schedule_id, robot_id, robot_name, tenant_id)
-        SELECT #{scheduleId}, id, name, #{tenantId}
+        INSERT IGNORE INTO sys_schedule_robot (schedule_id, robot_id, robot_name)
+        SELECT #{scheduleId}, id, name
         FROM robots
         WHERE id IN
         <foreach item="robotId" collection="robotIds" open="(" separator="," close=")">

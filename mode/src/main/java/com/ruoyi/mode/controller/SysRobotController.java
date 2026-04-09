@@ -1,40 +1,26 @@
 package com.ruoyi.mode.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
-import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.core.page.TableDataInfo;
-import com.ruoyi.mode.domain.SysRobot;
+import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.mode.service.ISysRobotService;
-import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.robots.domain.Robot;
-
+import com.ruoyi.robots.service.IRobotsService;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 机器人模式管理Controller
@@ -51,7 +37,7 @@ public class SysRobotController extends BaseController
     private ISysRobotService sysRobotService;
 
     @Autowired
-    private IRobotsService robotsService;
+    private IRobotsService robotsService;  // 复用已有的机器人服务
 
     /**
      * 查询机器人基础信息列表（复用robot模块）
@@ -230,69 +216,6 @@ public class SysRobotController extends BaseController
     {
         int result = sysRobotService.deleteRobotModeConfig(robotId, modeId);
         return toAjax(result);
-    }
-
-    /**
-     * 刷新机器人状态
-     */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
-    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
-    @ApiOperation(value = "刷新机器人状态", notes = "刷新指定机器人的状态信息")
-    @PutMapping("/refreshStatus")
-    public AjaxResult refreshStatus(@RequestBody Long[] robotIds)
-    {
-        int result = sysRobotService.refreshStatus(robotIds);
-        return success(result);
-    }
-
-    /**
-     * 测试告警
-     */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
-    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
-    @ApiOperation(value = "测试告警", notes = "触发机器人测试告警")
-    @PutMapping("/testAlert")
-    public AjaxResult testAlert(@RequestBody Long[] robotIds)
-    {
-        int result = sysRobotService.testAlert(robotIds);
-        return success(result);
-    }
-
-    /**
-     * 清除告警
-     */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
-    @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
-    @ApiOperation(value = "清除告警", notes = "清除机器人的告警状态")
-    @PutMapping("/clearAlerts")
-    public AjaxResult clearAlerts(@RequestBody Long[] robotIds)
-    {
-        int result = sysRobotService.clearAlerts(robotIds);
-        return success(result);
-    }
-
-    /**
-     * 获取在线机器人列表
-     */
-    @PreAuthorize("@ss.hasPermi('mode:robots:list')")
-    @ApiOperation(value = "获取在线机器人列表", notes = "获取当前在线的机器人列表")
-    @GetMapping("/online")
-    public AjaxResult getOnlineRobots()
-    {
-        List<SysRobot> robots = sysRobotService.selectOnlineRobots();
-        return success(robots);
-    }
-
-    /**
-     * 获取低电量机器人列表
-     */
-    @PreAuthorize("@ss.hasPermi('mode:robots:list')")
-    @ApiOperation(value = "获取低电量机器人列表", notes = "获取电量低于阈值的机器人列表")
-    @GetMapping("/lowBattery")
-    public AjaxResult getLowBatteryRobots(@RequestParam(defaultValue = "20") Integer threshold)
-    {
-        List<SysRobot> robots = sysRobotService.selectLowBatteryRobots(threshold);
-        return success(robots);
     }
 
     // ==================== 内部DTO类 ====================

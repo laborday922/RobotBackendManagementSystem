@@ -87,12 +87,6 @@ public class SysMode extends BaseEntity
     @ApiModelProperty(value = "参数列表", notes = "模式关联的参数配置列表（非数据库字段）")
     private List<SysModeParam> modeParams;
 
-    /** 租户ID */
-    private Long tenantId;
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-
     // 分组校验接口
     public interface AddGroup {}
     public interface UpdateGroup {}

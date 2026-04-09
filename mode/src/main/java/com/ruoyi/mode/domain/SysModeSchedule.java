@@ -62,12 +62,6 @@ public class SysModeSchedule extends BaseEntity
     /** 机器人ID列表（用于接收前端数据） */
     private Long[] robotIds;
 
-    /** 租户ID */
-    private Long tenantId;
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-
     // Getters and Setters
     public Long getScheduleId() {
         return scheduleId;

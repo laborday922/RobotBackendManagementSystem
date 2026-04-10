@@ -167,7 +167,7 @@ export default {
         { type: 'system', label: '系统操作', icon: 'fas fa-cogs', count: 0 }
       ],
       categoryTypeMap: {
-        'emergency': ['emergency_stop', 'return_charge', 'batch_restart', 'emergency'],
+        'emergency': ['emergency_stop', 'return_charge', 'batch_restart', 'emergency', 'emergency_evacuation'],
         'status': ['refresh_status', 'test_alert', 'clear_alerts', 'alert'],
         'system': ['standby_mode', 'maintenance_mode', 'charge_mode', 'mode-switch', 'config-change']
       },
@@ -175,6 +175,7 @@ export default {
         'emergency_stop': 'emergency',
         'return_charge': 'emergency',
         'batch_restart': 'emergency',
+        'emergency_evacuation': 'emergency',
         'refresh_status': 'status',
         'test_alert': 'status',
         'clear_alerts': 'status',
@@ -190,6 +191,7 @@ export default {
         'emergency_stop': '紧急停止',
         'return_charge': '返回充电',
         'batch_restart': '批量重启',
+        'emergency_evacuation': '紧急撤离',
         'refresh_status': '刷新状态',
         'test_alert': '测试告警',
         'clear_alerts': '清除告警',
@@ -205,6 +207,7 @@ export default {
         'emergency_stop': 'danger',
         'return_charge': 'danger',
         'batch_restart': 'danger',
+        'emergency_evacuation': 'danger',
         'emergency': 'danger',
         'refresh_status': 'warning',
         'test_alert': 'warning',

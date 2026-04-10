@@ -4,12 +4,14 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.mode.domain.SysRobot;
 import com.ruoyi.mode.mapper.SysRobotMapper;
+import com.ruoyi.mode.service.ISysModeService;
 import com.ruoyi.mode.service.ISysRobotOperationService;
 import com.ruoyi.mode.service.ISysRobotService;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.mapper.RobotsMapper;
 import com.ruoyi.robots.service.IRobotsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,14 @@ public class SysRobotServiceImpl implements ISysRobotService
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ISysModeService sysModeService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // 模式名称缓存
+    private Map<Long, String> modeNameCache = new HashMap<>();
+
     // ==================== 辅助方法 ====================
 
     private RobotStatusDto convertToRobotStatusDto(Robot robot) {
@@ -66,10 +76,89 @@ public class SysRobotServiceImpl implements ISysRobotService
             sysRobot.setRobotId(robotId);
             sysRobot.setCreateTime(DateUtils.getNowDate());
             sysRobot.setDelFlag("0");
+            sysRobot.setNeedAutoCharge(0);
             sysRobotMapper.insertSysRobot(sysRobot);
             logger.info("创建机器人扩展信息: robotId={}", robotId);
         }
         return sysRobot;
+    }
+
+    /**
+     * 根据模式ID获取模式名称
+     */
+    private String getModeNameById(Long modeId) {
+        if (modeId == null) {
+            return "未知";
+        }
+        if (modeNameCache.containsKey(modeId)) {
+            return modeNameCache.get(modeId);
+        }
+        try {
+            String sql = "SELECT mode_name FROM sys_mode WHERE mode_id = ? AND del_flag = '0'";
+            String modeName = jdbcTemplate.queryForObject(sql, String.class, modeId);
+            if (modeName != null) {
+                modeNameCache.put(modeId, modeName);
+                return modeName;
+            }
+        } catch (Exception e) {
+            logger.warn("获取模式名称失败: modeId={}", modeId, e);
+        }
+        return "未知模式(" + modeId + ")";
+    }
+
+    /**
+     * 获取机器人的充电策略配置
+     * @param robotId 机器人ID
+     * @param modeId 模式ID
+     * @return "immediate" 立即充电, "after_task" 完成任务后充电, null 未配置
+     */
+    private String getChargeStrategy(Long robotId, Long modeId) {
+        try {
+            String configJson = sysRobotMapper.getRobotModeConfig(robotId, modeId);
+            if (configJson != null && !configJson.isEmpty()) {
+                // 使用 Jackson 解析 JSON
+                Map<String, Object> configMap = objectMapper.readValue(configJson, Map.class);
+
+                // 优先使用中文键名 "充电策略"（与数据库保存格式一致）
+                Object strategy = configMap.get("充电策略");
+                if (strategy == null) {
+                    // 兼容英文键名
+                    strategy = configMap.get("chargeStrategy");
+                }
+
+                if (strategy != null) {
+                    String strategyStr = strategy.toString();
+                    logger.debug("获取到充电策略: robotId={}, strategy={}", robotId, strategyStr);
+                    if ("after_task".equals(strategyStr)) {
+                        return "after_task";
+                    } else if ("immediate".equals(strategyStr)) {
+                        return "immediate";
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("获取充电策略失败: robotId={}, modeId={}", robotId, modeId, e);
+        }
+        return null;
+    }
+
+    @Override
+    public Map<String, Object> getRobotModeConfig(Long robotId, Long modeId)
+    {
+        logger.info("获取机器人模式配置: robotId={}, modeId={}", robotId, modeId);
+        try {
+            String configJson = sysRobotMapper.getRobotModeConfig(robotId, modeId);
+            if (configJson != null && !configJson.isEmpty()) {
+                return objectMapper.readValue(configJson, Map.class);
+            }
+        } catch (Exception e) {
+            logger.error("获取配置失败", e);
+        }
+
+        // 返回默认配置（使用中文键名）
+        Map<String, Object> config = new HashMap<>();
+        config.put("充电策略", "after_task");
+        return config;
     }
 
     // ==================== 基础CRUD方法 ====================
@@ -94,6 +183,9 @@ public class SysRobotServiceImpl implements ISysRobotService
         logger.info("新增机器人扩展信息: robotId={}", sysRobot.getRobotId());
         sysRobot.setCreateTime(DateUtils.getNowDate());
         sysRobot.setDelFlag("0");
+        if (sysRobot.getNeedAutoCharge() == null) {
+            sysRobot.setNeedAutoCharge(0);
+        }
         return sysRobotMapper.insertSysRobot(sysRobot);
     }
 
@@ -119,9 +211,6 @@ public class SysRobotServiceImpl implements ISysRobotService
         return sysRobotMapper.deleteSysRobotById(robotId);
     }
 
-    /**
-     * 更新机器人当前模式 - 同时增加模式使用次数
-     */
     @Override
     @Transactional
     public int updateRobotMode(Long robotId, Long modeId)
@@ -131,10 +220,11 @@ public class SysRobotServiceImpl implements ISysRobotService
         SysRobot sysRobot = getOrCreateSysRobot(robotId);
         Long oldMode = sysRobot.getCurrentMode();
 
-        // 1. 更新扩展表 sys_robot_ext
+        String oldModeName = getModeNameById(oldMode);
+        String newModeName = getModeNameById(modeId);
+
         int result = sysRobotMapper.updateRobotMode(robotId, modeId);
 
-        // 2. 直接更新 robots 表的 current_mode
         if (result > 0) {
             try {
                 jdbcTemplate.update("UPDATE robots SET current_mode = ? WHERE id = ?", modeId, robotId);
@@ -143,41 +233,23 @@ public class SysRobotServiceImpl implements ISysRobotService
                 logger.error("同步更新 robots 表失败: robotId={}, error={}", robotId, e.getMessage());
             }
 
-            // ========== 新增：增加模式使用次数 ==========
-            incrementModeUsageCount(modeId);
-            // ========================================
+            sysModeService.incrementUsageCount(modeId);
+            sysModeService.updateRobotCountByModeId(modeId);
+            if (oldMode != null) {
+                sysModeService.updateRobotCountByModeId(oldMode);
+            }
         }
 
         if (result > 0) {
             logger.info("机器人模式切换成功: robotId={}, oldMode={}, newMode={}",
                     robotId, oldMode, modeId);
-            recordOperation(robotId, null, "mode_switch",
-                    "success", null, "模式切换: " + oldMode + " -> " + modeId);
+            String remark = String.format("模式切换: %s -> %s", oldModeName, newModeName);
+            recordOperation(robotId, null, "mode_switch", "success", null, remark);
         } else {
             logger.warn("机器人模式切换失败: robotId={}, modeId={}", robotId, modeId);
         }
 
         return result;
-    }
-
-    /**
-     * 增加模式使用次数
-     * @param modeId 模式ID
-     */
-    private void incrementModeUsageCount(Long modeId) {
-        if (modeId == null) {
-            return;
-        }
-        try {
-            int updated = jdbcTemplate.update("UPDATE sys_mode SET usage_count = usage_count + 1 WHERE mode_id = ?", modeId);
-            if (updated > 0) {
-                logger.debug("模式使用次数增加成功: modeId={}", modeId);
-            } else {
-                logger.warn("模式不存在，无法增加使用次数: modeId={}", modeId);
-            }
-        } catch (Exception e) {
-            logger.error("增加模式使用次数失败: modeId={}", modeId, e);
-        }
     }
 
     // ==================== 快捷操作方法 ====================
@@ -354,6 +426,60 @@ public class SysRobotServiceImpl implements ISysRobotService
     }
 
     @Override
+    @Transactional
+    public int emergencyEvacuation(Long[] robotIds)
+    {
+        logger.info("执行紧急撤离: robotIds={}", Arrays.toString(robotIds));
+        int successCount = 0;
+        String operator = getCurrentUsername();
+
+        Long safeModeId = getSafeEvacuationModeId();
+        String safeModeName = getModeNameById(safeModeId);
+
+        for (Long robotId : robotIds) {
+            try {
+                Robot robot = robotsMapper.selectRobotsById(robotId);
+                if (robot != null && robot.getStatus() != 0) {
+                    RobotStatusDto statusDto = convertToRobotStatusDto(robot);
+
+                    statusDto.setTaskStatus(0);
+                    statusDto.setStatus(2);
+                    statusDto.setHardwareStatus(0);
+                    robotsService.updateRobotStatus(statusDto);
+
+                    updateRobotMode(robotId, safeModeId);
+
+                    recordOperation(robotId, robot.getName(), "emergency_evacuation",
+                            "success", operator, "紧急撤离 - 停止任务并返回安全位置(" + safeModeName + ")");
+
+                    successCount++;
+                    logger.info("紧急撤离成功: robotId={}, robotName={}", robotId, robot.getName());
+                } else {
+                    logger.warn("机器人不存在或不在线，无法执行紧急撤离: robotId={}", robotId);
+                }
+            } catch (Exception e) {
+                logger.error("紧急撤离失败: robotId={}", robotId, e);
+            }
+        }
+
+        logger.info("紧急撤离完成: 成功={}, 总数={}", successCount, robotIds.length);
+        return successCount;
+    }
+
+    private Long getSafeEvacuationModeId() {
+        try {
+            String sql = "SELECT mode_id FROM sys_mode WHERE (mode_name LIKE '%安全%' OR mode_name LIKE '%撤离%') AND del_flag = '0' LIMIT 1";
+            Long modeId = jdbcTemplate.queryForObject(sql, Long.class);
+            if (modeId != null) {
+                return modeId;
+            }
+        } catch (Exception e) {
+            logger.warn("未找到安全撤离模式，使用待机模式作为默认");
+        }
+        return 1L;
+    }
+
+    @Override
     public int refreshStatus(Long[] robotIds)
     {
         logger.info("刷新机器人状态: robotIds={}", Arrays.toString(robotIds));
@@ -378,6 +504,9 @@ public class SysRobotServiceImpl implements ISysRobotService
 
                     robotsService.updateRobotStatus(statusDto);
 
+                    // 检查并执行自动充电
+                    checkAndExecuteAutoCharge(robotId);
+
                     recordOperation(robotId, robot.getName(), "refresh_status",
                             "success", operator, "刷新状态, 当前电量:" + newBattery);
                     successCount++;
@@ -388,6 +517,36 @@ public class SysRobotServiceImpl implements ISysRobotService
             }
         }
         return successCount;
+    }
+
+    /**
+     * 检查并执行自动充电
+     * 任务状态说明：
+     * 0 - 执行中（有任务）
+     * 1 - 充电中
+     * 2 - 闲置（无任务）
+     * 3 - 维护中
+     */
+    private void checkAndExecuteAutoCharge(Long robotId) {
+        try {
+            // 检查是否需要自动充电
+            Integer needAutoCharge = sysRobotMapper.checkNeedAutoCharge(robotId);
+            if (needAutoCharge != null && needAutoCharge == 1) {
+                Robot robot = robotsMapper.selectRobotsById(robotId);
+                // 检查任务是否已完成：task_status != 0 表示没有任务在执行
+                if (robot != null && robot.getTaskStatus() != null && robot.getTaskStatus() != 0) {
+                    logger.info("任务已完成（task_status={}），执行自动充电: robotId={}", robot.getTaskStatus(), robotId);
+                    // 执行充电
+                    chargeMode(new Long[]{robotId});
+                    // 清除标记
+                    sysRobotMapper.clearNeedAutoCharge(robotId);
+                } else {
+                    logger.debug("机器人仍有任务在执行（task_status=0），等待下次检查: robotId={}", robotId);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("检查自动充电失败: robotId={}", robotId, e);
+        }
     }
 
     @Override
@@ -522,6 +681,7 @@ public class SysRobotServiceImpl implements ISysRobotService
         int successCount = 0;
         String operator = getCurrentUsername();
         Long standbyModeId = 1L;
+        String modeName = getModeNameById(standbyModeId);
 
         for (Long robotId : robotIds) {
             try {
@@ -535,7 +695,7 @@ public class SysRobotServiceImpl implements ISysRobotService
                     updateRobotMode(robotId, standbyModeId);
 
                     recordOperation(robotId, robot.getName(), "standby_mode",
-                            "success", operator, "切换为待机模式");
+                            "success", operator, "切换为" + modeName);
                     successCount++;
                     logger.info("切换待机模式成功: robotId={}", robotId);
                 }
@@ -554,6 +714,7 @@ public class SysRobotServiceImpl implements ISysRobotService
         int successCount = 0;
         String operator = getCurrentUsername();
         Long maintenanceModeId = 2L;
+        String modeName = getModeNameById(maintenanceModeId);
 
         for (Long robotId : robotIds) {
             try {
@@ -566,7 +727,7 @@ public class SysRobotServiceImpl implements ISysRobotService
                     updateRobotMode(robotId, maintenanceModeId);
 
                     recordOperation(robotId, robot.getName(), "maintenance_mode",
-                            "success", operator, "切换为维护模式");
+                            "success", operator, "切换为" + modeName);
                     successCount++;
                     logger.info("切换维护模式成功: robotId={}", robotId);
                 }
@@ -579,33 +740,88 @@ public class SysRobotServiceImpl implements ISysRobotService
 
     @Override
     @Transactional
-    public int chargeMode(Long[] robotIds)
+    public Map<String, Object> chargeMode(Long[] robotIds)
     {
         logger.info("切换充电模式: robotIds={}", Arrays.toString(robotIds));
         int successCount = 0;
+        int waitingCount = 0;
+        int immediateCount = 0;
         String operator = getCurrentUsername();
         Long chargeModeId = 3L;
+        String modeName = getModeNameById(chargeModeId);
 
         for (Long robotId : robotIds) {
             try {
                 Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-                    statusDto.setTaskStatus(1);
-                    robotsService.updateRobotStatus(statusDto);
 
-                    updateRobotMode(robotId, chargeModeId);
+                    // 获取充电策略
+                    String chargeStrategy = getChargeStrategy(robotId, chargeModeId);
+                    if (chargeStrategy == null) {
+                        chargeStrategy = "after_task";
+                        logger.info("机器人 {} 未配置充电策略，使用默认策略: 完成任务后充电", robot.getName());
+                    }
 
-                    recordOperation(robotId, robot.getName(), "charge_mode",
-                            "success", operator, "切换为充电模式");
-                    successCount++;
-                    logger.info("切换充电模式成功: robotId={}", robotId);
+                    logger.info("机器人 {} - 充电策略: {}, 当前任务状态: {}, 当前电量: {}%",
+                            robot.getName(), chargeStrategy, statusDto.getTaskStatus(), statusDto.getBattery());
+
+                    if ("immediate".equals(chargeStrategy)) {
+                        // 立即充电策略
+                        statusDto.setTaskStatus(1);
+                        robotsService.updateRobotStatus(statusDto);
+                        updateRobotMode(robotId, chargeModeId);
+                        recordOperation(robotId, robot.getName(), "charge_mode",
+                                "success", operator, "切换为" + modeName + "（立即充电）");
+                        successCount++;
+                        immediateCount++;
+                        logger.info("立即充电成功: robotId={}, robotName={}", robotId, robot.getName());
+
+                    } else if ("after_task".equals(chargeStrategy)) {
+                        // 完成任务后充电策略
+                        // taskStatus == 0 表示有任务在执行中
+                        if (statusDto.getTaskStatus() != null && statusDto.getTaskStatus() == 0) {
+                            // 有任务在执行中：标记自动充电，同时切换到充电模式
+                            sysRobotMapper.markNeedAutoCharge(robotId);
+                            // 立即切换模式到充电模式（但不改变任务状态）
+                            updateRobotMode(robotId, chargeModeId);
+                            recordOperation(robotId, robot.getName(), "charge_mode",
+                                    "info", operator, "切换为" + modeName + "（任务完成后自动充电）");
+                            logger.info("标记自动充电并切换模式: robotId={}, 当前任务状态=0（执行中），任务完成后自动充电", robotId);
+                            successCount++;
+                            waitingCount++;
+                        } else {
+                            // 无任务或任务已完成（taskStatus != 0）：立即充电
+                            statusDto.setTaskStatus(1);
+                            robotsService.updateRobotStatus(statusDto);
+                            updateRobotMode(robotId, chargeModeId);
+                            recordOperation(robotId, robot.getName(), "charge_mode",
+                                    "success", operator, "切换为" + modeName + "（当前无任务，立即充电）");
+                            logger.info("无任务（task_status={}），立即充电: robotId={}", statusDto.getTaskStatus(), robotId);
+                            successCount++;
+                            immediateCount++;
+                        }
+                    }
+                } else {
+                    logger.warn("机器人不存在或不在线，无法切换充电模式: robotId={}", robotId);
                 }
             } catch (Exception e) {
                 logger.error("切换充电模式失败: robotId={}", robotId, e);
             }
         }
-        return successCount;
+
+        logger.info("充电模式切换完成: 成功={}, 立即充电={}, 等待充电={}, 总数={}",
+                successCount, immediateCount, waitingCount, robotIds.length);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("successCount", successCount);
+        result.put("immediateCount", immediateCount);
+        result.put("waitingCount", waitingCount);
+        result.put("total", robotIds.length);
+        result.put("message", String.format("成功切换 %d 个机器人，其中 %d 个立即充电，%d 个等待任务完成后充电",
+                successCount, immediateCount, waitingCount));
+
+        return result;
     }
 
     @Override
@@ -616,26 +832,56 @@ public class SysRobotServiceImpl implements ISysRobotService
         int successCount = 0;
         String operator = getCurrentUsername();
         Long chargeModeId = 3L;
+        String modeName = getModeNameById(chargeModeId);
 
         for (Long robotId : robotIds) {
             try {
                 Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-                    statusDto.setTaskStatus(1);
-                    robotsService.updateRobotStatus(statusDto);
 
-                    updateRobotMode(robotId, chargeModeId);
+                    String chargeStrategy = getChargeStrategy(robotId, chargeModeId);
+                    if (chargeStrategy == null) {
+                        chargeStrategy = "after_task";
+                        logger.info("机器人 {} 未配置充电策略，使用默认策略: 完成任务后充电", robot.getName());
+                    }
 
-                    recordOperation(robotId, robot.getName(), "return_charge",
-                            "success", operator, "返回充电");
-                    successCount++;
-                    logger.info("返回充电成功: robotId={}", robotId);
+                    String remarkSuffix = chargeStrategy.equals("after_task") ? "（完成任务后充电）" : "（立即充电）";
+                    logger.info("机器人 {} 充电策略: {}, 当前任务状态: {}", robot.getName(), chargeStrategy, statusDto.getTaskStatus());
+
+                    if ("immediate".equals(chargeStrategy)) {
+                        statusDto.setTaskStatus(1);
+                        robotsService.updateRobotStatus(statusDto);
+                        updateRobotMode(robotId, chargeModeId);
+                        recordOperation(robotId, robot.getName(), "return_charge",
+                                "success", operator, "返回充电 - " + modeName + remarkSuffix);
+                        successCount++;
+                        logger.info("返回充电成功: robotId={}", robotId);
+
+                    } else if ("after_task".equals(chargeStrategy)) {
+                        if (statusDto.getTaskStatus() != null && statusDto.getTaskStatus() == 0) {
+                            sysRobotMapper.markNeedAutoCharge(robotId);
+                            recordOperation(robotId, robot.getName(), "return_charge",
+                                    "info", operator, "等待当前任务完成后自动返回充电" + remarkSuffix);
+                            logger.info("标记自动返回充电: robotId={}, 当前任务状态=0（执行中）", robotId);
+                            successCount++;
+                        } else {
+                            statusDto.setTaskStatus(1);
+                            robotsService.updateRobotStatus(statusDto);
+                            updateRobotMode(robotId, chargeModeId);
+                            recordOperation(robotId, robot.getName(), "return_charge",
+                                    "success", operator, "返回充电 - " + modeName + "（当前无任务，立即充电）");
+                            logger.info("无任务（task_status={}），立即返回充电: robotId={}", statusDto.getTaskStatus(), robotId);
+                            successCount++;
+                        }
+                    }
                 }
             } catch (Exception e) {
                 logger.error("返回充电失败: robotId={}", robotId, e);
             }
         }
+
+        logger.info("返回充电完成: 成功={}, 总数={}", successCount, robotIds.length);
         return successCount;
     }
 
@@ -646,30 +892,29 @@ public class SysRobotServiceImpl implements ISysRobotService
     public int saveRobotModeConfig(Long robotId, Long modeId, Map<String, Object> config)
     {
         logger.info("保存机器人模式配置: robotId={}, modeId={}, config={}", robotId, modeId, config);
-        recordOperation(robotId, null, "save_config", "success",
-                getCurrentUsername(), "保存模式配置: modeId=" + modeId);
-        return 1;
+
+        try {
+            String configJson = objectMapper.writeValueAsString(config);
+            int result = sysRobotMapper.saveRobotModeConfig(robotId, modeId, configJson);
+            recordOperation(robotId, null, "save_config", "success",
+                    getCurrentUsername(), "保存模式配置: modeId=" + modeId);
+            return result;
+        } catch (Exception e) {
+            logger.error("保存配置失败", e);
+            return 0;
+        }
     }
 
-    @Override
-    public Map<String, Object> getRobotModeConfig(Long robotId, Long modeId)
-    {
-        logger.info("获取机器人模式配置: robotId={}, modeId={}", robotId, modeId);
-        Map<String, Object> config = new HashMap<>();
-        config.put("speed", 50);
-        config.put("power", 80);
-        config.put("auto_mode", true);
-        return config;
-    }
 
     @Override
     @Transactional
     public int deleteRobotModeConfig(Long robotId, Long modeId)
     {
         logger.info("删除机器人模式配置: robotId={}, modeId={}", robotId, modeId);
+        int result = sysRobotMapper.deleteRobotModeConfig(robotId, modeId);
         recordOperation(robotId, null, "delete_config", "success",
                 getCurrentUsername(), "删除模式配置: modeId=" + modeId);
-        return 1;
+        return result;
     }
 
     @Override

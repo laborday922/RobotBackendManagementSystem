@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询机器人列表
 export function listRobot(query) {
   return request({
-    url: '/mode/robots/list',  // 修改这里
+    url: '/mode/robots/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listRobot(query) {
 // 查询机器人详细
 export function getRobot(robotId) {
   return request({
-    url: '/mode/robots/' + robotId,  // 修改这里
+    url: '/mode/robots/' + robotId,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getRobot(robotId) {
 // 批量重启机器人
 export function batchRestart(data) {
   return request({
-    url: '/mode/robots/batchRestart',  // 修改这里
+    url: '/mode/robots/batchRestart',
     method: 'put',
     data: data,
     timeout: 60000
@@ -30,7 +30,17 @@ export function batchRestart(data) {
 // 紧急停止
 export function emergencyStop(data) {
   return request({
-    url: '/mode/robots/emergencyStop',  // 修改这里
+    url: '/mode/robots/emergencyStop',
+    method: 'put',
+    data: data,
+    timeout: 30000
+  })
+}
+
+// 紧急撤离
+export function emergencyEvacuation(data) {
+  return request({
+    url: '/mode/robots/emergencyEvacuation',
     method: 'put',
     data: data,
     timeout: 30000
@@ -40,7 +50,7 @@ export function emergencyStop(data) {
 // 刷新状态
 export function refreshStatus(data) {
   return request({
-    url: '/mode/robots/refreshStatus',  // 修改这里
+    url: '/mode/robots/refreshStatus',
     method: 'put',
     data: data,
     timeout: 30000
@@ -50,7 +60,7 @@ export function refreshStatus(data) {
 // 测试告警
 export function testAlert(data) {
   return request({
-    url: '/mode/robots/testAlert',  // 修改这里
+    url: '/mode/robots/testAlert',
     method: 'put',
     data: data,
     timeout: 30000
@@ -60,7 +70,7 @@ export function testAlert(data) {
 // 清除告警
 export function clearAlerts(data) {
   return request({
-    url: '/mode/robots/clearAlerts',  // 修改这里
+    url: '/mode/robots/clearAlerts',
     method: 'put',
     data: data,
     timeout: 30000
@@ -70,7 +80,7 @@ export function clearAlerts(data) {
 // 切换待机模式
 export function standbyMode(data) {
   return request({
-    url: '/mode/robots/standbyMode',  // 修改这里
+    url: '/mode/robots/standbyMode',
     method: 'put',
     data: data,
     timeout: 30000
@@ -80,7 +90,7 @@ export function standbyMode(data) {
 // 切换维护模式
 export function maintenanceMode(data) {
   return request({
-    url: '/mode/robots/maintenanceMode',  // 修改这里
+    url: '/mode/robots/maintenanceMode',
     method: 'put',
     data: data,
     timeout: 30000
@@ -90,17 +100,17 @@ export function maintenanceMode(data) {
 // 切换充电模式
 export function chargeMode(data) {
   return request({
-    url: '/mode/robots/chargeMode',  // 修改这里
+    url: '/mode/robots/chargeMode',
     method: 'put',
     data: data,
     timeout: 30000
   })
 }
 
-// 返回充电
+// 返回充电（保持兼容）
 export function returnCharge(data) {
   return request({
-    url: '/mode/robots/returnCharge',  // 修改这里
+    url: '/mode/robots/returnCharge',
     method: 'put',
     data: data,
     timeout: 30000
@@ -110,7 +120,7 @@ export function returnCharge(data) {
 // 获取在线机器人列表
 export function listOnlineRobot() {
   return request({
-    url: '/mode/robots/online/list',  // 修改这里
+    url: '/mode/robots/online/list',
     method: 'get'
   })
 }
@@ -118,7 +128,7 @@ export function listOnlineRobot() {
 // 获取低电量机器人列表
 export function listLowBatteryRobot(threshold) {
   return request({
-    url: '/mode/robots/lowBattery/list',  // 修改这里
+    url: '/mode/robots/lowBattery/list',
     method: 'get',
     params: { threshold: threshold }
   })
@@ -127,7 +137,7 @@ export function listLowBatteryRobot(threshold) {
 // 更新机器人当前模式
 export function updateRobotMode(data) {
   return request({
-    url: '/mode/robots/updateMode',  // 修改这里
+    url: '/mode/robots/updateMode',
     method: 'put',
     data: data
   })
@@ -136,7 +146,7 @@ export function updateRobotMode(data) {
 // 批量更新机器人模式
 export function batchUpdateRobotMode(data) {
   return request({
-    url: '/mode/robots/batchUpdateMode',  // 修改这里
+    url: '/mode/robots/batchUpdateMode',
     method: 'put',
     data: data
   })
@@ -147,7 +157,16 @@ export function batchUpdateRobotMode(data) {
 // 保存机器人模式配置
 export function saveRobotModeConfig(data) {
   return request({
-    url: '/mode/robots/saveModeConfig',  // 修改这里
+    url: '/mode/robots/saveModeConfig',
+    method: 'post',
+    data: data
+  })
+}
+
+// 批量保存机器人模式配置
+export function batchSaveRobotModeConfig(data) {
+  return request({
+    url: '/mode/robots/batchSaveModeConfig',
     method: 'post',
     data: data
   })
@@ -156,25 +175,16 @@ export function saveRobotModeConfig(data) {
 // 获取机器人模式配置
 export function getRobotModeConfig(robotId, modeId) {
   return request({
-    url: '/mode/robots/modeConfig',  // 修改这里
+    url: '/mode/robots/modeConfig',
     method: 'get',
     params: { robotId, modeId }
-  })
-}
-
-// 批量保存机器人模式配置
-export function batchSaveRobotModeConfig(data) {
-  return request({
-    url: '/mode/robots/batchSaveModeConfig',  // 修改这里
-    method: 'post',
-    data: data
   })
 }
 
 // 删除机器人模式配置
 export function deleteRobotModeConfig(robotId, modeId) {
   return request({
-    url: '/mode/robots/deleteModeConfig',  // 修改这里
+    url: '/mode/robots/deleteModeConfig',
     method: 'delete',
     params: { robotId, modeId }
   })
@@ -183,7 +193,7 @@ export function deleteRobotModeConfig(robotId, modeId) {
 // 复制机器人模式配置
 export function copyRobotModeConfig(data) {
   return request({
-    url: '/mode/robots/copyModeConfig',  // 修改这里
+    url: '/mode/robots/copyModeConfig',
     method: 'post',
     data: data
   })
@@ -192,7 +202,7 @@ export function copyRobotModeConfig(data) {
 // 导出机器人数据
 export function exportRobot(query) {
   return request({
-    url: '/mode/robots/export',  // 修改这里
+    url: '/mode/robots/export',
     method: 'get',
     params: query,
     responseType: 'blob'

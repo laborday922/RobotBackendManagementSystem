@@ -9,9 +9,6 @@ import java.util.Map;
 
 /**
  * 机器人模式扩展Mapper接口
- * 注意：基础信息请使用 IRobotsService
- *
- * @author ruoyi
  */
 public interface SysRobotMapper
 {
@@ -69,10 +66,34 @@ public interface SysRobotMapper
      * 批量更新机器人扩展信息状态
      *
      * @param robotIds 机器人ID数组
-     * @param status 状态（仅用于扩展表）
+     * @param status 状态
      * @return 结果
      */
     public int batchUpdateExtStatus(@Param("robotIds") Long[] robotIds, @Param("status") Integer status);
+
+    /**
+     * 标记需要自动充电
+     *
+     * @param robotId 机器人ID
+     * @return 结果
+     */
+    public int markNeedAutoCharge(@Param("robotId") Long robotId);
+
+    /**
+     * 清除自动充电标记
+     *
+     * @param robotId 机器人ID
+     * @return 结果
+     */
+    public int clearNeedAutoCharge(@Param("robotId") Long robotId);
+
+    /**
+     * 检查是否需要自动充电
+     *
+     * @param robotId 机器人ID
+     * @return 结果
+     */
+    public int checkNeedAutoCharge(@Param("robotId") Long robotId);
 
     /**
      * 删除机器人模式扩展信息（逻辑删除）

@@ -10,6 +10,7 @@
         <result property="currentModeName"  column="current_mode_name" />
         <result property="lastModeSwitchTime" column="last_mode_switch_time" />
         <result property="modeSwitchCount"  column="mode_switch_count"  />
+        <result property="needAutoCharge"   column="need_auto_charge"   />
         <result property="createBy"         column="create_by"         />
         <result property="createTime"       column="create_time"       />
         <result property="updateBy"         column="update_by"         />
@@ -23,6 +24,7 @@
         current_mode,
         last_mode_switch_time,
         mode_switch_count,
+        need_auto_charge,
         create_by,
         create_time,
         update_by,
@@ -63,6 +65,7 @@
         <if test="robotId != null">robot_id,</if>
         <if test="currentMode != null">current_mode,</if>
         <if test="modeSwitchCount != null">mode_switch_count,</if>
+        <if test="needAutoCharge != null">need_auto_charge,</if>
         <if test="createBy != null">create_by,</if>
         <if test="delFlag != null">del_flag,</if>
         create_time
@@ -70,6 +73,7 @@
         <if test="robotId != null">#{robotId},</if>
         <if test="currentMode != null">#{currentMode},</if>
         <if test="modeSwitchCount != null">#{modeSwitchCount},</if>
+        <if test="needAutoCharge != null">#{needAutoCharge},</if>
         <if test="createBy != null">#{createBy},</if>
         <if test="delFlag != null">#{delFlag},</if>
         NOW()
@@ -82,6 +86,7 @@
         <set>
             <if test="currentMode != null">current_mode = #{currentMode},</if>
             <if test="modeSwitchCount != null">mode_switch_count = #{modeSwitchCount},</if>
+            <if test="needAutoCharge != null">need_auto_charge = #{needAutoCharge},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             update_time = NOW()
@@ -114,7 +119,7 @@
         AND del_flag = '0'
     </update>
 
-    <!-- 批量更新扩展信息状态（如果需要） -->
+    <!-- 批量更新扩展信息状态 -->
     <update id="batchUpdateExtStatus">
         UPDATE sys_robot_ext
         SET update_time = NOW()
@@ -124,6 +129,30 @@
         </foreach>
         AND del_flag = '0'
     </update>
+
+    <!-- 标记需要自动充电 -->
+    <update id="markNeedAutoCharge">
+        UPDATE sys_robot_ext
+        SET need_auto_charge = 1, update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </update>
+
+    <!-- 清除自动充电标记 -->
+    <update id="clearNeedAutoCharge">
+        UPDATE sys_robot_ext
+        SET need_auto_charge = 0, update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </update>
+
+    <!-- 检查是否需要自动充电 -->
+    <select id="checkNeedAutoCharge" parameterType="Long" resultType="int">
+        SELECT need_auto_charge
+        FROM sys_robot_ext
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </select>
 
     <!-- 删除机器人模式扩展信息（逻辑删除） -->
     <update id="deleteSysRobotById" parameterType="Long">

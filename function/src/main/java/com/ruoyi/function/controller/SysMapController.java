@@ -49,11 +49,13 @@ public class SysMapController extends BaseController {
     public TableDataInfo list(SysMap map) {
         startPage();
         List<SysMap> list = sysMapService.selectList(map);
-        // 为每个地图设置Base64图片数据（只返回前100个字符用于前端判断，完整数据在详情接口）
+        // 为每个地图设置Base64图片数据
         for (SysMap sysMap : list) {
             if (StringUtils.isNotEmpty(sysMap.getMapBase64())) {
-                // 标记有图片数据
+                // 标记有图片数据，前端可以直接使用
                 sysMap.setHasImage(true);
+                // 同时设置mapUrl为Base64数据，方便前端直接使用
+                sysMap.setMapUrl(sysMap.getMapBase64());
             }
         }
         return getDataTable(list);

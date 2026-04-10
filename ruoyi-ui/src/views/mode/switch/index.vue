@@ -11,7 +11,7 @@
       <!-- 机器人选择 -->
       <div class="filter-bar">
         <span><i class="fas fa-robot"></i> 选择目标机器人</span>
-        <el-select v-model="selectedRobotId" placeholder="请选择机器人" filterable clearable style="flex: 1;">
+        <el-select v-model="selectedRobotId" placeholder="请选择机器人" filterable clearable style="flex: 1;" @change="onRobotChange">
           <el-option label="所有机器人" value="all"></el-option>
           <el-option
             v-for="robot in robotOptions"
@@ -48,6 +48,12 @@
       <div class="sub-card" v-if="selectedMode">
         <div class="sub-card-header">
           <span><i class="fas fa-sliders-h"></i> {{ selectedMode.modeName }} 配置</span>
+          <el-tag v-if="selectedRobotId === 'all'" type="warning" size="mini" style="margin-left: 10px;">
+            <i class="el-icon-info"></i> 批量配置模式（将应用到所有机器人）
+          </el-tag>
+          <el-tag v-else type="success" size="mini" style="margin-left: 10px;">
+            <i class="el-icon-info"></i> 单独配置模式（仅对当前机器人生效）
+          </el-tag>
         </div>
 
         <el-form :model="configData" label-width="140px">
@@ -128,40 +134,53 @@
         </div>
       </div>
     </div>
+
+    <!-- 充电模式结果弹窗 -->
+    <el-dialog :title="chargeResult.title" :visible.sync="chargeResultDialogVisible" width="30%">
+      <div class="result-content">
+        <i :class="chargeResult.icon" :style="{ color: chargeResult.color, fontSize: '48px' }"></i>
+        <p>{{ chargeResult.message }}</p>
+        <p v-if="chargeResult.detail" class="result-detail">{{ chargeResult.detail }}</p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="chargeResultDialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listRobot, updateRobotMode } from "@/api/mode/robot";
+import { listRobot, updateRobotMode, saveRobotModeConfig, batchSaveRobotModeConfig, getRobotModeConfig } from "@/api/mode/robot";
 import { listMode, getMode } from "@/api/mode/mode";
 import { addHistory } from "@/api/mode/history";
+import request from '@/utils/request';
 
 export default {
   name: "ModeSwitch",
   data() {
     return {
-      // 选中的机器人ID
       selectedRobotId: null,
-      // 选中的模式ID
       selectedModeId: null,
-      // 机器人列表
       robotOptions: [],
-      // 模式列表（包含参数）
       modeOptions: [],
-      // 配置数据（动态存储）
       configData: {},
-      // 保存的配置（用于重置）
       savedConfigData: {},
-      // 加载状态
-      loading: false
+      loading: false,
+      // 充电模式结果弹窗
+      chargeResultDialogVisible: false,
+      chargeResult: {
+        title: '',
+        icon: '',
+        color: '',
+        message: '',
+        detail: ''
+      }
     };
   },
   computed: {
-    /** 当前选中的模式 */
     selectedMode() {
       return this.modeOptions.find(m => m.modeId === this.selectedModeId);
     },
-    /** 当前生效模式名称 */
     activeModeName() {
       if (this.selectedModeId) {
         const mode = this.modeOptions.find(m => m.modeId === this.selectedModeId);
@@ -174,48 +193,35 @@ export default {
     this.initData();
   },
   methods: {
-    /** 初始化数据 */
     async initData() {
       await this.getModeList();
       await this.getRobotList();
     },
-    /** 查询机器人列表 - 修复版 */
+
     getRobotList() {
       return listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        console.log('原始机器人数据:', response.rows);
-if (response.rows && response.rows[0]) {
-      console.log('第一个机器人的所有字段:', Object.keys(response.rows[0]));
-      console.log('currentMode:', response.rows[0].currentMode);
-      console.log('current_mode:', response.rows[0].current_mode);
-    }
-        // 确保每个机器人都有正确的 robotId
         this.robotOptions = response.rows.map(robot => ({
           ...robot,
-          robotId: robot.robotId || robot.id,  // 兼容两种字段名
+          robotId: robot.robotId || robot.id,
           robotName: robot.robotName || robot.name,
           name: robot.robotName || robot.name
         }));
-
-        console.log('处理后的机器人列表:', this.robotOptions);
-
-        // 更新每个机器人的当前模式名称
         this.updateRobotModeNames();
       }).catch(error => {
         console.error('获取机器人列表失败', error);
         this.$message.error('获取机器人列表失败');
       });
     },
-    /** 更新所有机器人的模式名称 */
+
     updateRobotModeNames() {
       this.robotOptions.forEach(robot => {
         const mode = this.modeOptions.find(m => m.modeId === robot.currentMode);
         robot.currentModeName = mode ? mode.modeName : '未知';
       });
     },
-    /** 查询模式列表（包含参数） */
+
     getModeList() {
       return listMode({ pageNum: 1, pageSize: 100, enabled: '1' }).then(response => {
-        // 为每个模式加载参数配置
         const modePromises = response.rows.map(mode => {
           return getMode(mode.modeId).then(detail => {
             mode.modeParams = detail.data.modeParams || [];
@@ -228,14 +234,13 @@ if (response.rows && response.rows[0]) {
 
         return Promise.all(modePromises).then(modes => {
           this.modeOptions = modes;
-          console.log('加载的模式列表（含参数）:', this.modeOptions);
         });
       }).catch(error => {
         console.error('获取模式列表失败', error);
         this.$message.error('获取模式列表失败');
       });
     },
-    /** 获取参数选项 */
+
     getParamOptions(param) {
       if (!param.paramOptions) return [];
       if (Array.isArray(param.paramOptions)) return param.paramOptions;
@@ -249,37 +254,106 @@ if (response.rows && response.rows[0]) {
       }
       return [];
     },
-    /** 获取状态类型 */
+
     getStatusType(status) {
-      const map = {
-        0: 'info',      // 离线
-        1: 'success',   // 在线
-        2: 'warning'    // 忙碌/待机
-      };
+      const map = { 0: 'info', 1: 'success', 2: 'warning' };
       return map[status] || 'info';
     },
-    /** 获取状态文本 */
+
     getStatusText(status) {
-      const map = {
-        0: '离线',
-        1: '在线',
-        2: '待机中'
-      };
+      const map = { 0: '离线', 1: '在线', 2: '待机中' };
       return map[status] || '未知';
     },
-    /** 选择模式 */
+
+    /** 机器人选择变化时重新加载配置 */
+    onRobotChange() {
+      if (this.selectedModeId) {
+        const mode = this.modeOptions.find(m => m.modeId === this.selectedModeId);
+        if (mode) {
+          this.loadModeConfig(mode);
+        }
+      }
+    },
+
     selectMode(mode) {
       this.selectedModeId = mode.modeId;
-      // 加载该模式的配置数据
       this.loadModeConfig(mode);
     },
+
     /** 加载模式配置 */
     loadModeConfig(mode) {
+      // 如果没有选择机器人，只加载模式默认配置
+      if (!this.selectedRobotId) {
+        this.loadDefaultModeConfig(mode);
+        return;
+      }
+
+      // 如果是"所有机器人"，加载第一个机器人的配置作为参考
+      if (this.selectedRobotId === 'all') {
+        this.loadBatchModeConfig(mode);
+        return;
+      }
+
+      // 获取该机器人的配置
+      getRobotModeConfig(this.selectedRobotId, mode.modeId).then(response => {
+        if (response.code === 200 && response.data) {
+          this.loadConfigFromServer(mode, response.data);
+        } else {
+          this.loadDefaultModeConfig(mode);
+        }
+      }).catch(() => {
+        this.loadDefaultModeConfig(mode);
+      });
+    },
+
+    /** 批量模式配置 - 显示默认配置，保存时应用到所有机器人 */
+    loadBatchModeConfig(mode) {
+      // 尝试获取第一个机器人的配置作为参考
+      if (this.robotOptions.length > 0) {
+        const firstRobotId = this.robotOptions[0].robotId;
+        getRobotModeConfig(firstRobotId, mode.modeId).then(response => {
+          if (response.code === 200 && response.data) {
+            this.loadConfigFromServer(mode, response.data);
+          } else {
+            this.loadDefaultModeConfig(mode);
+          }
+        }).catch(() => {
+          this.loadDefaultModeConfig(mode);
+        });
+      } else {
+        this.loadDefaultModeConfig(mode);
+      }
+    },
+
+    /** 从服务器加载配置 */
+    loadConfigFromServer(mode, serverConfig) {
       const newConfigData = {};
       if (mode.modeParams && mode.modeParams.length > 0) {
         mode.modeParams.forEach(param => {
           const key = `param_${param.paramId}`;
-          // 根据参数类型处理默认值
+          // 优先使用服务器保存的值，否则使用默认值
+          let defaultValue = serverConfig[param.paramName] !== undefined
+            ? serverConfig[param.paramName]
+            : param.paramValue;
+
+          if (param.paramType === 'boolean') {
+            defaultValue = defaultValue === 'true' || defaultValue === true;
+          } else if (param.paramType === 'number' || param.paramType === 'range') {
+            defaultValue = Number(defaultValue) || 0;
+          }
+          newConfigData[key] = defaultValue;
+        });
+      }
+      this.configData = newConfigData;
+      this.savedConfigData = JSON.parse(JSON.stringify(newConfigData));
+    },
+
+    /** 加载模式默认配置 */
+    loadDefaultModeConfig(mode) {
+      const newConfigData = {};
+      if (mode.modeParams && mode.modeParams.length > 0) {
+        mode.modeParams.forEach(param => {
+          const key = `param_${param.paramId}`;
           let defaultValue = param.paramValue;
           if (param.paramType === 'boolean') {
             defaultValue = defaultValue === 'true' || defaultValue === true;
@@ -290,10 +364,9 @@ if (response.rows && response.rows[0]) {
         });
       }
       this.configData = newConfigData;
-      // 保存一份原始配置用于重置
       this.savedConfigData = JSON.parse(JSON.stringify(newConfigData));
     },
-    /** 获取切换警告信息 */
+
     getSwitchWarning() {
       if (!this.selectedMode) return '请先选择目标机器人和模式';
 
@@ -304,7 +377,7 @@ if (response.rows && response.rows[0]) {
       };
       return warnings[this.selectedMode.modeId] || '切换模式将立即生效，当前任务可能会被中断';
     },
-    /** 重置配置 */
+
     resetConfig() {
       this.$confirm('确定要重置当前配置为默认值吗？', '提示', {
         confirmButtonText: '确定',
@@ -315,29 +388,94 @@ if (response.rows && response.rows[0]) {
         this.$message.success('重置成功');
       }).catch(() => {});
     },
-    /** 保存配置 */
+
+    /** 保存配置 - 支持单个机器人和所有机器人 */
     saveConfig() {
-      this.savedConfigData = JSON.parse(JSON.stringify(this.configData));
-      this.$message.success('配置保存成功');
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        return;
+      }
 
-      // 记录操作历史
-      const modeName = this.selectedMode ? this.selectedMode.modeName : '未知';
-      this.recordHistory('config-change', `保存${modeName}配置`);
+      // 构建配置对象
+      const config = {};
+      if (this.selectedMode && this.selectedMode.modeParams) {
+        this.selectedMode.modeParams.forEach(param => {
+          const key = `param_${param.paramId}`;
+          let value = this.configData[key];
+
+          if (param.paramType === 'boolean') {
+            value = value === true ? 'true' : 'false';
+          } else if (param.paramType === 'number' || param.paramType === 'range') {
+            value = String(value || 0);
+          } else {
+            value = value || '';
+          }
+          config[param.paramName] = value;
+        });
+      }
+
+      const loading = this.$loading({
+        lock: true,
+        text: '正在保存配置...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+
+      // 判断是单个机器人还是所有机器人
+      if (this.selectedRobotId === 'all') {
+        // 所有机器人：批量保存配置
+        const robotIds = this.robotOptions.map(r => r.robotId);
+
+        batchSaveRobotModeConfig({
+          robotIds: robotIds,
+          modeId: this.selectedModeId,
+          config: config
+        }).then(response => {
+          loading.close();
+          if (response.code === 200) {
+            this.savedConfigData = JSON.parse(JSON.stringify(this.configData));
+            this.$message.success(`已成功将配置应用到所有 ${this.robotOptions.length} 个机器人`);
+            this.recordHistory('config-change', `批量保存${this.selectedMode.modeName}配置到所有机器人`);
+          } else {
+            this.$message.error(response.msg || '批量保存失败');
+          }
+        }).catch(error => {
+          loading.close();
+          console.error('批量保存配置失败', error);
+          this.$message.error('批量保存配置失败');
+        });
+      } else {
+        // 单个机器人
+        saveRobotModeConfig({
+          robotId: this.selectedRobotId,
+          modeId: this.selectedModeId,
+          config: config
+        }).then(response => {
+          loading.close();
+          if (response.code === 200) {
+            this.savedConfigData = JSON.parse(JSON.stringify(this.configData));
+            this.$message.success('配置保存成功');
+            this.recordHistory('config-change', `保存${this.selectedMode.modeName}配置`);
+          } else {
+            this.$message.error(response.msg || '保存失败');
+          }
+        }).catch(error => {
+          loading.close();
+          console.error('保存配置失败', error);
+          this.$message.error('保存配置失败');
+        });
+      }
     },
-    /** 确认切换 */
-    confirmSwitch() {
-      console.log('当前选中的机器人ID:', this.selectedRobotId);
-      console.log('机器人列表:', this.robotOptions);
 
+    confirmSwitch() {
       if (!this.selectedModeId || !this.selectedRobotId) {
         this.$message.warning('请选择目标机器人和模式');
         return;
       }
 
-      // 获取目标机器人名称
       let robotName = '';
       if (this.selectedRobotId === 'all') {
-        robotName = '所有机器人';
+        robotName = `所有机器人 (共${this.robotOptions.length}个)`;
       } else {
         const robot = this.robotOptions.find(r => r.robotId === this.selectedRobotId);
         robotName = robot ? robot.name : '未知';
@@ -345,7 +483,12 @@ if (response.rows && response.rows[0]) {
 
       const modeName = this.selectedMode.modeName;
 
-      this.$confirm(`确定要将 ${robotName} 切换为 ${modeName} 吗？`, '切换确认', {
+      let additionalTip = '';
+      if (this.selectedModeId === 3) {
+        additionalTip = '\n\n充电策略将根据每个机器人的配置决定（立即充电或完成任务后充电）';
+      }
+
+      this.$confirm(`确定要将 ${robotName} 切换为 ${modeName} 吗？${additionalTip}`, '切换确认', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -353,8 +496,8 @@ if (response.rows && response.rows[0]) {
         this.doSwitch();
       }).catch(() => {});
     },
-    /** 执行切换 */
-    doSwitch() {
+
+    async doSwitch() {
       if (this.loading) return;
       this.loading = true;
 
@@ -363,10 +506,17 @@ if (response.rows && response.rows[0]) {
         : [this.selectedRobotId];
 
       const robotNames = this.selectedRobotId === 'all'
-        ? '所有机器人'
+        ? `所有机器人 (共${this.robotOptions.length}个)`
         : this.robotOptions.find(r => r.robotId === this.selectedRobotId)?.name;
 
-      // 显示加载状态
+      // 如果是充电模式，使用专门的 chargeMode API
+      if (this.selectedModeId === 3) {
+        await this.executeChargeMode(robotIds, robotNames);
+        this.loading = false;
+        return;
+      }
+
+      // 其他模式使用原来的方式
       const loadingInstance = this.$loading({
         lock: true,
         text: '正在切换模式...',
@@ -374,42 +524,105 @@ if (response.rows && response.rows[0]) {
         background: 'rgba(0, 0, 0, 0.7)'
       });
 
-      // 调用更新机器人模式API
-      const promises = robotIds.map(robotId =>
-        updateRobotMode({ robotId: robotId, modeId: this.selectedModeId })
-      );
+      try {
+        // 逐个调用更新模式接口
+        for (const robotId of robotIds) {
+          await updateRobotMode({ robotId: robotId, modeId: this.selectedModeId });
+        }
 
-      Promise.all(promises)
-        .then(() => {
-          this.$message.success(`已成功将 ${robotNames} 切换为 ${this.selectedMode.modeName}`);
-
-          // 记录操作历史
-          this.recordHistory('mode-switch', `切换为${this.selectedMode.modeName}`);
-
-          // 刷新机器人列表以更新显示
-          this.getRobotList().then(() => {
-            if (this.selectedRobotId !== 'all') {
-              const updatedRobot = this.robotOptions.find(r => r.robotId === this.selectedRobotId);
-              if (updatedRobot) {
-                console.log(`机器人 ${updatedRobot.name} 模式已更新为: ${updatedRobot.currentModeName}`);
-              }
-            }
-          });
-        })
-        .catch(error => {
-          console.error('切换失败', error);
-          const errorMsg = error.response?.data?.msg || error.message || '网络错误';
-          this.$message.error(`切换失败：${errorMsg}`);
-
-          // 记录失败历史
-          this.recordHistory('mode-switch', `切换为${this.selectedMode.modeName}失败: ${errorMsg}`, 'fail');
-        })
-        .finally(() => {
-          this.loading = false;
-          loadingInstance.close();
-        });
+        const successMsg = `已成功将 ${robotNames} 切换为 ${this.selectedMode.modeName}`;
+        this.$message.success(successMsg);
+        this.recordHistory('mode-switch', `切换为${this.selectedMode.modeName}`);
+        await this.getRobotList();
+      } catch (error) {
+        console.error('切换失败', error);
+        const errorMsg = error.response?.data?.msg || error.message || '网络错误';
+        this.$message.error(`切换失败：${errorMsg}`);
+        this.recordHistory('mode-switch', `切换为${this.selectedMode.modeName}失败: ${errorMsg}`, 'fail');
+      } finally {
+        this.loading = false;
+        loadingInstance.close();
+      }
     },
-    /** 记录操作历史 */
+
+    /** 执行充电模式切换（带详细统计） */
+    async executeChargeMode(robotIds, robotNames) {
+      const loadingInstance = this.$loading({
+        lock: true,
+        text: '正在切换充电模式...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.7)'
+      });
+
+      try {
+        // 直接使用 request 调用充电模式接口
+        const response = await request({
+          url: '/mode/robots/chargeMode',
+          method: 'put',
+          data: robotIds
+        });
+
+        loadingInstance.close();
+        console.log('充电模式响应:', response);
+
+        if (response.code === 200) {
+          const successCount = response.data?.successCount || 0;
+          const immediateCount = response.data?.immediateCount || 0;
+          const waitingCount = response.data?.waitingCount || 0;
+
+          let message = '';
+          let detail = '';
+
+          if (successCount === 0) {
+            message = `充电模式切换失败`;
+            detail = '请检查机器人是否在线';
+          } else if (waitingCount > 0) {
+            if (immediateCount > 0) {
+              message = `已命令 ${successCount} 个机器人切换为充电模式：${immediateCount} 个立即充电，${waitingCount} 个等待任务完成后自动充电`;
+              detail = '有任务的机器人会在任务完成后自动开始充电';
+            } else {
+              message = `已命令 ${successCount} 个机器人切换为充电模式，其中 ${waitingCount} 个机器人将等待任务完成后自动充电`;
+              detail = '有任务的机器人会在任务完成后自动开始充电';
+            }
+          } else if (immediateCount > 0) {
+            message = `已将 ${successCount} 个机器人切换为充电模式`;
+            detail = '机器人正在前往充电站充电';
+          } else {
+            message = `已对 ${successCount} 个机器人执行充电模式操作`;
+            detail = '操作执行成功';
+          }
+
+          // 显示结果弹窗
+          this.chargeResult = {
+            title: '操作完成',
+            icon: 'el-icon-success',
+            color: '#67c23a',
+            message: message,
+            detail: detail
+          };
+          this.chargeResultDialogVisible = true;
+
+          // 记录历史
+          this.recordHistory('mode-switch', message);
+          this.$message.success(message);
+
+          // 刷新机器人列表
+          setTimeout(() => {
+            this.getRobotList();
+          }, 1000);
+        } else {
+          this.$message.error(response.msg || '充电模式切换失败');
+          this.recordHistory('mode-switch', `充电模式切换失败: ${response.msg || '未知错误'}`, 'fail');
+        }
+      } catch (error) {
+        loadingInstance.close();
+        console.error('充电模式切换失败:', error);
+        const errorMsg = error.response?.data?.msg || error.message || '网络错误';
+        this.$message.error(`充电模式切换失败：${errorMsg}`);
+        this.recordHistory('mode-switch', `充电模式切换失败: ${errorMsg}`, 'fail');
+      }
+    },
+
     recordHistory(type, content, status = 'success') {
       const historyData = {
         operationTime: new Date().toISOString(),
@@ -422,13 +635,7 @@ if (response.rows && response.rows[0]) {
         status: status
       };
 
-      addHistory(historyData).then(response => {
-        if (response.code === 200) {
-          console.log('历史记录已保存');
-        } else {
-          console.error('保存历史记录失败', response.msg);
-        }
-      }).catch(error => {
+      addHistory(historyData).catch(error => {
         console.error('保存历史记录失败', error);
       });
     }
@@ -437,7 +644,6 @@ if (response.rows && response.rows[0]) {
 </script>
 
 <style scoped>
-/* ========== 卡片样式 ========== */
 .card {
   background: white;
   border-radius: 10px;
@@ -475,7 +681,6 @@ if (response.rows && response.rows[0]) {
   padding: 24px 20px;
 }
 
-/* 筛选栏样式 */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -503,7 +708,6 @@ if (response.rows && response.rows[0]) {
   min-width: 300px;
 }
 
-/* 子卡片样式 */
 .sub-card {
   background: #ffffff;
   border-radius: 8px;
@@ -517,6 +721,8 @@ if (response.rows && response.rows[0]) {
   color: #1e2a3a;
   margin-bottom: 20px;
   font-size: 15px;
+  display: flex;
+  align-items: center;
 }
 
 .sub-card-header i {
@@ -524,7 +730,6 @@ if (response.rows && response.rows[0]) {
   margin-right: 8px;
 }
 
-/* 模式按钮组 */
 .mode-buttons {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -585,7 +790,6 @@ if (response.rows && response.rows[0]) {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* 参数配置项样式 */
 .param-config-item {
   margin-bottom: 20px;
   padding-bottom: 10px;
@@ -616,7 +820,6 @@ if (response.rows && response.rows[0]) {
   margin-right: 5px;
 }
 
-/* 配置操作按钮 */
 .config-actions {
   margin-top: 20px;
   text-align: right;
@@ -630,7 +833,6 @@ if (response.rows && response.rows[0]) {
   border-radius: 6px;
 }
 
-/* 切换信息 */
 .switch-info {
   display: flex;
   align-items: center;
@@ -662,7 +864,6 @@ if (response.rows && response.rows[0]) {
   font-size: 15px;
 }
 
-/* 表单样式 */
 .el-form-item {
   margin-bottom: 20px;
 }
@@ -677,7 +878,21 @@ if (response.rows && response.rows[0]) {
   margin-right: 15px;
 }
 
-/* 响应式调整 */
+.result-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.result-content p {
+  margin-top: 15px;
+  font-size: 16px;
+}
+
+.result-detail {
+  font-size: 14px;
+  color: #909399;
+}
+
 @media (max-width: 992px) {
   .mode-buttons {
     grid-template-columns: repeat(2, 1fr);

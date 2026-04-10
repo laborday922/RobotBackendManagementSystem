@@ -8,6 +8,7 @@
         <id property="mapId" column="map_id"/>
         <result property="mapName" column="map_name"/>
         <result property="mapFile" column="map_file"/>
+        <result property="mapBase64" column="map_base64"/>
         <result property="status" column="status"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
@@ -19,7 +20,8 @@
     </resultMap>
 
     <sql id="selectMapVo">
-        SELECT m.*,
+        SELECT m.map_id, m.map_name, m.map_file, m.map_base64, m.status,
+        m.create_by, m.create_time, m.update_by, m.update_time, m.remark,
         (SELECT COUNT(*) FROM sys_point p WHERE p.map_id = m.map_id AND p.del_flag = '0') as point_count
         FROM sys_map m
     </sql>
@@ -43,10 +45,10 @@
 
     <insert id="insert" parameterType="SysMap" useGeneratedKeys="true" keyProperty="mapId">
         INSERT INTO sys_map (
-        map_name, map_file, status, del_flag,
+        map_name, map_file, map_base64, status, del_flag,
         create_by, create_time, remark
         ) VALUES (
-        #{mapName}, #{mapFile}, #{status}, '0',
+        #{mapName}, #{mapFile}, #{mapBase64}, #{status}, '0',
         #{createBy}, #{createTime}, #{remark}
         )
     </insert>
@@ -56,6 +58,7 @@
         <set>
             <if test="mapName != null and mapName != ''">map_name = #{mapName},</if>
             <if test="mapFile != null and mapFile != ''">map_file = #{mapFile},</if>
+            <if test="mapBase64 != null and mapBase64 != ''">map_base64 = #{mapBase64},</if>
             <if test="status != null">status = #{status},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>

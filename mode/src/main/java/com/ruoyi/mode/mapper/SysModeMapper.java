@@ -1,6 +1,7 @@
 package com.ruoyi.mode.mapper;
 
 import com.ruoyi.mode.domain.SysMode;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -58,4 +59,34 @@ public interface SysModeMapper
      * @return 结果
      */
     public int deleteSysModeByIds(Long[] modeIds);
+
+    /**
+     * 增加模式使用次数
+     *
+     * @param modeId 模式ID
+     * @return 结果
+     */
+    public int incrementUsageCount(@Param("modeId") Long modeId);
+
+    /**
+     * 更新单个模式的机器人数量
+     *
+     * @param modeId 模式ID
+     * @return 结果
+     */
+    public int updateRobotCount(@Param("modeId") Long modeId);
+
+    /**
+     * 更新所有模式的机器人数量
+     *
+     * @return 结果
+     */
+    public int updateAllRobotCounts();
+
+    /**
+     * 更新所有模式的使用次数
+     *
+     * @return 结果
+     */
+    public int updateAllUsageCounts();
 }

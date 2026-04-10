@@ -94,6 +94,14 @@ public interface ISysRobotService
     public int emergencyStop(Long[] robotIds);
 
     /**
+     * 紧急撤离 - 立即停止当前任务并返回指定安全位置
+     *
+     * @param robotIds 机器人ID数组
+     * @return 成功操作的数量
+     */
+    public int emergencyEvacuation(Long[] robotIds);
+
+    /**
      * 刷新机器人状态
      *
      * @param robotIds 机器人ID数组
@@ -156,7 +164,8 @@ public interface ISysRobotService
      * @param robotIds 机器人ID数组
      * @return 成功切换的数量
      */
-    public int chargeMode(Long[] robotIds);
+    // 将原来的 int chargeMode(Long[] robotIds); 改为：
+    public Map<String, Object> chargeMode(Long[] robotIds);
 
     /**
      * 返回充电

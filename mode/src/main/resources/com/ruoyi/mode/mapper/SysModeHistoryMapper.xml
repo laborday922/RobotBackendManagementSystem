@@ -24,6 +24,7 @@
         from sys_mode_history
     </sql>
 
+    <!-- 修复：添加 del_flag 过滤和日期查询优化 -->
     <select id="selectSysModeHistoryList" parameterType="com.ruoyi.mode.domain.SysModeHistory" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         <where>
@@ -33,16 +34,20 @@
             <if test="robotId != null">
                 AND robot_id = #{robotId}
             </if>
+            <!-- 修复：日期范围查询 - 使用 STR_TO_DATE 确保正确比较 -->
             <if test="beginTime != null and beginTime != ''">
-                AND operation_time >= #{beginTime}
+                AND operation_time >= STR_TO_DATE(#{beginTime}, '%Y-%m-%d %H:%i:%s')
             </if>
             <if test="endTime != null and endTime != ''">
-                AND operation_time &lt;= #{endTime}
+                AND operation_time &lt;= STR_TO_DATE(#{endTime}, '%Y-%m-%d %H:%i:%s')
             </if>
+            <!-- 添加软删除过滤 -->
+            AND del_flag = '0'
         </where>
         order by operation_time desc
     </select>
 
+    <!-- 修复：多操作类型查询同样添加日期和软删除过滤 -->
     <select id="selectSysModeHistoryListByTypes" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         <where>
@@ -56,18 +61,19 @@
                 AND robot_id = #{history.robotId}
             </if>
             <if test="history.beginTime != null and history.beginTime != ''">
-                AND operation_time >= #{history.beginTime}
+                AND operation_time >= STR_TO_DATE(#{history.beginTime}, '%Y-%m-%d %H:%i:%s')
             </if>
             <if test="history.endTime != null and history.endTime != ''">
-                AND operation_time &lt;= #{history.endTime}
+                AND operation_time &lt;= STR_TO_DATE(#{history.endTime}, '%Y-%m-%d %H:%i:%s')
             </if>
+            AND del_flag = '0'
         </where>
         order by operation_time desc
     </select>
 
     <select id="selectSysModeHistoryById" parameterType="Long" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
-        where history_id = #{historyId}
+        where history_id = #{historyId} and del_flag = '0'
     </select>
 
     <insert id="insertSysModeHistory" parameterType="com.ruoyi.mode.domain.SysModeHistory" useGeneratedKeys="true" keyProperty="historyId">
@@ -82,6 +88,7 @@
         <if test="operator != null and operator != ''">operator,</if>
         <if test="status != null and status != ''">status,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
+        del_flag,
         create_time
         ) values (
         <if test="operationTime != null">#{operationTime},</if>
@@ -94,6 +101,7 @@
         <if test="operator != null and operator != ''">#{operator},</if>
         <if test="status != null and status != ''">#{status},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
+        '0',
         sysdate()
         )
     </insert>
@@ -115,27 +123,30 @@
         where history_id = #{historyId}
     </update>
 
-    <delete id="deleteSysModeHistoryById" parameterType="Long">
-        delete from sys_mode_history where history_id = #{historyId}
-    </delete>
+    <!-- 软删除：更新 del_flag -->
+    <update id="deleteSysModeHistoryById" parameterType="Long">
+        update sys_mode_history set del_flag = '2' where history_id = #{historyId}
+    </update>
 
-    <delete id="deleteSysModeHistoryByIds" parameterType="String">
-        delete from sys_mode_history where history_id in
+    <update id="deleteSysModeHistoryByIds" parameterType="String">
+        update sys_mode_history set del_flag = '2' where history_id in
         <foreach item="historyId" collection="array" open="(" separator="," close=")">
             #{historyId}
         </foreach>
-    </delete>
+    </update>
 
+    <!-- 物理删除（清空所有记录） -->
     <delete id="clearAllHistory">
         delete from sys_mode_history
     </delete>
 
     <delete id="deleteHistoryBefore" parameterType="String">
-        delete from sys_mode_history where create_time &lt; #{expireTime}
+        delete from sys_mode_history where create_time &lt; STR_TO_DATE(#{expireTime}, '%Y-%m-%d %H:%i:%s')
     </delete>
 
     <select id="selectRecentHistory" parameterType="Integer" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
+        where del_flag = '0'
         order by operation_time desc
         limit #{limit}
     </select>
@@ -143,6 +154,7 @@
     <select id="selectHistoryByOperatorAndType" resultMap="SysModeHistoryResult">
         <include refid="selectHistoryVo"/>
         where operator = #{operator}
+        and del_flag = '0'
         <if test="operationType != null and operationType != ''">
             and operation_type = #{operationType}
         </if>
@@ -154,6 +166,7 @@
         operation_type as operationType,
         count(*) as count
         from sys_mode_history
+        where del_flag = '0'
         group by operation_type
         order by count desc
     </select>
@@ -165,6 +178,7 @@
         count(*) as count
         from sys_mode_history
         where robot_id is not null
+        and del_flag = '0'
         group by robot_id, robot_name
         order by count desc
     </select>
@@ -175,6 +189,7 @@
         count(*) as count
         from sys_mode_history
         where operation_time >= date_sub(curdate(), interval #{days} day)
+        and del_flag = '0'
         group by date_format(operation_time, '%Y-%m-%d')
         order by date desc
     </select>
@@ -183,11 +198,12 @@
         <include refid="selectHistoryVo"/>
         <where>
             <if test="beginTime != null and beginTime != ''">
-                and operation_time >= #{beginTime}
+                and operation_time >= STR_TO_DATE(#{beginTime}, '%Y-%m-%d %H:%i:%s')
             </if>
             <if test="endTime != null and endTime != ''">
-                and operation_time &lt;= #{endTime}
+                and operation_time &lt;= STR_TO_DATE(#{endTime}, '%Y-%m-%d %H:%i:%s')
             </if>
+            and del_flag = '0'
         </where>
         order by operation_time desc
     </select>

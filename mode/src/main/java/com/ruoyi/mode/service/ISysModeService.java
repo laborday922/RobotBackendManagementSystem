@@ -67,4 +67,24 @@ public interface ISysModeService
      * @return 结果
      */
     public int changeModeStatus(Long modeId, String enabled);
+
+    /**
+     * 增加模式使用次数
+     *
+     * @param modeId 模式ID
+     * @return 结果
+     */
+    public int incrementUsageCount(Long modeId);
+
+    /**
+     * 更新指定模式的机器人数量
+     *
+     * @param modeId 模式ID
+     */
+    public void updateRobotCountByModeId(Long modeId);
+
+    /**
+     * 更新所有模式的统计数据（机器人数量和使用次数）
+     */
+    public void updateAllStatistics();
 }

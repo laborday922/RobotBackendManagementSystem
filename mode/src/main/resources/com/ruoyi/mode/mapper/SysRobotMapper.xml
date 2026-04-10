@@ -5,241 +5,252 @@
 <mapper namespace="com.ruoyi.mode.mapper.SysRobotMapper">
 
     <resultMap type="com.ruoyi.mode.domain.SysRobot" id="SysRobotResult">
-        <id     property="robotId"         column="id"                   />
-        <result property="robotCode"       column="code"                 />
-        <result property="robotName"       column="name"                 />
-        <result property="groupId"         column="group_id"             />
-        <result property="manufacturer"    column="manufacturer"         />
-        <result property="productionDate"  column="production_date"      />
-        <result property="area"            column="area"                 />
-        <result property="status"          column="status"               />
-        <result property="hardwareStatus"  column="hardware_status"      />
-        <result property="taskStatus"      column="task_status"          />
-        <result property="battery"         column="battery"              />
-        <result property="currentMode"     column="current_mode"         />
-        <result property="idleStartTime"   column="idle_start_time"      />
-        <result property="delFlag"         column="del_flag"             />
-        <result property="createBy"        column="create_by"            />
-        <result property="createTime"      column="created_at"           />
-        <result property="updateBy"        column="update_by"            />
-        <result property="updateTime"      column="updated_at"           />
-        <!-- 兼容字段 -->
-        <result property="runtime"         column="runtime"              />
-        <result property="speed"           column="speed"                />
-        <result property="temperature"     column="temperature"          />
-        <result property="tasksCompleted"  column="tasks_completed"      />
+        <id     property="robotId"          column="robot_id"          />
+        <result property="currentMode"      column="current_mode"      />
+        <result property="currentModeName"  column="current_mode_name" />
+        <result property="lastModeSwitchTime" column="last_mode_switch_time" />
+        <result property="modeSwitchCount"  column="mode_switch_count"  />
+        <result property="needAutoCharge"   column="need_auto_charge"   />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="delFlag"          column="del_flag"          />
     </resultMap>
 
-    <sql id="selectRobotVo">
-        select
-        id, code, name, group_id, manufacturer, production_date, area,
-        status, hardware_status, task_status, battery, current_mode,
-        idle_start_time, del_flag, create_by, created_at, update_by, updated_at,
-        null as runtime, null as speed, null as temperature, 0 as tasks_completed
-        from robots
+    <!-- 基础字段列表 -->
+    <sql id="BaseColumnList">
+        robot_id,
+        current_mode,
+        last_mode_switch_time,
+        mode_switch_count,
+        need_auto_charge,
+        create_by,
+        create_time,
+        update_by,
+        update_time,
+        del_flag
     </sql>
 
-    <!-- 查询机器人列表 -->
-    <select id="selectSysRobotList" parameterType="com.ruoyi.mode.domain.SysRobot" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
+    <!-- 查询条件 -->
+    <sql id="selectSysRobotCondition">
         <where>
-            <if test="robotName != null and robotName != ''">
-                AND name like concat('%', #{robotName}, '%')
-            </if>
-            <if test="robotCode != null and robotCode != ''">
-                AND code like concat('%', #{robotCode}, '%')
-            </if>
-            <if test="groupId != null">
-                AND group_id = #{groupId}
-            </if>
-            <if test="status != null">
-                AND status = #{status}
-            </if>
-            <if test="currentMode != null">
-                AND current_mode = #{currentMode}
-            </if>
-            AND del_flag = '0'
+            <if test="robotId != null"> and robot_id = #{robotId}</if>
+            <if test="currentMode != null"> and current_mode = #{currentMode}</if>
+            <if test="delFlag != null"> and del_flag = #{delFlag}</if>
+            <if test="createTime != null"> and create_time >= #{createTime}</if>
+            <if test="updateTime != null"> and update_time >= #{updateTime}</if>
         </where>
-        order by id
-    </select>
+    </sql>
 
-    <!-- 根据ID查询机器人 -->
+    <!-- 查询机器人模式扩展信息 -->
     <select id="selectSysRobotById" parameterType="Long" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where id = #{robotId} and del_flag = '0'
+        SELECT <include refid="BaseColumnList" />
+        FROM sys_robot_ext
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
     </select>
 
-    <!-- 查询在线机器人列表 -->
-    <select id="selectOnlineRobots" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where status = 1 and del_flag = '0'
-        order by id
+    <!-- 查询机器人模式扩展信息列表 -->
+    <select id="selectSysRobotList" parameterType="com.ruoyi.mode.domain.SysRobot" resultMap="SysRobotResult">
+        SELECT <include refid="BaseColumnList" />
+        FROM sys_robot_ext
+        <include refid="selectSysRobotCondition" />
+        ORDER BY create_time DESC
     </select>
 
-    <!-- 查询低电量机器人列表 -->
-    <select id="selectLowBatteryRobots" parameterType="Integer" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where battery &lt;= #{threshold} and del_flag = '0'
-        order by battery asc
-    </select>
-
-    <!-- 根据分组ID查询机器人列表 -->
-    <select id="selectRobotsByGroupId" parameterType="Long" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where group_id = #{groupId} and del_flag = '0'
-        order by id
-    </select>
-
-    <!-- 根据状态查询机器人数量 -->
-    <select id="selectRobotCountByStatus" parameterType="Integer" resultType="int">
-        select count(*) from robots
-        where del_flag = '0'
-        <if test="status != null">
-            and status = #{status}
-        </if>
-    </select>
-
-    <!-- 新增机器人 -->
+    <!-- 新增机器人模式扩展信息 -->
     <insert id="insertSysRobot" parameterType="com.ruoyi.mode.domain.SysRobot" useGeneratedKeys="true" keyProperty="robotId">
-        insert into robots(
-        code, name, group_id, manufacturer, production_date, area,
-        status, hardware_status, task_status, battery, current_mode,
-        idle_start_time, del_flag, create_by, created_at
-        ) values (
-        #{robotCode}, #{robotName}, #{groupId}, #{manufacturer}, #{productionDate}, #{area},
-        #{status}, #{hardwareStatus}, #{taskStatus}, #{battery}, #{currentMode},
-        #{idleStartTime}, '0', #{createBy}, NOW()
+        INSERT INTO sys_robot_ext (
+        <if test="robotId != null">robot_id,</if>
+        <if test="currentMode != null">current_mode,</if>
+        <if test="modeSwitchCount != null">mode_switch_count,</if>
+        <if test="needAutoCharge != null">need_auto_charge,</if>
+        <if test="createBy != null">create_by,</if>
+        <if test="delFlag != null">del_flag,</if>
+        create_time
+        ) VALUES (
+        <if test="robotId != null">#{robotId},</if>
+        <if test="currentMode != null">#{currentMode},</if>
+        <if test="modeSwitchCount != null">#{modeSwitchCount},</if>
+        <if test="needAutoCharge != null">#{needAutoCharge},</if>
+        <if test="createBy != null">#{createBy},</if>
+        <if test="delFlag != null">#{delFlag},</if>
+        NOW()
         )
     </insert>
 
-    <!-- 修改机器人 -->
+    <!-- 修改机器人模式扩展信息 -->
     <update id="updateSysRobot" parameterType="com.ruoyi.mode.domain.SysRobot">
-        update robots
+        UPDATE sys_robot_ext
         <set>
-            <if test="robotCode != null and robotCode != ''">code = #{robotCode},</if>
-            <if test="robotName != null and robotName != ''">name = #{robotName},</if>
-            <if test="groupId != null">group_id = #{groupId},</if>
-            <if test="manufacturer != null">manufacturer = #{manufacturer},</if>
-            <if test="productionDate != null">production_date = #{productionDate},</if>
-            <if test="area != null">area = #{area},</if>
-            <if test="status != null">status = #{status},</if>
-            <if test="hardwareStatus != null">hardware_status = #{hardwareStatus},</if>
-            <if test="taskStatus != null">task_status = #{taskStatus},</if>
-            <if test="battery != null">battery = #{battery},</if>
             <if test="currentMode != null">current_mode = #{currentMode},</if>
-            <if test="idleStartTime != null">idle_start_time = #{idleStartTime},</if>
-            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
-            updated_at = NOW()
+            <if test="modeSwitchCount != null">mode_switch_count = #{modeSwitchCount},</if>
+            <if test="needAutoCharge != null">need_auto_charge = #{needAutoCharge},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            update_time = NOW()
         </set>
-        where id = #{robotId}
+        WHERE robot_id = #{robotId}
     </update>
 
     <!-- 更新机器人当前模式 -->
     <update id="updateRobotMode">
-        update robots
-        set current_mode = #{modeId}, updated_at = NOW()
-        where id = #{robotId}
+        UPDATE sys_robot_ext
+        SET current_mode = #{modeId},
+        last_mode_switch_time = NOW(),
+        mode_switch_count = mode_switch_count + 1,
+        update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
     </update>
 
-    <!-- 批量更新机器人状态 -->
-    <update id="batchUpdateRobotStatus">
-        update robots
-        set status = #{status}, updated_at = NOW()
-        where id in
-        <foreach item="robotId" collection="robotIds" open="(" separator="," close=")">
+    <!-- 批量更新机器人模式 -->
+    <update id="batchUpdateRobotMode">
+        UPDATE sys_robot_ext
+        SET current_mode = #{modeId},
+        last_mode_switch_time = NOW(),
+        mode_switch_count = mode_switch_count + 1,
+        update_time = NOW()
+        WHERE robot_id IN
+        <foreach collection="robotIds" item="robotId" open="(" separator="," close=")">
             #{robotId}
         </foreach>
+        AND del_flag = '0'
     </update>
 
-    <!-- 更新机器人电量 -->
-    <update id="updateRobotBattery">
-        update robots
-        set battery = #{battery}, updated_at = NOW()
-        where id = #{robotId}
+    <!-- 批量更新扩展信息状态 -->
+    <update id="batchUpdateExtStatus">
+        UPDATE sys_robot_ext
+        SET update_time = NOW()
+        WHERE robot_id IN
+        <foreach collection="robotIds" item="robotId" open="(" separator="," close=")">
+            #{robotId}
+        </foreach>
+        AND del_flag = '0'
     </update>
 
-    <!-- 更新机器人位置 -->
-    <update id="updateRobotLocation">
-        update robots
-        set area = #{location}, updated_at = NOW()
-        where id = #{robotId}
+    <!-- 标记需要自动充电 -->
+    <update id="markNeedAutoCharge">
+        UPDATE sys_robot_ext
+        SET need_auto_charge = 1, update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
     </update>
 
-    <!-- 增加完成任务数（兼容旧代码） -->
-    <update id="incrementTasksCompleted">
-        update robots
-        set updated_at = NOW()
-        where id = #{robotId}
+    <!-- 清除自动充电标记 -->
+    <update id="clearNeedAutoCharge">
+        UPDATE sys_robot_ext
+        SET need_auto_charge = 0, update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
     </update>
 
-    <!-- 删除机器人（逻辑删除） -->
+    <!-- 检查是否需要自动充电 -->
+    <select id="checkNeedAutoCharge" parameterType="Long" resultType="int">
+        SELECT need_auto_charge
+        FROM sys_robot_ext
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </select>
+
+    <!-- 删除机器人模式扩展信息（逻辑删除） -->
     <update id="deleteSysRobotById" parameterType="Long">
-        update robots set del_flag = '2', updated_at = NOW() where id = #{robotId}
+        UPDATE sys_robot_ext
+        SET del_flag = '2', update_time = NOW()
+        WHERE robot_id = #{robotId}
     </update>
 
-    <!-- 批量删除机器人（逻辑删除） -->
-    <delete id="deleteSysRobotByIds" parameterType="String">
-        update robots set del_flag = '2', updated_at = NOW() where id in
-        <foreach item="robotId" collection="array" open="(" separator="," close=")">
+    <!-- 批量删除机器人模式扩展信息（逻辑删除） -->
+    <update id="deleteSysRobotByIds">
+        UPDATE sys_robot_ext
+        SET del_flag = '2', update_time = NOW()
+        WHERE robot_id IN
+        <foreach collection="array" item="robotId" open="(" separator="," close=")">
             #{robotId}
         </foreach>
-    </delete>
+    </update>
 
-    <!-- 物理删除机器人（慎用） -->
+    <!-- 物理删除机器人模式扩展信息 -->
     <delete id="deleteSysRobotPhysically" parameterType="Long">
-        delete from robots where id = #{robotId}
+        DELETE FROM sys_robot_ext WHERE robot_id = #{robotId}
     </delete>
 
-    <!-- 批量物理删除机器人（慎用） -->
-    <delete id="deleteSysRobotPhysicallyByIds" parameterType="String">
-        delete from robots where id in
-        <foreach item="robotId" collection="array" open="(" separator="," close=")">
+    <!-- 批量物理删除机器人模式扩展信息 -->
+    <delete id="deleteSysRobotPhysicallyByIds">
+        DELETE FROM sys_robot_ext WHERE robot_id IN
+        <foreach collection="array" item="robotId" open="(" separator="," close=")">
             #{robotId}
         </foreach>
     </delete>
 
-    <!-- 检查机器人编码是否唯一 -->
-    <select id="checkRobotCodeUnique" parameterType="String" resultType="int">
-        select count(*) from robots where code = #{robotCode} and del_flag = '0'
+    <!-- 检查机器人是否存在扩展信息 -->
+    <select id="checkSysRobotExists" parameterType="Long" resultType="int">
+        SELECT COUNT(1) FROM sys_robot_ext
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
     </select>
 
-    <!-- 检查机器人名称是否唯一 -->
-    <select id="checkRobotNameUnique" parameterType="String" resultType="int">
-        select count(*) from robots where name = #{robotName} and del_flag = '0'
+    <!-- 保存机器人模式配置（JSON格式） -->
+    <insert id="saveRobotModeConfig">
+        INSERT INTO sys_robot_mode_config (robot_id, mode_id, config, create_time, update_time)
+        VALUES (#{robotId}, #{modeId}, #{config}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        config = #{config},
+        update_time = NOW()
+    </insert>
+
+    <!-- 获取机器人模式配置 -->
+    <select id="getRobotModeConfig" resultType="String">
+        SELECT config
+        FROM sys_robot_mode_config
+        WHERE robot_id = #{robotId}
+        AND mode_id = #{modeId}
+        LIMIT 1
     </select>
 
-    <!-- 统计各状态机器人数量 -->
-    <select id="selectRobotStatusStats" resultType="java.util.Map">
-        select
-        status,
-        count(*) as count
-        from robots
-        where del_flag = '0'
-        group by status
+    <!-- 删除机器人模式配置 -->
+    <delete id="deleteRobotModeConfig">
+        DELETE FROM sys_robot_mode_config
+        WHERE robot_id = #{robotId}
+        AND mode_id = #{modeId}
+    </delete>
+
+    <!-- 统计各模式机器人数量 -->
+    <select id="selectRobotModeStats" resultType="java.util.Map">
+        SELECT
+        current_mode as "currentMode",
+        COUNT(*) as "count"
+        FROM sys_robot_ext
+        WHERE del_flag = '0'
+        GROUP BY current_mode
+        ORDER BY current_mode
     </select>
 
-    <!-- 统计各组机器人数量 -->
-    <select id="selectRobotGroupStats" resultType="java.util.Map">
-        select
-        group_id,
-        count(*) as count
-        from robots
-        where del_flag = '0'
-        group by group_id
+    <!-- 查询最近模式切换的机器人 -->
+    <select id="selectRecentModeSwitchRobots" resultMap="SysRobotResult">
+        SELECT <include refid="BaseColumnList" />
+        FROM sys_robot_ext
+        WHERE del_flag = '0'
+        AND last_mode_switch_time IS NOT NULL
+        ORDER BY last_mode_switch_time DESC
+        LIMIT #{limit}
     </select>
 
-    <!-- 查询需要充电的机器人（电量低于阈值） -->
-    <select id="selectRobotsNeedCharge" parameterType="Integer" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where battery &lt;= #{threshold} and status != 0 and del_flag = '0'
-        order by battery asc
-    </select>
+    <!-- 更新最后模式切换时间 -->
+    <update id="updateLastModeSwitchTime" parameterType="Long">
+        UPDATE sys_robot_ext
+        SET last_mode_switch_time = NOW(), update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </update>
 
-    <!-- 查询最近活跃的机器人 -->
-    <select id="selectRecentActiveRobots" parameterType="Integer" resultMap="SysRobotResult">
-        <include refid="selectRobotVo"/>
-        where updated_at >= DATE_SUB(NOW(), INTERVAL #{minutes} MINUTE) and del_flag = '0'
-        order by updated_at desc
-    </select>
+    <!-- 增加模式切换次数 -->
+    <update id="incrementModeSwitchCount" parameterType="Long">
+        UPDATE sys_robot_ext
+        SET mode_switch_count = mode_switch_count + 1, update_time = NOW()
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+    </update>
 
 </mapper>

@@ -4,7 +4,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.robots.mapper.RobotGroupsMapper">
     
-    <resultMap type="RobotGroups" id="RobotGroupsResult">
+    <resultMap type="com.ruoyi.robots.domain.RobotGroups" id="RobotGroupsResult">
         <result property="id"    column="id"    />
         <result property="name"    column="name"    />
         <result property="description"    column="description"    />
@@ -16,7 +16,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select id, name, description, created_at, updated_at from robot_groups
     </sql>
 
-    <select id="selectRobotGroupsList" parameterType="RobotGroups" resultMap="RobotGroupsResult">
+    <select id="selectRobotGroupsList" parameterType="com.ruoyi.robots.domain.RobotGroups" resultMap="RobotGroupsResult">
         <include refid="selectRobotGroupsVo"/>
         <where>  
             <if test="name != null  and name != ''"> and name like concat('%', #{name}, '%')</if>
@@ -29,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </select>
 
-    <insert id="insertRobotGroups" parameterType="RobotGroups" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertRobotGroups" parameterType="com.ruoyi.robots.domain.RobotGroups" useGeneratedKeys="true" keyProperty="id">
         insert into robot_groups
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="name != null and name != ''">name,</if>
@@ -47,7 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
          </trim>
     </insert>
 
-    <update id="updateRobotGroups" parameterType="RobotGroups">
+    <update id="updateRobotGroups" parameterType="com.ruoyi.robots.domain.RobotGroups">
         update robot_groups
         <trim prefix="SET" suffixOverrides=",">
             <if test="name != null and name != ''">name = #{name},</if>

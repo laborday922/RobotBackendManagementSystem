@@ -100,10 +100,10 @@
               </el-button>
               <el-button
                 type="warning"
-                class="operation-btn return-charge"
-                @click="executeOperation('return_charge')"
+                class="operation-btn emergency-evacuation"
+                @click="executeOperation('emergency_evacuation')"
                 :disabled="!hasSelectedRobot() || loading">
-                <i class="fas fa-arrow-left"></i> 返回充电
+                <i class="fas fa-arrow-left"></i> 紧急撤离
               </el-button>
               <el-button
                 type="info"
@@ -194,14 +194,13 @@
       </el-dialog>
     </div>
 
-    <!-- 调试面板 - 使用自定义浮层 -->
+    <!-- 调试面板 -->
     <div v-if="showDebugPanel" class="custom-debug-panel">
       <div class="debug-panel-header">
         <h3><i class="el-icon-setting"></i> 调试工具</h3>
         <el-button type="text" @click="showDebugPanel = false" icon="el-icon-close"></el-button>
       </div>
       <div class="debug-panel-body">
-        <!-- 机器人选择 -->
         <div class="debug-section">
           <h4><i class="el-icon-robot"></i> 选择机器人</h4>
           <el-select
@@ -223,7 +222,6 @@
           </el-select>
         </div>
 
-        <!-- 操作按钮组 -->
         <div class="debug-section">
           <h4><i class="el-icon-setting"></i> 调试操作</h4>
           <div class="debug-buttons">
@@ -245,7 +243,6 @@
           </div>
         </div>
 
-        <!-- 查询结果 -->
         <div class="debug-section" v-if="debugResult">
           <h4><i class="el-icon-document"></i> 查询结果</h4>
           <div class="debug-result">
@@ -253,7 +250,6 @@
           </div>
         </div>
 
-        <!-- 操作日志 -->
         <div class="debug-section">
           <h4><i class="el-icon-tickets"></i> 操作日志</h4>
           <div class="debug-logs">
@@ -263,9 +259,7 @@
                 <span class="log-message">{{ log.message }}</span>
                 <pre v-if="log.data" class="log-data">{{ JSON.stringify(log.data, null, 2) }}</pre>
               </div>
-              <div v-if="debugLogs.length === 0" class="log-empty">
-                暂无日志，请执行操作
-              </div>
+              <div v-if="debugLogs.length === 0" class="log-empty">暂无日志，请执行操作</div>
             </div>
           </div>
           <div class="debug-actions">
@@ -274,7 +268,6 @@
           </div>
         </div>
 
-        <!-- 控制台命令 -->
         <div class="debug-section">
           <h4><i class="el-icon-console"></i> 控制台命令</h4>
           <div class="console-commands">
@@ -302,6 +295,7 @@ import {
   listRobot,
   batchRestart,
   emergencyStop,
+  emergencyEvacuation,
   refreshStatus,
   testAlert,
   clearAlerts,
@@ -317,7 +311,6 @@ export default {
   name: "QuickOperation",
   data() {
     return {
-      // 原有数据
       selectionMode: 'all',
       selectedRobotId: null,
       selectedRobots: [],
@@ -335,8 +328,6 @@ export default {
       },
       testAlertActive: false,
       pollingTimer: null,
-
-      // 调试相关
       showDebugPanel: false,
       debugRobotId: null,
       debugLoading: false,
@@ -355,20 +346,23 @@ export default {
     }
   },
   methods: {
-    // ==================== 原有方法 ====================
-
     getRobotList() {
       this.addDebugLog('开始获取机器人列表', null, 'info');
       return request({
-        url: '/system/robot/debug/simple',
+        url: '/mode/robots/list',
         method: 'get'
       }).then(response => {
         if (response.code === 200) {
-          // 确保每个机器人都有状态文本和类型，用于显示
-          this.robotOptions = (response.data || []).map(robot => ({
-            ...robot,
+          const rows = response.rows || [];
+          this.robotOptions = rows.map(robot => ({
+            robotId: robot.id,
+            robotName: robot.name,
+            robotCode: robot.code,
+            status: robot.status,
             statusText: this.getStatusText(robot.status),
-            statusType: this.getStatusType(robot.status)
+            statusType: this.getStatusType(robot.status),
+            battery: robot.battery,
+            area: robot.area
           }));
           this.addDebugLog(`获取机器人列表成功，共${this.robotOptions.length}个机器人`,
             this.robotOptions.map(r => ({
@@ -379,7 +373,6 @@ export default {
               battery: r.battery
             })),
             'success');
-
           if (this.robotOptions.length === 0) {
             this.$message.warning('暂无机器人数据');
           }
@@ -394,29 +387,18 @@ export default {
       });
     },
 
-    // 获取状态类型（用于标签颜色）
     getStatusType(status) {
       const statusNum = parseInt(status);
-      const map = {
-        0: 'info',      // 离线 - 灰色
-        1: 'success',   // 在线 - 绿色
-        2: 'warning'    // 待激活/待机 - 橙色
-      };
+      const map = { 0: 'info', 1: 'success', 2: 'warning' };
       return map[statusNum] || 'info';
     },
 
-    // 获取状态文本（用于显示）- 处理数字状态码
     getStatusText(status) {
       const statusNum = parseInt(status);
-      const map = {
-        0: '离线',
-        1: '在线',
-        2: '待机中'
-      };
+      const map = { 0: '离线', 1: '在线', 2: '待机中' };
       return map[statusNum] || '未知';
     },
 
-    // 获取电池样式类
     getBatteryClass(battery) {
       if (battery >= 80) return 'battery-high';
       if (battery >= 30) return 'battery-medium';
@@ -448,7 +430,6 @@ export default {
     },
 
     selectOnlineRobots() {
-      // 筛选状态为 1（在线）的机器人
       this.selectedRobots = this.robotOptions
         .filter(r => parseInt(r.status) === 1)
         .map(r => r.robotId);
@@ -503,7 +484,7 @@ export default {
 
       const operationNames = {
         'emergency_stop': '紧急停止',
-        'return_charge': '返回充电',
+        'emergency_evacuation': '紧急撤离',
         'batch_restart': '批量重启',
         'refresh_status': '刷新状态',
         'test_alert': '测试告警',
@@ -514,7 +495,7 @@ export default {
       };
 
       const operationName = operationNames[type];
-      const needConfirmTypes = ['emergency_stop', 'batch_restart', 'standby_mode', 'maintenance_mode', 'charge_mode'];
+      const needConfirmTypes = ['emergency_stop', 'emergency_evacuation', 'batch_restart', 'standby_mode', 'maintenance_mode', 'charge_mode'];
 
       if (needConfirmTypes.includes(type)) {
         this.$confirm(`确定要对 ${count} 个机器人执行 ${operationName} 操作吗？`, '操作确认', {
@@ -540,7 +521,7 @@ export default {
 
       const operationNames = {
         'emergency_stop': '紧急停止',
-        'return_charge': '返回充电',
+        'emergency_evacuation': '紧急撤离',
         'batch_restart': '批量重启',
         'refresh_status': '刷新状态',
         'test_alert': '测试告警',
@@ -552,7 +533,6 @@ export default {
 
       const operationName = operationNames[type];
 
-      // 使用消息提示代替全屏loading
       const loadingMessage = this.$message({
         message: `正在执行${operationName}操作...`,
         duration: 0,
@@ -561,25 +541,23 @@ export default {
         customClass: 'operation-loading-message'
       });
 
-      // 如果是重启操作，先标记为重启中状态
       if (type === 'batch_restart') {
         this.addDebugLog('标记机器人为重启中状态', robotIds, 'warning');
         robotIds.forEach(robotId => {
           const robot = this.robotOptions.find(r => r.robotId === robotId);
           if (robot) {
-            robot.status = 3; // 使用数字 3 表示重启中
+            robot.status = 3;
           }
         });
       }
 
-      // 根据操作类型选择API
       let apiPromise = null;
       switch(type) {
         case 'emergency_stop':
           apiPromise = emergencyStop(robotIds);
           break;
-        case 'return_charge':
-          apiPromise = batchRestart(robotIds);
+        case 'emergency_evacuation':
+          apiPromise = emergencyEvacuation(robotIds);
           break;
         case 'batch_restart':
           apiPromise = batchRestart(robotIds);
@@ -601,7 +579,75 @@ export default {
           break;
         case 'charge_mode':
           apiPromise = chargeMode(robotIds);
-          break;
+          apiPromise.then(response => {
+            loadingMessage.close();
+            this.addDebugLog(`API响应: ${type}`, response, response.code === 200 ? 'success' : 'error');
+
+            if (response.code === 200) {
+              // 从 response.data 中获取统计数据
+              const successCount = response.data?.successCount || 0;
+              const immediateCount = response.data?.immediateCount || 0;
+              const waitingCount = response.data?.waitingCount || 0;
+              const total = response.data?.total || count;
+
+              let message = '';
+              let detail = '';
+
+              // 注意判断顺序：先判断 waitingCount > 0 的情况，再判断立即充电
+              if (successCount === 0) {
+                message = `充电模式切换失败`;
+                detail = '请检查机器人是否在线';
+              } else if (waitingCount > 0) {
+                // 有等待充电的机器人
+                if (immediateCount > 0) {
+                  message = `已命令 ${successCount} 个机器人切换为充电模式：${immediateCount} 个立即充电，${waitingCount} 个等待任务完成后自动充电`;
+                  detail = '有任务的机器人会在任务完成后自动开始充电';
+                } else {
+                  message = `已命令 ${successCount} 个机器人切换为充电模式，其中 ${waitingCount} 个机器人将等待任务完成后自动充电`;
+                  detail = '有任务的机器人会在任务完成后自动开始充电';
+                }
+              } else if (immediateCount > 0) {
+                message = `已将 ${successCount} 个机器人切换为充电模式`;
+                detail = '机器人正在前往充电站充电';
+              } else {
+                message = `已对 ${successCount} 个机器人执行充电模式操作`;
+                detail = '操作执行成功';
+              }
+
+              // 记录历史
+              this.recordHistory(type, robotIds, robotNames, message);
+
+              // 显示结果弹窗
+              this.operationResult = {
+                title: '操作完成',
+                icon: 'el-icon-success',
+                color: '#67c23a',
+                message: message,
+                detail: detail
+              };
+              this.resultDialogVisible = true;
+
+              // 刷新机器人列表
+              setTimeout(() => {
+                this.getRobotList();
+              }, 1000);
+
+              this.$message.success(message);
+            } else {
+              this.$message.error(response.msg || '充电模式切换失败');
+              this.recordHistory(type, robotIds, robotNames, `充电模式切换失败: ${response.msg || '未知错误'}`, 'fail');
+            }
+          }).catch(error => {
+            loadingMessage.close();
+            this.addDebugLog(`API调用失败: ${error.message}`, error, 'error');
+            const errorMsg = error.msg || error.message || '网络错误';
+            this.$message.error(`充电模式切换失败：${errorMsg}`);
+            this.recordHistory(type, robotIds, robotNames, `充电模式切换失败: ${errorMsg}`, 'fail');
+          }).finally(() => {
+            this.loading = false;
+          });
+          return;  // 重要：避免继续执行后面的通用处理
+
         default:
           this.$message.error('未知操作类型');
           this.loading = false;
@@ -611,7 +657,6 @@ export default {
 
       apiPromise.then(response => {
         loadingMessage.close();
-
         this.addDebugLog(`API响应: ${type}`, response, response.code === 200 ? 'success' : 'error');
 
         if (response.code === 200) {
@@ -623,9 +668,9 @@ export default {
               message = `已对 ${count} 个机器人执行紧急停止操作`;
               detail = '所有选中的机器人已紧急停止';
               break;
-            case 'return_charge':
-              message = `已让 ${count} 个机器人返回充电`;
-              detail = '机器人正在前往充电站';
+            case 'emergency_evacuation':
+              message = `已命令 ${count} 个机器人紧急撤离`;
+              detail = '机器人正在停止当前任务并返回安全位置';
               break;
             case 'batch_restart':
               const submitted = response.data?.submitted || count;
@@ -690,20 +735,17 @@ export default {
         } else {
           this.$message.error(response.msg || `${operationName}操作失败`);
           this.recordHistory(type, robotIds, robotNames, `${operationName}操作失败: ${response.msg || '未知错误'}`, 'fail');
-
           if (type === 'batch_restart') {
             this.getRobotList();
           }
         }
       }).catch(error => {
         loadingMessage.close();
-
         this.addDebugLog(`API调用失败: ${error.message}`, error, 'error');
         console.error(`${operationName}操作失败`, error);
         const errorMsg = error.msg || error.message || '网络错误';
         this.$message.error(`${operationName}操作失败：${errorMsg}`);
         this.recordHistory(type, robotIds, robotNames, `${operationName}操作失败: ${errorMsg}`, 'fail');
-
         if (type === 'batch_restart') {
           this.getRobotList();
         }
@@ -714,7 +756,6 @@ export default {
 
     startPollingRestartStatus(robotIds) {
       this.addDebugLog(`开始轮询检查重启状态: robotIds=${JSON.stringify(robotIds)}`, null, 'info');
-
       let retryCount = 0;
       const maxRetries = 20;
 
@@ -728,24 +769,18 @@ export default {
           }
           return;
         }
-
         retryCount++;
         this.addDebugLog(`第${retryCount}次轮询检查`, null, 'info');
-
         this.getRobotList().then(() => {
-          // 注意：状态码 3 表示重启中
           const stillRestarting = this.robotOptions.filter(
             r => robotIds.includes(r.robotId) && parseInt(r.status) === 3
           );
-
           const completedRobots = this.robotOptions.filter(r => robotIds.includes(r.robotId));
           const onlineCount = completedRobots.filter(r => parseInt(r.status) === 1).length;
           const offlineCount = completedRobots.filter(r => parseInt(r.status) === 0).length;
-
           this.addDebugLog(`轮询结果: 重启中=${stillRestarting.length}, 在线=${onlineCount}, 离线=${offlineCount}`,
             completedRobots.map(r => ({ name: r.robotName, status: r.status, battery: r.battery })),
             'info');
-
           if (stillRestarting.length > 0) {
             this.addDebugLog(`还有${stillRestarting.length}个机器人正在重启，继续轮询`, null, 'info');
             if (this.pollingTimer) {
@@ -754,7 +789,6 @@ export default {
             this.pollingTimer = setTimeout(checkStatus, 2000);
           } else {
             this.addDebugLog(`轮询完成: 在线=${onlineCount}, 离线=${offlineCount}`, null, 'success');
-
             if (offlineCount > 0) {
               this.$message.warning(`重启完成：${onlineCount}个在线，${offlineCount}个离线`);
               this.addDebugLog(`警告: ${offlineCount}个机器人重启后仍为离线状态`,
@@ -765,7 +799,6 @@ export default {
             } else {
               this.$message.info(`重启完成，当前状态: ${onlineCount}个在线，${offlineCount}个离线`);
             }
-
             if (this.pollingTimer) {
               clearTimeout(this.pollingTimer);
               this.pollingTimer = null;
@@ -779,7 +812,6 @@ export default {
           this.pollingTimer = setTimeout(checkStatus, 3000);
         });
       };
-
       if (this.pollingTimer) {
         clearTimeout(this.pollingTimer);
       }
@@ -798,7 +830,7 @@ export default {
     recordHistory(type, robotIds, robotNames, content, status = 'success') {
       const operationTypeMap = {
         'emergency_stop': 'emergency_stop',
-        'return_charge': 'return_charge',
+        'emergency_evacuation': 'emergency_evacuation',
         'batch_restart': 'batch_restart',
         'refresh_status': 'refresh_status',
         'test_alert': 'test_alert',
@@ -817,25 +849,15 @@ export default {
         operator: this.$store.state.user?.name || this.$store.state.user?.nickName || '系统',
         status: status
       };
-
       addHistory(historyData).catch(error => {
         console.error('保存历史记录失败', error);
       });
     },
 
-    // ==================== 调试方法 ====================
-
     addDebugLog(message, data = null, type = 'info') {
-      const log = {
-        time: new Date().toLocaleTimeString(),
-        message: message,
-        data: data,
-        type: type
-      };
+      const log = { time: new Date().toLocaleTimeString(), message: message, data: data, type: type };
       this.debugLogs.unshift(log);
-      if (this.debugLogs.length > 50) {
-        this.debugLogs.pop();
-      }
+      if (this.debugLogs.length > 50) { this.debugLogs.pop(); }
       console.log(`[调试][${type.toUpperCase()}] ${message}`, data || '');
     },
 
@@ -861,21 +883,14 @@ export default {
         this.$message.warning('请先选择机器人');
         return;
       }
-
       this.debugLoading = true;
       this.addDebugLog(`开始查询机器人状态: robotId=${this.debugRobotId}`, null, 'info');
-
       try {
-        const response = await request({
-          url: `/system/robot/debug/${this.debugRobotId}`,
-          method: 'get'
-        });
-
+        const response = await request({ url: `/system/robot/debug/${this.debugRobotId}`, method: 'get' });
         if (response.code === 200) {
           this.debugResult = response.data;
           this.addDebugLog(`查询成功`, response.data, 'success');
           this.$message.success('查询成功');
-
           const robot = response.data;
           this.addDebugLog(`机器人状态: status=${robot.status}, battery=${robot.battery}, updateTime=${robot.updateTime}`, null, 'info');
         } else {
@@ -895,21 +910,14 @@ export default {
         this.$message.warning('请先选择机器人');
         return;
       }
-
       this.debugLoading = true;
       this.addDebugLog(`开始强制更新机器人状态为在线: robotId=${this.debugRobotId}`, null, 'warning');
-
       try {
         const response = await request({
           url: `/system/robot/debug/forceUpdate`,
           method: 'put',
-          data: {
-            robotId: this.debugRobotId,
-            status: 1,  // 使用数字 1 表示在线
-            battery: 100
-          }
+          data: { robotId: this.debugRobotId, status: 1, battery: 100 }
         });
-
         if (response.code === 200) {
           this.addDebugLog(`强制更新成功`, response.data, 'success');
           this.$message.success('强制更新成功');
@@ -929,7 +937,6 @@ export default {
     async debugRefreshList() {
       this.debugLoading = true;
       this.addDebugLog('开始刷新机器人列表', null, 'info');
-
       try {
         await this.getRobotList();
         this.addDebugLog(`刷新成功，共${this.robotOptions.length}个机器人`,
@@ -947,13 +954,8 @@ export default {
     async debugClearCache() {
       this.debugLoading = true;
       this.addDebugLog('开始清除缓存', null, 'warning');
-
       try {
-        const response = await request({
-          url: `/system/robot/debug/clearCache`,
-          method: 'delete'
-        });
-
+        const response = await request({ url: `/system/robot/debug/clearCache`, method: 'delete' });
         if (response.code === 200) {
           this.addDebugLog(`清除缓存成功`, null, 'success');
           this.$message.success('缓存已清除');
@@ -975,22 +977,15 @@ export default {
         this.$message.warning('请先选择机器人');
         return;
       }
-
       this.debugLoading = true;
       this.addDebugLog(`开始测试重启: robotId=${this.debugRobotId}`, null, 'warning');
-
       try {
         const response = await batchRestart([this.debugRobotId]);
-
         if (response.code === 200) {
           this.addDebugLog(`测试重启已提交`, response.data, 'success');
           this.$message.success('重启命令已发送');
-
           const robot = this.robotOptions.find(r => r.robotId === this.debugRobotId);
-          if (robot) {
-            robot.status = 3; // 使用数字 3 表示重启中
-          }
-
+          if (robot) { robot.status = 3; }
           this.startPollingRestartStatus([this.debugRobotId]);
         } else {
           this.addDebugLog(`测试重启失败: ${response.msg}`, null, 'error');
@@ -1016,7 +1011,6 @@ export default {
 </script>
 
 <style scoped>
-/* 卡片样式 */
 .card {
   background: white;
   border-radius: 10px;
@@ -1029,7 +1023,7 @@ export default {
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-light, #E5E7EB);
+  border-bottom: 1px solid #E5E7EB;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1045,7 +1039,7 @@ export default {
 }
 
 .card-title i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
 }
 
 .header-actions {
@@ -1068,7 +1062,7 @@ export default {
 }
 
 .filter-bar i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   margin-right: 4px;
 }
 
@@ -1092,7 +1086,7 @@ export default {
   padding: 10px;
   background-color: #f8f9fa;
   border-radius: 4px;
-  border: 1px solid var(--border-light, #E5E7EB);
+  border: 1px solid #E5E7EB;
 }
 
 .robot-item {
@@ -1129,34 +1123,22 @@ export default {
   margin-left: auto;
 }
 
-.battery-high {
-  color: #67c23a;
-}
-
-.battery-medium {
-  color: #e6a23c;
-}
-
-.battery-low {
-  color: #f56c6c;
-}
-
-.battery-danger {
-  color: #f56c6c;
-  font-weight: 700;
-}
+.battery-high { color: #67c23a; }
+.battery-medium { color: #e6a23c; }
+.battery-low { color: #f56c6c; }
+.battery-danger { color: #f56c6c; font-weight: 700; }
 
 .selected-info {
   margin-top: 15px;
   padding: 10px;
   background-color: #ecf5ff;
-  border-left: 4px solid var(--primary-blue, #3976E4);
+  border-left: 4px solid #3976E4;
   border-radius: 4px;
   font-size: 14px;
 }
 
 .selected-info i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   margin-right: 8px;
 }
 
@@ -1168,7 +1150,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-light, #E5E7EB);
+  border: 1px solid #E5E7EB;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1215,7 +1197,7 @@ export default {
 
 .operation-card.system .el-card__header {
   background-color: #ecf5ff;
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
   border-bottom: 1px solid #c6e2ff;
 }
 
@@ -1230,13 +1212,13 @@ export default {
   border-color: #f78989 !important;
 }
 
-.operation-btn.return-charge {
+.operation-btn.emergency-evacuation {
   background-color: #e6a23c !important;
   border-color: #e6a23c !important;
   color: white !important;
 }
 
-.operation-btn.return-charge:hover {
+.operation-btn.emergency-evacuation:hover {
   background-color: #ebb563 !important;
   border-color: #ebb563 !important;
 }
@@ -1317,20 +1299,11 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .operation-section .el-col {
-    margin-bottom: 20px;
-  }
-  .operation-section .el-col:last-child {
-    margin-bottom: 0;
-  }
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
+  .operation-section .el-col { margin-bottom: 20px; }
+  .operation-section .el-col:last-child { margin-bottom: 0; }
+  .card-header { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
-/* 自定义调试面板样式 */
 .custom-debug-panel {
   position: fixed;
   top: 0;
@@ -1346,12 +1319,8 @@ export default {
 }
 
 @keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
 .debug-panel-header {
@@ -1375,7 +1344,7 @@ export default {
 }
 
 .debug-panel-header h3 i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
 }
 
 .debug-panel-body {
@@ -1407,7 +1376,7 @@ export default {
 }
 
 .debug-section h4 i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
 }
 
 .debug-buttons {
@@ -1456,21 +1425,10 @@ export default {
   border-bottom: none;
 }
 
-.log-info {
-  color: #a0a0a0;
-}
-
-.log-success {
-  color: #67c23a;
-}
-
-.log-warning {
-  color: #e6a23c;
-}
-
-.log-error {
-  color: #f56c6c;
-}
+.log-info { color: #a0a0a0; }
+.log-success { color: #67c23a; }
+.log-warning { color: #e6a23c; }
+.log-error { color: #f56c6c; }
 
 .log-time {
   color: #909399;
@@ -1540,6 +1498,6 @@ export default {
 }
 
 .command-item:hover i {
-  color: var(--primary-blue, #3976E4);
+  color: #3976E4;
 }
 </style>

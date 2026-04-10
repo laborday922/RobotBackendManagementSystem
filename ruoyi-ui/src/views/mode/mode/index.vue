@@ -194,6 +194,9 @@
 
         <el-divider content-position="left">
           <i class="fas fa-sliders-h"></i> 配置参数
+          <el-tooltip content="充电模式建议添加【充电策略】参数" placement="top">
+            <i class="el-icon-question" style="margin-left: 8px; color: #909399; cursor: pointer;"></i>
+          </el-tooltip>
         </el-divider>
 
         <div class="params-config">
@@ -242,9 +245,20 @@
             </div>
           </div>
 
-          <el-button type="primary" plain icon="el-icon-plus" size="small" @click="addParam" class="add-param-btn">
-            添加参数
-          </el-button>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <el-button type="primary" plain icon="el-icon-plus" size="small" @click="addParam" class="add-param-btn">
+              添加参数
+            </el-button>
+            <el-button
+              type="success"
+              plain
+              icon="el-icon-setting"
+              size="small"
+              @click="addChargeStrategyParam"
+              v-if="form.modeName === '充电模式' || form.modeId === 3">
+              快速添加充电策略
+            </el-button>
+          </div>
         </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -372,7 +386,7 @@
 </template>
 
 <script>
-import { listMode, getMode, delMode, addMode, updateMode, changeModeStatus } from "@/api/mode/mode";
+import { listMode, getMode, delMode, addMode, updateMode, changeModeStatus, getChargeStrategyParam } from "@/api/mode/mode";
 
 export default {
   name: "Mode",
@@ -533,8 +547,25 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+
+      // 自动计算排序值：取现有模式中最大的 orderNum + 1
+      let maxOrderNum = 0;
+      if (this.modeList && this.modeList.length > 0) {
+        const orderNums = this.modeList.map(mode => mode.orderNum || 0);
+        maxOrderNum = Math.max(...orderNums);
+      }
+      this.form.orderNum = maxOrderNum + 1;
+
       this.open = true;
       this.title = "添加模式";
+    },
+
+    /** 快速添加充电策略参数 */
+    addChargeStrategyParam() {
+      const chargeStrategyParam = getChargeStrategyParam();
+      chargeStrategyParam._tempId = Date.now();
+      this.form.modeParams.push(chargeStrategyParam);
+      this.$message.success('已添加充电策略参数');
     },
 
     /** 修改按钮操作 */
@@ -576,7 +607,6 @@ export default {
         type: 'warning',
         dangerouslyUseHTMLString: true
       }).then(() => {
-        // 显示加载中
         const loading = this.$loading({
           lock: true,
           text: '正在删除中...',
@@ -590,11 +620,8 @@ export default {
           loading.close();
           console.log('删除API返回:', response);
 
-          // 检查返回结果
           if (response && response.code === 200) {
             this.$modal.msgSuccess(`删除"${modeName}"成功`);
-
-            // 重新查询列表
             console.log('重新加载模式列表...');
             this.getList();
           } else {
@@ -616,7 +643,6 @@ export default {
           throw error;
         });
       }).catch(() => {
-        // 用户取消删除
         console.log('用户取消了删除操作');
       });
     },

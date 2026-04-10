@@ -42,7 +42,7 @@ public class TAppLibraryController extends BaseController
      * 查询应用库列表
      */
     @ApiOperation("查询应用库列表")
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:list')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppLibrary tAppLibrary)
     {
@@ -54,7 +54,7 @@ public class TAppLibraryController extends BaseController
     /**
      * 导出应用库列表
      */
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:export')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:export')")
     @Log(title = "应用库", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TAppLibrary tAppLibrary)
@@ -68,7 +68,7 @@ public class TAppLibraryController extends BaseController
      * 获取应用库详细信息
      */
     @ApiOperation("获取应用详细信息")
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:query')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -79,7 +79,7 @@ public class TAppLibraryController extends BaseController
      * 新增应用
      */
     @ApiOperation("新增应用")
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:add')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:add')")
     @Log(title = "应用库", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@Validated @RequestBody TAppLibraryDto tAppLibraryDto)
@@ -91,7 +91,7 @@ public class TAppLibraryController extends BaseController
      * 修改应用
      */
     @ApiOperation("修改应用")
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:edit')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:edit')")
     @Log(title = "应用库", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@Validated @RequestBody TAppLibraryDto tAppLibraryDto)
@@ -103,7 +103,7 @@ public class TAppLibraryController extends BaseController
      * 删除应用
      */
     @ApiOperation("删除应用")
-    @PreAuthorize("@ss.hasPermi('app:appLibrary:remove')")
+//    @PreAuthorize("@ss.hasPermi('app:appLibrary:remove')")
     @Log(title = "应用库", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

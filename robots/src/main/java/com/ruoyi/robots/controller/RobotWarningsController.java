@@ -43,7 +43,7 @@ public class RobotWarningsController extends BaseController
      * 通过status的值来查询不同的结果
      */
     @ApiOperation("查询机器人状态预警历史")
-    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
     @GetMapping("/list")
     public TableDataInfo listAll(RobotWarnings robotWarnings)
     {
@@ -54,7 +54,7 @@ public class RobotWarningsController extends BaseController
     }
 
     @ApiOperation("查询未处理机器人状态预警列表")
-    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
     @GetMapping("/list/no")
     public TableDataInfo listNo()
     {
@@ -64,7 +64,7 @@ public class RobotWarningsController extends BaseController
         return getDataTable(list);
     }
     @ApiOperation("查询已处理机器人状态预警列表")
-    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:list')")
     @GetMapping("/list/yes")
     public TableDataInfo listYes()
     {
@@ -76,7 +76,7 @@ public class RobotWarningsController extends BaseController
     /**
      * 导出机器人状态预警列表
      */
-    @PreAuthorize("@ss.hasPermi('robots:warnings:export')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:export')")
     @Log(title = "机器人状态预警", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, RobotWarnings robotWarnings)
@@ -89,7 +89,7 @@ public class RobotWarningsController extends BaseController
     /**
      * 获取机器人状态预警详细信息
      */
-    @PreAuthorize("@ss.hasPermi('robots:warnings:query')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -101,7 +101,7 @@ public class RobotWarningsController extends BaseController
      *
      */
     @ApiOperation("新增机器人状态预警")
-    @PreAuthorize("@ss.hasPermi('robots:warnings:add')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:add')")
     @Log(title = "机器人状态预警", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody RobotWarnings robotWarnings)
@@ -136,7 +136,7 @@ public class RobotWarningsController extends BaseController
      * 处理机器人状态预警
      */
     @ApiOperation("处理机器人状态预警")
-    @PreAuthorize("@ss.hasPermi('robots:warnings:deal')")
+//    @PreAuthorize("@ss.hasPermi('robots:warnings:deal')")
     @Log(title = "机器人状态预警", businessType = BusinessType.UPDATE)
     @PutMapping("/deal")
     public AjaxResult deal(@RequestBody RobotWarningsDto robotWarningsDto)

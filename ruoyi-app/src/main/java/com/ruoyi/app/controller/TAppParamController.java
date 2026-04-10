@@ -37,7 +37,7 @@ public class TAppParamController extends BaseController
     /**
      * 查询应用能力参数定义列表
      */
-    @PreAuthorize("@ss.hasPermi('app:param:list')")
+//    @PreAuthorize("@ss.hasPermi('app:param:list')")
     @GetMapping("/list")
     public TableDataInfo list(TAppParam tAppParam)
     {
@@ -49,7 +49,7 @@ public class TAppParamController extends BaseController
     /**
      * 导出应用能力参数定义列表
      */
-    @PreAuthorize("@ss.hasPermi('app:param:export')")
+//    @PreAuthorize("@ss.hasPermi('app:param:export')")
     @Log(title = "应用能力参数定义", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TAppParam tAppParam)
@@ -62,7 +62,7 @@ public class TAppParamController extends BaseController
     /**
      * 获取应用能力参数定义详细信息
      */
-    @PreAuthorize("@ss.hasPermi('app:param:query')")
+//    @PreAuthorize("@ss.hasPermi('app:param:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -72,7 +72,7 @@ public class TAppParamController extends BaseController
     /**
      * 新增应用能力参数定义
      */
-    @PreAuthorize("@ss.hasPermi('app:param:add')")
+//    @PreAuthorize("@ss.hasPermi('app:param:add')")
     @Log(title = "应用能力参数定义", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TAppParam tAppParam)
@@ -83,7 +83,7 @@ public class TAppParamController extends BaseController
     /**
      * 修改应用能力参数定义
      */
-    @PreAuthorize("@ss.hasPermi('app:param:edit')")
+//    @PreAuthorize("@ss.hasPermi('app:param:edit')")
     @Log(title = "应用能力参数定义", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody TAppParam tAppParam)
@@ -94,7 +94,7 @@ public class TAppParamController extends BaseController
     /**
      * 删除应用能力参数定义
      */
-    @PreAuthorize("@ss.hasPermi('app:param:remove')")
+//    @PreAuthorize("@ss.hasPermi('app:param:remove')")
     @Log(title = "应用能力参数定义", businessType = BusinessType.DELETE)
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)

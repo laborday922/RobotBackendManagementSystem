@@ -1,146 +1,548 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="demo-form-inline">
-      <el-form-item label="机器人ID" prop="robotId">
-        <el-input
-          v-model="queryParams.robotId"
-          placeholder="请输入机器人ID"
-          clearable
-          size="small"
-          prefix-icon="el-icon-search"
-          style="width: 200px"
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="page-title">
+        <i class="el-icon-s-data"></i>
+        <span>机器人位置历史管理</span>
+      </div>
+      <div class="page-description">
+        <el-alert
+          title="选择机器人查看其位置历史记录"
+          type="info"
+          :closable="false"
+          show-icon
+          class="page-alert">
+        </el-alert>
+      </div>
+    </div>
+
+    <!-- 机器人列表卡片 -->
+    <el-card class="robot-list-card" shadow="never">
+      <div slot="header" class="clearfix">
+        <span class="card-title">
+          <i class="el-icon-robot"></i>
+          机器人列表
+        </span>
+      </div>
+
+      <el-table
+        v-loading="loading"
+        :data="robotList"
+        style="width: 100%"
+        stripe
+        highlight-current-row
+        :header-cell-style="{background:'#f5f7fa',color:'#606266'}"
+        class="robot-table">
+        <el-table-column label="编号" align="center" prop="code" width="150" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div class="robot-code-cell">
+              <el-tag type="primary" size="small" class="robot-code-tag">
+                <i class="el-icon-price-tag"></i>
+                {{ scope.row.code }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="名称" align="center" prop="name" width="200" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div class="robot-name-cell">
+              <i class="el-icon-monitor robot-icon"></i>
+              <span class="robot-name-text">{{ scope.row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" align="center" prop="status" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div class="status-cell">
+              <el-tag
+                :type="getStatusTagType(scope.row.status)"
+                size="small"
+                class="status-tag">
+                <i :class="getStatusIcon(scope.row.status)"></i>
+                {{ getStatusText(scope.row.status) }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" width="120">
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="primary"
+              icon="el-icon-view"
+              @click="showLocationHistory(scope.row)"
+              class="view-btn">
+              查看历史
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- 位置历史信息弹窗 -->
+    <el-dialog
+      title="位置历史信息"
+      :visible="historyDialogVisible"
+      width="90%"
+      append-to-body
+      class="history-dialog"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      @close="closeHistoryDialog"
+      @closed="clearHistoryData">
+      <div class="dialog-header" v-if="currentRobot">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="机器人编号">
+            <el-tag type="primary">{{ currentRobot.code }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="机器人名称">
+            <i class="el-icon-monitor"></i>
+            {{ currentRobot.name }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <el-table
+        v-loading="historyLoading"
+        :data="historyList"
+        style="width: 100%"
+        stripe
+        :header-cell-style="{background:'#f0f9ff',color:'#409eff'}"
+        class="history-table">
+        <el-table-column label="记录时间" align="center" prop="recordTime" width="180" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <div class="time-cell">
+              <i class="el-icon-time"></i>
+              <span>{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="位置区域" align="center" prop="locationArea" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag type="warning" size="small">{{ scope.row.locationArea }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="具体位置" align="center" prop="specificLocation" width="150" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <i class="el-icon-location-information"></i>
+            <span style="margin-left: 5px;">{{ scope.row.specificLocation }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="坐标X" align="center" prop="coordinateX" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag type="info" size="mini">{{ scope.row.coordinateX }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="坐标Y" align="center" prop="coordinateY" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag type="info" size="mini">{{ scope.row.coordinateY }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="移动速度" align="center" prop="moveSpeed" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag type="success" size="mini">
+              <i class="el-icon-s-promotion"></i>
+              {{ scope.row.moveSpeed }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态描述" align="center" prop="statusDesc" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tooltip :content="scope.row.statusDesc" placement="top">
+              <span class="status-text">{{ scope.row.statusDesc }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-wrapper" v-show="historyTotal>0">
+        <pagination
+          :total="historyTotal"
+          :page.sync="historyQuery.pageNum"
+          :limit.sync="historyQuery.pageSize"
+          @pagination="getHistoryList"
         />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+      </div>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="small"
-          @click="handleAdd"
-          v-hasPermi="['robots:history:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="small"
-          @click="handleExport"
-          v-hasPermi="['robots:history:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table v-loading="loading" :data="historyList" @selection-change="handleSelectionChange" style="width: 100%" stripe highlight-current-row>
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="机器人ID" align="center" prop="robotId" width="80" show-overflow-tooltip />
-      <el-table-column label="记录时间" align="center" prop="recordTime" width="160" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <i class="el-icon-time"></i>
-          <span style="margin-left: 5px;">{{ parseTime(scope.row.recordTime, '{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="位置区域" align="center" prop="locationArea" width="110" show-overflow-tooltip />
-      <el-table-column label="具体位置" align="center" prop="specificLocation" width="140" show-overflow-tooltip />
-      <el-table-column label="坐标X" align="center" prop="coordinateX" width="90" show-overflow-tooltip />
-      <el-table-column label="坐标Y" align="center" prop="coordinateY" width="90" show-overflow-tooltip />
-      <el-table-column label="移动速度" align="center" prop="moveSpeed" width="90" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <el-tag type="info" size="mini">{{ scope.row.moveSpeed }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态描述" align="center" prop="statusDesc" width="120" show-overflow-tooltip />
-    </el-table>
-    
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
-
-    <!-- 添加机器人位置历史信息对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body @close="cancel">
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px" size="small">
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="机器人ID" prop="robotId">
-              <el-input v-model="form.robotId" placeholder="请输入机器人ID" clearable />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="记录时间" prop="recordTime">
-              <el-date-picker 
-                clearable
-                v-model="form.recordTime"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="请选择记录时间"
-                style="width: 100%">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="位置区域" prop="locationArea">
-              <el-input v-model="form.locationArea" placeholder="请输入位置区域" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="具体位置" prop="specificLocation">
-              <el-input v-model="form.specificLocation" placeholder="请输入具体位置" clearable />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="坐标X" prop="coordinateX">
-              <el-input v-model="form.coordinateX" placeholder="X坐标" type="number" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="坐标Y" prop="coordinateY">
-              <el-input v-model="form.coordinateY" placeholder="Y坐标" type="number" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="移动速度" prop="moveSpeed">
-              <el-input v-model="form.moveSpeed" placeholder="速度(单位)" type="number" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="状态描述" prop="statusDesc">
-              <el-input v-model="form.statusDesc" placeholder="请输入状态描述" type="textarea" rows="3" clearable />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="closeHistoryDialog" icon="el-icon-close">关 闭</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
+<style lang="scss" scoped>
+.app-container {
+  padding: 20px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 84px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// 页面头部样式
+.page-header {
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 1000px;
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    font-size: 28px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 15px;
+
+    i {
+      color: #409eff;
+      margin-right: 12px;
+      font-size: 32px;
+    }
+  }
+
+  .page-description {
+    .page-alert {
+      ::v-deep .el-alert__description {
+        color: #606266;
+        font-size: 15px;
+      }
+    }
+  }
+}
+
+// 机器人列表卡片样式
+.robot-list-card {
+  width: fit-content;
+  min-width: 600px;
+  margin: 0 auto 0 100px;
+
+  ::v-deep .el-card__header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      font-weight: 500;
+
+      i {
+        margin-right: 8px;
+        font-size: 18px;
+      }
+    }
+  }
+
+  ::v-deep .el-card__body {
+    padding: 0;
+  }
+}
+
+// 表格样式
+.robot-table {
+  ::v-deep .el-table__row {
+    &:hover {
+      background-color: #ecf5ff;
+    }
+  }
+
+  ::v-deep .el-table__cell {
+    padding: 12px 0;
+    font-size: 14px;
+  }
+
+  ::v-deep .el-table__header {
+    th {
+      padding: 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+  }
+}
+
+// 机器人单元格样式
+.robot-code-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .robot-code-tag {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+
+    i {
+      margin-right: 4px;
+    }
+  }
+}
+
+.robot-name-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .robot-icon {
+    font-size: 18px;
+    color: #409eff;
+    margin-bottom: 4px;
+  }
+
+  .robot-name-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #303133;
+    text-align: center;
+    line-height: 1.4;
+  }
+}
+
+// 状态单元格样式
+.status-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .status-tag {
+    font-size: 12px;
+
+    i {
+      margin-right: 3px;
+    }
+  }
+}
+
+// 按钮样式
+.view-btn {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  }
+}
+
+// 弹窗样式
+.history-dialog {
+  ::v-deep .el-dialog {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.15s ease-out !important;
+  }
+
+  ::v-deep .el-dialog__wrapper {
+    transition: all 0.15s ease-out !important;
+  }
+
+  ::v-deep .el-dialog__header {
+    background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+    color: white;
+    margin: 0;
+    padding: 20px;
+
+    .el-dialog__title {
+      font-weight: 500;
+    }
+
+    .el-dialog__headerbtn {
+      top: 15px;
+      right: 20px;
+
+      .el-dialog__close {
+        color: white;
+        font-size: 20px;
+
+        &:hover {
+          color: #e6a23c;
+        }
+      }
+    }
+  }
+
+  ::v-deep .el-dialog__body {
+    padding: 20px;
+  }
+}
+
+// 弹窗头部信息样式
+.dialog-header {
+  margin-bottom: 20px;
+
+  ::v-deep .el-descriptions {
+    .el-descriptions__title {
+      font-weight: 600;
+      color: #409eff;
+    }
+
+    .el-descriptions-item__label {
+      background-color: #f5f7fa;
+      font-weight: 500;
+    }
+  }
+}
+
+// 历史表格样式
+.history-table {
+  ::v-deep .el-table__header-wrapper {
+    background-color: #f0f9ff;
+  }
+
+  ::v-deep .el-table__row {
+    &:hover {
+      background-color: #f0f9ff;
+    }
+  }
+
+  ::v-deep .el-table__cell {
+    padding: 10px 0;
+  }
+}
+
+// 时间单元格样式
+.time-cell {
+  display: flex;
+  align-items: center;
+
+  i {
+    color: #909399;
+    margin-right: 5px;
+  }
+
+  span {
+    color: #606266;
+    font-weight: 500;
+  }
+}
+
+// 状态文本样式
+.status-text {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #606266;
+
+  &:hover {
+    color: #409eff;
+  }
+}
+
+// 分页样式
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+// 弹窗底部样式
+.dialog-footer {
+  text-align: center;
+
+  .el-button {
+    padding: 10px 30px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+    max-width: 100%;
+  }
+
+  .page-title {
+    font-size: 22px;
+
+    i {
+      font-size: 26px;
+    }
+  }
+
+  .robot-list-card {
+    ::v-deep .el-card__header {
+      padding: 12px 16px;
+
+      .card-title {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .robot-table {
+    ::v-deep .el-table__cell {
+      padding: 8px 0;
+      font-size: 12px;
+    }
+
+    ::v-deep .el-table__header {
+      th {
+        padding: 8px 0;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .robot-name-text {
+    font-size: 11px;
+  }
+
+  .robot-code-tag {
+    font-size: 11px;
+  }
+
+  .status-tag {
+    font-size: 10px;
+  }
+
+  .history-dialog {
+    ::v-deep .el-dialog {
+      width: 95% !important;
+      margin: 5vh auto;
+    }
+  }
+}
+
+// 动画效果
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.robot-list-card,
+.history-dialog {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+// 加载状态样式
+::v-deep .el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+</style>
+
 <script>
-import { listHistory, getHistory, delHistory, addHistory, updateHistory } from "@/api/robots/history"
+import { listRobots } from "@/api/robots/robots"
+import { listHistory } from "@/api/robots/history"
 
 export default {
   name: "History",
@@ -148,203 +550,87 @@ export default {
     return {
       // 遮罩层
       loading: true,
-      // 选中数组
-      ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 机器人位置历史信息表格数据
+      // 机器人列表
+      robotList: [],
+      // 历史弹窗相关
+      historyDialogVisible: false,
+      historyLoading: false,
       historyList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 查询参数
-      queryParams: {
+      historyTotal: 0,
+      currentRobot: null,
+      // 历史查询参数
+      historyQuery: {
         pageNum: 1,
         pageSize: 10,
-        robotId: null, // 机器人ID查询条件
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        robotId: [
-          { required: true, message: "机器人ID不能为空", trigger: "blur" },
-          { type: 'number', message: '机器人ID必须为数字', trigger: 'blur' } // 新增数字校验
-        ],
-        recordTime: [
-          { required: true, message: "记录时间不能为空", trigger: "change" } // 修改trigger为change，适配日期选择器
-        ],
-        locationArea: [
-          { required: true, message: "位置区域不能为空", trigger: "blur" }
-        ],
-        specificLocation: [
-          { required: true, message: "具体位置不能为空", trigger: "blur" }
-        ],
-        coordinateX: [
-          { required: true, message: "坐标X不能为空", trigger: "blur" },
-          { type: 'number', message: '坐标X必须为数字', trigger: 'blur' }
-        ],
-        coordinateY: [
-          { required: true, message: "坐标Y不能为空", trigger: "blur" },
-          { type: 'number', message: '坐标Y必须为数字', trigger: 'blur' }
-        ],
-        moveSpeed: [
-          { required: true, message: "移动速度不能为空", trigger: "blur" },
-          { type: 'number', message: '移动速度必须为数字', trigger: 'blur' }
-        ],
-        statusDesc: [
-          { required: true, message: "状态描述不能为空", trigger: "blur" }
-        ]
+        robotId: null
       }
     }
   },
   created() {
-    // 检查路由查询参数中是否有robotId，如果有则自动搜索
-    if (this.$route.query.robotId) {
-      this.queryParams.robotId = this.$route.query.robotId
-      this.queryParams.pageNum = 1
-    }
-    this.getList()
+    this.getRobotList()
   },
   methods: {
-    /** 查询机器人位置历史信息列表 */
-    getList() {
+    /** 查询机器人列表 */
+    getRobotList() {
       this.loading = true
-      // 处理查询参数：如果robotId为空，传递null；否则转为数字类型
-      const params = {
-        ...this.queryParams,
-        robotId: this.queryParams.robotId ? Number(this.queryParams.robotId) : null
-      }
-      listHistory(params).then(response => {
-        this.historyList = response.rows
-        this.total = response.total
+      listRobots({}).then(response => {
+        this.robotList = response.rows || response.data || []
         this.loading = false
+      }).catch(error => {
+        console.error('查询机器人列表失败:', error)
+        this.loading = false
+        this.$modal.msgError("获取机器人列表失败")
+      })
+    },
+    /** 显示位置历史弹窗 */
+    showLocationHistory(robot) {
+      this.currentRobot = robot
+      this.historyDialogVisible = true
+      this.historyQuery.robotId = robot.id
+      this.historyQuery.pageNum = 1
+      this.getHistoryList()
+    },
+    /** 查询位置历史列表 */
+    getHistoryList() {
+      this.historyLoading = true
+      listHistory(this.historyQuery).then(response => {
+        this.historyList = response.rows || []
+        this.historyTotal = response.total || 0
+        this.historyLoading = false
       }).catch(error => {
         console.error('查询位置历史失败:', error)
-        this.loading = false
+        this.historyLoading = false
+        this.$modal.msgError("获取历史数据失败")
       })
     },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
+    /** 关闭弹窗（仅隐藏） */
+    closeHistoryDialog() {
+      this.historyDialogVisible = false
     },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        robotId: null,
-        recordTime: null,
-        locationArea: null,
-        specificLocation: null,
-        coordinateX: null,
-        coordinateY: null,
-        moveSpeed: null,
-        statusDesc: null
-      }
-      this.resetForm("form")
+    /** 弹窗动画完全关闭后清空数据 */
+    clearHistoryData() {
+      this.historyList = []
+      this.historyTotal = 0
+      this.currentRobot = null
+      this.historyQuery.pageNum = 1
     },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
+    /** 获取状态文本 */
+    getStatusText(status) {
+      if (status === 1) return '在线'
+      if (status === 0) return '离线'
+      return '待激活'
     },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      // 手动重置robotId查询参数
-      this.queryParams.robotId = null
-      this.handleQuery()
+    /** 获取状态标签类型 */
+    getStatusTagType(status) {
+      if (status === 1) return 'success'
+      if (status === 0) return 'info'
+      return 'warning'
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加机器人位置历史信息"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getHistory(id).then(response => {
-        this.form = response.data
-        // 确保时间格式正确回显
-        if (this.form.recordTime) {
-          this.form.recordTime = this.form.recordTime
-        }
-        this.open = true
-        this.title = "修改机器人位置历史信息"
-      }).catch(error => {
-        console.error('获取位置历史详情失败:', error)
-        this.$modal.msgError("获取数据失败")
-      })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          // 处理表单数据类型转换
-          const submitData = {
-            ...this.form,
-            robotId: this.form.robotId ? Number(this.form.robotId) : null,
-            coordinateX: this.form.coordinateX ? Number(this.form.coordinateX) : null,
-            coordinateY: this.form.coordinateY ? Number(this.form.coordinateY) : null,
-            moveSpeed: this.form.moveSpeed ? Number(this.form.moveSpeed) : null
-          }
-          
-          if (this.form.id != null) {
-            updateHistory(submitData).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            }).catch(error => {
-              console.error('修改位置历史失败:', error)
-              this.$modal.msgError("修改失败")
-            })
-          } else {
-            addHistory(submitData).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            }).catch(error => {
-              console.error('新增位置历史失败:', error)
-              this.$modal.msgError("新增失败")
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除机器人位置历史信息编号为"' + ids + '"的数据项？').then(() => {
-        return delHistory(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      // 处理导出参数类型
-      const exportParams = {
-        ...this.queryParams,
-        robotId: this.queryParams.robotId ? Number(this.queryParams.robotId) : null
-      }
-      this.download('robots/history/export', exportParams, `history_${new Date().getTime()}.xlsx`)
+    /** 获取状态图标 */
+    getStatusIcon(status) {
+      if (status === 1) return 'el-icon-circle-check'
+      if (status === 0) return 'el-icon-circle-close'
+      return 'el-icon-warning'
     }
   }
 }

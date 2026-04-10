@@ -66,6 +66,18 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>robots</artifactId>
+            <version>3.9.1</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>robots</artifactId>
+            <version>3.9.1</version>
+            <scope>compile</scope>
+        </dependency>
 
 
     </dependencies>

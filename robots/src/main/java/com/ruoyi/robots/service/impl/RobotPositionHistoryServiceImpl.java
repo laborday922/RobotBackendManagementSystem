@@ -1,9 +1,13 @@
 package com.ruoyi.robots.service.impl;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.mapper.RobotsMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.robots.mapper.RobotPositionHistoryMapper;
@@ -25,6 +29,9 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     private RobotPositionHistoryMapper robotPositionHistoryMapper;
     @Autowired
     private RobotsMapper robotsMapper;
+    @Autowired
+    private RedisCache redisCache;
+
 
     /**
      * 查询机器人位置历史信息
@@ -100,5 +107,17 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     public int deleteRobotPositionHistoryById(Long id)
     {
         return robotPositionHistoryMapper.deleteRobotPositionHistoryById(id);
+    }
+
+    @Override
+    public void loadPosToRedis(RobotStatusDto robotStatusDto) {
+        RobotPositionHistory robotPositionHistory = new RobotPositionHistory();
+        BeanUtils.copyProperties(robotStatusDto, robotPositionHistory);
+        robotPositionHistory.setTenantId(TenantContext.get());
+        robotPositionHistory.setId(null);
+        robotPositionHistory.setRobotId(robotStatusDto.getId());
+        String redisKey = "robot:position:" + robotPositionHistory.getRobotId();
+
+        redisCache.setCacheObject(redisKey, robotPositionHistory, 5, TimeUnit.MINUTES);
     }
 }

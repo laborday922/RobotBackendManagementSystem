@@ -8,9 +8,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
+import org.apache.ibatis.type.Alias;
 
 import javax.validation.constraints.NotBlank;
 
+@Alias("RobotGroups")
 /**
  * 机器人分组对象 robot_groups
  * 

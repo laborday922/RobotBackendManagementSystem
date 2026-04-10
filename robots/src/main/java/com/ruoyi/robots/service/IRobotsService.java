@@ -62,4 +62,8 @@ public interface IRobotsService
      * @return 结果
      */
     public int deleteRobotsById(String id);
+
+    public int updateOnlineStatus(Long robotId, boolean online);
+
+    public int updateHeartbeatTime(Long robotId);
 }

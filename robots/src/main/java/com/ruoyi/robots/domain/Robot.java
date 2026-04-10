@@ -78,6 +78,7 @@ public class Robot extends BaseEntity
 
     private Long tenantId;
 
+    private Date lastHeartbeatTime;
 
     /** 当前模式名称（非数据库字段） */
     private Long currentMode;

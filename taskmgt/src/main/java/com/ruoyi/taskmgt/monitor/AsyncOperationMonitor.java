@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.monitor;
 
+import com.ruoyi.taskmgt.event.WebSocketAsyncResultEvent;
 import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
@@ -13,6 +14,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -132,6 +134,11 @@ public class AsyncOperationMonitor {
         }
     }
 
+    @EventListener
+    public void onWebSocketAsyncResult(WebSocketAsyncResultEvent event) {
+        handleWebSocketCallback(event.getTraceId(), event.isSuccess(), event.getData(), event.getErrorMsg());
+    }
+
     public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
         log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
         AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
@@ -148,13 +155,28 @@ public class AsyncOperationMonitor {
         cancelPolling(traceId);
     }
 
-    public void cancelPolling(String traceId) {
-        ScheduledFuture<?> future = pollingTasks.remove(traceId);
-        if (future != null) {
-            future.cancel(false);
-            log.debug("已取消轮询: {}", traceId);
+    /**
+     * 处理通过 WebSocket 推送的异步结果
+     */
+    public void handleWebSocketCallback(String traceId, boolean success, Object data, String errorMsg) {
+        log.info("收到WebSocket异步结果, traceId={}, success={}", traceId, success);
+        AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
+        if (!completedFlag.compareAndSet(false, true)) {
+            log.warn("重复处理异步结果, traceId={}", traceId);
+            return;
         }
-        pollingContexts.remove(traceId);
+        TaskStep step = stepRepository.findByTraceId(traceId);
+        if (step == null) {
+            log.error("异步结果traceId不存在: {}", traceId);
+            return;
+        }
+        OperationResult result = OperationResult.builder()
+                .success(success)
+                .data(data)
+                .message(errorMsg)
+                .build();
+        eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, step.getId(), result));
+        cancelPolling(traceId);
     }
 
     private long calculatePeriod(Date estimatedFinishTime) {
@@ -171,6 +193,35 @@ public class AsyncOperationMonitor {
         }
     }
 
+    // 新增：存储超时任务的 Map
+    private final Map<String, ScheduledFuture<?>> timeoutTasks = new ConcurrentHashMap<>();
+
+    /**
+     * 为回调模式注册超时检测
+     * @param stepId 步骤ID
+     * @param traceId 追踪ID
+     * @param timeoutMillis 超时毫秒数
+     */
+    public void registerCallbackTimeout(Long stepId, String traceId, long timeoutMillis) {
+        ScheduledFuture<?> future = executor.schedule(() -> {
+            AtomicBoolean completedFlag = completedTraceIds.get(traceId);
+            if (completedFlag != null && !completedFlag.get()) {
+                if (completedFlag.compareAndSet(false, true)) {
+                    log.warn("回调超时, traceId={}, stepId={}", traceId, stepId);
+                    eventPublisher.publishEvent(new AsyncTaskTimeoutEvent(this, stepId));
+                    cancelPolling(traceId);
+                }
+            }
+        }, timeoutMillis, TimeUnit.MILLISECONDS);
+        timeoutTasks.put(traceId, future);
+    }
+    public void cancelPolling(String traceId) {
+        ScheduledFuture<?> future = pollingTasks.remove(traceId);
+        if (future != null) future.cancel(false);
+        ScheduledFuture<?> timeoutFuture = timeoutTasks.remove(traceId);
+        if (timeoutFuture != null) timeoutFuture.cancel(false);
+        pollingContexts.remove(traceId);
+    }
     private boolean isTimeout(PollingContext context) {
         Date estimated = context.getEstimatedFinishTime();
         if (estimated == null) return false;

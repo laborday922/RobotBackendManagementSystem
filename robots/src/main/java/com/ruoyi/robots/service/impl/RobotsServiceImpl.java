@@ -154,4 +154,21 @@ public class RobotsServiceImpl implements IRobotsService {
     public int deleteRobotsById(String id) {
         return robotsMapper.deleteRobotsById(id);
     }
+
+    @Override
+    public int updateOnlineStatus(Long robotId, boolean online) {
+        Robot robot = new Robot();
+        robot.setId(robotId);
+        robot.setStatus(online?1:0);
+        robot.setLastHeartbeatTime(online?new Date():new Date(0));
+        return robotsMapper.updateRobots(robot);
+    }
+
+    @Override
+    public int updateHeartbeatTime(Long robotId) {
+        Robot robot = new Robot();
+        robot.setId(robotId);
+        robot.setLastHeartbeatTime(new Date());
+        return robotsMapper.updateRobots(robot);
+    }
 }

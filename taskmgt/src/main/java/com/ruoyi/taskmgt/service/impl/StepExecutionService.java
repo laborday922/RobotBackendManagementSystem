@@ -52,7 +52,6 @@ public class StepExecutionService {
         Long stepId = step.getId();
         log.info("开始执行步骤: {}", stepId);
         try {
-            // 更新步骤状态为执行中
             step.setStatus(TaskStep.EXECUTING);
             step.setStartTime(new Date());
             stepRepository.update(step);
@@ -62,32 +61,33 @@ public class StepExecutionService {
                     String.format("步骤[%s]开始执行, 操作ID=%d", step.getStepName(), step.getOperationId()),
                     "system", null);
 
-            // 解析机器人ID
             Long robotId = resolveRobotId(task, step);
             if (robotId == null) {
                 throw new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
                         new String[]{messageSourceAccessor.getMessage("机器人", "未知")},
                         messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
             }
-            // 解析 operationJson 参数
+
+            if (!robotInvoker.isRobotOnline(robotId)) {
+                throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
+                        new String[]{robotId.toString()},
+                        "机器人不在线");
+            }
+
             Map<String, Object> params = parseOperationJson(step.getOperationJson());
-            // 构造请求
+
             RobotTaskRequest request = new RobotTaskRequest();
             String traceId = step.getTraceId() != null ? step.getTraceId() : UUID.randomUUID().toString();
             request.setTraceId(traceId);
             request.setOperationId(step.getOperationId());
             request.setParams(params);
             request.setCallbackUrl(callbackBaseUrl + "/callback/robot");
-            //机器人根据操作类型返回模式
             request.setMode(null);
-            // 调用机器人
+
             RobotTaskResponse response = robotInvoker.execute(robotId, request);
-            // 根据响应模式处理
-            String respMode = response.getMode();
-            if (respMode == null) {
-                // 默认按同步处理
-                respMode = "SYNC";
-            }
+
+            String respMode = response.getMode() != null ? response.getMode() : "SYNC";
+
             switch (respMode) {
                 case "SYNC":
                     if (response.isSuccess()) {
@@ -116,11 +116,15 @@ public class StepExecutionService {
                     step.setTraceId(response.getTraceId());
                     step.setStatus(TaskStep.WAITING_CALLBACK);
                     stepRepository.update(step);
+                    // 注册超时检测（estimatedFinishTime若无默认30分钟）
+                    long timeout = response.getEstimatedFinishTime() != null ?
+                            response.getEstimatedFinishTime().getTime() - System.currentTimeMillis() :
+                            30 * 60 * 1000;
+                    asyncMonitor.registerCallbackTimeout(step.getId(), response.getTraceId(), timeout);
                     taskLogService.record(step.getTaskId(), step.getId(),
                             TaskLogEventType.STEP_WAITING_CALLBACK,
-                            "等待机器人回调, traceId=" + response.getTraceId(), "system", null);
+                            "等待异步结果, traceId=" + response.getTraceId(), "system", null);
                     break;
-
                 default:
                     log.error("步骤{}未知的结果类型: {}", stepId, respMode);
                     failStep(step.getId(), "未知的结果类型: " + respMode);
@@ -173,7 +177,7 @@ public class StepExecutionService {
         }
         step.setAssignedRobotId(selectedRobot);
         stepRepository.update(step);
-        return selectedRobot; // 注意原代码返回null，这里应返回选中的机器人ID
+        return selectedRobot;
     }
 
     @Transactional

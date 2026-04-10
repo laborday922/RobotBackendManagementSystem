@@ -92,6 +92,17 @@
             <if test="battery != null and battery != ''">battery = #{battery},</if>
             <if test="currentMode != null and currentMode != ''">current_mode = #{currentMode},</if>
             <if test="idleStartTime != null">idle_start_time = #{idleStartTime},</if>
+            <if test="lastHeartbeatTime != null">
+                last_heartbeat_time =
+                <choose>
+                    <when test="lastHeartbeatTime.getTime() == 0">
+                        null
+                    </when>
+                    <otherwise>
+                        #{lastHeartbeatTime}
+                    </otherwise>
+                </choose>,
+            </if>
             <if test="createdAt != null">created_at = #{createdAt},</if>
         </trim>
         where id = #{id}

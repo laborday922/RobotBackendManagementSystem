@@ -42,4 +42,5 @@ public class TaskStepDto {
     private String resultData;
     private String errorMsg;
     private Long assignedRobotId;
+    private Integer estimatedTime;
 }

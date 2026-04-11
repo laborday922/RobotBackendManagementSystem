@@ -106,7 +106,7 @@ public class RobotsServiceImpl implements IRobotsService {
             robot.setIdleStartTime(DateUtils.getNowDate());
 
     // 如果硬件状态正常且机器人状态变为更高，记录警告信息
-         if(robotsMapper.selectHardwareStatusById(robot.getId()) == RobotsConstants.NORMAL && robot.getStatus() > RobotsConstants.NORMAL)
+         if(robotsMapper.selectHardwareStatusById(robot.getId()) == RobotsConstants.NORMAL && robot.getHardwareStatus() > RobotsConstants.NORMAL)
          {
         // 创建警告对象并设置基本信息
              RobotWarnings robotWarnings = new RobotWarnings();

@@ -7,10 +7,10 @@
     <resultMap type="com.ruoyi.mode.domain.SysRobot" id="SysRobotResult">
         <id     property="robotId"          column="robot_id"          />
         <result property="currentMode"      column="current_mode"      />
-        <result property="currentModeName"  column="current_mode_name" />
         <result property="lastModeSwitchTime" column="last_mode_switch_time" />
         <result property="modeSwitchCount"  column="mode_switch_count"  />
         <result property="needAutoCharge"   column="need_auto_charge"   />
+        <result property="tenantId"         column="tenant_id"         />
         <result property="createBy"         column="create_by"         />
         <result property="createTime"       column="create_time"       />
         <result property="updateBy"         column="update_by"         />
@@ -25,6 +25,7 @@
         last_mode_switch_time,
         mode_switch_count,
         need_auto_charge,
+        tenant_id,
         create_by,
         create_time,
         update_by,
@@ -37,9 +38,8 @@
         <where>
             <if test="robotId != null"> and robot_id = #{robotId}</if>
             <if test="currentMode != null"> and current_mode = #{currentMode}</if>
+            <if test="tenantId != null and tenantId != ''"> and tenant_id = #{tenantId}</if>
             <if test="delFlag != null"> and del_flag = #{delFlag}</if>
-            <if test="createTime != null"> and create_time >= #{createTime}</if>
-            <if test="updateTime != null"> and update_time >= #{updateTime}</if>
         </where>
     </sql>
 
@@ -66,6 +66,7 @@
         <if test="currentMode != null">current_mode,</if>
         <if test="modeSwitchCount != null">mode_switch_count,</if>
         <if test="needAutoCharge != null">need_auto_charge,</if>
+        <if test="tenantId != null">tenant_id,</if>
         <if test="createBy != null">create_by,</if>
         <if test="delFlag != null">del_flag,</if>
         create_time
@@ -74,6 +75,7 @@
         <if test="currentMode != null">#{currentMode},</if>
         <if test="modeSwitchCount != null">#{modeSwitchCount},</if>
         <if test="needAutoCharge != null">#{needAutoCharge},</if>
+        <if test="tenantId != null">#{tenantId},</if>
         <if test="createBy != null">#{createBy},</if>
         <if test="delFlag != null">#{delFlag},</if>
         NOW()
@@ -193,8 +195,8 @@
 
     <!-- 保存机器人模式配置（JSON格式） -->
     <insert id="saveRobotModeConfig">
-        INSERT INTO sys_robot_mode_config (robot_id, mode_id, config, create_time, update_time)
-        VALUES (#{robotId}, #{modeId}, #{config}, NOW(), NOW())
+        INSERT INTO sys_robot_mode_config (robot_id, mode_id, config, tenant_id, create_time, update_time)
+        VALUES (#{robotId}, #{modeId}, #{config}, (SELECT tenant_id FROM sys_robot_ext WHERE robot_id = #{robotId} LIMIT 1), NOW(), NOW())
         ON DUPLICATE KEY UPDATE
         config = #{config},
         update_time = NOW()

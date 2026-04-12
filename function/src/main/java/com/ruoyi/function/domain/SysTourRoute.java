@@ -30,6 +30,9 @@ public class SysTourRoute extends BaseEntity {
     @ApiModelProperty("状态(0禁用 1启用)")
     private String status;
 
+    /** 租户ID */
+    private Long tenantId;
+
     @ApiModelProperty("关联的点位列表")
     private List<SysRoutePoint> routePoints;
 
@@ -50,6 +53,9 @@ public class SysTourRoute extends BaseEntity {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 
     public List<SysRoutePoint> getRoutePoints() { return routePoints; }
     public void setRoutePoints(List<SysRoutePoint> routePoints) { this.routePoints = routePoints; }

@@ -1,5 +1,6 @@
 package com.ruoyi.mode.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysRobotOperation;
 import com.ruoyi.mode.mapper.SysRobotOperationMapper;
@@ -8,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 /**
  * 机器人操作记录Service业务层处理
@@ -41,6 +44,11 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     @Override
     public List<SysRobotOperation> selectSysRobotOperationList(SysRobotOperation sysRobotOperation)
     {
+        // 添加租户过滤
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            sysRobotOperation.setTenantId(tenantId);
+        }
         return sysRobotOperationMapper.selectSysRobotOperationList(sysRobotOperation);
     }
 
@@ -54,6 +62,8 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
     public int insertSysRobotOperation(SysRobotOperation sysRobotOperation)
     {
         sysRobotOperation.setOperationTime(DateUtils.getNowDate());
+        // 设置租户ID
+        sysRobotOperation.setTenantId(TenantContext.get());
         return sysRobotOperationMapper.insertSysRobotOperation(sysRobotOperation);
     }
 
@@ -104,6 +114,7 @@ public class SysRobotOperationServiceImpl implements ISysRobotOperationService
         operation.setOperationTime(DateUtils.getNowDate());
         operation.setOperator(operator);
         operation.setRemark(remark);
+        operation.setTenantId(TenantContext.get());  // 设置租户ID
         return sysRobotOperationMapper.insertSysRobotOperation(operation);
     }
 }

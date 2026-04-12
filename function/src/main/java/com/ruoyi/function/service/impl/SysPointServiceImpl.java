@@ -1,5 +1,6 @@
 package com.ruoyi.function.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.mapper.SysPointMapper;
@@ -8,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 @Service
 public class SysPointServiceImpl implements ISysPointService {
@@ -22,12 +25,17 @@ public class SysPointServiceImpl implements ISysPointService {
 
     @Override
     public List<SysPoint> selectList(SysPoint point) {
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            point.setTenantId(tenantId);
+        }
         return sysPointMapper.selectList(point);
     }
 
     @Override
     public int insert(SysPoint point) {
         point.setCreateTime(DateUtils.getNowDate());
+        point.setTenantId(TenantContext.get());
         return sysPointMapper.insert(point);
     }
 

@@ -42,6 +42,9 @@ public class SysPoint extends BaseEntity {
     @ApiModelProperty("删除标志(0存在 2删除)")
     private String delFlag;
 
+    /** 租户ID */
+    private Long tenantId;
+
     // ========== Getters and Setters ==========
 
     public Long getPointId() {
@@ -124,6 +127,14 @@ public class SysPoint extends BaseEntity {
         this.delFlag = delFlag;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return "SysPoint{" +
@@ -137,6 +148,7 @@ public class SysPoint extends BaseEntity {
                 ", status='" + status + '\'' +
                 ", orderNum=" + orderNum +
                 ", delFlag='" + delFlag + '\'' +
+                ", tenantId=" + tenantId +
                 ", createBy='" + getCreateBy() + '\'' +
                 ", createTime=" + getCreateTime() +
                 ", updateBy='" + getUpdateBy() + '\'' +

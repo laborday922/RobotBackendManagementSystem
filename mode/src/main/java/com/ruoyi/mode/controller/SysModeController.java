@@ -13,7 +13,6 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -41,7 +40,6 @@ public class SysModeController extends BaseController
             @ApiImplicitParam(name = "modeType", value = "模式类型(system/custom)", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "enabled", value = "是否启用(0禁用 1启用)", dataType = "string", paramType = "query")
     })
-    @PreAuthorize("@ss.hasPermi('system:mode:list')")
     @GetMapping("/list")
     public TableDataInfo list(SysMode sysMode)
     {
@@ -54,7 +52,6 @@ public class SysModeController extends BaseController
      * 导出模式列表
      */
     @ApiOperation("导出模式列表")
-    @PreAuthorize("@ss.hasPermi('system:mode:export')")
     @Log(title = "模式", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, SysMode sysMode)
@@ -76,7 +73,6 @@ public class SysModeController extends BaseController
             paramType = "path",
             example = "1"
     )
-    @PreAuthorize("@ss.hasPermi('system:mode:query')")
     @GetMapping(value = "/{modeId}")
     public AjaxResult getInfo(@PathVariable("modeId") Long modeId)
     {
@@ -94,7 +90,6 @@ public class SysModeController extends BaseController
             dataType = "SysMode",
             paramType = "body"
     )
-    @PreAuthorize("@ss.hasPermi('system:mode:add')")
     @Log(title = "模式", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody SysMode sysMode)
@@ -113,7 +108,6 @@ public class SysModeController extends BaseController
             dataType = "SysMode",
             paramType = "body"
     )
-    @PreAuthorize("@ss.hasPermi('system:mode:edit')")
     @Log(title = "模式", businessType = BusinessType.UPDATE)
     @PutMapping
     public AjaxResult edit(@RequestBody SysMode sysMode)
@@ -133,7 +127,6 @@ public class SysModeController extends BaseController
             paramType = "path",
             example = "1,2,3"
     )
-    @PreAuthorize("@ss.hasPermi('system:mode:remove')")
     @Log(title = "模式", businessType = BusinessType.DELETE)
     @DeleteMapping("/{modeIds}")
     public AjaxResult remove(@PathVariable Long[] modeIds)
@@ -149,7 +142,6 @@ public class SysModeController extends BaseController
             @ApiImplicitParam(name = "modeId", value = "模式ID", required = true, dataType = "int", paramType = "body"),
             @ApiImplicitParam(name = "enabled", value = "启用状态(0禁用 1启用)", required = true, dataType = "string", paramType = "body")
     })
-    @PreAuthorize("@ss.hasPermi('system:mode:edit')")
     @Log(title = "模式", businessType = BusinessType.UPDATE)
     @PutMapping("/changeStatus")
     public AjaxResult changeStatus(@RequestBody SysMode sysMode)

@@ -10,7 +10,6 @@ import com.ruoyi.mode.domain.SysModeHistory;
 import com.ruoyi.mode.service.ISysModeHistoryService;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -33,7 +32,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 查询历史记录列表
      */
-    @PreAuthorize("@ss.hasPermi('system:history:list')")
     @ApiOperation(value = "查询历史记录列表", notes = "分页查询模式切换历史记录列表")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "pageNum", value = "页码", dataType = "int", paramType = "query", defaultValue = "1"),
@@ -50,7 +48,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 导出历史记录列表
      */
-    @PreAuthorize("@ss.hasPermi('system:history:export')")
     @Log(title = "历史记录", businessType = BusinessType.EXPORT)
     @ApiOperation(value = "导出历史记录列表", notes = "导出模式切换历史记录列表到Excel")
     @PostMapping("/export")
@@ -65,7 +62,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 获取历史记录详细信息
      */
-    @PreAuthorize("@ss.hasPermi('system:history:query')")
     @ApiOperation(value = "获取历史记录详细信息", notes = "根据历史记录ID获取详细信息")
     @ApiImplicitParam(name = "historyId", value = "历史记录ID", required = true, dataType = "Long", paramType = "path")
     @GetMapping(value = "/{historyId}")
@@ -77,7 +73,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 新增历史记录
      */
-    @PreAuthorize("@ss.hasPermi('system:history:add')")
     @Log(title = "历史记录", businessType = BusinessType.INSERT)
     @ApiOperation(value = "新增历史记录", notes = "添加一条模式切换历史记录")
     @PostMapping
@@ -89,7 +84,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 删除历史记录（批量）
      */
-    @PreAuthorize("@ss.hasPermi('system:history:remove')")
     @Log(title = "历史记录", businessType = BusinessType.DELETE)
     @ApiOperation(value = "删除历史记录", notes = "根据历史记录ID数组批量删除历史记录")
     @ApiImplicitParam(name = "historyIds", value = "历史记录ID数组", required = true, dataType = "Long[]", paramType = "path", allowMultiple = true)
@@ -102,7 +96,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 清空所有历史记录
      */
-    @PreAuthorize("@ss.hasPermi('system:history:remove')")
     @Log(title = "历史记录", businessType = BusinessType.DELETE)
     @ApiOperation(value = "清空所有历史记录", notes = "清空所有的模式切换历史记录")
     @DeleteMapping("/clear")
@@ -114,7 +107,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 获取操作类型统计（各类型操作数量）
      */
-    @PreAuthorize("@ss.hasPermi('system:history:list')")
     @ApiOperation(value = "操作类型统计", notes = "统计各操作类型的记录数量")
     @GetMapping("/stats/operationType")
     public AjaxResult getOperationTypeStats()
@@ -126,7 +118,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 获取机器人操作统计（各机器人操作次数）
      */
-    @PreAuthorize("@ss.hasPermi('system:history:list')")
     @ApiOperation(value = "机器人操作统计", notes = "统计各机器人的操作次数")
     @GetMapping("/stats/robot")
     public AjaxResult getRobotOperationStats()
@@ -138,7 +129,6 @@ public class SysModeHistoryController extends BaseController
     /**
      * 获取每日操作统计（最近N天）
      */
-    @PreAuthorize("@ss.hasPermi('system:history:list')")
     @ApiOperation(value = "每日操作统计", notes = "统计最近N天的操作数量，默认7天")
     @ApiImplicitParam(name = "days", value = "最近天数", dataType = "int", paramType = "query", defaultValue = "7")
     @GetMapping("/stats/daily")

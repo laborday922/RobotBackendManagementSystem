@@ -214,4 +214,25 @@ public interface ISysRobotService
      * @return 结果
      */
     public int copyRobotModeConfig(Long sourceRobotId, Long targetRobotId, Long modeId);
+// ==================== WebSocket 模式切换方法 ====================
+
+    /**
+     * 通过 WebSocket 切换机器人模式（同步）
+     *
+     * @param robotId 机器人ID
+     * @param modeId 目标模式ID
+     * @param modeName 目标模式名称
+     * @return 是否成功
+     */
+    public boolean switchModeViaWebSocketSync(Long robotId, Long modeId, String modeName);
+
+    /**
+     * 通过 WebSocket 切换机器人模式（异步）
+     *
+     * @param robotId 机器人ID
+     * @param modeId 目标模式ID
+     * @param modeName 目标模式名称
+     * @return 追踪ID
+     */
+    public String switchModeViaWebSocketAsync(Long robotId, Long modeId, String modeName);
 }

@@ -27,10 +27,10 @@ export function addMap(data) {
   })
 }
 
-// 修改地图
+// 修改地图（注意：URL 是 '/func/map'，不是 '/func/map/update'）
 export function updateMap(data) {
   return request({
-    url: '/func/map',
+    url: '/func/map',  // 修改这里，去掉 /update
     method: 'put',
     data: data
   })
@@ -64,5 +64,3 @@ export function getPointListByMap(mapId) {
     method: 'get'
   })
 }
-
-// 注意：不再需要 getMapImage 方法，因为使用静态资源

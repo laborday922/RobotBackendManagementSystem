@@ -9,7 +9,6 @@ import com.ruoyi.mode.domain.SysMode;
 import com.ruoyi.mode.domain.SysRobot;
 import com.ruoyi.mode.service.ISysModeService;
 import com.ruoyi.mode.service.ISysRobotService;
-import com.ruoyi.mode.service.impl.SysRobotServiceImpl;
 import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.service.IRobotsService;
 import io.swagger.annotations.Api;
@@ -17,7 +16,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,7 +47,6 @@ public class SysRobotController extends BaseController
     /**
      * 查询机器人基础信息列表（复用robot模块）
      */
-    @PreAuthorize("@ss.hasPermi('robots:robots:list')")
     @GetMapping("/list")
     @ApiOperation("查询机器人列表")
     public TableDataInfo list(Robot robot)
@@ -81,7 +78,6 @@ public class SysRobotController extends BaseController
      * 获取机器人基础信息详细信息（复用robot模块）
      */
     @ApiOperation("获取机器人基础信息")
-    @PreAuthorize("@ss.hasPermi('robots:robots:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -91,7 +87,6 @@ public class SysRobotController extends BaseController
     /**
      * 更新机器人当前模式
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "更新机器人当前模式", notes = "更新单个机器人的当前工作模式")
     @PutMapping("/updateMode")
@@ -103,7 +98,6 @@ public class SysRobotController extends BaseController
     /**
      * 批量更新机器人模式
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "批量更新机器人模式", notes = "批量更新多个机器人的工作模式")
     @PutMapping("/batchUpdateMode")
@@ -119,7 +113,6 @@ public class SysRobotController extends BaseController
     /**
      * 批量重启机器人 - 异步执行
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "批量重启机器人", notes = "批量重启指定的机器人（异步执行）")
     @PutMapping("/batchRestart")
@@ -142,7 +135,6 @@ public class SysRobotController extends BaseController
     /**
      * 刷新机器人状态
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "刷新机器人状态", notes = "刷新指定机器人的状态信息")
     @PutMapping("/refreshStatus")
@@ -156,7 +148,6 @@ public class SysRobotController extends BaseController
     /**
      * 测试告警
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "测试告警", notes = "触发机器人的测试告警")
     @PutMapping("/testAlert")
@@ -170,7 +161,6 @@ public class SysRobotController extends BaseController
     /**
      * 清除告警
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "清除告警", notes = "清除机器人的告警状态")
     @PutMapping("/clearAlerts")
@@ -184,7 +174,6 @@ public class SysRobotController extends BaseController
     /**
      * 紧急停止机器人
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "紧急停止机器人", notes = "紧急停止指定的机器人")
     @PutMapping("/emergencyStop")
@@ -196,7 +185,6 @@ public class SysRobotController extends BaseController
     /**
      * 紧急撤离 - 立即停止当前任务并返回指定安全位置
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "紧急撤离", notes = "让机器人立即停止当前任务并返回指定安全位置")
     @PutMapping("/emergencyEvacuation")
@@ -210,7 +198,6 @@ public class SysRobotController extends BaseController
     /**
      * 切换待机模式
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "切换待机模式", notes = "将机器人切换为待机模式")
     @PutMapping("/standbyMode")
@@ -223,7 +210,6 @@ public class SysRobotController extends BaseController
     /**
      * 切换维护模式
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "切换维护模式", notes = "将机器人切换为维护模式")
     @PutMapping("/maintenanceMode")
@@ -236,7 +222,6 @@ public class SysRobotController extends BaseController
     /**
      * 切换充电模式
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "切换充电模式", notes = "将机器人切换为充电模式")
     @PutMapping("/chargeMode")
@@ -250,7 +235,6 @@ public class SysRobotController extends BaseController
     /**
      * 返回充电（保持兼容）
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "返回充电", notes = "让机器人返回充电站充电")
     @PutMapping("/returnCharge")
@@ -263,7 +247,6 @@ public class SysRobotController extends BaseController
     /**
      * 保存机器人模式配置
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "保存机器人模式配置", notes = "保存机器人在特定模式下的配置参数")
     @PostMapping("/saveModeConfig")
@@ -280,7 +263,6 @@ public class SysRobotController extends BaseController
     /**
      * 批量保存机器人模式配置
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "批量保存机器人模式配置", notes = "批量保存多个机器人在特定模式下的配置参数")
     @PostMapping("/batchSaveModeConfig")
@@ -307,7 +289,6 @@ public class SysRobotController extends BaseController
     /**
      * 获取机器人模式配置
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:query')")
     @ApiOperation(value = "获取机器人模式配置", notes = "获取机器人在特定模式下的配置参数")
     @GetMapping("/modeConfig")
     public AjaxResult getModeConfig(@RequestParam Long robotId, @RequestParam Long modeId)
@@ -319,7 +300,6 @@ public class SysRobotController extends BaseController
     /**
      * 删除机器人模式配置
      */
-    @PreAuthorize("@ss.hasPermi('mode:robots:edit')")
     @Log(title = "机器人模式", businessType = BusinessType.DELETE)
     @ApiOperation(value = "删除机器人模式配置", notes = "删除机器人在特定模式下的配置参数")
     @DeleteMapping("/deleteModeConfig")

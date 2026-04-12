@@ -56,6 +56,9 @@ public class SysModeSchedule extends BaseEntity
     /** 删除标志（0代表存在 2代表删除） */
     private String delFlag;
 
+    /** 租户ID */
+    private Long tenantId;
+
     /** 关联的机器人列表 */
     private List<SysRobot> robots;
 
@@ -167,6 +170,14 @@ public class SysModeSchedule extends BaseEntity
         this.delFlag = delFlag;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public List<SysRobot> getRobots() {
         return robots;
     }
@@ -199,6 +210,7 @@ public class SysModeSchedule extends BaseEntity
                 .append("lastExecuteTime", getLastExecuteTime())
                 .append("lastExecuteStatus", getLastExecuteStatus())
                 .append("delFlag", getDelFlag())
+                .append("tenantId", getTenantId())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

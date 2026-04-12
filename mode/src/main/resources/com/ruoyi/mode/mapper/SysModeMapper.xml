@@ -17,6 +17,7 @@
         <result property="robotCount"    column="robot_count"   />
         <result property="orderNum"      column="order_num"     />
         <result property="delFlag"       column="del_flag"      />
+        <result property="tenantId"      column="tenant_id"     />
         <result property="createBy"      column="create_by"     />
         <result property="createTime"    column="create_time"   />
         <result property="updateBy"      column="update_by"     />
@@ -38,6 +39,7 @@
         COALESCE(r.robot_count, 0) as robot_count,
         m.order_num,
         m.del_flag,
+        m.tenant_id,
         m.create_by,
         m.create_time,
         m.update_by,
@@ -47,12 +49,18 @@
         SELECT mode_id, COUNT(*) as usage_count
         FROM sys_mode_history
         WHERE mode_id IS NOT NULL
+        <if test="tenantId != null and tenantId != ''">
+            AND tenant_id = #{tenantId}
+        </if>
         GROUP BY mode_id
         ) h ON m.mode_id = h.mode_id
         LEFT JOIN (
         SELECT current_mode as mode_id, COUNT(DISTINCT robot_id) as robot_count
         FROM sys_robot_ext
         WHERE current_mode IS NOT NULL AND del_flag = '0'
+        <if test="tenantId != null and tenantId != ''">
+            AND tenant_id = #{tenantId}
+        </if>
         GROUP BY current_mode
         ) r ON m.mode_id = r.mode_id
         <where>
@@ -67,6 +75,9 @@
             </if>
             <if test="enabled != null and enabled != ''">
                 AND m.enabled = #{enabled}
+            </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND m.tenant_id = #{tenantId}
             </if>
             AND m.del_flag = '0'
         </where>
@@ -88,6 +99,7 @@
         COALESCE(r.robot_count, 0) as robot_count,
         m.order_num,
         m.del_flag,
+        m.tenant_id,
         m.create_by,
         m.create_time,
         m.update_by,
@@ -119,6 +131,7 @@
         <if test="description != null and description != ''">description,</if>
         <if test="enabled != null and enabled != ''">enabled,</if>
         <if test="orderNum != null">order_num,</if>
+        <if test="tenantId != null">tenant_id,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
         create_time
         )values(
@@ -130,6 +143,7 @@
         <if test="description != null and description != ''">#{description},</if>
         <if test="enabled != null and enabled != ''">#{enabled},</if>
         <if test="orderNum != null">#{orderNum},</if>
+        <if test="tenantId != null">#{tenantId},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
         sysdate()
         )
@@ -168,8 +182,13 @@
 
     <!-- 增加模式使用次数（历史记录方式） -->
     <insert id="incrementUsageCount">
-        INSERT INTO sys_mode_history (mode_id, operation_type, content, operator, status, create_time)
-        VALUES (#{modeId}, 'auto_usage', '模式被使用', 'system', 'success', sysdate())
+        INSERT INTO sys_mode_history (mode_id, operation_type, content, operator, status, tenant_id, create_time)
+        VALUES (#{modeId}, 'auto_usage', '模式被使用', 'system', 'success',
+        <choose>
+            <when test="tenantId != null">#{tenantId}</when>
+            <otherwise>(SELECT tenant_id FROM sys_mode WHERE mode_id = #{modeId})</otherwise>
+        </choose>
+        , sysdate())
     </insert>
 
     <!-- 更新单个模式的机器人数量 -->
@@ -180,32 +199,45 @@
         FROM sys_robot_ext e
         WHERE e.current_mode = m.mode_id
         AND e.del_flag = '0'
+        AND e.tenant_id = m.tenant_id
         )
         WHERE m.mode_id = #{modeId}
         AND m.del_flag = '0'
     </update>
 
     <!-- 更新所有模式的机器人数量 -->
-    <update id="updateAllRobotCounts">
+    <update id="updateAllRobotCounts" parameterType="Long">
         UPDATE sys_mode m
         SET m.robot_count = (
         SELECT COUNT(DISTINCT e.robot_id)
         FROM sys_robot_ext e
         WHERE e.current_mode = m.mode_id
         AND e.del_flag = '0'
+        <if test="tenantId != null">
+            AND e.tenant_id = #{tenantId}
+        </if>
         )
         WHERE m.del_flag = '0'
+        <if test="tenantId != null">
+            AND m.tenant_id = #{tenantId}
+        </if>
     </update>
 
     <!-- 更新所有模式的使用次数 -->
-    <update id="updateAllUsageCounts">
+    <update id="updateAllUsageCounts" parameterType="Long">
         UPDATE sys_mode m
         SET m.usage_count = (
         SELECT COUNT(*)
         FROM sys_mode_history h
         WHERE h.mode_id = m.mode_id
+        <if test="tenantId != null">
+            AND h.tenant_id = #{tenantId}
+        </if>
         )
         WHERE m.del_flag = '0'
+        <if test="tenantId != null">
+            AND m.tenant_id = #{tenantId}
+        </if>
     </update>
 
 </mapper>

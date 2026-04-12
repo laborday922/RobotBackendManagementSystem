@@ -1,5 +1,6 @@
 package com.ruoyi.function.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.function.domain.SysMap;
 import com.ruoyi.function.domain.SysPoint;
@@ -10,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 @Service
 public class SysMapServiceImpl implements ISysMapService {
@@ -27,12 +30,17 @@ public class SysMapServiceImpl implements ISysMapService {
 
     @Override
     public List<SysMap> selectList(SysMap map) {
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            map.setTenantId(tenantId);
+        }
         return sysMapMapper.selectList(map);
     }
 
     @Override
     public int insert(SysMap map) {
         map.setCreateTime(DateUtils.getNowDate());
+        map.setTenantId(TenantContext.get());
         return sysMapMapper.insert(map);
     }
 

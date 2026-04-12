@@ -43,6 +43,9 @@ public class SysReceptionConfig extends BaseEntity {
     @ApiModelProperty("多性别陌生人识别语")
     private String strangerMulti;
 
+    /** 租户ID */
+    private Long tenantId;
+
     // getters and setters
     public Long getConfigId() { return configId; }
     public void setConfigId(Long configId) { this.configId = configId; }
@@ -76,4 +79,7 @@ public class SysReceptionConfig extends BaseEntity {
 
     public String getStrangerMulti() { return strangerMulti; }
     public void setStrangerMulti(String strangerMulti) { this.strangerMulti = strangerMulti; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

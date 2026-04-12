@@ -10,7 +10,6 @@ import com.ruoyi.mode.domain.SysModeSchedule;
 import com.ruoyi.mode.service.ISysModeScheduleService;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -34,7 +33,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 查询排程列表
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:list')")
     @ApiOperation(value = "查询排程列表", notes = "分页查询模式排程列表")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "pageNum", value = "页码", dataType = "int", paramType = "query", defaultValue = "1"),
@@ -51,7 +49,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 导出排程列表
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:export')")
     @Log(title = "模式排程", businessType = BusinessType.EXPORT)
     @ApiOperation(value = "导出排程列表", notes = "导出模式排程列表到Excel")
     @PostMapping("/export")
@@ -66,7 +63,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 获取排程详细信息
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:query')")
     @ApiOperation(value = "获取排程详细信息", notes = "根据排程ID获取详细信息")
     @ApiImplicitParam(name = "scheduleId", value = "排程ID", required = true, dataType = "Long", paramType = "path")
     @GetMapping(value = "/{scheduleId}")
@@ -78,7 +74,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 新增排程
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:add')")
     @Log(title = "模式排程", businessType = BusinessType.INSERT)
     @ApiOperation(value = "新增排程", notes = "创建新的模式排程")
     @PostMapping
@@ -90,7 +85,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 修改排程
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:edit')")
     @Log(title = "模式排程", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "修改排程", notes = "修改现有的模式排程信息")
     @PutMapping
@@ -102,7 +96,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 删除排程
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:remove')")
     @Log(title = "模式排程", businessType = BusinessType.DELETE)
     @ApiOperation(value = "删除排程", notes = "根据排程ID数组批量删除模式排程")
     @ApiImplicitParam(name = "scheduleIds", value = "排程ID数组", required = true, dataType = "Long[]", paramType = "path", allowMultiple = true)
@@ -115,7 +108,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 切换排程状态
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:edit')")
     @Log(title = "模式排程", businessType = BusinessType.UPDATE)
     @ApiOperation(value = "切换排程状态", notes = "切换模式排程的启用/禁用状态")
     @ApiImplicitParam(name = "scheduleId", value = "排程ID", required = true, dataType = "Long", paramType = "path")
@@ -128,7 +120,6 @@ public class SysModeScheduleController extends BaseController
     /**
      * 获取日历数据
      */
-    @PreAuthorize("@ss.hasPermi('system:schedule:list')")
     @GetMapping("/calendar")
     public AjaxResult getCalendarData(@RequestParam(required = false) Integer year,
                                       @RequestParam(required = false) Integer month)

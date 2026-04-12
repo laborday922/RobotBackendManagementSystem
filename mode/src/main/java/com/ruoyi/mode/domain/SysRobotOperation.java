@@ -39,6 +39,11 @@ public class SysRobotOperation extends BaseEntity
     /** 备注 */
     private String remark;
 
+    /** 租户ID */
+    private Long tenantId;
+
+    // ==================== Getters and Setters ====================
+
     public Long getOperationId() {
         return operationId;
     }
@@ -103,6 +108,14 @@ public class SysRobotOperation extends BaseEntity
         this.remark = remark;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
@@ -114,6 +127,11 @@ public class SysRobotOperation extends BaseEntity
                 .append("operationTime", getOperationTime())
                 .append("operator", getOperator())
                 .append("remark", getRemark())
+                .append("tenantId", getTenantId())
+                .append("createBy", getCreateBy())
+                .append("createTime", getCreateTime())
+                .append("updateBy", getUpdateBy())
+                .append("updateTime", getUpdateTime())
                 .toString();
     }
 }

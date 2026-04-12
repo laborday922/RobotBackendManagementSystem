@@ -229,9 +229,9 @@
 </template>
 
 <script>
-import { getNavConfig, saveNavConfig } from "@/api/func/nav";
-import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/func/map";
-import { addPoint, updatePoint, deletePoint } from "@/api/func/point";
+import { getNavConfig, saveNavConfig } from "@/api/function/nav";
+import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
+import { addPoint, updatePoint, deletePoint } from "@/api/function/point";
 import { listRobot } from "@/api/mode/robot";
 
 export default {

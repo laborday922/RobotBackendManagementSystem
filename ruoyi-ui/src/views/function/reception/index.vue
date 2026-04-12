@@ -116,7 +116,7 @@
 </template>
 
 <script>
-import { getReceptionConfig, saveReceptionConfig, resetReceptionConfig } from "@/api/func/reception";
+import { getReceptionConfig, saveReceptionConfig, resetReceptionConfig } from "@/api/function/reception";
 import { listRobot } from "@/api/mode/robot";
 
 export default {

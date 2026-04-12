@@ -178,7 +178,7 @@ export const constantRoutes = [
   children: [
     {
       path: 'reception',
-      component: () => import('@/views/func/reception/index.vue'),
+      component: () => import('@/views/function/reception/index.vue'),
       name: 'Reception',
       meta: {
         title: '业务接待',
@@ -187,7 +187,7 @@ export const constantRoutes = [
     },
     {
       path: 'nav',
-      component: () => import('@/views/func/nav/index.vue'),
+      component: () => import('@/views/function/nav/index.vue'),
       name: 'Nav',
       meta: {
         title: '导航指引',
@@ -196,7 +196,7 @@ export const constantRoutes = [
     },
     {
       path: 'tour',
-      component: () => import('@/views/func/tour/index'),
+      component: () => import('@/views/function/tour/index'),
       name: 'Tour',
       meta: {
         title: '智能讲解',

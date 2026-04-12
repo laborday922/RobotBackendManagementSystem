@@ -436,11 +436,11 @@
 </template>
 
 <script>
-import { getTourGeneral, saveTourGeneral } from "@/api/func/tour";
-import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/func/tour";
-import { getRouteList, saveRoute, deleteRoute } from "@/api/func/tour";
+import { getTourGeneral, saveTourGeneral } from "@/api/function/tour";
+import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/function/tour";
+import { getRouteList, saveRoute, deleteRoute } from "@/api/function/tour";
 import { listRobot } from "@/api/mode/robot";
-import { getMapList, getPointListByMap } from "@/api/func/map";
+import { getMapList, getPointListByMap } from "@/api/function/map";
 import Pagination from "@/components/Pagination";
 
 export default {

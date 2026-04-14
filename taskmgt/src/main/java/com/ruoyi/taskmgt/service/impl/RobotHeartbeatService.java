@@ -1,4 +1,4 @@
-package com.ruoyi.taskmgt.service.heartbeat;
+package com.ruoyi.taskmgt.service.impl;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.service.IRobotsService;

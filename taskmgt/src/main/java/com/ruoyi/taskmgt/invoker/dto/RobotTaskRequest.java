@@ -9,6 +9,6 @@ public class RobotTaskRequest {
     private String traceId;
     private Long operationId;
     private Map<String, Object> params;
-    private String callbackUrl;
+    //private String callbackUrl;
     private String mode; // SYNC, ASYNC, CALLBACK
 }

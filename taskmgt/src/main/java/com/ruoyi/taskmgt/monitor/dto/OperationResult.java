@@ -1,6 +1,6 @@
-package com.ruoyi.taskmgt.operation.dto;
+package com.ruoyi.taskmgt.monitor.dto;
 
-import com.ruoyi.taskmgt.operation.enums.OperationType;
+import com.ruoyi.taskmgt.monitor.enums.OperationType;
 import lombok.Builder;
 import lombok.Data;
 

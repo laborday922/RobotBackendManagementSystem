@@ -161,7 +161,6 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     private Integer pendingOrder;
 
     private Integer globalPendingOrder;
-
     private String formContent;
 
     @JsonIgnore

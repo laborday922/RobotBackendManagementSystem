@@ -44,8 +44,8 @@ public class StepExecutionService {
     private final AsyncOperationMonitor asyncMonitor;
     private final RobotInvoker robotInvoker;
 
-    @Value("${task.callback.base-url:http://localhost:8080}")
-    private String callbackBaseUrl;
+//    @Value("${task.callback.base-url:http://localhost:8080}")
+//    private String callbackBaseUrl;
 
     @Transactional
     public void executeStep(TaskStep step, Task task) {
@@ -81,7 +81,7 @@ public class StepExecutionService {
             request.setTraceId(traceId);
             request.setOperationId(step.getOperationId());
             request.setParams(params);
-            request.setCallbackUrl(callbackBaseUrl + "/callback/robot");
+            //request.setCallbackUrl(callbackBaseUrl + "/callback/robot");
             request.setMode(null);
 
             RobotTaskResponse response = robotInvoker.execute(robotId, request);

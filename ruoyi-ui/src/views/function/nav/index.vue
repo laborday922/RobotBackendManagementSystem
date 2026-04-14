@@ -2,19 +2,31 @@
   <div class="app-container">
     <el-card class="box-card">
       <div slot="header" class="clearfix">
-        <span><i class="el-icon-location"></i> 导航指引</span>
-        <el-button style="float: right; margin-left: 10px" type="success" size="small" @click="showAddPointDialog = true">
-          <i class="el-icon-plus"></i> 添加点位
-        </el-button>
-        <el-button style="float: right;" type="primary" size="small" @click="triggerUploadNewMap">
-          <i class="el-icon-upload"></i> 上传新地图
-        </el-button>
-        <el-button style="float: right; margin-right: 10px;" type="warning" size="small" plain :disabled="!navConfig.mapId" @click="triggerUpdateCurrentMap">
-          <i class="el-icon-refresh"></i> 更新当前地图
-        </el-button>
-        <el-button style="float: right; margin-right: 10px;" type="danger" size="small" plain :disabled="!navConfig.mapId" @click="deleteCurrentMap">
-          <i class="el-icon-delete"></i> 删除地图
-        </el-button>
+        <div class="header-left">
+          <span><i class="el-icon-location"></i> 导航指引</span>
+        </div>
+        <div class="header-right">
+          <div class="robot-selector">
+            <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
+            <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="onRobotChange">
+              <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
+            </el-select>
+          </div>
+          <div class="action-buttons">
+            <el-button type="success" size="small" @click="showAddPointDialog = true">
+              <i class="el-icon-plus"></i> 添加点位
+            </el-button>
+            <el-button type="primary" size="small" @click="triggerUploadNewMap">
+              <i class="el-icon-upload"></i> 上传新地图
+            </el-button>
+            <el-button type="warning" size="small" plain :disabled="!navConfig.mapId" @click="triggerUpdateCurrentMap">
+              <i class="el-icon-refresh"></i> 更新当前地图
+            </el-button>
+            <el-button type="danger" size="small" plain :disabled="!navConfig.mapId" @click="deleteCurrentMap">
+              <i class="el-icon-delete"></i> 删除地图
+            </el-button>
+          </div>
+        </div>
       </div>
 
       <!-- 隐藏的文件上传输入框 - 上传新地图 -->
@@ -217,14 +229,17 @@
 </template>
 
 <script>
-import { getNavConfig, saveNavConfig } from "@/api/func/nav";
-import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/func/map";
-import { addPoint, updatePoint, deletePoint } from "@/api/func/point";
+import { getNavConfig, saveNavConfig } from "@/api/function/nav";
+import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
+import { addPoint, updatePoint, deletePoint } from "@/api/function/point";
+import { listRobot } from "@/api/mode/robot";
 
 export default {
   name: "Navigation",
   data() {
     return {
+      selectedRobotId: null,
+      robotList: [],
       navConfig: {
         mapId: null,
         voiceType: 'default',
@@ -242,7 +257,7 @@ export default {
       isSavingMapName: false,
       isUploading: false,
       changeMapTimer: null,
-      pendingNewMapData: null, // 存储新上传的地图数据
+      pendingNewMapData: null,
       newMapForm: {
         mapId: null,
         mapName: ''
@@ -285,8 +300,7 @@ export default {
     }
   },
   created() {
-    this.loadNavConfig();
-    this.loadMaps();
+    this.loadRobotsByGroup();
   },
   watch: {
     'navConfig.mapId': function(newVal, oldVal) {
@@ -308,6 +322,42 @@ export default {
       return icons[pointType] || icons.default;
     },
 
+    // 加载导览组机器人（groupId=4）
+    loadRobotsByGroup() {
+      listRobot({ groupId: 4, pageNum: 1, pageSize: 100 }).then(response => {
+        this.robotList = response.rows || [];
+
+        if (this.robotList.length > 0) {
+          this.selectedRobotId = this.robotList[0].id;
+          this.loadMaps();
+          this.loadNavConfig();
+        } else {
+          this.$message.warning('导览组下没有可用机器人');
+        }
+      }).catch(error => {
+        console.error('获取机器人列表失败:', error);
+        this.$message.error('获取机器人列表失败');
+      });
+    },
+
+    // 机器人切换事件
+    onRobotChange() {
+      // 清空当前配置
+      this.navConfig = {
+        mapId: null,
+        voiceType: 'default',
+        beforeMsg: '',
+        duringMsg: '',
+        afterMsg: ''
+      };
+      this.mapList = [];
+      this.pointList = [];
+      this.mapImageUrl = '';
+      // 重新加载数据
+      this.loadMaps();
+      this.loadNavConfig();
+    },
+
     // 触发上传新地图
     triggerUploadNewMap() {
       if (this.$refs.newMapFileInput) {
@@ -327,7 +377,9 @@ export default {
     },
 
     loadNavConfig() {
-      getNavConfig().then(response => {
+      if (!this.selectedRobotId) return;
+
+      getNavConfig(this.selectedRobotId).then(response => {
         if (response.data) {
           this.navConfig = response.data;
           if (this.navConfig.mapId) {
@@ -340,13 +392,34 @@ export default {
     },
 
     loadMaps() {
-      getMapList({}).then(response => {
+      if (!this.selectedRobotId) return;
+
+      getMapList({ robotId: this.selectedRobotId }).then(response => {
         console.log('地图列表响应:', response);
-        this.mapList = response.rows || response.data || [];
+        let maps = response.rows || response.data || [];
+        // 只显示未删除(delFlag === '0' 或 delFlag === 0)且启用(status === '1')的地图
+        this.mapList = maps.filter(map => {
+          // 根据实际后端返回的 delFlag 类型调整（可能是字符串或数字）
+          const isNotDeleted = map.delFlag === '0' || map.delFlag === 0 || !map.delFlag;
+          const isEnabled = map.status === '1';
+          return isNotDeleted && isEnabled;
+        });
+
+        console.log('过滤后的地图列表:', this.mapList);
+
         // 加载每个地图的点位数量
         this.mapList.forEach(map => {
           this.loadPointCount(map);
         });
+
+        // 如果当前选中的地图不在有效列表中，清空
+        if (this.navConfig.mapId && !this.mapList.some(m => m.mapId === this.navConfig.mapId)) {
+          console.log('当前选中的地图已失效，清空');
+          this.navConfig.mapId = null;
+          this.pointList = [];
+          this.mapImageUrl = '';
+        }
+
         if (this.navConfig.mapId) {
           this.loadMapImage();
         }
@@ -451,6 +524,12 @@ export default {
         return;
       }
 
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        event.target.value = '';
+        return;
+      }
+
       console.log('开始上传新地图:', file.name, file.size, file.type);
 
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
@@ -478,7 +557,7 @@ export default {
 
       const formData = new FormData();
       formData.append('file', file);
-      // 不传 mapId，表示新增地图
+      formData.append('robotId', this.selectedRobotId);
 
       uploadMap(formData).then(response => {
         this.uploadLoading = false;
@@ -653,7 +732,9 @@ export default {
             ...this.pendingNewMapData,
             mapName: this.newMapForm.mapName,
             mapBase64: this.pendingNewMapData.mapBase64 || this.pendingNewMapData.mapUrl,
-            mapUrl: this.pendingNewMapData.mapUrl || this.pendingNewMapData.mapBase64
+            mapUrl: this.pendingNewMapData.mapUrl || this.pendingNewMapData.mapBase64,
+            delFlag: '0',
+            status: '1'
           };
           this.mapList.unshift(newMap);
 
@@ -696,10 +777,16 @@ export default {
       }).then(() => {
         delMap(this.navConfig.mapId).then(() => {
           this.$message.success('地图删除成功');
-          this.loadMaps();
+
+          // 清空当前选中的地图
           this.navConfig.mapId = null;
           this.pointList = [];
           this.mapImageUrl = '';
+
+          // 重新加载地图列表（这会自动过滤掉已删除的地图）
+          this.loadMaps();
+
+          // 保存导航配置，清除已删除地图的关联
           this.saveNavConfig();
         }).catch(error => {
           console.error('删除地图失败:', error);
@@ -741,9 +828,18 @@ export default {
         return;
       }
 
+      if (!this.selectedRobotId) {
+        return;
+      }
+
       this.isSavingConfig = true;
 
-      saveNavConfig(this.navConfig).then(() => {
+      const data = {
+        robotId: this.selectedRobotId,
+        ...this.navConfig
+      };
+
+      saveNavConfig(data).then(() => {
         console.log('导航配置已保存');
       }).catch(error => {
         console.error('保存导航配置失败:', error);
@@ -842,6 +938,169 @@ export default {
   border-radius: 8px;
 }
 
+.box-card >>> .el-card__header {
+  padding: 16px 20px;
+}
+
+/* 头部布局优化 */
+.clearfix {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-left span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.header-left i {
+  font-size: 18px;
+  color: #409eff;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* 机器人选择器样式 - 更精致 */
+.robot-selector {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f9fafc 100%);
+  padding: 4px 4px 4px 16px;
+  border-radius: 32px;
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.robot-selector:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.12);
+}
+
+.badge {
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
+  color: #409eff;
+  padding: 5px 14px;
+  border-radius: 28px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge i {
+  font-size: 14px;
+}
+
+/* 按钮组样式 - 更紧凑美观 */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-buttons .el-button {
+  border-radius: 6px;
+  transition: all 0.25s ease;
+}
+
+.action-buttons .el-button--success {
+  background: linear-gradient(135deg, #67c23a, #5daf34);
+  border: none;
+  color: #fff;
+}
+
+.action-buttons .el-button--primary {
+  background: linear-gradient(135deg, #409eff, #3a8ee6);
+  border: none;
+  color: #fff;
+}
+
+.action-buttons .el-button--warning.is-plain {
+  border-color: #e6a23c;
+  color: #fff;
+  background-color: #e6a23c;
+}
+
+.action-buttons .el-button--warning.is-plain:hover {
+  background: #e6a23c;
+  color: #fff;
+  border-color: #e6a23c;
+  opacity: 0.85;
+}
+
+.action-buttons .el-button--danger.is-plain {
+  border-color: #f56c6c;
+  color: #f56c6c;
+}
+
+.action-buttons .el-button--danger.is-plain:hover {
+  background: #f56c6c;
+  color: #fff;
+  border-color: #f56c6c;
+}
+
+.action-buttons .el-button i {
+  margin-right: 4px;
+}
+
+/* 响应式布局 */
+@media (max-width: 992px) {
+  .clearfix {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .robot-selector {
+    justify-content: space-between;
+  }
+
+  .action-buttons {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 576px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .el-button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .robot-selector {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+}
+
+/* 以下保持原有样式 */
 .sub-card {
   margin-bottom: 0;
   border: 1px solid #e9ecef;
@@ -1130,29 +1389,5 @@ export default {
   background: #f8f9fa;
   border-radius: 8px;
   border-left: 3px solid #409eff;
-}
-
-@media (max-width: 768px) {
-  .el-col {
-    width: 100% !important;
-    margin-bottom: 20px;
-  }
-
-  .point-item {
-    padding: 10px 12px;
-  }
-
-  .point-icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .point-name {
-    font-size: 13px;
-  }
-
-  .point-actions {
-    opacity: 1;
-  }
 }
 </style>

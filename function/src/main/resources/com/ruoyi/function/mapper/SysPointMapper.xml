@@ -13,6 +13,7 @@
         <result property="coordinateY" column="coordinate_y"/>
         <result property="status" column="status"/>
         <result property="orderNum" column="order_num"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -24,7 +25,7 @@
     <!-- 通用查询字段列表 -->
     <sql id="BaseColumnList">
         point_id, map_id, point_name, point_code, point_type,
-        coordinate_x, coordinate_y, status, order_num,
+        coordinate_x, coordinate_y, status, order_num, tenant_id,
         create_by, create_time, update_by, update_time, remark, del_flag
     </sql>
 
@@ -68,6 +69,9 @@
             <if test="status != null and status != ''">
                 AND status = #{status}
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
             <if test="delFlag != null and delFlag != ''">
                 AND del_flag = #{delFlag}
             </if>
@@ -86,6 +90,7 @@
         coordinate_y,
         status,
         order_num,
+        tenant_id,
         create_by,
         create_time,
         remark,
@@ -99,6 +104,7 @@
         #{coordinateY},
         IFNULL(#{status}, '1'),
         IFNULL(#{orderNum}, 0),
+        #{tenantId},
         #{createBy},
         #{createTime},
         #{remark},
@@ -143,15 +149,6 @@
         </foreach>
     </delete>
 
-    <!-- 逻辑删除（推荐使用逻辑删除而不是物理删除） -->
-    <update id="logicDeleteById">
-        UPDATE sys_point
-        SET del_flag = '2'
-        WHERE point_id = #{pointId}
-    </update>
-
-
-
     <!-- 更新点位状态 -->
     <update id="updateStatus">
         UPDATE sys_point
@@ -177,22 +174,5 @@
             AND point_id != #{pointId}
         </if>
     </select>
-
-    <!-- 批量逻辑删除 -->
-    <update id="logicDeleteByIds" parameterType="java.util.List">
-        UPDATE sys_point
-        SET del_flag = '2'
-        WHERE point_id IN
-        <foreach collection="pointIds" item="pointId" open="(" separator="," close=")">
-            #{pointId}
-        </foreach>
-    </update>
-
-    <!-- 根据地图ID逻辑删除 -->
-    <update id="logicDeleteByMapId">
-        UPDATE sys_point
-        SET del_flag = '2'
-        WHERE map_id = #{mapId}
-    </update>
 
 </mapper>

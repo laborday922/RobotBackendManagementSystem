@@ -49,6 +49,9 @@ public class SysRobot implements Serializable
     /** 是否需要自动充电（0-否，1-是） */
     private Integer needAutoCharge;
 
+    /** 租户ID */
+    private Long tenantId;
+
     /** 创建者 */
     private String createBy;
 
@@ -164,6 +167,14 @@ public class SysRobot implements Serializable
         this.needAutoCharge = needAutoCharge;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public String getCreateBy() {
         return createBy;
     }
@@ -235,6 +246,7 @@ public class SysRobot implements Serializable
                 .append("lastModeSwitchTime", getLastModeSwitchTime())
                 .append("modeSwitchCount", getModeSwitchCount())
                 .append("needAutoCharge", getNeedAutoCharge())
+                .append("tenantId", getTenantId())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

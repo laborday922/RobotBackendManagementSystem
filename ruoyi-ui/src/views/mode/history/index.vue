@@ -401,12 +401,15 @@ export default {
       return map[category] || category;
     },
 
-    /** 获取状态标签类型 */
+    /** 获取状态标签类型 - 失败状态显示为红色(danger) */
     getStatusTag(status) {
       const map = {
         'success': 'success',
         'warning': 'warning',
-        'danger': 'danger'
+        'danger': 'danger',
+        'fail': 'danger',      // 失败状态改为红色
+        'error': 'danger',     // 错误状态改为红色
+        'failed': 'danger'     // failed 状态改为红色
       };
       return map[status] || 'info';
     },
@@ -416,7 +419,10 @@ export default {
       const map = {
         'success': '成功',
         'warning': '告警',
-        'danger': '紧急'
+        'danger': '紧急',
+        'fail': '失败',
+        'error': '错误',
+        'failed': '失败'
       };
       return map[status] || status;
     },
@@ -587,7 +593,7 @@ export default {
   border-bottom: 1px solid #F0F0F0 !important;
 }
 
-/* ========== 详情对话框样式优化 ========== */
+/* 详情对话框样式优化 */
 ::v-deep .el-dialog {
   border-radius: 8px;
 }
@@ -614,7 +620,7 @@ export default {
   border-top: 1px solid #EBEEF5;
 }
 
-/* ========== 响应式样式 ========== */
+/* 响应式样式 */
 @media (max-width: 992px) {
   .stats-cards {
     grid-template-columns: repeat(2, 1fr);

@@ -6,14 +6,13 @@
       </div>
       <div class="robot-selector">
         <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
-        <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="loadAllData">
+        <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="onRobotChange">
           <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
         </el-select>
       </div>
     </div>
 
     <div class="card-body">
-      <!-- 标签页 -->
       <el-tabs v-model="activeTab" @tab-click="handleTabClick">
         <!-- 讲解通用设置 -->
         <el-tab-pane label="讲解通用设置" name="general">
@@ -21,14 +20,14 @@
             <div class="form-row">
               <div class="form-group">
                 <label>当前地图</label>
-                <el-select v-model="generalConfig.mapId" placeholder="请选择地图" @change="loadRoutes">
-                  <el-option v-for="map in mapList" :key="map.mapId" :label="map.mapName" :value="map.mapId" />
+                <el-select v-model="generalConfig.mapId" placeholder="请选择地图" @change="onGeneralMapChange">
+                  <el-option v-for="map in currentRobotMaps" :key="map.mapId" :label="map.mapName" :value="map.mapId" />
                 </el-select>
               </div>
               <div class="form-group">
                 <label>讲解路线</label>
                 <el-select v-model="generalConfig.routeId" placeholder="请选择路线">
-                  <el-option v-for="route in routeList" :key="route.routeId" :label="route.routeName" :value="route.routeId" />
+                  <el-option v-for="route in currentRobotRoutes" :key="route.routeId" :label="route.routeName" :value="route.routeId" />
                 </el-select>
               </div>
               <div class="form-group">
@@ -98,37 +97,39 @@
 
             <el-table :data="contentList" border style="width: 100%" @selection-change="handleContentSelectionChange">
               <el-table-column type="selection" width="55" align="center" />
-              <el-table-column label="讲解点名称" prop="pointName" width="150" />
-              <el-table-column label="讲解点描述" prop="pointDesc" width="200" show-overflow-tooltip />
-              <el-table-column label="播报类型" width="100">
+              <el-table-column label="讲解点名称" prop="pointName" min-width="150" show-overflow-tooltip />
+              <el-table-column label="讲解点描述" prop="pointDesc" min-width="200" show-overflow-tooltip />
+              <el-table-column label="播报类型" width="100" align="center">
                 <template slot-scope="scope">
                   <el-tag :type="scope.row.broadcastType === 'audio' ? 'success' : 'info'">
                     {{ scope.row.broadcastType === 'audio' ? '音频' : '文本' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="内容类型" width="100">
+              <el-table-column label="内容类型" width="100" align="center">
                 <template slot-scope="scope">
                   <el-tag :type="getContentTypeTag(scope.row.contentType)">
                     {{ getContentTypeText(scope.row.contentType) }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="音色" prop="voiceType" width="100" />
-              <el-table-column label="语速" prop="speechRate" width="80">
+              <el-table-column label="音色" prop="voiceType" width="100" show-overflow-tooltip />
+              <el-table-column label="语速" prop="speechRate" width="80" align="center">
                 <template slot-scope="scope">{{ scope.row.speechRate }}%</template>
               </el-table-column>
-              <el-table-column label="操作" width="200" fixed="right">
+              <el-table-column label="操作" width="220" align="center" fixed="right">
                 <template slot-scope="scope">
-                  <el-button size="mini" type="text" @click="openDrawer('edit', scope.row)">
-                    <i class="fas fa-edit"></i> 编辑
-                  </el-button>
-                  <el-button size="mini" type="text" @click="previewContent(scope.row)">
-                    <i class="fas fa-play"></i> 预览
-                  </el-button>
-                  <el-button size="mini" type="text" class="danger" @click="deleteContent(scope.row.contentId)">
-                    <i class="fas fa-trash"></i> 删除
-                  </el-button>
+                  <div class="table-actions-buttons">
+                    <el-button size="mini" type="text" @click="openDrawer('edit', scope.row)">
+                      <i class="fas fa-edit"></i> 编辑
+                    </el-button>
+                    <el-button size="mini" type="text" @click="previewContent(scope.row)">
+                      <i class="fas fa-play"></i> 预览
+                    </el-button>
+                    <el-button size="mini" type="text" class="danger" @click="deleteContent(scope.row.contentId)">
+                      <i class="fas fa-trash"></i> 删除
+                    </el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -164,43 +165,46 @@
               </div>
             </div>
 
-            <el-table :data="routeList" border style="width: 100%">
-              <el-table-column label="路线名称" prop="routeName" width="200" />
-              <el-table-column label="所属地图" width="150">
-                <template slot-scope="scope">
-                  {{ getMapName(scope.row.mapId) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="点位数量" prop="pointCount" width="100" align="center" />
-              <el-table-column label="状态" width="100" align="center">
-                <template slot-scope="scope">
-                  <el-switch
-                    v-model="scope.row.status"
-                    active-value="1"
-                    inactive-value="0"
-                    @change="toggleRouteStatus(scope.row)"
-                  />
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="250" fixed="right">
-                <template slot-scope="scope">
-                  <el-button size="mini" type="text" @click="openRouteConfigDrawer(scope.row)">
-                    <i class="fas fa-cog"></i> 配置
-                  </el-button>
-                  <el-button size="mini" type="text" @click="editRoute(scope.row)">
-                    <i class="fas fa-edit"></i> 编辑
-                  </el-button>
-                  <el-button size="mini" type="text" class="danger" @click="deleteSingleRoute(scope.row.routeId)">
-                    <i class="fas fa-trash"></i> 删除
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="table-wrapper">
+              <el-table :data="currentRobotRoutes" border style="width: 100%" fit>
+                <el-table-column label="路线名称" prop="routeName" min-width="180" show-overflow-tooltip />
+                <el-table-column label="所属地图" min-width="150" show-overflow-tooltip>
+                  <template slot-scope="scope">
+                    {{ getMapName(scope.row.mapId) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="点位数量" prop="pointCount" width="100" align="center" />
+                <el-table-column label="状态" width="100" align="center">
+                  <template slot-scope="scope">
+                    <el-switch
+                      v-model="scope.row.status"
+                      active-value="1"
+                      inactive-value="0"
+                      @change="toggleRouteStatus(scope.row)"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="240" align="center">
+                  <template slot-scope="scope">
+                    <div class="table-actions-buttons">
+                      <el-button size="mini" type="text" @click="openRouteConfigDrawer(scope.row)">
+                        <i class="fas fa-cog"></i> 配置
+                      </el-button>
+                      <el-button size="mini" type="text" @click="editRoute(scope.row)">
+                        <i class="fas fa-edit"></i> 编辑
+                      </el-button>
+                      <el-button size="mini" type="text" class="danger" @click="deleteSingleRoute(scope.row.routeId)">
+                        <i class="fas fa-trash"></i> 删除
+                      </el-button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </div>
         </el-tab-pane>
       </el-tabs>
 
-      <!-- 底部保存按钮 -->
       <div class="footer-actions">
         <el-button type="primary" size="large" @click="saveTourConfig">
           <i class="fas fa-save"></i> 保存讲解配置
@@ -208,7 +212,7 @@
       </div>
     </div>
 
-    <!-- ========== 讲解内容抽屉 ========== -->
+    <!-- 讲解内容抽屉 -->
     <el-drawer
       :title="drawerMode === 'add' ? '新增讲解内容' : '编辑讲解内容'"
       :visible.sync="drawerVisible"
@@ -223,7 +227,6 @@
         <el-form :model="drawerForm" label-width="100px" ref="drawerForm" :rules="drawerRules">
           <el-form-item label="讲解点名称" prop="pointName">
             <el-input v-model="drawerForm.pointName" placeholder="例如：企业历程" maxlength="12" show-word-limit />
-            <div class="word-counter">{{ drawerForm.pointName.length }}/12</div>
           </el-form-item>
 
           <el-form-item label="讲解点描述" prop="pointDesc">
@@ -356,7 +359,7 @@
       </div>
     </el-drawer>
 
-    <!-- ========== 配置路线抽屉 ========== -->
+    <!-- 配置路线抽屉 -->
     <el-drawer
       title="配置讲解路线"
       :visible.sync="routeConfigDrawerVisible"
@@ -374,7 +377,7 @@
 
           <el-form-item label="选择地图" prop="mapId">
             <el-select v-model="routeConfigForm.mapId" placeholder="请选择地图" style="width: 100%;" @change="onMapChange">
-              <el-option v-for="map in mapList" :key="map.mapId" :label="map.mapName" :value="map.mapId" />
+              <el-option v-for="map in currentRobotMaps" :key="map.mapId" :label="map.mapName" :value="map.mapId" />
             </el-select>
           </el-form-item>
 
@@ -403,13 +406,13 @@
               <i class="fas fa-exclamation-triangle"></i> {{ routeConfigForm.warningMessage }}
             </div>
             <el-table :data="routeConfigForm.associationList" border style="width: 100%; margin-top: 10px;">
-              <el-table-column label="序号" width="60">
+              <el-table-column label="序号" width="60" align="center">
                 <template slot-scope="scope">{{ scope.$index + 1 }}</template>
               </el-table-column>
-              <el-table-column label="点位名称" prop="pointName" />
+              <el-table-column label="点位名称" prop="pointName" min-width="150" show-overflow-tooltip />
               <el-table-column label="关联讲解内容" width="200">
                 <template slot-scope="scope">
-                  <el-select v-model="scope.row.contentId" placeholder="请选择" size="small" clearable>
+                  <el-select v-model="scope.row.contentId" placeholder="请选择" size="small" clearable style="width: 100%;">
                     <el-option
                       v-for="content in contentList"
                       :key="content.contentId"
@@ -433,11 +436,11 @@
 </template>
 
 <script>
-import { getTourGeneral, saveTourGeneral } from "@/api/func/tour";
-import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/func/tour";
-import { getRouteList, saveRoute, deleteRoute } from "@/api/func/tour";
+import { getTourGeneral, saveTourGeneral } from "@/api/function/tour";
+import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/function/tour";
+import { getRouteList, saveRoute, deleteRoute } from "@/api/function/tour";
 import { listRobot } from "@/api/mode/robot";
-import { getMapList, getPointListByMap } from "@/api/func/map";
+import { getMapList, getPointListByMap } from "@/api/function/map";
 import Pagination from "@/components/Pagination";
 
 export default {
@@ -445,14 +448,13 @@ export default {
   components: { Pagination },
   data() {
     return {
-      // 机器人选择
       selectedRobotId: null,
       robotList: [],
-
-      // 当前激活的标签页
       activeTab: 'general',
 
-      // 通用配置
+      currentRobotMaps: [],
+      allRoutes: [],
+
       generalConfig: {
         mapId: null,
         routeId: null,
@@ -464,13 +466,6 @@ export default {
         afterAction: 'stay'
       },
 
-      // 地图列表
-      mapList: [],
-
-      // 路线列表
-      routeList: [],
-
-      // 讲解内容列表
       contentList: [],
       contentTotal: 0,
       contentQuery: {
@@ -479,7 +474,6 @@ export default {
       },
       selectedContentIds: [],
 
-      // 抽屉相关
       drawerVisible: false,
       drawerMode: 'add',
       drawerForm: {
@@ -506,7 +500,6 @@ export default {
         ]
       },
 
-      // 路线配置抽屉
       routeConfigDrawerVisible: false,
       currentRouteId: null,
       mapPoints: [],
@@ -520,28 +513,26 @@ export default {
       }
     };
   },
+  computed: {
+    currentRobotRoutes() {
+      if (!this.selectedRobotId || !this.currentRobotMaps.length) return [];
+      const currentRobotMapIds = this.currentRobotMaps.map(m => m.mapId);
+      return this.allRoutes.filter(route => currentRobotMapIds.includes(route.mapId));
+    }
+  },
   async created() {
-    // 1. 先加载导览组机器人
     await this.loadRobotsByGroup();
-
-    // 2. 再获取地图列表
-    await this.loadMaps();
-
-    // 3. 获取路线列表
-    await this.loadRoutes();
-
-    // 4. 如果已选择机器人，加载其他数据
     if (this.selectedRobotId) {
-      this.loadGeneralConfig();
-      this.loadContentList();
+      await this.loadMapsForCurrentRobot();
+      await this.loadAllRoutes();
+      await this.loadGeneralConfig();
+      await this.loadContentList();
     }
   },
   methods: {
-    // 加载导览组机器人（groupId=4）
     loadRobotsByGroup() {
       return listRobot({ groupId: 4, pageNum: 1, pageSize: 100 }).then(response => {
         this.robotList = response.rows || [];
-
         if (this.robotList.length > 0) {
           this.selectedRobotId = this.robotList[0].id;
         } else {
@@ -553,70 +544,88 @@ export default {
       });
     },
 
-    // 加载所有数据（切换机器人时）
-    loadAllData() {
-      this.loadGeneralConfig();
-      this.loadContentList();
+    async onRobotChange() {
+      this.generalConfig = {
+        mapId: null,
+        routeId: null,
+        voice: '温柔女声',
+        voiceInteraction: true,
+        startCommand: '开始讲解',
+        beforeTip: '即将开始讲解，请跟随我',
+        endTip: '本次讲解结束，谢谢',
+        afterAction: 'stay'
+      };
+
+      await this.loadMapsForCurrentRobot();
+      await this.loadAllRoutes();
+      await this.loadGeneralConfig();
+      await this.loadContentList();
     },
 
-    // 加载通用配置
+    loadMapsForCurrentRobot() {
+      if (!this.selectedRobotId) return Promise.resolve();
+      return getMapList({ robotId: this.selectedRobotId }).then(response => {
+        let maps = response.rows || response.data || [];
+        this.currentRobotMaps = maps.filter(m => m.delFlag === '0' && m.status === '1');
+      }).catch(error => {
+        console.error('获取地图列表失败:', error);
+        this.currentRobotMaps = [];
+      });
+    },
+
+    loadAllRoutes() {
+      return getRouteList().then(response => {
+        this.allRoutes = response.rows || response.data || [];
+      }).catch(error => {
+        console.error('获取路线列表失败:', error);
+        this.allRoutes = [];
+      });
+    },
+
     loadGeneralConfig() {
       if (!this.selectedRobotId) return;
       getTourGeneral(this.selectedRobotId).then(response => {
         if (response.data) {
-          this.generalConfig = { ...this.generalConfig, ...response.data };
+          const data = response.data;
+          const mapValid = this.currentRobotMaps.some(m => m.mapId === data.mapId);
+          const routeValid = this.currentRobotRoutes.some(r => r.routeId === data.routeId);
+
+          this.generalConfig.mapId = mapValid ? data.mapId : null;
+          this.generalConfig.routeId = routeValid ? data.routeId : null;
+          this.generalConfig.voice = data.voice || '温柔女声';
+          this.generalConfig.voiceInteraction = data.voiceInteraction !== '0';
+          this.generalConfig.startCommand = data.startCommand || '开始讲解';
+          this.generalConfig.beforeTip = data.beforeTip || '即将开始讲解，请跟随我';
+          this.generalConfig.endTip = data.endTip || '本次讲解结束，谢谢';
+          this.generalConfig.afterAction = data.afterAction || 'stay';
         }
       }).catch(error => {
         console.error('获取通用配置失败:', error);
       });
     },
 
-    // 加载地图列表
-    loadMaps() {
-      return getMapList().then(response => {
-        this.mapList = response.rows || response.data || [];
-      }).catch(error => {
-        console.error('获取地图列表失败:', error);
-        this.mapList = [];
-      });
+    onGeneralMapChange() {
+      this.generalConfig.routeId = null;
     },
 
-    // 加载路线列表
-    loadRoutes() {
-      return getRouteList().then(response => {
-        this.routeList = response.rows || response.data || [];
-      }).catch(error => {
-        console.error('获取路线列表失败:', error);
-        this.routeList = [];
-      });
-    },
-
-    // 加载地图点位
     loadMapPoints(mapId) {
       if (!mapId) {
         this.mapPoints = [];
         return;
       }
-
       getPointListByMap(mapId).then(response => {
         this.mapPoints = response.rows || response.data || [];
-        if (this.mapPoints.length === 0) {
-          this.$message.info('该地图暂无点位数据');
-        }
       }).catch(error => {
         console.error('获取地图点位失败:', error);
-        this.$message.error('获取地图点位失败');
         this.mapPoints = [];
       });
     },
 
-    // 地图选择变化时的处理
     onMapChange(mapId) {
       this.routeConfigForm.selectedPoints = [];
       this.routeConfigForm.associationList = [];
       this.routeConfigForm.selectAll = false;
       this.routeConfigForm.warningMessage = '';
-
       if (mapId) {
         this.loadMapPoints(mapId);
       } else {
@@ -624,13 +633,8 @@ export default {
       }
     },
 
-    // 加载讲解内容列表
     loadContentList() {
-      if (!this.selectedRobotId) {
-        console.warn('未选择机器人，无法加载讲解内容列表');
-        return;
-      }
-
+      if (!this.selectedRobotId) return;
       getTourContentList(this.selectedRobotId, {
         pageNum: this.contentQuery.pageNum,
         pageSize: this.contentQuery.pageSize
@@ -649,58 +653,40 @@ export default {
             this.contentList = [];
             this.contentTotal = 0;
           }
-        } else if (Array.isArray(response)) {
-          this.contentList = response;
-          this.contentTotal = response.length;
         } else {
           this.contentList = [];
           this.contentTotal = 0;
         }
       }).catch(error => {
         console.error('获取讲解内容列表失败:', error);
-        this.$message.error('获取讲解内容列表失败');
         this.contentList = [];
         this.contentTotal = 0;
       });
     },
 
-    // 标签页切换
     handleTabClick(tab) {
       if (tab.name === 'content') {
         this.loadContentList();
       } else if (tab.name === 'route') {
-        this.loadRoutes();
+        this.loadAllRoutes();
       }
     },
 
-    // 获取地图名称
     getMapName(mapId) {
-      const map = this.mapList.find(m => m.mapId === mapId);
+      const map = this.currentRobotMaps.find(m => m.mapId === mapId);
       return map ? map.mapName : '未知';
     },
 
-    // 内容类型标签
     getContentTypeTag(type) {
-      const map = {
-        'text': 'info',
-        'audio': 'success',
-        'image': 'warning',
-        'video': 'danger'
-      };
+      const map = { 'text': 'info', 'audio': 'success', 'image': 'warning', 'video': 'danger' };
       return map[type] || 'info';
     },
 
     getContentTypeText(type) {
-      const map = {
-        'text': '文本',
-        'audio': '音频',
-        'image': '图片',
-        'video': '视频'
-      };
+      const map = { 'text': '文本', 'audio': '音频', 'image': '图片', 'video': '视频' };
       return map[type] || type;
     },
 
-    // ========== 讲解内容管理 ==========
     handleContentSelectionChange(selection) {
       this.selectedContentIds = selection.map(item => item.contentId);
     },
@@ -740,12 +726,7 @@ export default {
     saveDrawerForm() {
       this.$refs.drawerForm.validate(valid => {
         if (!valid) return;
-
-        const data = {
-          ...this.drawerForm,
-          robotId: this.selectedRobotId
-        };
-
+        const data = { ...this.drawerForm, robotId: this.selectedRobotId };
         saveTourContent(data).then(() => {
           this.$message.success(this.drawerMode === 'add' ? '新增成功' : '修改成功');
           this.closeDrawer();
@@ -778,7 +759,6 @@ export default {
         this.$message.warning('请至少选择一条记录');
         return;
       }
-
       this.$confirm(`确定要删除选中的 ${this.selectedContentIds.length} 条记录吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -805,10 +785,7 @@ export default {
           <p><strong>间隔时间：</strong>${row.intervalTime || 0}ms</p>
         </div>`,
         '预览讲解内容',
-        {
-          dangerouslyUseHTMLString: true,
-          confirmButtonText: '关闭'
-        }
+        { dangerouslyUseHTMLString: true, confirmButtonText: '关闭' }
       );
     },
 
@@ -816,18 +793,10 @@ export default {
       this.drawerForm[field] = (this.drawerForm[field] || '') + variable;
     },
 
-    // 文件上传处理
     handleAudioUpload(file) {
       const isValid = file.type === 'audio/mpeg' || file.type === 'audio/wav';
-      if (!isValid) {
-        this.$message.error('只支持 mp3、wav 格式');
-        return false;
-      }
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isLt10M) {
-        this.$message.error('文件大小不能超过10MB');
-        return false;
-      }
+      if (!isValid) { this.$message.error('只支持 mp3、wav 格式'); return false; }
+      if (file.size / 1024 / 1024 > 10) { this.$message.error('文件大小不能超过10MB'); return false; }
       this.drawerForm.audioFile = file.name;
       this.$message.success('音频文件已选择');
       return false;
@@ -835,10 +804,7 @@ export default {
 
     handleSegmentAudioUpload(file) {
       const isValid = file.type === 'audio/mpeg' || file.type === 'audio/wav';
-      if (!isValid) {
-        this.$message.error('只支持 mp3、wav 格式');
-        return false;
-      }
+      if (!isValid) { this.$message.error('只支持 mp3、wav 格式'); return false; }
       this.drawerForm.mediaFile = file.name;
       this.$message.success('音频上传成功');
       return false;
@@ -846,27 +812,19 @@ export default {
 
     handleImageUpload(file) {
       const isValid = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-      if (!isValid) {
-        this.$message.error('只支持 jpg、png 格式');
-        return false;
-      }
+      if (!isValid) { this.$message.error('只支持 jpg、png 格式'); return false; }
       this.drawerForm.mediaFile = file.name;
       this.$message.success('图片上传成功');
       return false;
     },
 
     handleVideoUpload(file) {
-      const isValid = file.type === 'video/mp4';
-      if (!isValid) {
-        this.$message.error('只支持 mp4 格式');
-        return false;
-      }
+      if (file.type !== 'video/mp4') { this.$message.error('只支持 mp4 格式'); return false; }
       this.drawerForm.mediaFile = file.name;
       this.$message.success('视频上传成功');
       return false;
     },
 
-    // ========== 讲解内容导入导出 ==========
     triggerContentImport() {
       this.$refs.contentImportInput.click();
     },
@@ -874,54 +832,22 @@ export default {
     handleContentImport(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const importedData = JSON.parse(e.target.result);
-
           let contentsToImport = Array.isArray(importedData) ? importedData : [importedData];
-
-          if (contentsToImport.length === 0) {
-            this.$message.warning('导入数据为空');
-            return;
-          }
-
-          const isValid = contentsToImport.every(item =>
-            item.pointName && typeof item.pointName === 'string'
-          );
-
-          if (!isValid) {
-            this.$message.error('导入文件格式不正确，缺少必要字段');
-            return;
-          }
-
-          this.$confirm(
-            `确定要导入 ${contentsToImport.length} 条讲解内容吗？`,
-            '导入确认',
-            {
-              confirmButtonText: '确定导入',
-              cancelButtonText: '取消',
-              type: 'info'
-            }
-          ).then(() => {
-            let successCount = 0;
-            let failCount = 0;
-
+          if (contentsToImport.length === 0) { this.$message.warning('导入数据为空'); return; }
+          const isValid = contentsToImport.every(item => item.pointName && typeof item.pointName === 'string');
+          if (!isValid) { this.$message.error('导入文件格式不正确，缺少必要字段'); return; }
+          this.$confirm(`确定要导入 ${contentsToImport.length} 条讲解内容吗？`, '导入确认', {
+            confirmButtonText: '确定导入', cancelButtonText: '取消', type: 'info'
+          }).then(() => {
+            let successCount = 0, failCount = 0;
             const promises = contentsToImport.map(content => {
-              const saveData = {
-                ...content,
-                robotId: this.selectedRobotId,
-                contentId: undefined
-              };
-              return saveTourContent(saveData).then(() => {
-                successCount++;
-              }).catch(err => {
-                console.error('导入单条数据失败:', err);
-                failCount++;
-              });
+              return saveTourContent({ ...content, robotId: this.selectedRobotId, contentId: undefined })
+                .then(() => successCount++).catch(() => failCount++);
             });
-
             Promise.all(promises).then(() => {
               if (successCount > 0) {
                 this.$message.success(`导入完成：成功 ${successCount} 条，失败 ${failCount} 条`);
@@ -932,7 +858,6 @@ export default {
             });
           }).catch(() => {});
         } catch (error) {
-          console.error('解析文件失败:', error);
           this.$message.error('文件格式错误，请上传正确的 JSON 文件');
         }
       };
@@ -941,26 +866,13 @@ export default {
     },
 
     exportContent() {
-      if (this.contentList.length === 0) {
-        this.$message.warning('暂无数据可导出');
-        return;
-      }
-
+      if (this.contentList.length === 0) { this.$message.warning('暂无数据可导出'); return; }
       const exportData = this.contentList.map(item => ({
-        pointName: item.pointName,
-        pointDesc: item.pointDesc,
-        broadcastType: item.broadcastType,
-        broadcastText: item.broadcastText,
-        audioFile: item.audioFile,
-        voiceType: item.voiceType,
-        speechRate: item.speechRate,
-        intervalTime: item.intervalTime,
-        contentType: item.contentType,
-        mediaFile: item.mediaFile,
-        armAction: item.armAction,
-        chassisAngle: item.chassisAngle
+        pointName: item.pointName, pointDesc: item.pointDesc, broadcastType: item.broadcastType,
+        broadcastText: item.broadcastText, audioFile: item.audioFile, voiceType: item.voiceType,
+        speechRate: item.speechRate, intervalTime: item.intervalTime, contentType: item.contentType,
+        mediaFile: item.mediaFile, armAction: item.armAction, chassisAngle: item.chassisAngle
       }));
-
       const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -973,51 +885,21 @@ export default {
     },
 
     copyContent() {
-      if (this.selectedContentIds.length === 0) {
-        this.$message.warning('请至少选择一条要复制的记录');
-        return;
-      }
-
-      const selectedContents = this.contentList.filter(item =>
-        this.selectedContentIds.includes(item.contentId)
-      );
-
-      this.$confirm(
-        `确定要复制选中的 ${selectedContents.length} 条讲解内容吗？`,
-        '复制确认',
-        {
-          confirmButtonText: '确定复制',
-          cancelButtonText: '取消',
-          type: 'info'
-        }
-      ).then(() => {
-        let successCount = 0;
-        let failCount = 0;
-
+      if (this.selectedContentIds.length === 0) { this.$message.warning('请至少选择一条要复制的记录'); return; }
+      const selectedContents = this.contentList.filter(item => this.selectedContentIds.includes(item.contentId));
+      this.$confirm(`确定要复制选中的 ${selectedContents.length} 条讲解内容吗？`, '复制确认', {
+        confirmButtonText: '确定复制', cancelButtonText: '取消', type: 'info'
+      }).then(() => {
+        let successCount = 0, failCount = 0;
         const promises = selectedContents.map(content => {
-          const copyData = {
-            pointName: `${content.pointName}_副本`,
-            pointDesc: content.pointDesc,
-            broadcastType: content.broadcastType,
-            broadcastText: content.broadcastText,
-            audioFile: content.audioFile,
-            voiceType: content.voiceType,
-            speechRate: content.speechRate,
-            intervalTime: content.intervalTime,
-            contentType: content.contentType,
-            mediaFile: content.mediaFile,
-            armAction: content.armAction,
-            chassisAngle: content.chassisAngle,
-            robotId: this.selectedRobotId
-          };
-          return saveTourContent(copyData).then(() => {
-            successCount++;
-          }).catch(err => {
-            console.error('复制单条数据失败:', err);
-            failCount++;
-          });
+          return saveTourContent({
+            pointName: `${content.pointName}_副本`, pointDesc: content.pointDesc,
+            broadcastType: content.broadcastType, broadcastText: content.broadcastText,
+            audioFile: content.audioFile, voiceType: content.voiceType, speechRate: content.speechRate,
+            intervalTime: content.intervalTime, contentType: content.contentType, mediaFile: content.mediaFile,
+            armAction: content.armAction, chassisAngle: content.chassisAngle, robotId: this.selectedRobotId
+          }).then(() => successCount++).catch(() => failCount++);
         });
-
         Promise.all(promises).then(() => {
           if (successCount > 0) {
             this.$message.success(`复制完成：成功 ${successCount} 条，失败 ${failCount} 条`);
@@ -1029,16 +911,10 @@ export default {
       }).catch(() => {});
     },
 
-    // ========== 讲解路线管理 ==========
     addRoute() {
       this.currentRouteId = null;
       this.routeConfigForm = {
-        routeName: '',
-        mapId: null,
-        selectAll: false,
-        selectedPoints: [],
-        associationList: [],
-        warningMessage: ''
+        routeName: '', mapId: null, selectAll: false, selectedPoints: [], associationList: [], warningMessage: ''
       };
       this.mapPoints = [];
       this.routeConfigDrawerVisible = true;
@@ -1050,13 +926,11 @@ export default {
 
     deleteSingleRoute(routeId) {
       this.$confirm('确定要删除该路线吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
+        confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
       }).then(() => {
         deleteRoute(routeId).then(() => {
           this.$message.success('删除成功');
-          this.loadRoutes();
+          this.loadAllRoutes();
         }).catch(error => {
           console.error('删除失败:', error);
           this.$message.error('删除失败');
@@ -1067,6 +941,7 @@ export default {
     toggleRouteStatus(row) {
       saveRoute(row).then(() => {
         this.$message.success('状态更新成功');
+        this.loadAllRoutes();
       }).catch(error => {
         console.error('状态更新失败:', error);
         this.$message.error('状态更新失败');
@@ -1076,27 +951,15 @@ export default {
     openRouteConfigDrawer(row) {
       this.currentRouteId = row.routeId;
       this.routeConfigForm = {
-        routeName: row.routeName,
-        mapId: row.mapId,
-        selectAll: false,
-        selectedPoints: [],
-        associationList: [],
-        warningMessage: ''
+        routeName: row.routeName, mapId: row.mapId, selectAll: false, selectedPoints: [], associationList: [], warningMessage: ''
       };
-
-      if (row.mapId) {
-        this.loadMapPoints(row.mapId);
-      }
-
+      if (row.mapId) { this.loadMapPoints(row.mapId); }
       if (row.routePoints && row.routePoints.length > 0) {
         this.routeConfigForm.selectedPoints = row.routePoints.map(p => p.pointId);
         this.routeConfigForm.associationList = row.routePoints.map(p => ({
-          pointId: p.pointId,
-          pointName: p.pointName || '',
-          contentId: p.contentId
+          pointId: p.pointId, pointName: p.pointName || '', contentId: p.contentId
         }));
       }
-
       this.routeConfigDrawerVisible = true;
     },
 
@@ -1120,39 +983,21 @@ export default {
         const point = this.mapPoints.find(p => p.pointId === pointId);
         const existing = this.routeConfigForm.associationList.find(a => a.pointId === pointId);
         newAssociationList.push({
-          pointId: pointId,
-          pointName: point?.pointName || '',
-          contentId: existing?.contentId || null
+          pointId: pointId, pointName: point?.pointName || '', contentId: existing?.contentId || null
         });
       });
       this.routeConfigForm.associationList = newAssociationList;
-
       const unassociated = this.routeConfigForm.associationList.filter(a => !a.contentId);
-      if (unassociated.length > 0) {
-        this.routeConfigForm.warningMessage = `有 ${unassociated.length} 个点位未关联讲解内容`;
-      } else {
-        this.routeConfigForm.warningMessage = '';
-      }
+      this.routeConfigForm.warningMessage = unassociated.length > 0 ? `有 ${unassociated.length} 个点位未关联讲解内容` : '';
     },
 
     saveRouteConfig() {
-      if (!this.routeConfigForm.routeName) {
-        this.$message.warning('请输入路线名称');
-        return;
-      }
-
-      if (!this.routeConfigForm.mapId) {
-        this.$message.warning('请选择地图');
-        return;
-      }
+      if (!this.routeConfigForm.routeName) { this.$message.warning('请输入路线名称'); return; }
+      if (!this.routeConfigForm.mapId) { this.$message.warning('请选择地图'); return; }
 
       const routePoints = this.routeConfigForm.associationList
         .filter(item => item.pointId)
-        .map((item, index) => ({
-          pointId: item.pointId,
-          contentId: item.contentId,
-          orderNum: index + 1
-        }));
+        .map((item, index) => ({ pointId: item.pointId, contentId: item.contentId, orderNum: index + 1 }));
 
       const data = {
         routeId: this.currentRouteId,
@@ -1165,7 +1010,10 @@ export default {
       saveRoute(data).then(() => {
         this.$message.success(this.currentRouteId ? '路线修改成功' : '路线新增成功');
         this.closeRouteConfigDrawer();
-        this.loadRoutes();
+        this.loadAllRoutes();
+        if (this.generalConfig.mapId === this.routeConfigForm.mapId) {
+          this.loadGeneralConfig();
+        }
       }).catch(error => {
         console.error('保存路线配置失败:', error);
         this.$message.error('保存路线配置失败');
@@ -1179,64 +1027,31 @@ export default {
     handleRouteImport(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const importedData = JSON.parse(e.target.result);
-
           let routesToImport = Array.isArray(importedData) ? importedData : [importedData];
-
-          if (routesToImport.length === 0) {
-            this.$message.warning('导入数据为空');
-            return;
-          }
-
-          const isValid = routesToImport.every(item =>
-            item.routeName && typeof item.routeName === 'string'
-          );
-
-          if (!isValid) {
-            this.$message.error('导入文件格式不正确，缺少必要字段');
-            return;
-          }
-
-          this.$confirm(
-            `确定要导入 ${routesToImport.length} 条路线吗？`,
-            '导入确认',
-            {
-              confirmButtonText: '确定导入',
-              cancelButtonText: '取消',
-              type: 'info'
-            }
-          ).then(() => {
-            let successCount = 0;
-            let failCount = 0;
-
+          if (routesToImport.length === 0) { this.$message.warning('导入数据为空'); return; }
+          const isValid = routesToImport.every(item => item.routeName && typeof item.routeName === 'string');
+          if (!isValid) { this.$message.error('导入文件格式不正确，缺少必要字段'); return; }
+          this.$confirm(`确定要导入 ${routesToImport.length} 条路线吗？`, '导入确认', {
+            confirmButtonText: '确定导入', cancelButtonText: '取消', type: 'info'
+          }).then(() => {
+            let successCount = 0, failCount = 0;
             const promises = routesToImport.map(route => {
-              const saveData = {
-                ...route,
-                routeId: undefined
-              };
-              return saveRoute(saveData).then(() => {
-                successCount++;
-              }).catch(err => {
-                console.error('导入路线失败:', err);
-                failCount++;
-              });
+              return saveRoute({ ...route, routeId: undefined }).then(() => successCount++).catch(() => failCount++);
             });
-
             Promise.all(promises).then(() => {
               if (successCount > 0) {
                 this.$message.success(`导入完成：成功 ${successCount} 条，失败 ${failCount} 条`);
-                this.loadRoutes();
+                this.loadAllRoutes();
               } else {
                 this.$message.error('导入失败，请检查文件格式');
               }
             });
           }).catch(() => {});
         } catch (error) {
-          console.error('解析文件失败:', error);
           this.$message.error('文件格式错误，请上传正确的 JSON 文件');
         }
       };
@@ -1245,25 +1060,18 @@ export default {
     },
 
     exportRoute() {
-      if (this.routeList.length === 0) {
-        this.$message.warning('暂无路线数据可导出');
-        return;
-      }
-
-      const exportData = this.routeList.map(route => ({
-        routeName: route.routeName,
-        mapId: route.mapId,
-        pointCount: route.pointCount,
-        status: route.status,
-        routePoints: route.routePoints
+      const routes = this.currentRobotRoutes;
+      if (routes.length === 0) { this.$message.warning('暂无路线数据可导出'); return; }
+      const exportData = routes.map(route => ({
+        routeName: route.routeName, mapId: route.mapId, pointCount: route.pointCount,
+        status: route.status, routePoints: route.routePoints
       }));
-
       const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `tour_routes_${new Date().getTime()}.json`;
+      link.download = `tour_routes_${this.selectedRobotId}_${new Date().getTime()}.json`;
       link.click();
       URL.revokeObjectURL(url);
       this.$message.success(`已导出 ${exportData.length} 条路线数据`);
@@ -1272,7 +1080,8 @@ export default {
     saveTourConfig() {
       const data = {
         ...this.generalConfig,
-        robotId: this.selectedRobotId
+        robotId: this.selectedRobotId,
+        voiceInteraction: this.generalConfig.voiceInteraction ? '1' : '0'
       };
       saveTourGeneral(data).then(() => {
         this.$message.success('讲解配置已保存');
@@ -1375,6 +1184,18 @@ export default {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-actions-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
 }
 
 .form-row {
@@ -1521,32 +1342,29 @@ export default {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .robot-selector {
     width: 100%;
     justify-content: space-between;
   }
-
   .form-row {
     flex-direction: column;
     gap: 0;
   }
-
   .point-checkbox-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .table-header {
     flex-direction: column;
     align-items: flex-start;
   }
-
   .footer-actions {
     flex-direction: column;
   }
-
   .footer-actions .el-button {
     width: 100%;
+  }
+  .table-actions-buttons {
+    flex-wrap: wrap;
   }
 }
 </style>

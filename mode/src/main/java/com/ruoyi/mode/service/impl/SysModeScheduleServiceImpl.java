@@ -1,5 +1,6 @@
 package com.ruoyi.mode.service.impl;
 
+import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.mode.domain.SysModeSchedule;
 import com.ruoyi.mode.mapper.SysModeScheduleMapper;
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 /**
  * 模式排程Service业务层处理
@@ -38,7 +41,8 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     {
         SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(scheduleId);
         if (schedule != null) {
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId));
+            Long tenantId = TenantContext.get();
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId, isAdmin(tenantId) ? null : tenantId));
         }
         return schedule;
     }
@@ -52,10 +56,15 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Override
     public List<SysModeSchedule> selectSysModeScheduleList(SysModeSchedule sysModeSchedule)
     {
+        // 设置租户过滤
+        Long tenantId = TenantContext.get();
+        if(!isAdmin(tenantId))
+            sysModeSchedule.setTenantId(tenantId);
+
         List<SysModeSchedule> list = sysModeScheduleMapper.selectSysModeScheduleList(sysModeSchedule);
         // 为每个排程加载关联的机器人
         for (SysModeSchedule schedule : list) {
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId()));
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId(), isAdmin(tenantId) ? null : tenantId));
         }
         return list;
     }
@@ -70,6 +79,8 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     @Transactional
     public int insertSysModeSchedule(SysModeSchedule sysModeSchedule)
     {
+        // 设置租户ID
+        sysModeSchedule.setTenantId(TenantContext.get());
         sysModeSchedule.setCreateTime(DateUtils.getNowDate());
         // 生成执行时间描述
         String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
@@ -184,9 +195,6 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
                 monthData.put("month", month);
                 monthData.put("beginTime", beginTime);
                 monthData.put("endTime", endTime);
-
-                // TODO: 从数据库查询该月份的执行记录
-                // List<SysModeHistory> histories = historyService.selectHistoryByTimeRange(beginTime, endTime);
 
                 result.put("monthData", monthData);
                 result.put("message", "获取月份数据成功");

@@ -12,15 +12,17 @@
         <result property="operationResult"   column="operation_result"   />
         <result property="operationTime"     column="operation_time"     />
         <result property="operator"          column="operator"           />
-        <result property="remark"             column="remark"             />
+        <result property="remark"            column="remark"             />
+        <result property="tenantId"          column="tenant_id"          />
     </resultMap>
 
     <sql id="selectOperationVo">
         select operation_id, robot_id, robot_name, operation_type,
-               operation_result, operation_time, operator, remark
+        operation_result, operation_time, operator, remark, tenant_id
         from sys_robot_operation
     </sql>
 
+    <!-- 查询操作记录列表 -->
     <select id="selectSysRobotOperationList" parameterType="com.ruoyi.mode.domain.SysRobotOperation" resultMap="SysRobotOperationResult">
         <include refid="selectOperationVo"/>
         <where>
@@ -33,15 +35,20 @@
             <if test="operationResult != null and operationResult != ''">
                 AND operation_result = #{operationResult}
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
         </where>
         order by operation_time desc
     </select>
 
+    <!-- 根据ID查询操作记录 -->
     <select id="selectSysRobotOperationById" parameterType="Long" resultMap="SysRobotOperationResult">
         <include refid="selectOperationVo"/>
         where operation_id = #{operationId}
     </select>
 
+    <!-- 新增操作记录 -->
     <insert id="insertSysRobotOperation" parameterType="com.ruoyi.mode.domain.SysRobotOperation" useGeneratedKeys="true" keyProperty="operationId">
         insert into sys_robot_operation(
         <if test="robotId != null">robot_id,</if>
@@ -51,6 +58,7 @@
         <if test="operationTime != null">operation_time,</if>
         <if test="operator != null and operator != ''">operator,</if>
         <if test="remark != null and remark != ''">remark,</if>
+        <if test="tenantId != null">tenant_id,</if>
         create_time
         )values(
         <if test="robotId != null">#{robotId},</if>
@@ -60,14 +68,17 @@
         <if test="operationTime != null">#{operationTime},</if>
         <if test="operator != null and operator != ''">#{operator},</if>
         <if test="remark != null and remark != ''">#{remark},</if>
+        <if test="tenantId != null">#{tenantId},</if>
         sysdate()
         )
     </insert>
 
+    <!-- 删除操作记录（单个） -->
     <delete id="deleteSysRobotOperationById" parameterType="Long">
         delete from sys_robot_operation where operation_id = #{operationId}
     </delete>
 
+    <!-- 删除操作记录（批量） -->
     <delete id="deleteSysRobotOperationByIds" parameterType="String">
         delete from sys_robot_operation where operation_id in
         <foreach item="operationId" collection="array" open="(" separator="," close=")">

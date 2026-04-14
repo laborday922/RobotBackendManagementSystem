@@ -13,6 +13,7 @@
         <result property="beforeTip" column="before_tip"/>
         <result property="endTip" column="end_tip"/>
         <result property="afterAction" column="after_action"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -21,8 +22,8 @@
 
     <sql id="selectVo">
         select config_id, robot_id, map_id, route_id, voice, voice_interaction,
-               start_command, before_tip, end_tip, after_action,
-               create_by, create_time, update_by, update_time
+        start_command, before_tip, end_tip, after_action, tenant_id,
+        create_by, create_time, update_by, update_time
         from sys_tour_general
     </sql>
 
@@ -30,18 +31,25 @@
         <include refid="selectVo"/>
         where robot_id = #{robotId}
     </select>
-    <select id="selectList" resultType="com.ruoyi.function.domain.SysTourGeneral"></select>
+
+    <select id="selectList" resultMap="SysTourGeneralResult" parameterType="com.ruoyi.function.domain.SysTourGeneral">
+        <include refid="selectVo"/>
+        <where>
+            <if test="robotId != null">and robot_id = #{robotId}</if>
+            <if test="tenantId != null and tenantId != ''">and tenant_id = #{tenantId}</if>
+        </where>
+    </select>
 
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourGeneral" useGeneratedKeys="true" keyProperty="configId">
         insert into sys_tour_general (
-            robot_id, map_id, route_id, voice, voice_interaction,
-            start_command, before_tip, end_tip, after_action,
-            create_by, create_time
+        robot_id, map_id, route_id, voice, voice_interaction,
+        start_command, before_tip, end_tip, after_action, tenant_id,
+        create_by, create_time
         ) values (
-                     #{robotId}, #{mapId}, #{routeId}, #{voice}, #{voiceInteraction},
-                     #{startCommand}, #{beforeTip}, #{endTip}, #{afterAction},
-                     #{createBy}, sysdate()
-                 )
+        #{robotId}, #{mapId}, #{routeId}, #{voice}, #{voiceInteraction},
+        #{startCommand}, #{beforeTip}, #{endTip}, #{afterAction}, #{tenantId},
+        #{createBy}, sysdate()
+        )
     </insert>
 
     <update id="update" parameterType="com.ruoyi.function.domain.SysTourGeneral">
@@ -60,4 +68,8 @@
         </set>
         where config_id = #{configId}
     </update>
+
+    <delete id="deleteByRobotId">
+        delete from sys_tour_general where robot_id = #{robotId}
+    </delete>
 </mapper>

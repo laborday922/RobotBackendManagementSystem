@@ -39,7 +39,8 @@ public class SysModeHistory extends BaseEntity
     /** 状态(success/warning/danger) */
     private String status;
 
-
+    /** 租户ID */
+    private Long tenantId;
 
     // 非数据库字段
     private String robotName;
@@ -112,6 +113,14 @@ public class SysModeHistory extends BaseEntity
         this.status = status;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public String getRobotName() {
         return robotName;
     }
@@ -145,6 +154,7 @@ public class SysModeHistory extends BaseEntity
                 .append("content", getContent())
                 .append("operator", getOperator())
                 .append("status", getStatus())
+                .append("tenantId", getTenantId())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .toString();

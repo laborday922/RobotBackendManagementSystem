@@ -74,19 +74,21 @@ public interface SysModeMapper
      * @param modeId 模式ID
      * @return 结果
      */
-    public int updateRobotCount(@Param("modeId") Long modeId);
+    public int updateRobotCount(Long modeId);
 
     /**
      * 更新所有模式的机器人数量
      *
+     * @param tenantId 租户ID（为null时更新所有租户）
      * @return 结果
      */
-    public int updateAllRobotCounts();
+    public int updateAllRobotCounts(@Param("tenantId") Long tenantId);
 
     /**
      * 更新所有模式的使用次数
      *
+     * @param tenantId 租户ID（为null时更新所有租户）
      * @return 结果
      */
-    public int updateAllUsageCounts();
+    public int updateAllUsageCounts(@Param("tenantId") Long tenantId);
 }

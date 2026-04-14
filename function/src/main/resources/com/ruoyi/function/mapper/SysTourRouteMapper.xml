@@ -9,6 +9,7 @@
         <result property="pointIds" column="point_ids"/>
         <result property="pointCount" column="point_count"/>
         <result property="status" column="status"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -24,8 +25,8 @@
     </resultMap>
 
     <sql id="selectRouteVo">
-        select route_id, route_name, map_id, point_ids, point_count, status,
-               create_by, create_time, update_by, update_time
+        select route_id, route_name, map_id, point_ids, point_count, status, tenant_id,
+        create_by, create_time, update_by, update_time
         from sys_tour_route
     </sql>
 
@@ -34,20 +35,23 @@
         where route_id = #{routeId}
     </select>
 
-    <select id="selectList" resultMap="SysTourRouteResult">
+    <select id="selectList" resultMap="SysTourRouteResult" parameterType="com.ruoyi.function.domain.SysTourRoute">
         <include refid="selectRouteVo"/>
-        where status = '1'
+        <where>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="tenantId != null and tenantId != ''">and tenant_id = #{tenantId}</if>
+        </where>
         order by create_time desc
     </select>
 
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourRoute" useGeneratedKeys="true" keyProperty="routeId">
         insert into sys_tour_route (
-            route_name, map_id, point_ids, point_count, status,
-            create_by, create_time
+        route_name, map_id, point_ids, point_count, status, tenant_id,
+        create_by, create_time
         ) values (
-                     #{routeName}, #{mapId}, #{pointIds}, #{pointCount}, #{status},
-                     #{createBy}, sysdate()
-                 )
+        #{routeName}, #{mapId}, #{pointIds}, #{pointCount}, #{status}, #{tenantId},
+        #{createBy}, sysdate()
+        )
     </insert>
 
     <update id="update" parameterType="com.ruoyi.function.domain.SysTourRoute">
@@ -63,7 +67,6 @@
         </set>
         where route_id = #{routeId}
     </update>
-    <update id="batchInsertRoutePoints"></update>
 
     <delete id="deleteById">
         delete from sys_tour_route where route_id = #{routeId}
@@ -85,4 +88,12 @@
     <delete id="deleteRoutePoints">
         delete from sys_route_point where route_id = #{routeId}
     </delete>
+
+    <insert id="batchInsertRoutePoints">
+        insert into sys_route_point (route_id, point_id, content_id, order_num)
+        values
+        <foreach collection="points" item="point" separator=",">
+            (#{routeId}, #{point.pointId}, #{point.contentId}, #{point.orderNum})
+        </foreach>
+    </insert>
 </mapper>

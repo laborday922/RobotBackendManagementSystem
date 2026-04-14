@@ -29,13 +29,21 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private IRobotsService robotService;
+
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** 机器人ID -> WebSocketSession 映射 */
     @Getter
     private final Map<Long, WebSocketSession> robotSessions = new ConcurrentHashMap<>();
+
+    /** correlationId -> CompletableFuture<RobotTaskResponse> 映射（任务模块专用） */
     private final Map<String, CompletableFuture<RobotTaskResponse>> pendingResponses = new ConcurrentHashMap<>();
+
+    /** correlationId -> CompletableFuture<RobotWebSocketMessage> 映射（通用原始响应） */
+    private final Map<String, CompletableFuture<RobotWebSocketMessage>> pendingRawResponses = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -50,47 +58,87 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
         String type = wsMsg.getType();
 
         if ("AUTH".equals(type)) {
-            Long robotId = wsMsg.getRobotId();
-            if (robotId != null && robotService.selectRobotsById(robotId) != null) {
-                robotSessions.put(robotId, session);
-                session.getAttributes().put("robotId", robotId);
-                session.getAttributes().put("authenticated", true);
-                // 更新在线状态和心跳时间
-                RobotStatusDto robot = new RobotStatusDto();
-                robot.setId(robotId);
-                robot.setStatus(1);
-                robot.setLastHeartbeatTime(new Date());
-                robotService.updateRobotStatus(robot);
-                log.info("机器人 {} 认证成功", robotId);
-                sendMessage(session, RobotWebSocketMessage.authSuccess());
-            } else {
-                log.warn("认证失败，无效robotId: {}", robotId);
-                session.close(CloseStatus.BAD_DATA);
-            }
+            handleAuth(session, wsMsg);
         } else if ("RESPONSE".equals(type)) {
-            String correlationId = wsMsg.getCorrelationId();
-            CompletableFuture<RobotTaskResponse> future = pendingResponses.remove(correlationId);
-            if (future != null) {
-                RobotTaskResponse response = objectMapper.convertValue(wsMsg.getData(), RobotTaskResponse.class);
-                future.complete(response);
-            } else {
-                log.warn("未找到等待中的请求: {}", correlationId);
-            }
+            handleResponse(wsMsg);
         } else if ("ASYNC_RESULT".equals(type)) {
-            String traceId = wsMsg.getTraceId();
-            boolean success = wsMsg.getSuccess() != null && wsMsg.getSuccess();
-            eventPublisher.publishEvent(new WebSocketAsyncResultEvent(this,traceId, success, wsMsg.getData(), wsMsg.getErrorMsg()));
+            handleAsyncResult(wsMsg);
         } else if ("HEARTBEAT".equals(type)) {
-            Long robotId = (Long) session.getAttributes().get("robotId");
-            if (robotId != null) {
-                RobotStatusDto robot = new RobotStatusDto();
-                robot.setId(robotId);
-                robot.setLastHeartbeatTime(new Date());
-                robotService.updateRobotStatus(robot);
-                sendMessage(session, RobotWebSocketMessage.heartbeatAck());
-            }
+            handleHeartbeat(session, wsMsg);
         } else {
             log.warn("未知消息类型: {}", type);
+        }
+    }
+
+    /**
+     * 处理认证消息
+     */
+    private void handleAuth(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
+        Long robotId = wsMsg.getRobotId();
+        if (robotId != null && robotService.selectRobotsById(robotId) != null) {
+            robotSessions.put(robotId, session);
+            session.getAttributes().put("robotId", robotId);
+            session.getAttributes().put("authenticated", true);
+
+            // 更新在线状态和心跳时间
+            RobotStatusDto robot = new RobotStatusDto();
+            robot.setId(robotId);
+            robot.setStatus(1);
+            robot.setLastHeartbeatTime(new Date());
+            robotService.updateRobotStatus(robot);
+
+            log.info("机器人 {} 认证成功", robotId);
+            sendMessage(session, RobotWebSocketMessage.authSuccess());
+        } else {
+            log.warn("认证失败，无效robotId: {}", robotId);
+            session.close(CloseStatus.BAD_DATA);
+        }
+    }
+
+    /**
+     * 处理响应消息
+     */
+    private void handleResponse(RobotWebSocketMessage wsMsg) {
+        String correlationId = wsMsg.getCorrelationId();
+
+        // 优先尝试匹配原始响应（用于模式模块等通用调用）
+        CompletableFuture<RobotWebSocketMessage> rawFuture = pendingRawResponses.remove(correlationId);
+        if (rawFuture != null) {
+            rawFuture.complete(wsMsg);
+            return;
+        }
+
+        // 匹配任务模块的响应
+        CompletableFuture<RobotTaskResponse> future = pendingResponses.remove(correlationId);
+        if (future != null) {
+            RobotTaskResponse response = objectMapper.convertValue(wsMsg.getData(), RobotTaskResponse.class);
+            future.complete(response);
+        } else {
+            log.warn("未找到等待中的请求: {}", correlationId);
+        }
+    }
+
+    /**
+     * 处理异步结果推送
+     */
+    private void handleAsyncResult(RobotWebSocketMessage wsMsg) {
+        String traceId = wsMsg.getTraceId();
+        boolean success = wsMsg.getSuccess() != null && wsMsg.getSuccess();
+        log.info("收到异步结果: traceId={}, success={}", traceId, success);
+        eventPublisher.publishEvent(new WebSocketAsyncResultEvent(this, traceId, success, wsMsg.getData(), wsMsg.getErrorMsg()));
+    }
+
+    /**
+     * 处理心跳消息
+     */
+    private void handleHeartbeat(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
+        Long robotId = (Long) session.getAttributes().get("robotId");
+        if (robotId != null) {
+            RobotStatusDto robot = new RobotStatusDto();
+            robot.setId(robotId);
+            robot.setLastHeartbeatTime(new Date());
+            robotService.updateRobotStatus(robot);
+            sendMessage(session, RobotWebSocketMessage.heartbeatAck());
         }
     }
 
@@ -122,11 +170,23 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
         log.error("WebSocket传输错误", exception);
     }
 
+    /**
+     * 发送消息给指定会话
+     */
     public void sendMessage(WebSocketSession session, RobotWebSocketMessage message) throws IOException {
         String json = objectMapper.writeValueAsString(message);
         session.sendMessage(new TextMessage(json));
     }
 
+    /**
+     * 发送请求并等待响应
+     *
+     * @param robotId 机器人ID
+     * @param request 请求数据
+     * @param correlationId 关联ID
+     * @param timeoutSeconds 超时时间（秒）
+     * @return 响应Future
+     */
     public CompletableFuture<RobotTaskResponse> sendAndWait(Long robotId, Object request, String correlationId, long timeoutSeconds) {
         WebSocketSession session = robotSessions.get(robotId);
         if (session == null || !session.isOpen()) {
@@ -134,8 +194,10 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             future.completeExceptionally(new RuntimeException("机器人未连接"));
             return future;
         }
+
         CompletableFuture<RobotTaskResponse> future = new CompletableFuture<>();
         pendingResponses.put(correlationId, future);
+
         try {
             RobotWebSocketMessage msg = RobotWebSocketMessage.request(correlationId, request);
             sendMessage(session, msg);
@@ -147,6 +209,60 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
         return future;
     }
 
+    /**
+     * 发送请求并等待原始响应
+     *
+     * @param robotId 机器人ID
+     * @param request 请求数据
+     * @param correlationId 关联ID
+     * @param timeoutSeconds 超时时间（秒）
+     * @return 原始响应Future
+     */
+    public CompletableFuture<RobotWebSocketMessage> sendAndWaitRaw(Long robotId, Object request, String correlationId, long timeoutSeconds) {
+        WebSocketSession session = robotSessions.get(robotId);
+        if (session == null || !session.isOpen()) {
+            CompletableFuture<RobotWebSocketMessage> future = new CompletableFuture<>();
+            future.completeExceptionally(new RuntimeException("机器人未连接"));
+            return future;
+        }
+
+        CompletableFuture<RobotWebSocketMessage> future = new CompletableFuture<>();
+        pendingRawResponses.put(correlationId, future);
+
+        try {
+            RobotWebSocketMessage msg = RobotWebSocketMessage.request(correlationId, request);
+            sendMessage(session, msg);
+            future.orTimeout(timeoutSeconds, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            pendingRawResponses.remove(correlationId);
+            future.completeExceptionally(e);
+        }
+        return future;
+    }
+
+    /**
+     * 发送请求（不等待响应）
+     *
+     * @param robotId 机器人ID
+     * @param request 请求数据
+     * @param correlationId 关联ID
+     * @throws IOException 发送异常
+     */
+    public void sendRequest(Long robotId, Object request, String correlationId) throws IOException {
+        WebSocketSession session = robotSessions.get(robotId);
+        if (session == null || !session.isOpen()) {
+            throw new IOException("机器人未连接");
+        }
+        RobotWebSocketMessage msg = RobotWebSocketMessage.request(correlationId, request);
+        sendMessage(session, msg);
+    }
+
+    /**
+     * 检查机器人是否在线
+     *
+     * @param robotId 机器人ID
+     * @return 是否在线
+     */
     public boolean isOnline(Long robotId) {
         WebSocketSession session = robotSessions.get(robotId);
         return session != null && session.isOpen();

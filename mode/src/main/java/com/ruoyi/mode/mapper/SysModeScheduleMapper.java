@@ -46,22 +46,6 @@ public interface SysModeScheduleMapper
     public int updateSysModeSchedule(SysModeSchedule sysModeSchedule);
 
     /**
-     * 删除排程（逻辑删除）
-     *
-     * @param scheduleId 排程ID
-     * @return 结果
-     */
-    public int deleteSysModeScheduleById(Long scheduleId);
-
-    /**
-     * 批量删除排程（逻辑删除）
-     *
-     * @param scheduleIds 需要删除的数据ID
-     * @return 结果
-     */
-    public int deleteSysModeScheduleByIds(Long[] scheduleIds);
-
-    /**
      * 更新排程状态
      *
      * @param scheduleId 排程ID
@@ -71,12 +55,29 @@ public interface SysModeScheduleMapper
     public int updateScheduleStatus(@Param("scheduleId") Long scheduleId, @Param("status") String status);
 
     /**
+     * 删除排程
+     *
+     * @param scheduleId 排程ID
+     * @return 结果
+     */
+    public int deleteSysModeScheduleById(Long scheduleId);
+
+    /**
+     * 批量删除排程
+     *
+     * @param scheduleIds 需要删除的数据ID
+     * @return 结果
+     */
+    public int deleteSysModeScheduleByIds(Long[] scheduleIds);
+
+    /**
      * 查询排程关联的机器人
      *
      * @param scheduleId 排程ID
-     * @return 机器人列表
+     * @param tenantId 租户ID（为null时查询所有租户）
+     * @return 机器人集合
      */
-    public List<SysRobot> selectRobotsByScheduleId(Long scheduleId);
+    public List<SysRobot> selectRobotsByScheduleId(@Param("scheduleId") Long scheduleId, @Param("tenantId") Long tenantId);
 
     /**
      * 批量插入排程机器人关联

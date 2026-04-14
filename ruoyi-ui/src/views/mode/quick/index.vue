@@ -592,11 +592,13 @@ export default {
 
               let message = '';
               let detail = '';
+              let isSuccess = false;
 
               // 注意判断顺序：先判断 waitingCount > 0 的情况，再判断立即充电
               if (successCount === 0) {
                 message = `充电模式切换失败`;
                 detail = '请检查机器人是否在线';
+                isSuccess = false;
               } else if (waitingCount > 0) {
                 // 有等待充电的机器人
                 if (immediateCount > 0) {
@@ -606,36 +608,51 @@ export default {
                   message = `已命令 ${successCount} 个机器人切换为充电模式，其中 ${waitingCount} 个机器人将等待任务完成后自动充电`;
                   detail = '有任务的机器人会在任务完成后自动开始充电';
                 }
+                isSuccess = true;
               } else if (immediateCount > 0) {
                 message = `已将 ${successCount} 个机器人切换为充电模式`;
                 detail = '机器人正在前往充电站充电';
+                isSuccess = true;
               } else {
                 message = `已对 ${successCount} 个机器人执行充电模式操作`;
                 detail = '操作执行成功';
+                isSuccess = true;
               }
 
               // 记录历史
-              this.recordHistory(type, robotIds, robotNames, message);
+              this.recordHistory(type, robotIds, robotNames, message, isSuccess ? 'success' : 'fail');
 
-              // 显示结果弹窗
+              // 显示结果弹窗 - 根据成功/失败显示不同图标
               this.operationResult = {
-                title: '操作完成',
-                icon: 'el-icon-success',
-                color: '#67c23a',
+                title: isSuccess ? '操作完成' : '操作失败',
+                icon: isSuccess ? 'el-icon-success' : 'el-icon-error',
+                color: isSuccess ? '#67c23a' : '#f56c6c',
                 message: message,
                 detail: detail
               };
               this.resultDialogVisible = true;
 
-              // 刷新机器人列表
-              setTimeout(() => {
-                this.getRobotList();
-              }, 1000);
-
-              this.$message.success(message);
+              if (isSuccess) {
+                // 刷新机器人列表
+                setTimeout(() => {
+                  this.getRobotList();
+                }, 1000);
+                this.$message.success(message);
+              } else {
+                this.$message.error(message);
+              }
             } else {
               this.$message.error(response.msg || '充电模式切换失败');
               this.recordHistory(type, robotIds, robotNames, `充电模式切换失败: ${response.msg || '未知错误'}`, 'fail');
+              // 失败时显示错误弹窗
+              this.operationResult = {
+                title: '操作失败',
+                icon: 'el-icon-error',
+                color: '#f56c6c',
+                message: response.msg || '充电模式切换失败',
+                detail: '请检查机器人是否在线后重试'
+              };
+              this.resultDialogVisible = true;
             }
           }).catch(error => {
             loadingMessage.close();
@@ -643,6 +660,15 @@ export default {
             const errorMsg = error.msg || error.message || '网络错误';
             this.$message.error(`充电模式切换失败：${errorMsg}`);
             this.recordHistory(type, robotIds, robotNames, `充电模式切换失败: ${errorMsg}`, 'fail');
+            // 失败时显示错误弹窗
+            this.operationResult = {
+              title: '操作失败',
+              icon: 'el-icon-error',
+              color: '#f56c6c',
+              message: `充电模式切换失败：${errorMsg}`,
+              detail: '请检查机器人是否在线及网络连接'
+            };
+            this.resultDialogVisible = true;
           }).finally(() => {
             this.loading = false;
           });
@@ -735,6 +761,15 @@ export default {
         } else {
           this.$message.error(response.msg || `${operationName}操作失败`);
           this.recordHistory(type, robotIds, robotNames, `${operationName}操作失败: ${response.msg || '未知错误'}`, 'fail');
+          // 失败时显示错误弹窗
+          this.operationResult = {
+            title: '操作失败',
+            icon: 'el-icon-error',
+            color: '#f56c6c',
+            message: response.msg || `${operationName}操作失败`,
+            detail: '请检查机器人状态后重试'
+          };
+          this.resultDialogVisible = true;
           if (type === 'batch_restart') {
             this.getRobotList();
           }
@@ -746,6 +781,15 @@ export default {
         const errorMsg = error.msg || error.message || '网络错误';
         this.$message.error(`${operationName}操作失败：${errorMsg}`);
         this.recordHistory(type, robotIds, robotNames, `${operationName}操作失败: ${errorMsg}`, 'fail');
+        // 失败时显示错误弹窗
+        this.operationResult = {
+          title: '操作失败',
+          icon: 'el-icon-error',
+          color: '#f56c6c',
+          message: `${operationName}操作失败：${errorMsg}`,
+          detail: '请检查网络连接后重试'
+        };
+        this.resultDialogVisible = true;
         if (type === 'batch_restart') {
           this.getRobotList();
         }

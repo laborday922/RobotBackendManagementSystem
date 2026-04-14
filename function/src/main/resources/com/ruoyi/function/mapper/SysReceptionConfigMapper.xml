@@ -14,6 +14,7 @@
         <result property="strangerEnabled" column="stranger_enabled"/>
         <result property="strangerGreeting" column="stranger_greeting"/>
         <result property="strangerMulti" column="stranger_multi"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -22,8 +23,8 @@
 
     <sql id="selectVo">
         select config_id, robot_id, welcome, `repeat`, idle, vip_enabled, vip_greeting,
-               vip_multi, stranger_enabled, stranger_greeting, stranger_multi,
-               create_by, create_time, update_by, update_time
+        vip_multi, stranger_enabled, stranger_greeting, stranger_multi, tenant_id,
+        create_by, create_time, update_by, update_time
         from sys_reception_config
     </sql>
 
@@ -31,18 +32,25 @@
         <include refid="selectVo"/>
         where robot_id = #{robotId}
     </select>
-    <select id="selectList" resultType="com.ruoyi.function.domain.SysReceptionConfig"></select>
+
+    <select id="selectList" resultMap="SysReceptionConfigResult" parameterType="com.ruoyi.function.domain.SysReceptionConfig">
+        <include refid="selectVo"/>
+        <where>
+            <if test="robotId != null">and robot_id = #{robotId}</if>
+            <if test="tenantId != null and tenantId != ''">and tenant_id = #{tenantId}</if>
+        </where>
+    </select>
 
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysReceptionConfig" useGeneratedKeys="true" keyProperty="configId">
         insert into sys_reception_config (
-            robot_id, welcome, `repeat`, idle, vip_enabled, vip_greeting,
-            vip_multi, stranger_enabled, stranger_greeting, stranger_multi,
-            create_by, create_time
+        robot_id, welcome, `repeat`, idle, vip_enabled, vip_greeting,
+        vip_multi, stranger_enabled, stranger_greeting, stranger_multi, tenant_id,
+        create_by, create_time
         ) values (
-                     #{robotId}, #{welcome}, #{repeat}, #{idle}, #{vipEnabled}, #{vipGreeting},
-                     #{vipMulti}, #{strangerEnabled}, #{strangerGreeting}, #{strangerMulti},
-                     #{createBy}, sysdate()
-                 )
+        #{robotId}, #{welcome}, #{repeat}, #{idle}, #{vipEnabled}, #{vipGreeting},
+        #{vipMulti}, #{strangerEnabled}, #{strangerGreeting}, #{strangerMulti}, #{tenantId},
+        #{createBy}, sysdate()
+        )
     </insert>
 
     <update id="update" parameterType="com.ruoyi.function.domain.SysReceptionConfig">
@@ -62,4 +70,8 @@
         </set>
         where config_id = #{configId}
     </update>
+
+    <delete id="deleteByRobotId">
+        delete from sys_reception_config where robot_id = #{robotId}
+    </delete>
 </mapper>

@@ -30,7 +30,9 @@ public class RobotHeartbeatService {
             if (session.isOpen()) {
                 try {
                     webSocketHandler.sendMessage(session, RobotWebSocketMessage.heartbeat());
+                    System.out.println("发送心跳给机器人成功");
                 } catch (IOException e) {
+                    System.out.println("发送心跳给机器人失败");
                     log.warn("发送心跳给机器人 {} 失败", robotId, e);
                     // 心跳失败，标记离线
                     RobotStatusDto robot = new RobotStatusDto();
@@ -41,6 +43,7 @@ public class RobotHeartbeatService {
                     try {
                         session.close();
                     } catch (IOException ex) {
+                        System.out.println("关闭会话失败");
                         log.error("关闭会话失败", ex);
                     }
                 }

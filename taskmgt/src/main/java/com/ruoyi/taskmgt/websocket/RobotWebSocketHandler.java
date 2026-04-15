@@ -135,6 +135,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
      */
     private void handleHeartbeat(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
         Long robotId = (Long) session.getAttributes().get("robotId");
+        System.out.println("接收到心跳信息");
         if (robotId != null) {
             RobotStatusDto robot = new RobotStatusDto();
             robot.setId(robotId);

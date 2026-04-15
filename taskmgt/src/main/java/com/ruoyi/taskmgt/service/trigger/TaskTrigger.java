@@ -16,8 +16,8 @@ import com.ruoyi.taskmgt.event.ExecuteStepEvent;
 import com.ruoyi.taskmgt.event.StepCompletedEvent;
 import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
 import com.ruoyi.taskmgt.service.impl.TaskReuseService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,31 +29,16 @@ import java.util.*;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class TaskTrigger {
-
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private StepRepository stepRepository;
-
-    @Autowired
-    private TaskLogReuseService taskLogService;
-
-    @Autowired
-    private RedisCache redisUtil;
-
-    @Autowired
-    private IRobotsService robotService;
-
-    @Autowired
-    private IRobotWarningsService robotWarningsService;
-
-    @Autowired
-    private TaskReuseService taskService;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final TaskRepository taskRepository;
+    private final StepRepository stepRepository;
+    private final TaskLogReuseService taskLogService;
+    private final RedisCache redisUtil;
+    private final IRobotsService robotService;
+    private final IRobotWarningsService robotWarningsService;
+    private final TaskReuseService taskService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 每分钟执行一次触发检查

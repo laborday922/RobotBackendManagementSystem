@@ -7,6 +7,7 @@ import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.taskmgt.event.WebSocketAsyncResultEvent;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,13 +26,12 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class RobotWebSocketHandler extends TextWebSocketHandler {
 
-    @Autowired
-    private IRobotsService robotService;
+    private final IRobotsService robotService;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

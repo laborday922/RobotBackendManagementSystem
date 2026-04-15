@@ -131,6 +131,7 @@ public class SecurityConfig
                     ).permitAll()
                         .antMatchers("/robots/robots/upload").permitAll()
                         .antMatchers("/taskmgt/**").permitAll()//临时放行taskmgt的接口用于测试
+                        .antMatchers("/ws/**").permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();
             })

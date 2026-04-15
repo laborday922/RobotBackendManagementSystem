@@ -74,7 +74,10 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
      * 处理认证消息
      */
     private void handleAuth(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
+
         Long robotId = wsMsg.getRobotId();
+        System.out.println("机器人认证成功");
+        log.info("机器人 {} 认证成功", robotId);
         if (robotId != null && robotService.selectRobotsById(robotId) != null) {
             robotSessions.put(robotId, session);
             session.getAttributes().put("robotId", robotId);
@@ -86,8 +89,8 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robot.setStatus(1);
             robot.setLastHeartbeatTime(new Date());
             robotService.updateRobotStatus(robot);
-            System.out.println("机器人认证成功");
-            log.info("机器人 {} 认证成功", robotId);
+
+
             sendMessage(session, RobotWebSocketMessage.authSuccess());
         } else {
             log.warn("认证失败，无效robotId: {}", robotId);

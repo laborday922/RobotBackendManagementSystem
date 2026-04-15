@@ -21,7 +21,7 @@ public class RobotHeartbeatService {
     @Autowired
     private IRobotsService robotService;
 
-    @Scheduled(fixedDelay = 30000) // 每30秒发送一次心跳
+    @Scheduled(fixedDelay = 10000) // 每30秒发送一次心跳
     public void sendHeartbeat() {
         var sessions = webSocketHandler.getRobotSessions();
         for (var entry : sessions.entrySet()) {

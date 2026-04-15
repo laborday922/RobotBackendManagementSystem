@@ -102,32 +102,36 @@ public class RobotsServiceImpl implements IRobotsService {
         Robot robot = new Robot();
         BeanUtils.copyProperties(robotStatusDto, robot);
     // 如果机器人正在执行任务且状态变为更高，设置空闲开始时间
-        if (robotsMapper.selectTaskStatusById(robot.getId()) == RobotsConstants.EXECUTING && robot.getStatus() > RobotsConstants.EXECUTING)
-            robot.setIdleStartTime(DateUtils.getNowDate());
+        if(robot.getStatus()!=null){
+            if (robotsMapper.selectTaskStatusById(robot.getId()) == RobotsConstants.EXECUTING && robot.getStatus() > RobotsConstants.EXECUTING)
+                robot.setIdleStartTime(DateUtils.getNowDate());
+        }
 
     // 如果硬件状态正常且机器人状态变为更高，记录警告信息
-         if(robotsMapper.selectHardwareStatusById(robot.getId()) == RobotsConstants.NORMAL && robot.getHardwareStatus() > RobotsConstants.NORMAL)
-         {
-        // 创建警告对象并设置基本信息
-             RobotWarnings robotWarnings = new RobotWarnings();
-             robotWarnings.setRobotId(robot.getId());
-             robotWarnings.setWarningContent(robotStatusDto.getNote());
-        // 如果电量低于等于20，设置低电量警告
-             if(robotStatusDto.getBattery()<=20)
+         if(robot.getHardwareStatus()!=null){
+             if(robotsMapper.selectHardwareStatusById(robot.getId()) == RobotsConstants.NORMAL && robot.getHardwareStatus() > RobotsConstants.NORMAL)
              {
-                 robotWarnings.setWarningType("0");//低电量
-                 robotWarnings.setWarningLevel(RobotsConstants.PROMPT);//提示
+                 // 创建警告对象并设置基本信息
+                 RobotWarnings robotWarnings = new RobotWarnings();
+                 robotWarnings.setRobotId(robot.getId());
+                 robotWarnings.setWarningContent(robotStatusDto.getNote());
+                 // 如果电量低于等于20，设置低电量警告
+                 if(robotStatusDto.getBattery()<=20)
+                 {
+                     robotWarnings.setWarningType("0");//低电量
+                     robotWarnings.setWarningLevel(RobotsConstants.PROMPT);//提示
+                 }
+                 // 如果有硬件状态异常，设置硬件警告
+                 if(robotStatusDto.getHardwareStatus()>0)
+                 {
+                     robotWarnings.setWarningType(String.valueOf(robotStatusDto.getHardwareStatus()));
+                     robotWarnings.setWarningLevel(String.valueOf(robotStatusDto.getHardwareStatus()));//警告
+                 }
+                 // 设置警告的其他属性并插入数据库
+                 robotWarnings.setStatus("0");//未完成
+                 robotWarnings.setCreatedAt(DateUtils.getNowDate());
+                 robotWarningsMapper.insertRobotWarnings(robotWarnings);
              }
-        // 如果有硬件状态异常，设置硬件警告
-             if(robotStatusDto.getHardwareStatus()>0)
-             {
-                 robotWarnings.setWarningType(String.valueOf(robotStatusDto.getHardwareStatus()));
-                 robotWarnings.setWarningLevel(String.valueOf(robotStatusDto.getHardwareStatus()));//警告
-             }
-        // 设置警告的其他属性并插入数据库
-             robotWarnings.setStatus("0");//未完成
-             robotWarnings.setCreatedAt(DateUtils.getNowDate());
-             robotWarningsMapper.insertRobotWarnings(robotWarnings);
          }
     // 更新机器人信息并返回更新的记录数
         return robotsMapper.updateRobots(robot);

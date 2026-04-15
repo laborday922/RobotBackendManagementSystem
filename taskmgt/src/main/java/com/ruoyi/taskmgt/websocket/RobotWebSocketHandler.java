@@ -87,6 +87,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             RobotStatusDto robot = new RobotStatusDto();
             robot.setId(robotId);
             robot.setStatus(1);
+            robot.setHardwareStatus(0);
             robot.setLastHeartbeatTime(new Date());
             robotService.updateRobotStatus(robot);
 

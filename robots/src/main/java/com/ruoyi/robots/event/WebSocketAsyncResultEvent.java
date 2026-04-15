@@ -1,4 +1,4 @@
-package com.ruoyi.taskmgt.event;
+package com.ruoyi.robots.event;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

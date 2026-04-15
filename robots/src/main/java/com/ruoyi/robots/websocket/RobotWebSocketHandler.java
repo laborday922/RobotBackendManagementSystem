@@ -1,15 +1,13 @@
-package com.ruoyi.taskmgt.websocket;
+package com.ruoyi.robots.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
+import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
 import com.ruoyi.robots.service.IRobotsService;
-import com.ruoyi.taskmgt.event.WebSocketAsyncResultEvent;
-import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -24,26 +22,26 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 通用 WebSocket 处理器（机器人管理模块）
+ * 负责机器人连接认证、心跳、会话管理、原始消息收发。
+ * 子类可继承并覆盖特定消息的处理逻辑。
+ */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class RobotWebSocketHandler extends TextWebSocketHandler {
 
-    private final IRobotsService robotService;
-
-    private final ApplicationEventPublisher eventPublisher;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    protected final IRobotsService robotService;
+    protected final ApplicationEventPublisher eventPublisher;
+    protected final ObjectMapper objectMapper = new ObjectMapper();
 
     /** 机器人ID -> WebSocketSession 映射 */
     @Getter
-    private final Map<Long, WebSocketSession> robotSessions = new ConcurrentHashMap<>();
-
-    /** correlationId -> CompletableFuture<RobotTaskResponse> 映射（任务模块专用） */
-    private final Map<String, CompletableFuture<RobotTaskResponse>> pendingResponses = new ConcurrentHashMap<>();
+    protected final Map<Long, WebSocketSession> robotSessions = new ConcurrentHashMap<>();
 
     /** correlationId -> CompletableFuture<RobotWebSocketMessage> 映射（通用原始响应） */
-    private final Map<String, CompletableFuture<RobotWebSocketMessage>> pendingRawResponses = new ConcurrentHashMap<>();
+    protected final Map<String, CompletableFuture<RobotWebSocketMessage>> pendingRawResponses = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -65,7 +63,10 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             handleAsyncResult(wsMsg);
         } else if ("HEARTBEAT".equals(type)) {
             handleHeartbeat(session, wsMsg);
-        } else {
+        } else if("CLOSE".equals(type)){
+            closeSession(session, CloseStatus.NORMAL);
+        }
+        else {
             log.warn("未知消息类型: {}", type);
         }
     }
@@ -73,11 +74,8 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理认证消息
      */
-    private void handleAuth(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
-
+    protected void handleAuth(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
         Long robotId = wsMsg.getRobotId();
-        System.out.println("机器人认证成功");
-        log.info("机器人 {} 认证成功", robotId);
         if (robotId != null && robotService.selectRobotsById(robotId) != null) {
             robotSessions.put(robotId, session);
             session.getAttributes().put("robotId", robotId);
@@ -91,6 +89,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robot.setLastHeartbeatTime(new Date());
             robotService.updateRobotStatus(robot);
             sendMessage(session, RobotWebSocketMessage.authSuccess());
+            log.info("机器人 {} 认证成功", robotId);
         } else {
             log.warn("认证失败，无效robotId: {}", robotId);
             session.close(CloseStatus.BAD_DATA);
@@ -98,23 +97,47 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 处理响应消息
+     * 直接关闭指定的 WebSocket 会话
+     * @param session 要关闭的会话
+     * @param status 关闭状态（如 CloseStatus.NORMAL）
      */
-    private void handleResponse(RobotWebSocketMessage wsMsg) {
-        String correlationId = wsMsg.getCorrelationId();
+    public void closeSession(WebSocketSession session, CloseStatus status) {
+        if (session != null && session.isOpen()) {
+            try {
+                session.close(status);
+                log.info("主动关闭会话: {}, 状态: {}", session.getId(), status);
+            } catch (IOException e) {
+                log.error("关闭会话失败: {}", session.getId(), e);
+            }
+        }
+    }
 
-        // 优先尝试匹配原始响应（用于模式模块等通用调用）
+    /**
+     * 管理端根据机器人ID主动关闭连接
+     * @param robotId 机器人ID
+     * @param status 关闭状态
+     * @return true 如果成功关闭，false 如果机器人不在线
+     */
+    public boolean closeRobotConnection(Long robotId, CloseStatus status) {
+        WebSocketSession session = robotSessions.get(robotId);
+        if (session == null || !session.isOpen()) {
+            log.warn("机器人 {} 不在线，无法关闭连接", robotId);
+            return false;
+        }
+        closeSession(session, status);
+        return true;
+    }
+
+
+    /**
+     * 处理响应消息（通用版本，完成原始响应Future）
+     * 子类可重写以进行特定类型的转换
+     */
+    protected void handleResponse(RobotWebSocketMessage wsMsg) {
+        String correlationId = wsMsg.getCorrelationId();
         CompletableFuture<RobotWebSocketMessage> rawFuture = pendingRawResponses.remove(correlationId);
         if (rawFuture != null) {
             rawFuture.complete(wsMsg);
-            return;
-        }
-
-        // 匹配任务模块的响应
-        CompletableFuture<RobotTaskResponse> future = pendingResponses.remove(correlationId);
-        if (future != null) {
-            RobotTaskResponse response = objectMapper.convertValue(wsMsg.getData(), RobotTaskResponse.class);
-            future.complete(response);
         } else {
             log.warn("未找到等待中的请求: {}", correlationId);
         }
@@ -123,7 +146,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理异步结果推送
      */
-    private void handleAsyncResult(RobotWebSocketMessage wsMsg) {
+    protected void handleAsyncResult(RobotWebSocketMessage wsMsg) {
         String traceId = wsMsg.getTraceId();
         boolean success = wsMsg.getSuccess() != null && wsMsg.getSuccess();
         log.info("收到异步结果: traceId={}, success={}", traceId, success);
@@ -133,15 +156,15 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理心跳消息
      */
-    private void handleHeartbeat(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
+    protected void handleHeartbeat(WebSocketSession session, RobotWebSocketMessage wsMsg) throws IOException {
         Long robotId = (Long) session.getAttributes().get("robotId");
-        System.out.println("接收到心跳信息");
         if (robotId != null) {
             RobotStatusDto robot = new RobotStatusDto();
             robot.setId(robotId);
             robot.setLastHeartbeatTime(new Date());
             robotService.updateRobotStatus(robot);
             sendMessage(session, RobotWebSocketMessage.heartbeatAck());
+            log.debug("收到心跳 from robotId={}", robotId);
         }
     }
 
@@ -182,38 +205,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 发送请求并等待响应
-     *
-     * @param robotId 机器人ID
-     * @param request 请求数据
-     * @param correlationId 关联ID
-     * @param timeoutSeconds 超时时间（秒）
-     * @return 响应Future
-     */
-    public CompletableFuture<RobotTaskResponse> sendAndWait(Long robotId, Object request, String correlationId, long timeoutSeconds) {
-        WebSocketSession session = robotSessions.get(robotId);
-        if (session == null || !session.isOpen()) {
-            CompletableFuture<RobotTaskResponse> future = new CompletableFuture<>();
-            future.completeExceptionally(new RuntimeException("机器人未连接"));
-            return future;
-        }
-
-        CompletableFuture<RobotTaskResponse> future = new CompletableFuture<>();
-        pendingResponses.put(correlationId, future);
-
-        try {
-            RobotWebSocketMessage msg = RobotWebSocketMessage.request(correlationId, request);
-            sendMessage(session, msg);
-            future.orTimeout(timeoutSeconds, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            pendingResponses.remove(correlationId);
-            future.completeExceptionally(e);
-        }
-        return future;
-    }
-
-    /**
-     * 发送请求并等待原始响应
+     * 发送请求并等待原始响应（返回 RobotWebSocketMessage）
      *
      * @param robotId 机器人ID
      * @param request 请求数据
@@ -262,9 +254,6 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 检查机器人是否在线
-     *
-     * @param robotId 机器人ID
-     * @return 是否在线
      */
     public boolean isOnline(Long robotId) {
         WebSocketSession session = robotSessions.get(robotId);

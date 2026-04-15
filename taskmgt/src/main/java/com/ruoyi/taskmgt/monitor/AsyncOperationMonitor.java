@@ -1,6 +1,6 @@
 package com.ruoyi.taskmgt.monitor;
 
-import com.ruoyi.taskmgt.event.WebSocketAsyncResultEvent;
+import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
 import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;

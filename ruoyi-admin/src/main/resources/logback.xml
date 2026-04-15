@@ -70,9 +70,24 @@
             <pattern>${log.pattern}</pattern>
         </encoder>
     </appender>
-	
+
+    <appender name="taskmgt_file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/taskmgt.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/taskmgt.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
 	<!-- 系统模块日志级别控制  -->
 	<logger name="com.ruoyi" level="info" />
+
+    <logger name="com.ruoyi.taskmgt" level="debug" additivity="false">
+        <appender-ref ref="console" />
+        <appender-ref ref="taskmgt_file" />
+    </logger>
 	<!-- Spring日志级别控制  -->
 	<logger name="org.springframework" level="warn" />
 
@@ -90,4 +105,5 @@
     <logger name="sys-user" level="info">
         <appender-ref ref="sys-user"/>
     </logger>
+    <logger name="com.ruoyi.taskmgt" level="debug" />
 </configuration> 

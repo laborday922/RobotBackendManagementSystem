@@ -4,9 +4,10 @@ import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.function.domain.SysNavConfig;
 import com.ruoyi.function.mapper.SysNavConfigMapper;
 import com.ruoyi.function.service.ISysNavConfigService;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,7 +21,9 @@ public class SysNavConfigServiceImpl implements ISysNavConfigService {
     @Autowired
     private SysNavConfigMapper navConfigMapper;
 
+    @Qualifier("robotWebSocketHandler")
     @Autowired(required = false)
+
     private RobotWebSocketHandler webSocketHandler;
 
     private final ObjectMapper objectMapper = new ObjectMapper();

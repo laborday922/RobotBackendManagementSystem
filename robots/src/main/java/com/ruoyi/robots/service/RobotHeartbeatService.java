@@ -1,10 +1,10 @@
-package com.ruoyi.taskmgt.service.impl;
+package com.ruoyi.robots.service;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
-import com.ruoyi.robots.service.IRobotsService;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
@@ -15,7 +15,7 @@ import java.util.Date;
 @Service
 @Slf4j
 public class RobotHeartbeatService {
-
+    @Qualifier("robotWebSocketHandler")
     @Autowired
     private RobotWebSocketHandler webSocketHandler;
     @Autowired

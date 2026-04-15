@@ -5,8 +5,9 @@ import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.function.domain.SysReceptionConfig;
 import com.ruoyi.function.mapper.SysReceptionConfigMapper;
 import com.ruoyi.function.service.ISysReceptionConfigService;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ public class SysReceptionConfigServiceImpl implements ISysReceptionConfigService
     private SysReceptionConfigMapper receptionConfigMapper;
 
     @Autowired(required = false)
+    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     @Override

@@ -1,8 +1,10 @@
 package com.ruoyi.taskmgt.invoker;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskRequest;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
 import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +19,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RobotInvoker {
 
-    private final RobotWebSocketHandler webSocketHandler;
+    private final TaskRobotWebSocketHandler webSocketHandler;
+    private final ObjectMapper objectMapper;
 
     /**
      * 执行任务（同步等待响应）
@@ -57,16 +60,11 @@ public class RobotInvoker {
         }
         Map<String, String> queryReq = Map.of("traceId", traceId, "action", "query");
         String correlationId = UUID.randomUUID().toString();
-        CompletableFuture<RobotTaskResponse> future = webSocketHandler.sendAndWait(robotId, queryReq, correlationId, 10);
+        CompletableFuture<RobotWebSocketMessage> rawFuture = webSocketHandler.sendAndWaitRaw(robotId, queryReq, correlationId, 10);
         try {
-            RobotTaskResponse response = future.get(10, TimeUnit.SECONDS);
-            TaskStatusResponse statusResp = new TaskStatusResponse();
-            statusResp.setCompleted(response.isCompleted());
-            statusResp.setProgress(response.getProgress());
-            statusResp.setStatus(response.getStatus());
-            statusResp.setData(response.getData());
-            statusResp.setErrorMsg(response.getErrorMsg());
-            return statusResp;
+            RobotWebSocketMessage rawMsg = rawFuture.get(10, TimeUnit.SECONDS);
+            // 从 rawMsg.getData() 转换为 TaskStatusResponse
+            return objectMapper.convertValue(rawMsg.getData(), TaskStatusResponse.class);
         } catch (Exception e) {
             log.error("查询状态失败 robotId={}, traceId={}", robotId, traceId, e);
             TaskStatusResponse resp = new TaskStatusResponse();

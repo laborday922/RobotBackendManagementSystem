@@ -1,6 +1,8 @@
 package com.ruoyi.taskmgt.service.trigger;
 
 import com.ruoyi.common.core.redis.RedisCache;
+import com.ruoyi.common.enums.ReturnNo;
+import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.domain.Robot;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +43,7 @@ public class TaskTrigger {
     private final IRobotWarningsService robotWarningsService;
     private final TaskReuseService taskService;
     private final ApplicationEventPublisher eventPublisher;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     /**
      * 每分钟执行一次触发检查
@@ -70,9 +75,12 @@ public class TaskTrigger {
     private void checkBatteryTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 2, null, null, null);
         for (Task task : tasks) {
-            Integer battery = robotService.selectRobotsById(task.getRobotId()).getBattery();
-            if (battery != null && battery >= task.getBatteryThreshold()) {
-                triggerTask(task);
+            Robot robot = robotService.selectRobotsById(task.getRobotId());
+            if(StringUtils.isNotNull(robot)){
+                Integer battery = robot.getBattery();
+                if (battery != null && battery >= task.getBatteryThreshold()) {
+                    triggerTask(task);
+                }
             }
         }
     }

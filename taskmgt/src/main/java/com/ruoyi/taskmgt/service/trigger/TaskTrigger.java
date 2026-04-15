@@ -1,8 +1,6 @@
 package com.ruoyi.taskmgt.service.trigger;
 
 import com.ruoyi.common.core.redis.RedisCache;
-import com.ruoyi.common.enums.ReturnNo;
-import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.domain.Robot;
@@ -43,7 +41,6 @@ public class TaskTrigger {
     private final IRobotWarningsService robotWarningsService;
     private final TaskReuseService taskService;
     private final ApplicationEventPublisher eventPublisher;
-    private final MessageSourceAccessor messageSourceAccessor;
 
     /**
      * 每分钟执行一次触发检查
@@ -91,12 +88,15 @@ public class TaskTrigger {
     private void checkIdleTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null,null);
         for (Task task : tasks) {
-            Integer taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
-            Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
-            if (taskStatus == 2 && idleSince != null) {
-                long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
-                if (idleMinutes >= task.getIdleTime()) {
-                    triggerTask(task);
+            Robot robot = robotService.selectRobotsById(task.getRobotId());
+            if(StringUtils.isNotNull(robot)){
+                Integer taskStatus = robot.getTaskStatus();
+                Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
+                if (taskStatus == 2 && idleSince != null) {
+                    long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
+                    if (idleMinutes >= task.getIdleTime()) {
+                        triggerTask(task);
+                    }
                 }
             }
         }

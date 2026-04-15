@@ -86,7 +86,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robot.setStatus(1);
             robot.setLastHeartbeatTime(new Date());
             robotService.updateRobotStatus(robot);
-
+            System.out.println("机器人认证成功");
             log.info("机器人 {} 认证成功", robotId);
             sendMessage(session, RobotWebSocketMessage.authSuccess());
         } else {

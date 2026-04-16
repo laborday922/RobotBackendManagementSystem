@@ -7,7 +7,7 @@ import com.ruoyi.taskmgt.event.AsyncTaskTimeoutEvent;
 import com.ruoyi.taskmgt.event.RobotCallbackEvent;
 import com.ruoyi.taskmgt.event.StepCompletedEvent;
 import com.ruoyi.taskmgt.monitor.dto.RobotCallbackData;
-import com.ruoyi.taskmgt.operation.dto.OperationResult;
+import com.ruoyi.taskmgt.monitor.dto.OperationResult;
 import com.ruoyi.taskmgt.service.impl.StepExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

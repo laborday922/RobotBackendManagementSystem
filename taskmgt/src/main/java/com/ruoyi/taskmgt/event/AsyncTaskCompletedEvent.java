@@ -1,6 +1,6 @@
 package com.ruoyi.taskmgt.event;
 
-import com.ruoyi.taskmgt.operation.dto.OperationResult;
+import com.ruoyi.taskmgt.monitor.dto.OperationResult;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

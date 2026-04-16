@@ -62,6 +62,13 @@ public class RobotWebSocketMessage {
         return msg;
     }
 
+    public static RobotWebSocketMessage close(String reason) {
+        RobotWebSocketMessage msg = new RobotWebSocketMessage();
+        msg.setType("CLOSE");
+        msg.setErrorMsg(reason);
+        return msg;
+    }
+
     public static RobotWebSocketMessage response(String correlationId, Object responseData) {
         RobotWebSocketMessage msg = new RobotWebSocketMessage();
         msg.setType("RESPONSE");

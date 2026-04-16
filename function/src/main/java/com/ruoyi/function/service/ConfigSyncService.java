@@ -1,7 +1,8 @@
 package com.ruoyi.function.service;
 
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public class ConfigSyncService {
 
     @Autowired(required = false)
+    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     /**

@@ -3,9 +3,11 @@ package com.ruoyi.mode.invoker;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.mode.invoker.dto.ModeSwitchRequest;
 import com.ruoyi.mode.invoker.dto.ModeSwitchResponse;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -19,10 +21,10 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class ModeSwitchInvoker {
-
-    private final RobotWebSocketHandler webSocketHandler;
+    @Autowired
+    @Qualifier("robotWebSocketHandler")
+    private RobotWebSocketHandler webSocketHandler;
 
     /**
      * 同步切换模式（等待响应）

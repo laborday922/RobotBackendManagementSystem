@@ -13,8 +13,9 @@ import com.ruoyi.function.mapper.SysTourContentMapper;
 import com.ruoyi.function.mapper.SysTourGeneralMapper;
 import com.ruoyi.function.mapper.SysTourRouteMapper;
 import com.ruoyi.function.service.ISysTourService;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class SysTourServiceImpl implements ISysTourService {
     private ObjectMapper objectMapper;
 
     @Autowired(required = false)
+    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     // ========== 通用配置 ==========

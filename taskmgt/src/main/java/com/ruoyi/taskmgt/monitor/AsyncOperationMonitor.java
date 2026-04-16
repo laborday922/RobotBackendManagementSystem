@@ -1,6 +1,6 @@
 package com.ruoyi.taskmgt.monitor;
 
-import com.ruoyi.taskmgt.event.WebSocketAsyncResultEvent;
+import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
 import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
@@ -9,7 +9,7 @@ import com.ruoyi.taskmgt.event.AsyncTaskTimeoutEvent;
 import com.ruoyi.taskmgt.event.RobotCallbackEvent;
 import com.ruoyi.taskmgt.invoker.RobotInvoker;
 import com.ruoyi.taskmgt.monitor.dto.RobotCallbackData;
-import com.ruoyi.taskmgt.operation.dto.OperationResult;
+import com.ruoyi.taskmgt.monitor.dto.OperationResult;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

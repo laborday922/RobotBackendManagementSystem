@@ -61,7 +61,6 @@ public class StepController extends BaseController {
         List<TaskStepVo> result = this.stepService.retrieveSteps(id);
         return success(result);
     }
-
     @ApiOperation("完成步骤")
     @Log(title = "完成步骤", businessType = BusinessType.UPDATE)
     @PutMapping("steps/{id}/complete")

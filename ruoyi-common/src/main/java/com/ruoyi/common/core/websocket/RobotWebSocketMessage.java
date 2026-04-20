@@ -1,5 +1,6 @@
 package com.ruoyi.common.core.websocket;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RobotWebSocketMessage {
     /**
      * 消息类型：AUTH, AUTH_SUCCESS, REQUEST, RESPONSE, ASYNC_RESULT, HEARTBEAT, HEARTBEAT_ACK

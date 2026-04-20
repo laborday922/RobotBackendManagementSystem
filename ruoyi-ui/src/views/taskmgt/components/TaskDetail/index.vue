@@ -155,7 +155,15 @@ export default {
   },
   methods: {
     getStatusText(status) {
-      const map = { 3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止' }
+      const map = {
+        0: '执行中',
+        1: '准备中',
+        2: '已暂停',
+        3: '未开始',
+        4: '已禁用',
+        5: '已终止',
+        6: '已完成'
+      }
       return map[status] || status
     },
     getStatusClass(status) {

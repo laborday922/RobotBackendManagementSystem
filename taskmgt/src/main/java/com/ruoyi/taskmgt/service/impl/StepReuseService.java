@@ -110,6 +110,7 @@ public class StepReuseService {
                 Object value = null;
                 switch (binding.getSource()) {
                     case "form_field":
+                    case "field":
                         value = formDataMap.get(binding.getValue());
                         break;
                     case "app_param":

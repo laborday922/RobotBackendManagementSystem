@@ -122,6 +122,13 @@ public class Task extends BaseEntity implements Serializable, Stateful {
             put(FINISHED, new HashSet<>(){
                 {
                     add(NOTSTART);
+                    add(DELETED);
+                }
+            });
+            put(TERMINATED,new HashSet<>(){
+                {
+                    add(NOTSTART);
+                    add(DELETED);
                 }
             });
         }

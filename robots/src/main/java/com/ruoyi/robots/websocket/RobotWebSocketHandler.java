@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
  * 负责机器人连接认证、心跳、会话管理、原始消息收发。
  * 子类可继承并覆盖特定消息的处理逻辑。
  */
-@Component
 @Slf4j
 @RequiredArgsConstructor
 public class RobotWebSocketHandler extends TextWebSocketHandler {

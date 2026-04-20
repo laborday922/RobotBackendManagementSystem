@@ -54,7 +54,6 @@ public class SysRobotServiceImpl implements ISysRobotService
     @Autowired
     private ISysModeService sysModeService;
 
-    @Qualifier("robotWebSocketHandler")
     @Autowired
     private RobotWebSocketHandler webSocketHandler;
 

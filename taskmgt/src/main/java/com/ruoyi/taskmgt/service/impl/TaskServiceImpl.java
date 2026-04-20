@@ -27,6 +27,7 @@ import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.domain.bo.Template;
 import com.ruoyi.taskmgt.service.IStepService;
 import com.ruoyi.taskmgt.service.ITaskService;
+import com.ruoyi.taskmgt.service.trigger.TaskTrigger;
 import com.ruoyi.taskmgt.service.vo.RobotStatus;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
 import com.ruoyi.taskmgt.service.vo.TaskVo;
@@ -208,6 +209,7 @@ public class TaskServiceImpl implements ITaskService {
             }
             Long tenantId = TenantContext.get();
             if(!isAdmin(tenantId))task.setTenantId(tenantId);
+            task.setStatus(Task.NOTSTART);
             task.setUpdateBy(SecurityUtils.getUsername());
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
@@ -460,6 +462,7 @@ public class TaskServiceImpl implements ITaskService {
 
         else{
             redisKeys = this.updateTaskStatus(task, Task.EXECUTING);
+
             this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
                     "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId);
             if (StringUtils.isNotNull(task.getTemplateId())) {
@@ -668,13 +671,11 @@ public class TaskServiceImpl implements ITaskService {
         for (Map.Entry<String, List<Long>> entry : inputResourceGroups.entrySet()) {
             String resourceKey = entry.getKey();
             List<Long> inputIdsForResource = entry.getValue();
-
             // 获取该资源下任务按pendingOrder排序的ID列表
             List<Long> sortedByPendingOrder = resourceGroups.get(resourceKey).stream()
                     .sorted(Comparator.comparingInt(Task::getPendingOrder))
                     .map(Task::getId)
                     .toList();
-
             // 校验传入的顺序是否与pendingOrder一致
             if (!inputIdsForResource.equals(sortedByPendingOrder)) {
                 throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{},
@@ -908,6 +909,7 @@ public class TaskServiceImpl implements ITaskService {
                 case "double":
                 case "decimal":
                 case "float":
+                case "dynamicselect":
                     // 统一使用 Double 进行数值比较
                     return Double.parseDouble(valueStr);
 

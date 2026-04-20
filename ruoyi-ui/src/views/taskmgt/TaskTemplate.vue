@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 搜索栏 - 实时筛选，无重置按钮 -->
+    <!-- 搜索栏 -->
     <el-card class="search-card">
       <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="80px">
         <el-form-item label="模板名称" prop="name">
@@ -114,7 +114,7 @@
           </template>
         </el-table-column>
         <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
-        <!-- 操作列改为图标按钮 -->
+        <!-- 操作列 -->
         <el-table-column label="操作" width="220" fixed="right" align="center">
           <template slot-scope="scope">
             <!-- 查看 -->
@@ -234,10 +234,10 @@
           </el-button>
           <div v-for="(field, index) in form.fields" :key="index" class="field-item">
             <el-row :gutter="10">
-              <el-col :span="6">
+              <el-col :span="5">
                 <el-input v-model="field.id" placeholder="字段ID（英文）" size="small" />
               </el-col>
-              <el-col :span="6">
+              <el-col :span="5">
                 <el-input v-model="field.label" placeholder="字段标签" size="small" />
               </el-col>
               <el-col :span="4">
@@ -247,6 +247,7 @@
                   <el-option label="日期" value="date" />
                   <el-option label="时间" value="time" />
                   <el-option label="下拉" value="select" />
+                  <el-option label="动态下拉" value="dynamicSelect" />
                   <el-option label="位置" value="location" />
                   <el-option label="图片" value="image" />
                   <el-option label="音频" value="audio" />
@@ -280,6 +281,22 @@
                 </el-select>
               </el-col>
             </el-row>
+            <!-- 动态下拉额外配置 -->
+            <el-row v-if="field.type === 'dynamicSelect'" :gutter="10" style="margin-top:5px">
+              <el-col :span="12">
+                <el-select v-model="field.apiId" placeholder="选择关联API" size="small" style="width:100%">
+                  <el-option
+                    v-for="api in currentAppApis"
+                    :key="api.id"
+                    :label="api.apiName"
+                    :value="api.id"
+                  />
+                </el-select>
+              </el-col>
+              <el-col :span="12">
+                <el-input v-model="field.paramKey" placeholder="参数Key（用于匹配动态选项）" size="small" />
+              </el-col>
+            </el-row>
           </div>
           <div v-if="form.fields.length === 0" class="empty-tip">暂无字段定义，请点击"添加字段"</div>
         </div>
@@ -304,7 +321,7 @@
           </div>
         </template>
 
-        <!-- 新增：模板约束规则 -->
+        <!-- 模板约束规则 -->
         <el-divider content-position="left">模板约束规则</el-divider>
         <div class="rules-container">
           <div class="rules-tip">
@@ -720,10 +737,13 @@
           <el-table-column prop="required" label="必填" width="60">
             <template slot-scope="scope">{{ scope.row.required ? '是' : '否' }}</template>
           </el-table-column>
-          <el-table-column label="配置" min-width="150">
+          <el-table-column label="配置" min-width="200">
             <template slot-scope="scope">
               <span v-if="['image','audio','video','file'].includes(scope.row.type)">
                 最多{{ scope.row.maxCount }}个，≤{{ scope.row.maxSize }}MB
+              </span>
+              <span v-else-if="scope.row.type === 'dynamicSelect'">
+                API: {{ scope.row.apiId ? '已配置' : '未配置' }}，Key: {{ scope.row.paramKey || '-' }}
               </span>
             </template>
           </el-table-column>
@@ -767,7 +787,6 @@ export default {
   name: 'TaskTemplate',
   data() {
     return {
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -780,20 +799,16 @@ export default {
       templateList: [],
       total: 0,
       robotGroupOptions: [],
-      // 应用列表
       appList: [],
-      // 表单对话框
       dialog: {
         visible: false,
         title: '',
         mode: 'create'
       },
-      // 当前选中的应用的API和参数
       currentAppApis: [],
       currentAppParams: [],
       currentAppName: '',
       currentAppObj: null,
-      // 表单数据
       form: {
         id: null,
         name: '',
@@ -810,7 +825,6 @@ export default {
         robotGroupIds: [{required: true, message: '请选择适用机器人组', trigger: 'change'}]
       },
       submitLoading: false,
-      // 查看详情对话框
       viewDialog: {
         visible: false,
         data: null,
@@ -835,7 +849,6 @@ export default {
     this.debouncedQuery.cancel()
   },
   methods: {
-    // 获取应用列表
     async getAppList() {
       try {
         const res = await listAppLibrary({pageSize: 1000, enabled: 1})
@@ -846,7 +859,6 @@ export default {
       }
     },
 
-    // 应用选择变更
     async onAppChange(appId) {
       if (!appId) {
         this.currentAppApis = []
@@ -880,12 +892,10 @@ export default {
       }
     },
 
-    // 获取API详情
     getApi(apiId) {
       return this.currentAppApis.find(api => api.id === apiId)
     },
 
-    // API选择变更
     onApiChange(step) {
       const api = this.getApi(step.apiId)
       if (!api || !api.paramsSchema) {
@@ -921,7 +931,6 @@ export default {
       }
     },
 
-    // 约束规则相关方法
     addRule() {
       this.form.rules.push({
         name: '',
@@ -970,7 +979,6 @@ export default {
       return expr
     },
 
-    // 确保数组
     ensureArray(ids) {
       if (!ids) return []
       if (Array.isArray(ids)) return ids
@@ -978,7 +986,6 @@ export default {
       return [ids]
     },
 
-    // 获取机器人组
     async getRobotGroups() {
       try {
         const res = await listGroups()
@@ -989,7 +996,6 @@ export default {
       }
     },
 
-    // 获取模板列表
     async getList() {
       this.loading = true
       try {
@@ -1066,6 +1072,7 @@ export default {
         'date': '日期',
         'time': '时间',
         'select': '下拉',
+        'dynamicSelect': '动态下拉',
         'location': '位置',
         'image': '图片',
         'audio': '音频',
@@ -1142,21 +1149,16 @@ export default {
           }
         }
 
-        // 解析约束规则
         let rules = []
         if (data.rules && Array.isArray(data.rules)) {
           rules = data.rules.map(rule => {
-            // 尝试解析已有的expression（如果前端配置丢失了）
             if (rule.expression && !rule.leftValue) {
-              // 简单解析：form_data.X <= app_param.Y 或 form_data.X <= 100
               const match = rule.expression.match(/(form_data|app_param)\.(\w+)\s*(<=|>=|<|>|==|!=)\s*(.+)/)
               if (match) {
                 const [, leftPrefix, leftVal, operator, rightPart] = match
                 rule.leftType = leftPrefix === 'form_data' ? 'form_field' : 'app_param'
                 rule.leftValue = leftVal
                 rule.operator = operator
-
-                // 解析右侧
                 const rightMatch = rightPart.match(/(form_data|app_param)\.(\w+)/)
                 if (rightMatch) {
                   rule.rightType = rightMatch[1] === 'form_data' ? 'form_field' : 'app_param'
@@ -1261,7 +1263,6 @@ export default {
       this.$refs.formRef.validate(async (valid) => {
         if (!valid) return
 
-        // 验证步骤配置
         for (let i = 0; i < this.form.steps.length; i++) {
           const step = this.form.steps[i]
           if (!step.name) {
@@ -1282,7 +1283,6 @@ export default {
           }
         }
 
-        // 验证并构建约束规则
         const rulesForSubmit = []
         for (let i = 0; i < this.form.rules.length; i++) {
           const rule = this.form.rules[i]
@@ -1474,7 +1474,6 @@ export default {
   margin-top: 4px;
 }
 
-/* 操作按钮样式优化 */
 .el-button [class*="fas"] {
   font-size: 14px;
 }
@@ -1490,7 +1489,6 @@ export default {
   margin-bottom: 5px;
 }
 
-/* 新增样式 */
 .compact-form-item {
   margin-bottom: 0;
 }

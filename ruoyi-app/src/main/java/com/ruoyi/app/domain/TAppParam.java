@@ -26,6 +26,9 @@ public class TAppParam extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String appId;
 
+    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+    private Long apiId;
+
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String paramKey;
@@ -46,6 +49,12 @@ public class TAppParam extends BaseEntity
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private String validationRule;
 
+    /**'INPUT-用户输入, DYNAMIC-动态列表, FIXED-固定值'*/
+    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+    private String valueSource;
+
+    @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
+    private String dynamicConfig;
     /** $column.columnComment */
     @Excel(name = "${comment}", readConverterExp = "$column.readConverterExp()")
     private Date createdAt;
@@ -120,6 +129,17 @@ public class TAppParam extends BaseEntity
         return validationRule;
     }
 
+    public void setValueSource(String valueSource){this.valueSource=valueSource;}
+
+    public String getValueSource(){return valueSource;}
+
+    public void setDynamicConfig(String dynamicConfig){this.dynamicConfig=dynamicConfig;}
+
+    public String getDynamicConfig(){return dynamicConfig;}
+    public void setApiId(Long apiId) {
+        this.apiId=apiId;
+    }
+    public Long getApiId(){return apiId;}
     public void setCreatedAt(Date createdAt) 
     {
         this.createdAt = createdAt;
@@ -135,12 +155,17 @@ public class TAppParam extends BaseEntity
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("appId", getAppId())
+            .append("apiId",getApiId())
             .append("paramKey", getParamKey())
             .append("paramName", getParamName())
             .append("paramType", getParamType())
             .append("defaultValue", getDefaultValue())
             .append("validationRule", getValidationRule())
+            .append("valueSource",getValueSource())
+            .append("dynamicConfig",getDynamicConfig())
             .append("createdAt", getCreatedAt())
             .toString();
     }
+
+
 }

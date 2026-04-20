@@ -60,9 +60,9 @@ public class StepRepository {
     /**
      * 构成满血的TaskStep对象
      *
-     * @param po       Task Po 对象
+     * @param po       TaskStep Po 对象
      * @param redisKey redis key
-     * @return 满血的Task对象
+     * @return 满血的TaskStep对象
      */
     private TaskStep build(TaskStepPo po, Optional<String> redisKey) {
         if (Objects.nonNull(po)) {

@@ -1,9 +1,6 @@
 package com.ruoyi.taskmgt.invoker.dto;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -11,6 +8,8 @@ import java.util.List;
 @Builder
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RobotParamDef {
     private String name;
     private String type;        // "select", "number", "string"

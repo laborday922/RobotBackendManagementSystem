@@ -906,25 +906,50 @@ export default {
       try {
         const schema = JSON.parse(api.paramsSchema)
         let params = []
+
+        // 兼容数组格式（旧版）和对象格式（新版）
         if (Array.isArray(schema)) {
-          params = schema
+          params = schema.map(item => ({
+            name: item.name,
+            label: item.label || item.name,
+            type: item.type || 'string',
+            required: item.required || false,
+            valueSource: item.valueSource || 'INPUT',
+            dynamicConfig: item.dynamicConfig || null
+          }))
         } else if (typeof schema === 'object') {
           params = Object.keys(schema).map(key => ({
             name: key,
-            label: schema[key].label || key,
+            label: schema[key].description || key,
             type: schema[key].type || 'string',
-            required: schema[key].required || false
+            required: schema[key].required || false,
+            valueSource: schema[key].valueSource || 'INPUT',
+            dynamicConfig: schema[key].dynamicConfig || null
           }))
         }
 
-        step.paramMappings = params.map(param => ({
-          paramName: param.name || param.paramName || param.key,
-          paramLabel: param.label || param.paramName || param.name,
-          paramType: param.type || param.paramType || 'string',
-          required: param.required || false,
-          sourceType: 'field',
-          sourceValue: ''
-        }))
+        step.paramMappings = params.map(param => {
+          // 根据参数的值来源，智能推荐 sourceType
+          let defaultSourceType = 'field'
+          if (param.valueSource === 'APP_PARAM') {
+            defaultSourceType = 'app_param'
+          } else if (param.valueSource === 'FIXED') {
+            defaultSourceType = 'fixed'
+          }
+          // 如果是 DYNAMIC 或 INPUT，默认使用表单字段
+
+          return {
+            paramName: param.name,
+            paramLabel: param.label,
+            paramType: param.type,
+            required: param.required,
+            sourceType: defaultSourceType,
+            sourceValue: '',
+            // 保存原始配置（可选，用于后续扩展）
+            valueSource: param.valueSource,
+            dynamicConfig: param.dynamicConfig
+          }
+        })
       } catch (e) {
         console.warn('解析paramsSchema失败', e)
         step.paramMappings = []

@@ -142,7 +142,7 @@ public class StepExecutionService {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    private Long resolveRobotId(Task task, TaskStep step) {
+    Long resolveRobotId(Task task, TaskStep step) {
         if (task.getIsGroupTask() == 0) {
             return task.getRobotId();
         }

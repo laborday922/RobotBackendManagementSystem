@@ -41,7 +41,7 @@ CREATE TABLE `t_app_api` (
 
 LOCK TABLES `t_app_api` WRITE;
 /*!40000 ALTER TABLE `t_app_api` DISABLE KEYS */;
-INSERT INTO `t_app_api` (`id`, `app_id`, `api_key`, `api_name`, `description`, `params_schema`, `created_at`) VALUES (1,'APP001','robot.move','机器人移动','控制机器人移动到指定目标位置','[{\"name\": \"target\", \"type\": \"string\", \"required\": true}, {\"name\": \"x\", \"type\": \"number\", \"required\": true}, {\"name\": \"y\", \"type\": \"number\", \"required\": true}]','2026-03-28 18:00:25'),(2,'APP001','robot.navigate','机器人导航','控制机器人导航至指定目标点','{\"speed\": {\"type\": \"number\", \"required\": false, \"description\": \"移动速度\"}, \"weight\": {\"type\": \"number\", \"required\": true, \"description\": \"载重\"}, \"position\": {\"type\": \"string\", \"required\": true, \"description\": \"目标位置ID\"}}','2026-04-21 01:22:43');
+INSERT INTO `t_app_api` (`id`, `app_id`, `api_key`, `api_name`, `description`, `params_schema`, `created_at`) VALUES (1,'APP001','robot.move','机器人移动','控制机器人移动到指定目标位置','[{\"name\": \"target\", \"type\": \"string\", \"required\": true}, {\"name\": \"x\", \"type\": \"number\", \"required\": true}, {\"name\": \"y\", \"type\": \"number\", \"required\": true}]','2026-03-28 18:00:25'),(2,'APP001','robot.navigate','机器人导航','控制机器人导航至指定目标点','{\"speed\": {\"type\": \"number\", \"required\": false, \"description\": \"移动速度\", \"valueSource\": \"INPUT\", \"defaultValue\": 1.0}, \"weight\": {\"type\": \"number\", \"required\": true, \"description\": \"载重\", \"valueSource\": \"INPUT\"}, \"position\": {\"type\": \"number\", \"required\": true, \"description\": \"目标位置ID\", \"valueSource\": \"DYNAMIC\", \"dynamicConfig\": {\"listKey\": \"id\", \"dataSource\": \"ROBOT_POSITION\", \"displayKey\": \"name\", \"refreshOnOpen\": true}}}','2026-04-21 01:22:43');
 /*!40000 ALTER TABLE `t_app_api` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -114,17 +114,14 @@ DROP TABLE IF EXISTS `t_app_param`;
 CREATE TABLE `t_app_param` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `app_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `api_id` bigint DEFAULT NULL COMMENT '关联的API ID（NULL表示应用级能力参数）',
   `param_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `param_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `param_type` enum('number','string','boolean','enum') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `default_value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
   `validation_rule` json DEFAULT NULL,
-  `value_source` varchar(20) DEFAULT 'INPUT' COMMENT '参数值来源：INPUT-用户输入，DYNAMIC-动态列表，FIXED-固定值',
-  `dynamic_config` json DEFAULT NULL COMMENT '动态数据源配置，例如：{"dataSource":"ROBOT_POSITION"}',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_app_param` (`app_id`,`api_id`,`param_key`)
+  UNIQUE KEY `uk_app_param` (`app_id`,`param_key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -134,7 +131,7 @@ CREATE TABLE `t_app_param` (
 
 LOCK TABLES `t_app_param` WRITE;
 /*!40000 ALTER TABLE `t_app_param` DISABLE KEYS */;
-INSERT INTO `t_app_param` (`id`, `app_id`, `api_id`, `param_key`, `param_name`, `param_type`, `default_value`, `validation_rule`, `value_source`, `dynamic_config`, `created_at`) VALUES (2,'APP001',3,'max_speed','最大速度','number','1.3','{\"max\": 1.5, \"min\": 0.5}','FIXED',NULL,'2026-04-19 22:45:56'),(3,'APP001',2,'position','目标位置','string',NULL,NULL,'DYNAMIC','{\"listKey\": \"id\", \"dataSource\": \"ROBOT_POSITION\", \"displayKey\": \"name\", \"refreshOnOpen\": true}','2026-04-19 22:45:56'),(4,'APP001',2,'speed','移动速度','number','1.0','{\"max\": 1.5, \"min\": 0.5}','INPUT',NULL,'2026-04-19 22:45:56'),(5,'APP001',2,'max_load_weight','最大载重','number','50',NULL,'INPUT',NULL,'2026-04-21 01:05:14');
+INSERT INTO `t_app_param` (`id`, `app_id`, `param_key`, `param_name`, `param_type`, `default_value`, `validation_rule`, `created_at`) VALUES (2,'APP001','max_speed','最大速度','number','1.3','{\"max\": 1.5, \"min\": 0.5}','2026-04-19 22:45:56'),(4,'APP001','speed','移动速度','number','1.0','{\"max\": 1.5, \"min\": 0.5}','2026-04-19 22:45:56'),(5,'APP001','max_load_weight','最大载重','number','50',NULL,'2026-04-21 01:05:14');
 /*!40000 ALTER TABLE `t_app_param` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -147,4 +144,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-21  2:58:43
+-- Dump completed on 2026-04-21  9:58:45

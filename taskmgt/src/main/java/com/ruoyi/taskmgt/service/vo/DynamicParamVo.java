@@ -1,5 +1,8 @@
 package com.ruoyi.taskmgt.service.vo;
+import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+
 import java.util.List;
 
 @Data

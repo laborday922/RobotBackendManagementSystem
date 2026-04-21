@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/taskmgt/callback")
+@RequestMapping("/taskmgt")
 @RequiredArgsConstructor
 public class RobotCallbackController {
 
@@ -20,7 +20,7 @@ public class RobotCallbackController {
      * @param callbackData 回调数据
      * @return 响应
      */
-    @PostMapping("/robot")
+    @PostMapping("/callback/robot")
     public ResponseEntity<Void> receiveRobotCallback(@RequestBody RobotCallbackData callbackData) {
         String traceId = callbackData.getTraceId();
         log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());

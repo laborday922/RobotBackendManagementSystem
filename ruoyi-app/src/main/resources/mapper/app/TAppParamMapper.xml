@@ -7,20 +7,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="TAppParam" id="TAppParamResult">
         <result property="id"    column="id"    />
         <result property="appId"    column="app_id"    />
-        <result property="apiId"    column="api_id"    />
         <result property="paramKey"    column="param_key"    />
         <result property="paramName"    column="param_name"    />
         <result property="paramType"    column="param_type"    />
         <result property="defaultValue"    column="default_value"    />
         <result property="validationRule"    column="validation_rule"    />
-        <result property="valueSource"  column="value_source" />
-        <result property="dynamicConfig" column="dynamic_config" />
         <result property="createdAt"    column="created_at"    />
     </resultMap>
 
     <sql id="selectTAppParamVo">
-        select id, app_id, api_id, param_key, param_name, param_type,
-               default_value, validation_rule, value_source, dynamic_config, created_at
+        select id, app_id, param_key, param_name, param_type,
+               default_value, validation_rule, created_at
         from t_app_param
     </sql>
 
@@ -28,10 +25,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectTAppParamVo"/>
         <where>
             <if test="appId != null and appId != ''"> and app_id = #{appId}</if>
-            <if test="apiId != null"> and api_id = #{apiId}</if>
             <if test="paramKey != null and paramKey != ''"> and param_key = #{paramKey}</if>
             <if test="paramName != null and paramName != ''"> and param_name like concat('%', #{paramName}, '%')</if>
-            <if test="valueSource != null and valueSource != ''"> and value_source = #{valueSource}</if>
         </where>
     </select>
 
@@ -44,26 +39,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into t_app_param
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="appId != null and appId != ''">app_id,</if>
-            <if test="apiId != null">api_id,</if>
             <if test="paramKey != null and paramKey != ''">param_key,</if>
             <if test="paramName != null and paramName != ''">param_name,</if>
             <if test="paramType != null and paramType != ''">param_type,</if>
             <if test="defaultValue != null">default_value,</if>
             <if test="validationRule != null">validation_rule,</if>
-            <if test="valueSource != null">value_source,</if>
-            <if test="dynamicConfig != null">dynamic_config,</if>
             <if test="createdAt != null">created_at,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="appId != null and appId != ''">#{appId},</if>
-            <if test="apiId != null">#{apiId},</if>
             <if test="paramKey != null and paramKey != ''">#{paramKey},</if>
             <if test="paramName != null and paramName != ''">#{paramName},</if>
             <if test="paramType != null and paramType != ''">#{paramType},</if>
             <if test="defaultValue != null">#{defaultValue},</if>
             <if test="validationRule != null">#{validationRule},</if>
-            <if test="valueSource != null">#{valueSource},</if>
-            <if test="dynamicConfig != null">#{dynamicConfig},</if>
             <if test="createdAt != null">#{createdAt},</if>
         </trim>
     </insert>
@@ -72,14 +61,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update t_app_param
         <trim prefix="SET" suffixOverrides=",">
             <if test="appId != null and appId != ''">app_id = #{appId},</if>
-            <if test="apiId != null">api_id = #{apiId},</if>
             <if test="paramKey != null and paramKey != ''">param_key = #{paramKey},</if>
             <if test="paramName != null and paramName != ''">param_name = #{paramName},</if>
             <if test="paramType != null and paramType != ''">param_type = #{paramType},</if>
             <if test="defaultValue != null">default_value = #{defaultValue},</if>
             <if test="validationRule != null">validation_rule = #{validationRule},</if>
-            <if test="valueSource != null">value_source = #{valueSource},</if>
-            <if test="dynamicConfig != null">dynamic_config = #{dynamicConfig},</if>
             <if test="createdAt != null">created_at = #{createdAt},</if>
         </trim>
         where id = #{id}

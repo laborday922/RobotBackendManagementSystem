@@ -1,15 +1,16 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.app.domain.TAppApi;
-import com.ruoyi.app.domain.TAppParam;
 import com.ruoyi.app.service.ITAppApiService;
-import com.ruoyi.app.service.ITAppParamService;
+import com.ruoyi.common.utils.StringUtils;
+import com.ruoyi.taskmgt.domain.bo.ApiParamDef;
 import com.ruoyi.taskmgt.service.vo.DynamicParamVo;
 import com.ruoyi.taskmgt.service.vo.ParamOption;
-import com.ruoyi.taskmgt.service.vo.RobotParamDef;
-import com.ruoyi.taskmgt.service.vo.RobotParamsResponse;
+import com.ruoyi.taskmgt.invoker.dto.RobotParamDef;
+import com.ruoyi.taskmgt.invoker.dto.RobotParamsResponse;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.taskmgt.service.ITaskParamsService;
 import com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler;
@@ -28,44 +29,58 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskParamsServiceImpl implements ITaskParamsService {
     private final TaskRobotWebSocketHandler webSocketHandler;
-    private final ITAppParamService appParamService;
     private final ITAppApiService appApiService;
     private final ObjectMapper objectMapper;
-    /**
-     * 获取指定 API 的所有动态参数及实时选项
-     *
-     * @param apiId   API ID
-     * @param robotId 机器人ID（用于实时查询）
-     */
+    @Override
+    public Map<String, ApiParamDef> getApiParamDefs(Long apiId) {
+        TAppApi api = appApiService.selectTAppApiById(apiId);
+        if (api == null || StringUtils.isBlank(api.getParamsSchema())) {
+            return Collections.emptyMap();
+        }
+        try {
+            return objectMapper.readValue(api.getParamsSchema(),
+                    new TypeReference<Map<String, ApiParamDef>>() {});
+        } catch (JsonProcessingException e) {
+            log.error("解析 API 参数定义失败 apiId={}", apiId, e);
+            return Collections.emptyMap();
+        }
+    }
+
     @Override
     public List<DynamicParamVo> getDynamicParams(Long apiId, Long robotId) {
-        // 查询该 API 下 value_source = 'DYNAMIC' 的参数
-        TAppParam query = new TAppParam();
-        query.setApiId(apiId);
-        query.setValueSource("DYNAMIC");
-        List<TAppParam> dynamicParams = appParamService.selectTAppParamList(query);
-        if (dynamicParams.isEmpty()) {
-            return Collections.emptyList();
-        }
-        // 从机器人获取实时选项（若 robotId 有效）
-        Map<String, List<ParamOption>> robotOptionsMap = Collections.emptyMap();
-        if (robotId != null && webSocketHandler.isOnline(robotId)) {
-            robotOptionsMap = fetchRobotDynamicOptions(apiId, robotId);
-        }
-        // 组装返回 VO
+        Map<String, ApiParamDef> paramDefs = getApiParamDefs(apiId);
         List<DynamicParamVo> vos = new ArrayList<>();
-        for (TAppParam param : dynamicParams) {
+
+        for (Map.Entry<String, ApiParamDef> entry : paramDefs.entrySet()) {
+            ApiParamDef def = entry.getValue();
+            if (!"DYNAMIC".equals(def.getValueSource())) {
+                continue;
+            }
             DynamicParamVo vo = new DynamicParamVo();
-            vo.setParamId(param.getId());
-            vo.setParamKey(param.getParamKey());
-            vo.setParamName(param.getParamName());
-            vo.setParamType(param.getParamType());
-            List<ParamOption> options = robotOptionsMap.getOrDefault(param.getParamKey(), Collections.emptyList());
-            vo.setOptions(options);
+            vo.setParamKey(entry.getKey());
+            vo.setParamName(def.getDescription());
+            vo.setParamType(def.getType());
+            vo.setRequired(def.getRequired());
+
+            if (robotId != null && webSocketHandler.isOnline(robotId)) {
+                List<ParamOption> options = fetchRobotOptions(robotId, apiId, entry.getKey(), def.getDynamicConfig());
+                vo.setOptions(options);
+            } else {
+                vo.setOptions(Collections.emptyList());
+            }
             vos.add(vo);
         }
         return vos;
     }
+
+    private List<ParamOption> fetchRobotOptions(Long robotId, Long apiId, String paramKey, Map<String, Object> dynamicConfig) {
+        if (robotId == null || !webSocketHandler.isOnline(robotId)) {
+            return Collections.emptyList();
+        }
+        Map<String, List<ParamOption>> allOptions = fetchRobotDynamicOptions(apiId, robotId);
+        return allOptions.getOrDefault(paramKey, Collections.emptyList());
+    }
+
     private Map<String, List<ParamOption>> fetchRobotDynamicOptions(Long apiId, Long robotId) {
         TAppApi api = appApiService.selectTAppApiById(apiId);
         if (api == null) return Collections.emptyMap();

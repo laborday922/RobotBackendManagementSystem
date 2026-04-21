@@ -202,14 +202,15 @@ public class TaskServiceImpl implements ITaskService {
                     }
                 }
             }
-
+            if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)){
+                task.setStatus(Task.NOTSTART);
+            }
             if (StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId()) && Objects.equals(originTask.getStatus(), Task.DISABLED)) {
                 List<TaskStep> steps = retrieveSteps(task);
                 stepService.updateSteps(task.getId(), steps);
             }
             Long tenantId = TenantContext.get();
             if(!isAdmin(tenantId))task.setTenantId(tenantId);
-            task.setStatus(Task.NOTSTART);
             task.setUpdateBy(SecurityUtils.getUsername());
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
@@ -909,10 +910,10 @@ public class TaskServiceImpl implements ITaskService {
                 case "double":
                 case "decimal":
                 case "float":
-                case "dynamicselect":
                     // 统一使用 Double 进行数值比较
                     return Double.parseDouble(valueStr);
 
+                case "dynamicselect":
                 case "integer":
                 case "int":
                 case "long":

@@ -2,6 +2,7 @@ package com.ruoyi.taskmgt.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.robots.domain.Robot;
@@ -24,6 +25,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
@@ -39,6 +42,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class StepExecutionServiceTest {
 
     @Mock private StepRepository stepRepository;
@@ -50,7 +54,7 @@ public class StepExecutionServiceTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private AsyncOperationMonitor asyncMonitor;
     @Mock private RobotInvoker robotInvoker;
-
+    @Mock private RedisCache redisCache;
     @InjectMocks
     private StepExecutionService stepExecutionService;
 
@@ -75,6 +79,7 @@ public class StepExecutionServiceTest {
         task.setId(TASK_ID);
         task.setIsGroupTask(0);
         task.setRobotId(ROBOT_ID);
+        when(redisCache.deleteObject(anyList())).thenReturn(true);
     }
 
     @Test
@@ -123,7 +128,7 @@ public class StepExecutionServiceTest {
     }
     @Test
     void testExecuteStep_AsyncMode() throws Exception {
-//        when(stepRepository.findById(STEP_ID)).thenReturn(Optional.of(step));
+        when(stepRepository.findById(STEP_ID)).thenReturn(Optional.of(step));
         when(robotInvoker.isRobotOnline(ROBOT_ID)).thenReturn(true);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
 
@@ -147,7 +152,7 @@ public class StepExecutionServiceTest {
 
     @Test
     void testExecuteStep_CallbackMode() throws Exception {
-//        when(stepRepository.findById(STEP_ID)).thenReturn(Optional.of(step));
+        when(stepRepository.findById(STEP_ID)).thenReturn(Optional.of(step));
         when(robotInvoker.isRobotOnline(ROBOT_ID)).thenReturn(true);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
 

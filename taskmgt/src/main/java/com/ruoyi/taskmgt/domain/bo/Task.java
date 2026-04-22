@@ -47,7 +47,7 @@ public class Task extends BaseEntity implements Serializable, Stateful {
     /** 是否组任务（1是 0否） */
     private Integer isGroupTask;
 
-    /** 任务时长（分钟） */
+    /** 任务时长（秒） */
     private Integer duration;
 
     /** 任务类型（1定时 2电量 3闲时） */

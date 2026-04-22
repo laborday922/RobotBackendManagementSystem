@@ -16,7 +16,7 @@
       <el-descriptions-item label="机器人组">{{ task.robotGroupName || '-' }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ task.createTime }}</el-descriptions-item>
       <el-descriptions-item label="更新时间">{{ task.updateTime }}</el-descriptions-item>
-      <el-descriptions-item label="任务时长">{{ task.duration }}分钟</el-descriptions-item>
+      <el-descriptions-item label="任务时长">{{ formatDuration(task.duration) }}</el-descriptions-item>
       <el-descriptions-item label="终止原因" v-if="task.terminateReason">{{ task.terminateReason }}</el-descriptions-item>
     </el-descriptions>
 
@@ -188,6 +188,17 @@ export default {
         return value.map(v => v.name || v).join(', ')
       }
       return String(value)
+    },
+    formatDuration(seconds) {
+      if (seconds == null || isNaN(seconds) || seconds < 0) return '0秒';
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      const parts = [];
+      if (hours > 0) parts.push(`${hours}小时`);
+      if (minutes > 0) parts.push(`${minutes}分钟`);
+      if (secs > 0 || parts.length === 0) parts.push(`${secs}秒`);
+      return parts.join('');
     }
   }
 }

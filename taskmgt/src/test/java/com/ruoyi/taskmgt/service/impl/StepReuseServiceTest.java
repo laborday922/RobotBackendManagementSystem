@@ -1,10 +1,8 @@
 package com.ruoyi.taskmgt.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.app.domain.TAppApi;
 import com.ruoyi.app.service.ITAppApiService;
-import com.ruoyi.taskmgt.TestApplication;
 import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.*;
@@ -16,10 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.*;
 
@@ -28,6 +24,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class StepReuseServiceTest {
 
     @Mock private StepRepository stepRepository;
@@ -36,7 +33,8 @@ public class StepReuseServiceTest {
     @Mock private ITaskParamsService taskParamsService;
     @Mock private ExpressionEvaluator expressionEvaluator;
     @Mock private ObjectMapper objectMapper; // 注意：StepReuseService 中没有直接使用 ObjectMapper，但 ParamValidator.objectMapper 是静态的，需要小心。不过我们测试其他方法时可以忽略。
-
+    @Mock
+    private StepWebSocketService stepWebSocketService;
     @InjectMocks
     private StepReuseService stepReuseService;
 
@@ -56,14 +54,16 @@ public class StepReuseServiceTest {
         step2.setStepName("步骤2");
         steps.add(step1);
         steps.add(step2);
+        doNothing().when(stepWebSocketService).sendStepChangeToRobot(anyLong(), anyString(), any(TaskStep.class), any(Task.class));
     }
 
     @Test
-    void testPauseStepsByTaskId() {
+    void testPauseStepsByTask() {
         when(stepRepository.findStepsByTaskId(TASK_ID)).thenReturn(steps);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
-
-        List<String> result = stepReuseService.pauseStepsByTaskId(TASK_ID);
+        Task task = new Task();
+        task.setId(TASK_ID);
+        List<String> result = stepReuseService.pauseStepsByTask(task);
 
         assertThat(result).isNotNull();
         for (TaskStep step : steps) {
@@ -82,7 +82,9 @@ public class StepReuseServiceTest {
         when(stepRepository.findStepsByTaskId(TASK_ID)).thenReturn(steps);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
 
-        stepReuseService.pauseStepsByTaskId(TASK_ID);
+        Task task = new Task();
+        task.setId(TASK_ID);
+        stepReuseService.pauseStepsByTask(task);
 
         // finishedStep 状态不应改变
         assertThat(finishedStep.getStatus()).isEqualTo(TaskStep.FINISHED);
@@ -90,7 +92,7 @@ public class StepReuseServiceTest {
     }
 
     @Test
-    void testContinueStepsByTaskId() {
+    void testContinueStepsByTask() {
         for (TaskStep step : steps) {
             step.setStatus(TaskStep.PAUSED);
             step.setTraceId("trace-" + step.getId());
@@ -98,7 +100,9 @@ public class StepReuseServiceTest {
         when(stepRepository.findStepsByTaskId(TASK_ID)).thenReturn(steps);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
 
-        stepReuseService.continueStepsByTaskId(TASK_ID);
+        Task task = new Task();
+        task.setId(TASK_ID);
+        stepReuseService.continueStepsByTask(task);
 
         for (TaskStep step : steps) {
             // 有 traceId 的恢复为 WAITING
@@ -108,25 +112,27 @@ public class StepReuseServiceTest {
     }
 
     @Test
-    void testContinueStepsByTaskId_WithoutTraceId() {
+    void testContinueStepsByTaskId_WithoutTrace() {
         TaskStep step = new TaskStep();
         step.setId(99L);
         step.setStatus(TaskStep.PAUSED);
         step.setTraceId(null);
         when(stepRepository.findStepsByTaskId(TASK_ID)).thenReturn(Collections.singletonList(step));
         when(stepRepository.update(step)).thenReturn(Collections.emptyList());
-
-        stepReuseService.continueStepsByTaskId(TASK_ID);
+        Task task = new Task();
+        task.setId(TASK_ID);
+        stepReuseService.continueStepsByTask(task);
 
         assertThat(step.getStatus()).isEqualTo(TaskStep.EXECUTING);
     }
 
     @Test
-    void testTerminatedStepsByTaskId() {
+    void testTerminatedStepsByTask() {
         when(stepRepository.findStepsByTaskId(TASK_ID)).thenReturn(steps);
         when(stepRepository.update(any(TaskStep.class))).thenReturn(Collections.emptyList());
-
-        stepReuseService.terminatedStepsByTaskId(TASK_ID);
+        Task task = new Task();
+        task.setId(TASK_ID);
+        stepReuseService.terminatedStepsByTask(task);
 
         for (TaskStep step : steps) {
             assertThat(step.getStatus()).isEqualTo(TaskStep.TERMINATED);

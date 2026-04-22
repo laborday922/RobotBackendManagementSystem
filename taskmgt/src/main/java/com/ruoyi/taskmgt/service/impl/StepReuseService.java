@@ -28,28 +28,30 @@ public class StepReuseService {
     private final ITAppApiService apiService;
     private final ITaskParamsService taskParamsService;
     private final ExpressionEvaluator expressionEvaluator;
-    public List<String> pauseStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+    private final StepWebSocketService stepWebSocketService;
+    public List<String> pauseStepsByTask(Task task) {
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(task.getId());
         List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
             if(Objects.equals(step.getStatus(), TaskStep.EXECUTING)|| Objects.equals(step.getStatus(), TaskStep.WAITING)
                     || Objects.equals(step.getStatus(), TaskStep.WAITING_CALLBACK)){
                 step.setStatus(TaskStep.PAUSED);
                 taskLogService.record(
-                        taskId,
+                        task.getId(),
                         step.getId(),
                         TaskLogEventType.STEP_PAUSE,
                         " 步骤" + step.getStepName() + "已暂停",
                         "system",
                         null);
                 redisKeys.addAll(this.stepRepository.update(step));
+                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"pause",step,task);
             }
         }
         return redisKeys;
     }
 
-    public List<String> continueStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+    public List<String> continueStepsByTask(Task task) {
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(task.getId());
         List<String> redisKeys = new ArrayList<>();
         for (TaskStep step : steps) {
             if (Objects.equals(step.getStatus(), TaskStep.PAUSED)) {
@@ -60,31 +62,36 @@ public class StepReuseService {
                     step.setStatus(TaskStep.EXECUTING);
                 }
                 this.taskLogService.record(
-                        taskId,
+                        task.getId(),
                         step.getId(),
                         TaskLogEventType.STEP_RESUME,
                         " 步骤" + step.getStepName() + "已继续",
                         "system",
                         null);
                 redisKeys.addAll(this.stepRepository.update(step));
+                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"continue",step,task);
             }
         }
         return redisKeys;
     }
 
-    public List<String> terminatedStepsByTaskId(Long taskId) {
-        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(taskId);
+    public List<String> terminatedStepsByTask(Task task) {
+        List<TaskStep> steps = this.stepRepository.findStepsByTaskId(task.getId());
         List<String> redisKeys = new ArrayList<>();
         for(TaskStep step : steps){
-            step.setStatus(TaskStep.TERMINATED);
-            this.taskLogService.record(
-                    taskId,
-                    step.getId(),
-                    TaskLogEventType.STEP_TERMINATE,
-                    " 步骤" + step.getStepName() + "已终止",
-                    "system",
-                    null);
-            redisKeys.addAll(this.stepRepository.update(step));
+            if(Objects.equals(step.getStatus(), TaskStep.EXECUTING) ||Objects.equals(step.getStatus(), TaskStep.PAUSED)||Objects.equals(step.getStatus(), TaskStep.WAITING)||Objects.equals(step.getStatus(), TaskStep.WAITING_CALLBACK)){
+                step.setStatus(TaskStep.TERMINATED);
+                this.taskLogService.record(
+                        task.getId(),
+                        step.getId(),
+                        TaskLogEventType.STEP_TERMINATE,
+                        " 步骤" + step.getStepName() + "已终止",
+                        "system",
+                        null);
+                redisKeys.addAll(this.stepRepository.update(step));
+                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"terminate",step,task);
+            }
+
         }
         return redisKeys;
     }

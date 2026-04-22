@@ -103,17 +103,14 @@ public class AsyncOperationMonitor {
             if (status.isCompleted()) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
                     log.info("异步任务已完成, traceId={}", traceId);
-                    if (completedFlag.compareAndSet(false, true)) {
-                        // 约定：status 为 "SUCCESS" 或 "COMPLETED" 表示成功
-                        boolean success = "SUCCESS".equals(status.getStatus()) || "COMPLETED".equals(status.getStatus());
-                        OperationResult result = OperationResult.builder()
-                                .success(success)
-                                .data(success ? status.getData() : null)
-                                .message(success ? null : status.getErrorMsg())
-                                .build();
-                        eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, context.getStepId(), result));
-                        cancelPolling(traceId);
-                    }
+                    boolean success = "SUCCESS".equals(status.getStatus()) || "COMPLETED".equals(status.getStatus());
+                    OperationResult result = OperationResult.builder()
+                            .success(success)
+                            .data(success ? status.getData() : null)
+                            .message(success ? null : status.getErrorMsg())
+                            .build();
+                    eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, context.getStepId(), result));
+                    cancelPolling(traceId);
                 }
             } else if (isTimeout(context)) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {

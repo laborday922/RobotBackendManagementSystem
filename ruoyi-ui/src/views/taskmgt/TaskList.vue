@@ -380,8 +380,35 @@
           <span class="el-form-item-msg">组任务可由多个机器人协同完成</span>
         </el-form-item>
 
-        <el-form-item label="任务时长(分钟)" prop="duration">
-          <el-input-number v-model="taskForm.duration" :min="1" :max="480" style="width:100%" />
+        <!-- 任务预计时长 - 时分秒选择器 -->
+        <el-form-item label="任务预计时长" prop="durationHMS">
+          <div class="duration-picker">
+            <el-input-number
+              v-model="taskForm.durationHMS.hours"
+              :min="0"
+              :max="23"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">小时</span>
+            <el-input-number
+              v-model="taskForm.durationHMS.minutes"
+              :min="0"
+              :max="59"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">分</span>
+            <el-input-number
+              v-model="taskForm.durationHMS.seconds"
+              :min="0"
+              :max="59"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">秒</span>
+          </div>
+          <div class="el-form-item-msg">默认10分钟（0小时10分0秒）</div>
         </el-form-item>
 
         <!-- 触发类型 -->
@@ -645,7 +672,8 @@ export default {
         formData: {},
         priority: 2,
         isGroupTask: false,
-        duration: 30,
+        // 时长对象：小时、分钟、秒，默认10分钟
+        durationHMS: { hours: 0, minutes: 10, seconds: 0 },
         taskType: 1,
         cronExpression: '',
         scheduledTime: undefined,
@@ -654,6 +682,32 @@ export default {
         robotId: undefined,
         robotGroupId: undefined,
       }
+    },
+    // 将秒数转换为时分秒对象
+    secondsToHMS(totalSeconds) {
+      if (!totalSeconds || totalSeconds < 0) return { hours: 0, minutes: 10, seconds: 0 }
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      return { hours, minutes, seconds }
+    },
+    // 将时分秒对象转换为总秒数
+    hmsToSeconds(hms) {
+      if (!hms) return 600 // 默认10分钟=600秒
+      const hours = parseInt(hms.hours) || 0
+      const minutes = parseInt(hms.minutes) || 0
+      const seconds = parseInt(hms.seconds) || 0
+      return hours * 3600 + minutes * 60 + seconds
+    },
+    // 格式化时长显示（用于详情等场景）
+    formatDuration(seconds) {
+      if (!seconds && seconds !== 0) return '-'
+      const hms = this.secondsToHMS(seconds)
+      const parts = []
+      if (hms.hours > 0) parts.push(`${hms.hours}小时`)
+      if (hms.minutes > 0) parts.push(`${hms.minutes}分`)
+      if (hms.seconds > 0 || parts.length === 0) parts.push(`${hms.seconds}秒`)
+      return parts.join('')
     },
     formatRobotStatus(robot) {
       if (robot.status === 1 && robot.hardwareStatus === 0) return '在线正常'
@@ -823,13 +877,17 @@ export default {
     async handleEdit(row) {
       this.dialog.mode = 'edit'
       this.dialog.title = '修改任务'
+
+      // 将后端传的duration秒转为时分秒
+      const durationHMS = this.secondsToHMS(row.duration)
+
       this.taskForm = {
         id: row.id,
         name: row.name,
         templateId: row.templateId,
         priority: row.priority,
         isGroupTask: row.isGroupTask === 1,
-        duration: row.duration,
+        durationHMS: durationHMS, // 使用转换后的时分秒对象
         taskType: row.taskType,
         cronExpression: row.cronExpression || '',
         scheduledTime: row.scheduledTime,
@@ -1054,6 +1112,10 @@ export default {
         } else {
           if (!this.taskForm.robotId) return this.$message.error('请选择机器人')
         }
+
+        // 将时分秒转换为秒数
+        const durationSeconds = this.hmsToSeconds(this.taskForm.durationHMS)
+
         this.dialog.loading = true
         try {
           const dto = {
@@ -1061,7 +1123,7 @@ export default {
             templateId: this.taskForm.templateId,
             priority: this.taskForm.priority,
             isGroupTask: this.taskForm.isGroupTask ? 1 : 0,
-            duration: this.taskForm.duration,
+            duration: durationSeconds, // 转换为秒传给后端
             taskType: this.taskForm.taskType,
             cronExpression: this.taskForm.cronExpression,
             scheduledTime: this.taskForm.scheduledTime,
@@ -1110,6 +1172,13 @@ export default {
           listLogByTask({taskId:row.id})
         ])
         this.currentTask = taskRes.data
+
+        // 将duration秒转换为时分秒，便于详情组件显示
+        if (this.currentTask.duration !== undefined && this.currentTask.duration !== null) {
+          this.currentTask.durationHMS = this.secondsToHMS(this.currentTask.duration)
+          this.currentTask.durationText = this.formatDuration(this.currentTask.duration)
+        }
+
         if (this.currentTask.formContent) {
           try {
             this.currentTask.formData = JSON.parse(this.currentTask.formContent)
@@ -1200,4 +1269,16 @@ export default {
 .el-button [class*="fas"] { font-size: 14px; }
 .el-table .cell .el-button + .el-button { margin-left: 4px; }
 .dynamic-form-container { max-height: 400px; overflow-y: auto; padding-right: 10px; }
+
+/* 时长选择器样式 */
+.duration-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.duration-label {
+  font-size: 14px;
+  color: #606266;
+  white-space: nowrap;
+}
 </style>

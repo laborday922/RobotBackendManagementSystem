@@ -142,6 +142,7 @@ public class StepRepository {
             return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args,this.messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
         });
         TaskStepPo newPo = CloneFactory.copyNotNull(oldstepPo, step);
+        if(Objects.equals(newPo.getTraceId(), "null"))newPo.setTraceId(null);
         newPo.setUpdateTime(new Date());
         newPo.setUpdateBy(getCurrentUsername());
         try {

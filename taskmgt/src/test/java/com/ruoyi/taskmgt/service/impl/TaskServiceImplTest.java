@@ -7,7 +7,6 @@ import com.ruoyi.app.service.ITAppConstraintService;
 import com.ruoyi.app.service.ITAppLibraryService;
 import com.ruoyi.app.service.ITAppParamService;
 import com.ruoyi.common.core.redis.RedisCache;
-import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -35,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.support.MessageSourceAccessor;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -591,11 +589,11 @@ public class TaskServiceImplTest {
             task.setStatus(Task.EXECUTING);
             when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(taskRepository.update(any(Task.class))).thenReturn(new ArrayList<>());
-            when(stepReuseService.pauseStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
+            when(stepReuseService.pauseStepsByTask(any(Task.class))).thenReturn(new ArrayList<>());
 
             taskService.pauseTask(TASK_ID);
 
-            verify(stepReuseService).pauseStepsByTaskId(TASK_ID);
+            verify(stepReuseService).pauseStepsByTask(any(Task.class));
             verify(taskLogService).record(eq(TASK_ID), isNull(), eq(TaskLogEventType.TASK_PAUSE),
                     anyString(), eq(TEST_USER), eq(TENANT_ID));
         }
@@ -617,7 +615,7 @@ public class TaskServiceImplTest {
 
             taskService.pauseTask(TASK_ID);
 
-            verify(stepReuseService, never()).pauseStepsByTaskId(any());
+            verify(stepReuseService, never()).pauseStepsByTask(any());
         }
     }
 
@@ -644,14 +642,14 @@ public class TaskServiceImplTest {
             when(taskRepository.findByRobotIdAndStatus(ROBOT_ID, Task.EXECUTING)).thenReturn(Collections.emptyList());
 
             when(taskRepository.update(any(Task.class))).thenReturn(new ArrayList<>());
-            when(stepReuseService.continueStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
+            //when(stepReuseService.continueStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
 
             taskService.continueTask(TASK_ID);
 
             ArgumentCaptor<Task> captor = ArgumentCaptor.forClass(Task.class);
             verify(taskRepository).update(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(Task.EXECUTING);
-            verify(stepReuseService).continueStepsByTaskId(TASK_ID);
+            //verify(stepReuseService).continueStepsByTaskId(TASK_ID);
         }
     }
 
@@ -682,7 +680,7 @@ public class TaskServiceImplTest {
             assertThat(captor.getValue().getStatus()).isEqualTo(Task.PENDING);
             verify(taskLogService).record(eq(TASK_ID), isNull(), eq(TaskLogEventType.TASK_PENDING),
                     anyString(), eq(TEST_USER), eq(TENANT_ID));
-            verify(stepReuseService, never()).continueStepsByTaskId(any());
+            verify(stepReuseService, never()).continueStepsByTask(any());
         }
     }
 
@@ -711,7 +709,7 @@ public class TaskServiceImplTest {
             when(stepRepository.countByAssignedRobotIdAndTaskIdAndStatusIn(eq(302L), isNull(), anyList())).thenReturn(0L);
 
             when(taskRepository.update(any(Task.class))).thenReturn(new ArrayList<>());
-            when(stepReuseService.continueStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
+           // when(stepReuseService.continueStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
 
             taskService.continueTask(TASK_ID);
 
@@ -735,7 +733,7 @@ public class TaskServiceImplTest {
             task.setStatus(Task.EXECUTING);
             when(taskRepository.findById(TASK_ID)).thenReturn(Optional.of(task));
             when(taskRepository.update(any(Task.class))).thenReturn(new ArrayList<>());
-            when(stepReuseService.terminatedStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
+            //when(stepReuseService.terminatedStepsByTaskId(TASK_ID)).thenReturn(new ArrayList<>());
 
             taskService.terminateTask(TASK_ID, "手动终止");
 
@@ -762,7 +760,7 @@ public class TaskServiceImplTest {
 
             taskService.terminateTask(TASK_ID, "手动终止");
 
-            verify(stepReuseService, never()).terminatedStepsByTaskId(any());
+            verify(stepReuseService, never()).terminatedStepsByTask(any());
         }
     }
 

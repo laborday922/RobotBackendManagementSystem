@@ -27,7 +27,6 @@ import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.domain.bo.Template;
 import com.ruoyi.taskmgt.service.IStepService;
 import com.ruoyi.taskmgt.service.ITaskService;
-import com.ruoyi.taskmgt.service.trigger.TaskTrigger;
 import com.ruoyi.taskmgt.service.vo.RobotStatus;
 import com.ruoyi.taskmgt.service.vo.TaskAbnormalVo;
 import com.ruoyi.taskmgt.service.vo.TaskVo;
@@ -206,7 +205,10 @@ public class TaskServiceImpl implements ITaskService {
                 task.setStatus(Task.NOTSTART);
                 List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
                 for(TaskStep step:steps){
-                    if(step.getStatus()!=TaskStep.NOTSTART)step.setStatus(TaskStep.NOTSTART);
+                    if(!Objects.equals(step.getStatus(), TaskStep.NOTSTART)){
+                        step.setStatus(TaskStep.NOTSTART);
+                        step.setTraceId("null");
+                    }
                 }
                 stepService.updateSteps(task.getId(), steps);
             }
@@ -438,7 +440,7 @@ public class TaskServiceImpl implements ITaskService {
                 SecurityUtils.getUsername(),
                 tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
-            List<String> stepRedisKeys = this.stepReuseService.pauseStepsByTaskId(id);
+            List<String> stepRedisKeys = this.stepReuseService.pauseStepsByTask(task);
             redisKeys.addAll(stepRedisKeys);
         }
         this.redisUtil.deleteObject(redisKeys);
@@ -472,7 +474,7 @@ public class TaskServiceImpl implements ITaskService {
             this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
                     "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId);
             if (StringUtils.isNotNull(task.getTemplateId())) {
-                List<String> stepRedisKeys = this.stepReuseService.continueStepsByTaskId(id);
+                List<String> stepRedisKeys = this.stepReuseService.continueStepsByTask(task);
                 redisKeys.addAll(stepRedisKeys);
             }
         }
@@ -534,7 +536,7 @@ public class TaskServiceImpl implements ITaskService {
                 SecurityUtils.getUsername(),
                 tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
-            List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTaskId(id);
+            List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTask(task);
             redisKeys.addAll(stepRedisKeys);
         }
         this.redisUtil.deleteObject(redisKeys);

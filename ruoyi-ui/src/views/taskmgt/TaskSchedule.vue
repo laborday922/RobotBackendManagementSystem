@@ -316,7 +316,7 @@
           <el-descriptions-item label="机器人组">{{ currentTask.robotGroupName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ currentTask.createTime }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ currentTask.updateTime }}</el-descriptions-item>
-          <el-descriptions-item label="任务时长">{{ currentTask.duration }}分钟</el-descriptions-item>
+          <el-descriptions-item label="任务时长">{{ formatDuration(currentTask.duration) }}分钟</el-descriptions-item>
           <el-descriptions-item label="终止原因" v-if="currentTask.terminateReason">{{
               currentTask.terminateReason
             }}
@@ -982,6 +982,17 @@ export default {
       } finally {
         this.detailLoading = false
       }
+    },
+    formatDuration(seconds) {
+      if (seconds == null || isNaN(seconds) || seconds < 0) return '0秒';
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      const parts = [];
+      if (hours > 0) parts.push(`${hours}小时`);
+      if (minutes > 0) parts.push(`${minutes}分钟`);
+      if (secs > 0 || parts.length === 0) parts.push(`${secs}秒`);
+      return parts.join('');
     },
     getStatusText(status) {
       const map = {3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止'}

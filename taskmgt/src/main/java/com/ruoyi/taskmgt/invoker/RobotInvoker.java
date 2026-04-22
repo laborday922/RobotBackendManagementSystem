@@ -1,4 +1,5 @@
 package com.ruoyi.taskmgt.invoker;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskRequest;
@@ -79,5 +80,49 @@ public class RobotInvoker {
      */
     public boolean isRobotOnline(Long robotId) {
         return webSocketHandler.isOnline(robotId);
+    }
+
+    /**
+     * 发送控制指令（同步等待确认）
+     */
+    public boolean sendCommand(Long robotId, Map<String, Object> command, long timeoutSeconds) {
+        if (!webSocketHandler.isOnline(robotId)) {
+            log.warn("机器人 {} 不在线，无法发送控制指令", robotId);
+            return false;
+        }
+        String correlationId = UUID.randomUUID().toString();
+        CompletableFuture<RobotWebSocketMessage> future = webSocketHandler.sendAndWaitRaw(robotId, command, correlationId, timeoutSeconds);
+        try {
+            RobotWebSocketMessage response = future.get(timeoutSeconds, TimeUnit.SECONDS);
+            Object data = response.getData();
+            boolean success = false;
+
+            if (data instanceof Map) {
+                // 直接是 Map 类型
+                Map<?, ?> dataMap = (Map<?, ?>) data;
+                Object successObj = dataMap.get("success");
+                success = Boolean.TRUE.equals(successObj) || "true".equalsIgnoreCase(String.valueOf(successObj));
+            } else if (data != null) {
+                // 非 Map 类型，尝试用 ObjectMapper 转换
+                try {
+                    Map<String, Object> dataMap = objectMapper.readValue(
+                            objectMapper.writeValueAsString(data),
+                            new TypeReference<Map<String, Object>>() {}
+                    );
+                    Object successObj = dataMap.get("success");
+                    success = Boolean.TRUE.equals(successObj) || "true".equalsIgnoreCase(String.valueOf(successObj));
+                } catch (Exception e) {
+                    log.warn("无法解析响应数据中的 success 字段: {}", data, e);
+                }
+            }
+
+            if (!success) {
+                log.warn("机器人 {} 控制指令执行失败: {}", robotId, response.getErrorMsg());
+            }
+            return success;
+        } catch (Exception e) {
+            log.error("发送控制指令失败 robotId={}, command={}", robotId, command, e);
+            return false;
+        }
     }
 }

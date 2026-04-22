@@ -204,6 +204,11 @@ public class TaskServiceImpl implements ITaskService {
             }
             if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)){
                 task.setStatus(Task.NOTSTART);
+                List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+                for(TaskStep step:steps){
+                    if(step.getStatus()!=TaskStep.NOTSTART)step.setStatus(TaskStep.NOTSTART);
+                }
+                stepService.updateSteps(task.getId(), steps);
             }
             if (StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId()) && Objects.equals(originTask.getStatus(), Task.DISABLED)) {
                 List<TaskStep> steps = retrieveSteps(task);

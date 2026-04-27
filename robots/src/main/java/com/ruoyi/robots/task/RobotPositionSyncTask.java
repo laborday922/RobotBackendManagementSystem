@@ -26,6 +26,7 @@ public class RobotPositionSyncTask {
      * 每小时执行一次
      */
     @Scheduled(cron = "0 0 */1 * * ?")
+//    @Scheduled(cron = "0/10 * * * * ?")
     public void syncRobotPositionToDb() {
         log.info("===== 开始每小时同步机器人位置数据到数据库 =====");
 

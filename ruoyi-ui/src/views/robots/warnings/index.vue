@@ -44,8 +44,8 @@
       <el-table-column label="预警类型" align="center" prop="warningType" width="110" show-overflow-tooltip>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.warningType === '0'" type="warning" effect="dark">低电量</el-tag>
-          <el-tag v-else-if="scope.row.warningType === '1'" type="danger" effect="dark">硬件故障</el-tag>
-          <el-tag v-else-if="scope.row.warningType === '2'" type="danger" effect="light">硬件异常</el-tag>
+          <el-tag v-else-if="scope.row.warningType === '1'" type="danger" effect="light">硬件异常</el-tag>
+          <el-tag v-else-if="scope.row.warningType === '2'" type="danger" effect="dark">硬件损坏</el-tag>
           <el-tag v-else-if="scope.row.warningType === '3'" type="info" effect="dark">离线</el-tag>
         </template>
       </el-table-column>
@@ -86,7 +86,7 @@
         </template>
       </el-table-column>
     </el-table>
-    
+
     <pagination
       v-show="total>0"
       :total="total"

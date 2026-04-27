@@ -25,7 +25,6 @@ public class SysReceptionConfigServiceImpl implements ISysReceptionConfigService
     private SysReceptionConfigMapper receptionConfigMapper;
 
     @Autowired(required = false)
-    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     @Override

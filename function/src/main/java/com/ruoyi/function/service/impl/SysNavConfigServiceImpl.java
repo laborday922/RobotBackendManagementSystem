@@ -21,7 +21,6 @@ public class SysNavConfigServiceImpl implements ISysNavConfigService {
     @Autowired
     private SysNavConfigMapper navConfigMapper;
 
-    @Qualifier("robotWebSocketHandler")
     @Autowired(required = false)
 
     private RobotWebSocketHandler webSocketHandler;

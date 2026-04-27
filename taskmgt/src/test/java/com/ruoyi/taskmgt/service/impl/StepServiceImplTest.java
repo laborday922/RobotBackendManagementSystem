@@ -4,6 +4,7 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.taskmgt.TestApplication;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
@@ -16,7 +17,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -26,7 +31,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class StepServiceImplTest {
+public class StepServiceImplTest {
 
     @Mock private TaskRepository taskRepository;
     @Mock private MessageSourceAccessor messageSourceAccessor;

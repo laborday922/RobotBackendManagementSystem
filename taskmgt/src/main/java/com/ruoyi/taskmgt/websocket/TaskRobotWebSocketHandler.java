@@ -1,6 +1,4 @@
 package com.ruoyi.taskmgt.websocket;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.robots.websocket.RobotWebSocketHandler;

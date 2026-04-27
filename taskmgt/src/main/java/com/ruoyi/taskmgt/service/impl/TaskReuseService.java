@@ -57,6 +57,18 @@ public class TaskReuseService {
         } else {
             // 一次性任务，直接完成
             task.setStatus(Task.FINISHED);
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+            Integer duration = 0 ;
+            for (TaskStep step : steps) {
+                Date startTime = step.getStartTime();
+                Date endTime = step.getEndTime();
+                if (startTime != null && endTime != null) {
+                    long diffMillis = endTime.getTime() - startTime.getTime();
+                    int seconds = (int) (diffMillis / 1000);
+                    duration += seconds;
+                }
+            }
+            task.setDuration(duration);
             taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
                     "任务执行完成", "system", null);
         }

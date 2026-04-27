@@ -12,7 +12,6 @@ import javax.transaction.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional
 public class TaskLogReuseService {
     private final TaskLogRepository taskLogRepository;
     @Async

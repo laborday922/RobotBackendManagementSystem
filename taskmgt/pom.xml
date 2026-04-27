@@ -114,5 +114,12 @@
             <artifactId>tyrus-client</artifactId>
             <version>1.17</version>
         </dependency>
+        <!-- Awaitility 用于异步测试 -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.2.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

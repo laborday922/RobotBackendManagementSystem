@@ -15,7 +15,6 @@ import java.util.Date;
 @Service
 @Slf4j
 public class RobotHeartbeatService {
-    @Qualifier("robotWebSocketHandler")
     @Autowired
     private RobotWebSocketHandler webSocketHandler;
     @Autowired

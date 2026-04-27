@@ -36,17 +36,19 @@ CREATE TABLE `sys_mode` (
                             `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                             `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                             `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                            PRIMARY KEY (`mode_id`)
+                            `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                            PRIMARY KEY (`mode_id`),
+                            KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式主表';
 
 -- ----------------------------
 -- Records of sys_mode
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_mode` VALUES (1, '待机模式', 'system', 1, '#95a5a6', 'fas fa-pause-circle', '机器人进入低功耗状态，等待唤醒指令', '1', 128, 15, 1, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 09:21:42');
-INSERT INTO `sys_mode` VALUES (2, '维护模式', 'system', 1, '#f1c40f', 'fas fa-tools', '进行系统维护和调试，暂停所有任务', '1', 89, 20, 2, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:47:07');
-INSERT INTO `sys_mode` VALUES (3, '充电模式', 'system', 1, '#2ecc71', 'fas fa-bolt', '低电量时自动返回充电桩充电', '1', 156, 20, 3, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:49:10');
-INSERT INTO `sys_mode` VALUES (7, '1', 'custom', 2, '#1890ff', 'fa fa-cog', NULL, '1', 0, 0, 0, '0', '', '2026-03-31 09:21:48', '', NULL);
+INSERT INTO `sys_mode` VALUES (1, '待机模式', 'system', 1, '#95a5a6', 'fas fa-pause-circle', '机器人进入低功耗状态，等待唤醒指令', '1', 128, 15, 1, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 09:21:42', 0);
+INSERT INTO `sys_mode` VALUES (2, '维护模式', 'system', 1, '#f1c40f', 'fas fa-tools', '进行系统维护和调试，暂停所有任务', '1', 89, 20, 2, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:47:07', 0);
+INSERT INTO `sys_mode` VALUES (3, '充电模式', 'system', 1, '#2ecc71', 'fas fa-bolt', '低电量时自动返回充电桩充电', '1', 156, 20, 3, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:49:10', 0);
+INSERT INTO `sys_mode` VALUES (7, '1', 'custom', 2, '#1890ff', 'fa fa-cog', NULL, '1', 0, 0, 0, '0', '', '2026-03-31 09:21:48', '', NULL, 0);
 COMMIT;
 
 -- ----------------------------
@@ -70,25 +72,27 @@ CREATE TABLE `sys_mode_param` (
                                   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+                                  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
                                   PRIMARY KEY (`param_id`),
-                                  KEY `idx_mode_id` (`mode_id`)
+                                  KEY `idx_mode_id` (`mode_id`),
+                                  KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式参数表';
 
 -- ----------------------------
 -- Records of sys_mode_param
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_mode_param` VALUES (26, 2, '维护人员权限', 'select', NULL, 'option1', '[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (27, 2, '维护时间', 'number', NULL, '0', NULL, 0, 100, '分钟', 0, '0', '', '2026-03-31 08:47:07', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (28, 2, '警告提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (30, 3, '低电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 08:49:10', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (31, 3, '充电优先级', 'select', NULL, 'option1', '[{\"label\":\"完成任务后充电\",\"value\":\"option1\"},{\"label\":\"立即充电\",\"value\":\"option2\"},{\"label\":\"定时充电\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (32, 3, '充电完成提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (33, 1, '唤醒触发条件', 'select', NULL, 'option1', '[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (34, 1, '唤醒电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 09:21:43', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (35, 1, '低温保护', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (36, 1, '网络保持', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL);
-INSERT INTO `sys_mode_param` VALUES (37, 1, '1', 'string', NULL, '', NULL, 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL);
+INSERT INTO `sys_mode_param` VALUES (26, 2, '维护人员权限', 'select', NULL, 'option1', '[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (27, 2, '维护时间', 'number', NULL, '0', NULL, 0, 100, '分钟', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (28, 2, '警告提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (30, 3, '低电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (31, 3, '充电优先级', 'select', NULL, 'option1', '[{\"label\":\"完成任务后充电\",\"value\":\"option1\"},{\"label\":\"立即充电\",\"value\":\"option2\"},{\"label\":\"定时充电\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (32, 3, '充电完成提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (33, 1, '唤醒触发条件', 'select', NULL, 'option1', '[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (34, 1, '唤醒电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (35, 1, '低温保护', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (36, 1, '网络保持', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (37, 1, '1', 'string', NULL, '', NULL, 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
 COMMIT;
 
 -- ----------------------------
@@ -108,19 +112,21 @@ CREATE TABLE `sys_mode_history` (
                                     `status` varchar(20) DEFAULT 'success' COMMENT '状态(success/warning/danger)',
                                     `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
                                     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+                                    `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
                                     PRIMARY KEY (`history_id`),
                                     KEY `idx_operation_time` (`operation_time`),
                                     KEY `idx_robot_id` (`robot_id`),
-                                    KEY `idx_operation_type` (`operation_type`)
+                                    KEY `idx_operation_type` (`operation_type`),
+                                    KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式切换历史记录表';
 
 -- ----------------------------
 -- Records of sys_mode_history
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_mode_history` VALUES (1, '2026-03-02 20:37:53', 'mode-switch', 1, '机器人A', 1, '待机模式', '切换到待机模式', 'admin', 'success', '', '2026-03-02 20:37:53');
-INSERT INTO `sys_mode_history` VALUES (77, '2026-03-31 09:20:57', 'mode-switch', 2, '小旋2号', 2, '维护模式', '切换到维护模式', 'admin', 'success', '', '2026-03-31 09:20:56');
-INSERT INTO `sys_mode_history` VALUES (78, '2026-04-02 00:50:45', 'emergency_stop', 1, '小旋1号', NULL, NULL, '已对 1 个机器人执行紧急停止操作', 'admin', 'success', '', '2026-04-02 00:50:45');
+INSERT INTO `sys_mode_history` VALUES (1, '2026-03-02 20:37:53', 'mode-switch', 1, '机器人A', 1, '待机模式', '切换到待机模式', 'admin', 'success', '', '2026-03-02 20:37:53', 0);
+INSERT INTO `sys_mode_history` VALUES (77, '2026-03-31 09:20:57', 'mode-switch', 2, '小旋2号', 2, '维护模式', '切换到维护模式', 'admin', 'success', '', '2026-03-31 09:20:56', 0);
+INSERT INTO `sys_mode_history` VALUES (78, '2026-04-02 00:50:45', 'emergency_stop', 1, '小旋1号', NULL, NULL, '已对 1 个机器人执行紧急停止操作', 'admin', 'success', '', '2026-04-02 00:50:45', 0);
 COMMIT;
 
 -- ----------------------------
@@ -145,19 +151,21 @@ CREATE TABLE `sys_mode_schedule` (
                                      `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                      `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                      `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+                                     `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
                                      PRIMARY KEY (`schedule_id`),
                                      KEY `idx_mode_id` (`mode_id`),
-                                     KEY `idx_status` (`status`)
+                                     KEY `idx_status` (`status`),
+                                     KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式排程表';
 
 -- ----------------------------
 -- Records of sys_mode_schedule
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_mode_schedule` VALUES (1, '夜间充电计划', 3, '充电模式', '每天 22:00', 'daily', '2024-01-01', '22:00:00', 2.00, 'paused', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL);
-INSERT INTO `sys_mode_schedule` VALUES (2, '午间待机计划', 1, '待机模式', '工作日 12:00-14:00', 'weekdays', '2024-01-01', '12:00:00', 2.00, 'running', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL);
-INSERT INTO `sys_mode_schedule` VALUES (3, '每周维护计划', 2, '维护模式', '每周一 08:00', 'weekly', '2024-01-01', '08:00:00', 1.00, 'pending', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL);
-INSERT INTO `sys_mode_schedule` VALUES (6, '1', 1, NULL, '2026-04-01 08:00', 'daily', '2026-04-01', '08:00:00', 2.00, 'pending', NULL, NULL, '0', '', '2026-03-31 09:21:16', '', NULL);
+INSERT INTO `sys_mode_schedule` VALUES (1, '夜间充电计划', 3, '充电模式', '每天 22:00', 'daily', '2024-01-01', '22:00:00', 2.00, 'paused', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
+INSERT INTO `sys_mode_schedule` VALUES (2, '午间待机计划', 1, '待机模式', '工作日 12:00-14:00', 'weekdays', '2024-01-01', '12:00:00', 2.00, 'running', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
+INSERT INTO `sys_mode_schedule` VALUES (3, '每周维护计划', 2, '维护模式', '每周一 08:00', 'weekly', '2024-01-01', '08:00:00', 1.00, 'pending', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
+INSERT INTO `sys_mode_schedule` VALUES (6, '1', 1, NULL, '2026-04-01 08:00', 'daily', '2026-04-01', '08:00:00', 2.00, 'pending', NULL, NULL, '0', '', '2026-03-31 09:21:16', '', NULL, 0);
 COMMIT;
 
 -- ----------------------------
@@ -169,24 +177,26 @@ CREATE TABLE `sys_schedule_robot` (
                                       `schedule_id` int NOT NULL COMMENT '排程ID',
                                       `robot_id` int NOT NULL COMMENT '机器人ID',
                                       `robot_name` varchar(100) DEFAULT NULL COMMENT '机器人名称',
+                                      `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
                                       PRIMARY KEY (`id`),
                                       KEY `idx_schedule_id` (`schedule_id`),
-                                      KEY `idx_robot_id` (`robot_id`)
+                                      KEY `idx_robot_id` (`robot_id`),
+                                      KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='排程机器人关联表';
 
 -- ----------------------------
 -- Records of sys_schedule_robot
 -- ----------------------------
 BEGIN;
-INSERT INTO `sys_schedule_robot` VALUES (1, 1, 1, '机器人A');
-INSERT INTO `sys_schedule_robot` VALUES (2, 1, 2, '机器人B');
-INSERT INTO `sys_schedule_robot` VALUES (3, 1, 4, '机器人D');
-INSERT INTO `sys_schedule_robot` VALUES (4, 2, 1, '机器人A');
-INSERT INTO `sys_schedule_robot` VALUES (5, 2, 3, '机器人C');
-INSERT INTO `sys_schedule_robot` VALUES (6, 3, 2, '机器人B');
-INSERT INTO `sys_schedule_robot` VALUES (7, 3, 5, '机器人E');
-INSERT INTO `sys_schedule_robot` VALUES (12, 6, 1, '小旋1号');
-INSERT INTO `sys_schedule_robot` VALUES (13, 6, 2, '小旋2号');
+INSERT INTO `sys_schedule_robot` VALUES (1, 1, 1, '机器人A', 0);
+INSERT INTO `sys_schedule_robot` VALUES (2, 1, 2, '机器人B', 0);
+INSERT INTO `sys_schedule_robot` VALUES (3, 1, 4, '机器人D', 0);
+INSERT INTO `sys_schedule_robot` VALUES (4, 2, 1, '机器人A', 0);
+INSERT INTO `sys_schedule_robot` VALUES (5, 2, 3, '机器人C', 0);
+INSERT INTO `sys_schedule_robot` VALUES (6, 3, 2, '机器人B', 0);
+INSERT INTO `sys_schedule_robot` VALUES (7, 3, 5, '机器人E', 0);
+INSERT INTO `sys_schedule_robot` VALUES (12, 6, 1, '小旋1号', 0);
+INSERT INTO `sys_schedule_robot` VALUES (13, 6, 2, '小旋2号', 0);
 COMMIT;
 
 -- ----------------------------

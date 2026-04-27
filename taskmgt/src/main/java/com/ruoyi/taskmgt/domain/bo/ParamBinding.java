@@ -1,9 +1,11 @@
 package com.ruoyi.taskmgt.domain.bo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ParamBinding {
     @JsonProperty("paramName")
     private String name;        // API 参数名

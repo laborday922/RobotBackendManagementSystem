@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ModeSwitchInvoker {
     @Autowired
-    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     /**

@@ -17,7 +17,6 @@ import java.util.UUID;
 public class ConfigSyncService {
 
     @Autowired(required = false)
-    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     /**

@@ -3,6 +3,7 @@ package com.ruoyi.taskmgt.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.StringUtils;
@@ -20,7 +21,6 @@ import com.ruoyi.taskmgt.loadbalancer.RobotLoadBalancer;
 import com.ruoyi.taskmgt.monitor.AsyncOperationMonitor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -43,6 +43,7 @@ public class StepExecutionService {
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncOperationMonitor asyncMonitor;
     private final RobotInvoker robotInvoker;
+    private final RedisCache redisCache;
 
 //    @Value("${task.callback.base-url:http://localhost:8080}")
 //    private String callbackBaseUrl;
@@ -54,7 +55,7 @@ public class StepExecutionService {
         try {
             step.setStatus(TaskStep.EXECUTING);
             step.setStartTime(new Date());
-            stepRepository.update(step);
+            redisCache.deleteObject(stepRepository.update(step));
 
             taskLogService.record(step.getTaskId(), step.getId(),
                     TaskLogEventType.STEP_START,
@@ -67,13 +68,21 @@ public class StepExecutionService {
                         new String[]{messageSourceAccessor.getMessage("机器人", "未知")},
                         messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
             }
+            sendAndWait(robotId,step);
+        } catch (Exception e) {
+            failStep(step.getId(), e.getMessage());
+            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
+        }
+    }
 
-            if (!robotInvoker.isRobotOnline(robotId)) {
-                throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
-                        new String[]{robotId.toString()},
-                        "机器人不在线");
-            }
-
+    public void sendAndWait(Long robotId,TaskStep step){
+        Long stepId=step.getId();
+        if (!robotInvoker.isRobotOnline(robotId)) {
+            throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
+                    new String[]{robotId.toString()},
+                    "机器人不在线");
+        }
+        try{
             Map<String, Object> params = parseOperationJson(step.getOperationJson());
 
             RobotTaskRequest request = new RobotTaskRequest();
@@ -128,8 +137,8 @@ public class StepExecutionService {
                 default:
                     log.error("步骤{}未知的结果类型: {}", stepId, respMode);
                     failStep(step.getId(), "未知的结果类型: " + respMode);
-            }
-        } catch (Exception e) {
+        }
+        }catch(Exception e){
             log.error("步骤执行异常: {}", stepId, e);
             failStep(step.getId(), e.getMessage());
             eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
@@ -143,7 +152,7 @@ public class StepExecutionService {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    private Long resolveRobotId(Task task, TaskStep step) {
+    Long resolveRobotId(Task task, TaskStep step) {
         if (task.getIsGroupTask() == 0) {
             return task.getRobotId();
         }
@@ -196,6 +205,7 @@ public class StepExecutionService {
             step.setStatus(TaskStep.FINISHED);
             step.setEndTime(new Date());
             step.setResultData(convertToJson(resultData));
+
             stepRepository.update(step);
             taskLogService.record(step.getTaskId(), stepId,
                     TaskLogEventType.STEP_COMPLETE, "步骤执行完成", "system", null);

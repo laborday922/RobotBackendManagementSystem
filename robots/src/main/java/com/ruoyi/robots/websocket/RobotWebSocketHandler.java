@@ -3,6 +3,7 @@ package com.ruoyi.robots.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
+import com.ruoyi.robots.event.RobotConnectedEvent;
 import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
 import com.ruoyi.robots.service.IRobotsService;
 import lombok.Getter;
@@ -27,7 +28,6 @@ import java.util.concurrent.TimeUnit;
  * 负责机器人连接认证、心跳、会话管理、原始消息收发。
  * 子类可继承并覆盖特定消息的处理逻辑。
  */
-@Component
 @Slf4j
 @RequiredArgsConstructor
 public class RobotWebSocketHandler extends TextWebSocketHandler {
@@ -90,6 +90,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robotService.updateRobotStatus(robot);
             sendMessage(session, RobotWebSocketMessage.authSuccess());
             log.info("机器人 {} 认证成功", robotId);
+            eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, true));
         } else {
             log.warn("认证失败，无效robotId: {}", robotId);
             session.close(CloseStatus.BAD_DATA);
@@ -179,6 +180,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robot.setLastHeartbeatTime(new Date(0));
             robotService.updateRobotStatus(robot);
             log.info("机器人 {} 断开连接", robotId);
+            eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, false));
         }
     }
 
@@ -192,6 +194,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robot.setStatus(0);
             robot.setLastHeartbeatTime(new Date(0));
             robotService.updateRobotStatus(robot);
+            eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, false));
         }
         log.error("WebSocket传输错误", exception);
     }

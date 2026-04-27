@@ -43,7 +43,6 @@ public class SysTourServiceImpl implements ISysTourService {
     private ObjectMapper objectMapper;
 
     @Autowired(required = false)
-    @Qualifier("robotWebSocketHandler")
     private RobotWebSocketHandler webSocketHandler;
 
     // ========== 通用配置 ==========

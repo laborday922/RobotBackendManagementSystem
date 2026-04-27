@@ -229,3 +229,10 @@ export function listLogByTask(query = {}){
 //     method: 'get'
 //   })
 // }
+export function getDynamicParams(id, params) {
+    return request({
+        url: '/taskmgt/' + id + "/dynamic-params",
+        method: 'get',
+        params: params
+    })
+}

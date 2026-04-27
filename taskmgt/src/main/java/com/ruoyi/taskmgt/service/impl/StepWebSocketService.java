@@ -26,7 +26,7 @@ public class StepWebSocketService {
 
 
                 try {
-                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId(), "stepId", step.getId());
+                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId());
                     robotInvoker.sendCommand(robotId, cmd, 5);
                 } catch (Exception e) {
                     log.warn("已将管理端步骤状态置为暂停。向机器人发送暂停指令失败: {}", e.getMessage());
@@ -39,7 +39,7 @@ public class StepWebSocketService {
             } break;
             case "continue":{
                 try {
-                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId(), "stepId", step.getId());
+                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId());
                     robotInvoker.sendCommand(robotId, cmd, 5);
                     stepExecutionService.sendAndWait(robotId,step);
                 } catch (Exception e) {
@@ -48,7 +48,7 @@ public class StepWebSocketService {
             }break;
             case "terminate":{
                 try {
-                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId(), "stepId", step.getId());
+                    Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId());
                     robotInvoker.sendCommand(robotId, cmd, 5);
                 } catch (Exception e) {
                     log.warn("已将管理端步骤状态置为终止。向机器人发送终止指令失败: {}", e.getMessage());

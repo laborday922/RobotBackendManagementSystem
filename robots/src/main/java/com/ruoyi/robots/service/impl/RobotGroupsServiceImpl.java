@@ -106,7 +106,7 @@ public class RobotGroupsServiceImpl implements IRobotGroupsService
         {
             Integer count=robotsMapper.countByGroupId(id);
             if(count>0){
-                throw new DeleteNoAllowedException(RobotsConstants.GROUP_NAME_HAS_EXISTED);
+                throw new DeleteNoAllowedException(GROUP_BY_RELATED_BY_ROBOT);
             }
         }
         return robotGroupsMapper.deleteRobotGroupsByIds(ids);

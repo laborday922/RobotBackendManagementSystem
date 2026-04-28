@@ -34,7 +34,7 @@ public class TaskReuseService {
         }
 
         Date nextTime = calculateNextScheduledTime(task);
-        boolean isPeriodic = (task.getTaskType() != null && task.getTaskType() == 1) || StringUtils.isNotBlank(task.getCronExpression());
+        boolean isPeriodic = task.getTaskType() != null && task.getTaskType() == 1 && StringUtils.isNotBlank(task.getCronExpression());
 
         if (isPeriodic && nextTime != null) {
             // 定时任务，重置为未开始状态
@@ -81,7 +81,7 @@ public class TaskReuseService {
         log.info("任务 {} 已完成处理，最终状态: {}", task.getId(), task.getStatus());
     }
 
-    private Date calculateNextScheduledTime(Task task) {
+    public Date calculateNextScheduledTime(Task task) {
         String cron = task.getCronExpression();
         if (cron == null || cron.trim().isEmpty()) {
             return null;

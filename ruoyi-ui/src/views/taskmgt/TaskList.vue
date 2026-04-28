@@ -422,17 +422,19 @@
 
         <!-- 定时任务设置 -->
         <template v-if="taskForm.taskType === 1">
-          <el-form-item label="Cron表达式" prop="cronExpression">
-            <el-input v-model="taskForm.cronExpression" placeholder="如：0 0 9 * * ?" />
-            <div class="el-form-item-msg">留空表示立即执行</div>
-          </el-form-item>
           <el-form-item label="定时开始时间" prop="scheduledTime">
             <el-date-picker
               v-model="taskForm.scheduledTime"
               type="datetime"
-              placeholder="选择开始时间"
+              placeholder="留空表示立即执行"
               style="width:100%"
+              clearable
             />
+            <div class="el-form-item-msg">不填写则默认当前时间，任务提交后立即执行</div>
+          </el-form-item>
+          <el-form-item label="Cron表达式" prop="cronExpression">
+            <el-input v-model="taskForm.cronExpression" placeholder="如：0 0 9 * * ?，留空则根据开始时间自动生成" />
+            <div class="el-form-item-msg">留空将根据开始时间自动生成（一次性执行）</div>
           </el-form-item>
         </template>
 
@@ -881,6 +883,18 @@ export default {
       // 将后端传的duration秒转为时分秒
       const durationHMS = this.secondsToHMS(row.duration)
 
+      // 处理定时任务字段：如果是一次性执行的cron（包含具体日期时间），编辑时清空cron让用户重新设置或保持自动填充
+      let cronExpression = row.cronExpression || ''
+      let scheduledTime = row.scheduledTime
+
+      // 如果是一次性cron表达式（格式：s m H d M ?），编辑时建议清空，让用户选择是否重新定时
+      // 但保留周期性cron（如 0 0 9 * * ?）
+      if (cronExpression && /^\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\?/.test(cronExpression)) {
+        // 这是一次性表达式，编辑时清空，提交时会自动填充新的时间
+        cronExpression = ''
+        scheduledTime = null
+      }
+
       this.taskForm = {
         id: row.id,
         name: row.name,
@@ -889,8 +903,8 @@ export default {
         isGroupTask: row.isGroupTask === 1,
         durationHMS: durationHMS, // 使用转换后的时分秒对象
         taskType: row.taskType,
-        cronExpression: row.cronExpression || '',
-        scheduledTime: row.scheduledTime,
+        cronExpression: cronExpression,
+        scheduledTime: scheduledTime,
         batteryThreshold: row.batteryThreshold,
         idleTime: row.idleTime,
         robotId: row.robotId ? Number(row.robotId) : undefined,
@@ -1099,9 +1113,49 @@ export default {
       }
       return map[type] || '*'
     },
+    /**
+     * 生成一次性执行的cron表达式（基于给定时间或当前时间+2秒）
+     */
+    generateOneTimeCron(date) {
+      const d = date || new Date(Date.now() + 2000) // 默认当前+2秒
+      const seconds = d.getSeconds()
+      const minutes = d.getMinutes()
+      const hours = d.getHours()
+      const day = d.getDate()
+      const month = d.getMonth() + 1
+      return `${seconds} ${minutes} ${hours} ${day} ${month} ?`
+    },
+    /**
+     * 处理定时任务字段自动填充
+     */
+    prepareScheduledFields() {
+      if (this.taskForm.taskType !== 1) return
+
+      // 如果开始时间和cron都为空，表示立即执行
+      if (!this.taskForm.scheduledTime && !this.taskForm.cronExpression) {
+        // 设置为当前时间+2秒，确保不会过期
+        const now = new Date(Date.now() + 2000)
+        this.taskForm.scheduledTime = now
+        // 生成一次性cron表达式
+        //this.taskForm.cronExpression = this.generateOneTimeCron(now)
+      }
+      // 如果开始时间已过期（早于当前时间）
+      else if (this.taskForm.scheduledTime&& !this.taskForm.cronExpression) {
+        const scheduled = new Date(this.taskForm.scheduledTime)
+        const now = new Date()
+        if (scheduled < now) {
+          const newTime = new Date(Date.now() + 2000)
+          this.taskForm.scheduledTime = newTime
+        }
+      }
+    },
     async submitTask() {
       this.$refs.taskFormRef.validate(async (valid) => {
         if (!valid) return
+
+        // 自动处理定时任务字段
+        this.prepareScheduledFields()
+
         if (this.taskForm.isGroupTask) {
           if (!this.taskForm.robotGroupId) return this.$message.error('请选择机器人组')
           const validRobotIds = this.availableRobotsForGroup.map(r => r.id)

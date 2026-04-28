@@ -54,6 +54,7 @@ public class TaskServiceImpl implements ITaskService {
     private final RedisCache redisUtil;
     private final TemplateRepository templateRepository;
     private final StepReuseService stepReuseService;
+    private final TaskReuseService taskReuseService;
     private final IStepService stepService;
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogService;
@@ -76,6 +77,7 @@ public class TaskServiceImpl implements ITaskService {
         if(!isAdmin(tenantId))task.setTenantId(tenantId);
         task.setStatus(Task.NOTSTART);
         task.setRiskLevel(0);
+        if(task.getCronExpression()!=null&&task.getScheduledTime()==null)task.setScheduledTime(taskReuseService.calculateNextScheduledTime(task));
         Task newTask = this.taskRepository.insert(task);
         List<TaskStep> steps = retrieveSteps(newTask);
         stepService.createSteps(newTask.getId(),steps);
@@ -219,6 +221,7 @@ public class TaskServiceImpl implements ITaskService {
             Long tenantId = TenantContext.get();
             if(!isAdmin(tenantId))task.setTenantId(tenantId);
             task.setUpdateBy(SecurityUtils.getUsername());
+            if(task.getCronExpression()!=null&&task.getScheduledTime()==null)task.setScheduledTime(taskReuseService.calculateNextScheduledTime(task));
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
         }

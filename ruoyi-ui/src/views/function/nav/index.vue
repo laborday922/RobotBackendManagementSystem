@@ -215,13 +215,40 @@
     <el-dialog
       :title="dialogTitle"
       :visible.sync="showAddPointDialog"
-      width="500px"
+      width="600px"
       @close="resetPointForm"
     >
       <el-form :model="pointForm" :rules="pointRules" ref="pointForm" label-width="100px">
         <el-form-item label="点位名称" prop="pointName">
           <el-input v-model="pointForm.pointName" placeholder="请输入点位名称" />
         </el-form-item>
+
+        <!-- 点位位置选择 - 点击下拉框时自动从机器人拉取 -->
+        <el-form-item label="点位位置" prop="position">
+          <el-select
+            v-model="selectedPositionId"
+            placeholder="请选择点位位置"
+            clearable
+            filterable
+            style="width: 100%"
+            @focus="loadPositionsFromRobot"
+            @change="onPositionChange"
+            :loading="loadingPositions"
+          >
+            <el-option
+              v-for="pos in positionList"
+              :key="pos.id"
+              :label="pos.name"
+              :value="pos.id"
+            >
+              <span>{{ pos.name }}</span>
+              <span style="float: right; color: #8492a6; font-size: 12px;">
+                坐标: {{ pos.x }}, {{ pos.y }}
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="点位编码" prop="pointCode">
           <el-input v-model="pointForm.pointCode" placeholder="请输入点位编码" />
         </el-form-item>
@@ -233,12 +260,33 @@
             <el-option label="出口点位" value="exit" />
           </el-select>
         </el-form-item>
-        <el-form-item label="X坐标" prop="coordinateX">
-          <el-input-number v-model="pointForm.coordinateX" :precision="2" :step="0.1" placeholder="请输入X坐标" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="Y坐标" prop="coordinateY">
-          <el-input-number v-model="pointForm.coordinateY" :precision="2" :step="0.1" placeholder="请输入Y坐标" style="width: 100%" />
-        </el-form-item>
+
+        <!-- X坐标和Y坐标 -->
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="X坐标" prop="coordinateX">
+              <el-input-number
+                v-model="pointForm.coordinateX"
+                :precision="2"
+                :step="0.1"
+                placeholder="请输入X坐标"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Y坐标" prop="coordinateY">
+              <el-input-number
+                v-model="pointForm.coordinateY"
+                :precision="2"
+                :step="0.1"
+                placeholder="请输入Y坐标"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-form-item label="显示顺序" prop="orderNum">
           <el-input-number v-model="pointForm.orderNum" :min="0" :max="999" placeholder="请输入显示顺序" style="width: 100%" />
         </el-form-item>
@@ -276,7 +324,7 @@
 <script>
 import { getNavConfig, saveNavConfig } from "@/api/function/nav";
 import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
-import { addPoint, updatePoint, deletePoint, getPointVoiceConfig, savePointVoiceConfig, getPointVoiceListByRobot, getPointVoiceListByMap } from "@/api/function/point";
+import { addPoint, updatePoint, deletePoint, getPointVoiceConfig, savePointVoiceConfig, getPointVoiceListByRobot, getPointVoiceListByMap, syncPositionsFromRobot } from "@/api/function/point";
 import { listRobot } from "@/api/mode/robot";
 
 export default {
@@ -338,7 +386,14 @@ export default {
         duringMsg: '',
         afterMsg: ''
       },
-      savingVoice: false
+      savingVoice: false,
+      // 从机器人同步的位置
+      loadingPositions: false,
+      positionList: [],
+      selectedPositionId: null,
+      // 缓存，避免重复请求
+      positionsCache: null,
+      lastRobotId: null
     };
   },
   computed: {
@@ -389,6 +444,9 @@ export default {
           this.selectedRobotId = this.robotList[0].id;
           this.loadMaps();
           this.loadNavConfig();
+          // 机器人切换时清空缓存
+          this.positionsCache = null;
+          this.lastRobotId = null;
         } else {
           this.$message.warning('导览组下没有可用机器人');
         }
@@ -413,6 +471,9 @@ export default {
       this.mapImageUrl = '';
       this.selectedPoint = null;
       this.resetPointVoiceConfig();
+      // 机器人切换时清空缓存
+      this.positionsCache = null;
+      this.lastRobotId = null;
       // 重新加载数据
       this.loadMaps();
       this.loadNavConfig();
@@ -941,6 +1002,64 @@ export default {
       }
     },
 
+    // ==================== 从机器人加载位置 ====================
+
+    // 点击下拉框时加载机器人点位
+    async loadPositionsFromRobot() {
+      // 检查是否有选中的机器人
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        return;
+      }
+
+      // 使用缓存，避免重复请求
+      if (this.positionsCache && this.lastRobotId === this.selectedRobotId) {
+        this.positionList = this.positionsCache;
+        return;
+      }
+
+      this.loadingPositions = true;
+      try {
+        const res = await syncPositionsFromRobot(this.selectedRobotId);
+        console.log('加载位置响应:', res);
+
+        if (res.code === 200 && res.data) {
+          this.positionList = res.data;
+          this.positionsCache = res.data;
+          this.lastRobotId = this.selectedRobotId;
+
+          if (res.data.length === 0) {
+            this.$message.info('机器人没有返回点位数据');
+          } else {
+            this.$message.success(`成功加载 ${res.data.length} 个点位`);
+          }
+        } else {
+          this.$message.error(res.msg || '加载失败');
+          this.positionList = [];
+        }
+      } catch (error) {
+        console.error('加载位置失败:', error);
+        this.$message.error('加载失败：' + (error.message || '未知错误'));
+        this.positionList = [];
+      } finally {
+        this.loadingPositions = false;
+      }
+    },
+
+    // 选择位置后自动填充表单
+    onPositionChange(positionId) {
+      const selectedPos = this.positionList.find(p => p.id === positionId);
+      if (selectedPos) {
+        this.pointForm.pointName = selectedPos.name;
+        this.pointForm.pointCode = selectedPos.code || '';
+        this.pointForm.coordinateX = selectedPos.x !== undefined ? selectedPos.x : null;
+        this.pointForm.coordinateY = selectedPos.y !== undefined ? selectedPos.y : null;
+        this.pointForm.pointType = selectedPos.type || 'normal';
+
+        this.$message.success(`已选择位置：${selectedPos.name}`);
+      }
+    },
+
     // ==================== 点位CRUD方法 ====================
 
     saveNavConfig() {
@@ -985,6 +1104,7 @@ export default {
         status: point.status || '1',
         remark: point.remark || ''
       };
+      this.selectedPositionId = null;
       this.showAddPointDialog = true;
     },
 
@@ -1021,6 +1141,7 @@ export default {
         status: '1',
         remark: ''
       };
+      this.selectedPositionId = null;
       if (this.$refs.pointForm) {
         this.$refs.pointForm.resetFields();
       }
@@ -1463,6 +1584,9 @@ export default {
   font-size: 11px;
   color: #909399;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .point-status {

@@ -34,7 +34,7 @@ export function savePointVoiceConfig(data) {
   })
 }
 
-// 根据机器人ID获取点位播报配置列表（用于机器人端同步）
+// 根据机器人ID获取点位播报配置列表
 export function getPointVoiceListByRobot(robotId) {
   return request({
     url: '/func/point/voice/listByRobot',
@@ -49,6 +49,15 @@ export function getPointVoiceListByMap(mapId) {
     url: '/func/point/voice/listByMap',
     method: 'get',
     params: { mapId: mapId }
+  })
+}
+
+// 从机器人同步点位位置列表
+export function syncPositionsFromRobot(robotId) {
+  return request({
+    url: '/func/point/syncPositionsFromRobot',
+    method: 'get',
+    params: { robotId: robotId }
   })
 }
 

@@ -33,6 +33,19 @@ public class SysPointServiceImpl implements ISysPointService {
     }
 
     @Override
+    public List<SysPoint> selectByMapId(Long mapId) {
+        return sysPointMapper.selectByMapId(mapId);
+    }
+
+    @Override
+    public List<SysPoint> selectByMapIds(List<Long> mapIds) {
+        if (mapIds == null || mapIds.isEmpty()) {
+            return null;
+        }
+        return sysPointMapper.selectByMapIds(mapIds);
+    }
+
+    @Override
     public int insert(SysPoint point) {
         point.setCreateTime(DateUtils.getNowDate());
         point.setTenantId(TenantContext.get());

@@ -45,6 +45,22 @@ public class SysPoint extends BaseEntity {
     /** 租户ID */
     private Long tenantId;
 
+    /** 播报类型(default-全局配置/custom-自定义/none-无播报) */
+    @ApiModelProperty("播报类型(default/custom/none)")
+    private String voiceType;
+
+    /** 出发前播报 */
+    @ApiModelProperty("出发前播报")
+    private String beforeMsg;
+
+    /** 导航中播报 */
+    @ApiModelProperty("导航中播报")
+    private String duringMsg;
+
+    /** 到达后播报 */
+    @ApiModelProperty("到达后播报")
+    private String afterMsg;
+
     // ========== Getters and Setters ==========
 
     public Long getPointId() {
@@ -135,6 +151,38 @@ public class SysPoint extends BaseEntity {
         this.tenantId = tenantId;
     }
 
+    public String getVoiceType() {
+        return voiceType;
+    }
+
+    public void setVoiceType(String voiceType) {
+        this.voiceType = voiceType;
+    }
+
+    public String getBeforeMsg() {
+        return beforeMsg;
+    }
+
+    public void setBeforeMsg(String beforeMsg) {
+        this.beforeMsg = beforeMsg;
+    }
+
+    public String getDuringMsg() {
+        return duringMsg;
+    }
+
+    public void setDuringMsg(String duringMsg) {
+        this.duringMsg = duringMsg;
+    }
+
+    public String getAfterMsg() {
+        return afterMsg;
+    }
+
+    public void setAfterMsg(String afterMsg) {
+        this.afterMsg = afterMsg;
+    }
+
     @Override
     public String toString() {
         return "SysPoint{" +
@@ -149,6 +197,10 @@ public class SysPoint extends BaseEntity {
                 ", orderNum=" + orderNum +
                 ", delFlag='" + delFlag + '\'' +
                 ", tenantId=" + tenantId +
+                ", voiceType='" + voiceType + '\'' +
+                ", beforeMsg='" + beforeMsg + '\'' +
+                ", duringMsg='" + duringMsg + '\'' +
+                ", afterMsg='" + afterMsg + '\'' +
                 ", createBy='" + getCreateBy() + '\'' +
                 ", createTime=" + getCreateTime() +
                 ", updateBy='" + getUpdateBy() + '\'' +

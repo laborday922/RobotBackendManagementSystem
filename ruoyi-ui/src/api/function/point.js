@@ -17,6 +17,41 @@ export function getPoint(pointId) {
   })
 }
 
+// 获取点位播报配置
+export function getPointVoiceConfig(pointId) {
+  return request({
+    url: '/func/point/voice/' + pointId,
+    method: 'get'
+  })
+}
+
+// 保存点位播报配置
+export function savePointVoiceConfig(data) {
+  return request({
+    url: '/func/point/voice/save',
+    method: 'post',
+    data: data
+  })
+}
+
+// 根据机器人ID获取点位播报配置列表（用于机器人端同步）
+export function getPointVoiceListByRobot(robotId) {
+  return request({
+    url: '/func/point/voice/listByRobot',
+    method: 'get',
+    params: { robotId: robotId }
+  })
+}
+
+// 根据地图ID获取点位播报配置列表
+export function getPointVoiceListByMap(mapId) {
+  return request({
+    url: '/func/point/voice/listByMap',
+    method: 'get',
+    params: { mapId: mapId }
+  })
+}
+
 // 新增点位
 export function addPoint(data) {
   return request({

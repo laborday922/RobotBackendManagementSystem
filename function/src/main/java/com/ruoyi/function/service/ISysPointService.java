@@ -10,6 +10,11 @@ public interface ISysPointService {
 
     List<SysPoint> selectList(SysPoint point);
 
+    List<SysPoint> selectByMapId(Long mapId);
+
+    // 新增：根据多个地图ID查询点位列表
+    List<SysPoint> selectByMapIds(List<Long> mapIds);
+
     int insert(SysPoint point);
 
     int update(SysPoint point);

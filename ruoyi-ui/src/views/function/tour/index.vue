@@ -106,13 +106,6 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="内容类型" width="100" align="center">
-                <template slot-scope="scope">
-                  <el-tag :type="getContentTypeTag(scope.row.contentType)">
-                    {{ getContentTypeText(scope.row.contentType) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
               <el-table-column label="音色" prop="voiceType" width="100" show-overflow-tooltip />
               <el-table-column label="语速" prop="speechRate" width="80" align="center">
                 <template slot-scope="scope">{{ scope.row.speechRate }}%</template>
@@ -289,52 +282,6 @@
 
           <el-divider></el-divider>
 
-          <el-form-item label="内容类型" prop="contentType">
-            <el-select v-model="drawerForm.contentType" placeholder="请选择内容类型" style="width: 100%;">
-              <el-option label="文本" value="text" />
-              <el-option label="音频" value="audio" />
-              <el-option label="图片+播报语" value="image" />
-              <el-option label="视频" value="video" />
-            </el-select>
-          </el-form-item>
-
-          <div v-if="drawerForm.contentType === 'audio'">
-            <el-form-item label="音频文件">
-              <el-upload
-                action="#"
-                :before-upload="handleSegmentAudioUpload"
-                :show-file-list="false"
-              >
-                <el-button size="small" type="primary">上传音频</el-button>
-              </el-upload>
-            </el-form-item>
-          </div>
-
-          <div v-if="drawerForm.contentType === 'image'">
-            <el-form-item label="图片">
-              <el-upload
-                action="#"
-                list-type="picture-card"
-                :before-upload="handleImageUpload"
-                :limit="1"
-              >
-                <i class="el-icon-plus"></i>
-              </el-upload>
-            </el-form-item>
-          </div>
-
-          <div v-if="drawerForm.contentType === 'video'">
-            <el-form-item label="视频">
-              <el-upload
-                action="#"
-                :before-upload="handleVideoUpload"
-                :show-file-list="true"
-              >
-                <el-button size="small" type="primary">上传视频</el-button>
-              </el-upload>
-            </el-form-item>
-          </div>
-
           <div class="form-row">
             <el-form-item label="手臂动作">
               <el-select v-model="drawerForm.armAction" style="width: 100%;">
@@ -485,8 +432,6 @@ export default {
         voiceType: '温柔女声',
         speechRate: 50,
         intervalTime: 0,
-        contentType: 'text',
-        mediaFile: '',
         armAction: '0°',
         chassisAngle: 0
       },
@@ -677,16 +622,6 @@ export default {
       return map ? map.mapName : '未知';
     },
 
-    getContentTypeTag(type) {
-      const map = { 'text': 'info', 'audio': 'success', 'image': 'warning', 'video': 'danger' };
-      return map[type] || 'info';
-    },
-
-    getContentTypeText(type) {
-      const map = { 'text': '文本', 'audio': '音频', 'image': '图片', 'video': '视频' };
-      return map[type] || type;
-    },
-
     handleContentSelectionChange(selection) {
       this.selectedContentIds = selection.map(item => item.contentId);
     },
@@ -703,8 +638,6 @@ export default {
           voiceType: '温柔女声',
           speechRate: 50,
           intervalTime: 0,
-          contentType: 'text',
-          mediaFile: '',
           armAction: '0°',
           chassisAngle: 0
         };
@@ -802,29 +735,6 @@ export default {
       return false;
     },
 
-    handleSegmentAudioUpload(file) {
-      const isValid = file.type === 'audio/mpeg' || file.type === 'audio/wav';
-      if (!isValid) { this.$message.error('只支持 mp3、wav 格式'); return false; }
-      this.drawerForm.mediaFile = file.name;
-      this.$message.success('音频上传成功');
-      return false;
-    },
-
-    handleImageUpload(file) {
-      const isValid = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg';
-      if (!isValid) { this.$message.error('只支持 jpg、png 格式'); return false; }
-      this.drawerForm.mediaFile = file.name;
-      this.$message.success('图片上传成功');
-      return false;
-    },
-
-    handleVideoUpload(file) {
-      if (file.type !== 'video/mp4') { this.$message.error('只支持 mp4 格式'); return false; }
-      this.drawerForm.mediaFile = file.name;
-      this.$message.success('视频上传成功');
-      return false;
-    },
-
     triggerContentImport() {
       this.$refs.contentImportInput.click();
     },
@@ -868,10 +778,16 @@ export default {
     exportContent() {
       if (this.contentList.length === 0) { this.$message.warning('暂无数据可导出'); return; }
       const exportData = this.contentList.map(item => ({
-        pointName: item.pointName, pointDesc: item.pointDesc, broadcastType: item.broadcastType,
-        broadcastText: item.broadcastText, audioFile: item.audioFile, voiceType: item.voiceType,
-        speechRate: item.speechRate, intervalTime: item.intervalTime, contentType: item.contentType,
-        mediaFile: item.mediaFile, armAction: item.armAction, chassisAngle: item.chassisAngle
+        pointName: item.pointName,
+        pointDesc: item.pointDesc,
+        broadcastType: item.broadcastType,
+        broadcastText: item.broadcastText,
+        audioFile: item.audioFile,
+        voiceType: item.voiceType,
+        speechRate: item.speechRate,
+        intervalTime: item.intervalTime,
+        armAction: item.armAction,
+        chassisAngle: item.chassisAngle
       }));
       const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -893,11 +809,17 @@ export default {
         let successCount = 0, failCount = 0;
         const promises = selectedContents.map(content => {
           return saveTourContent({
-            pointName: `${content.pointName}_副本`, pointDesc: content.pointDesc,
-            broadcastType: content.broadcastType, broadcastText: content.broadcastText,
-            audioFile: content.audioFile, voiceType: content.voiceType, speechRate: content.speechRate,
-            intervalTime: content.intervalTime, contentType: content.contentType, mediaFile: content.mediaFile,
-            armAction: content.armAction, chassisAngle: content.chassisAngle, robotId: this.selectedRobotId
+            pointName: `${content.pointName}_副本`,
+            pointDesc: content.pointDesc,
+            broadcastType: content.broadcastType,
+            broadcastText: content.broadcastText,
+            audioFile: content.audioFile,
+            voiceType: content.voiceType,
+            speechRate: content.speechRate,
+            intervalTime: content.intervalTime,
+            armAction: content.armAction,
+            chassisAngle: content.chassisAngle,
+            robotId: this.selectedRobotId
           }).then(() => successCount++).catch(() => failCount++);
         });
         Promise.all(promises).then(() => {

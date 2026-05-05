@@ -14,7 +14,7 @@
         <result property="voiceType" column="voice_type"/>
         <result property="speechRate" column="speech_rate"/>
         <result property="intervalTime" column="interval_time"/>
-        <result property="contentType" column="content_type"/>
+        <!-- 删除 content_type 字段映射 -->
         <result property="mediaFile" column="media_file"/>
         <result property="armAction" column="arm_action"/>
         <result property="chassisAngle" column="chassis_angle"/>
@@ -29,7 +29,7 @@
     <sql id="selectVo">
         select content_id, robot_id, point_id, point_name, point_desc,
         broadcast_type, broadcast_text, audio_file, voice_type,
-        speech_rate, interval_time, content_type, media_file,
+        speech_rate, interval_time, media_file,  <!-- 删除 content_type -->
         arm_action, chassis_angle, order_num, tenant_id,
         create_by, create_time, update_by, update_time
         from sys_tour_content
@@ -59,12 +59,12 @@
         insert into sys_tour_content (
         robot_id, point_id, point_name, point_desc, broadcast_type,
         broadcast_text, audio_file, voice_type, speech_rate, interval_time,
-        content_type, media_file, arm_action, chassis_angle, order_num, tenant_id,
+        media_file, arm_action, chassis_angle, order_num, tenant_id,  <!-- 删除 content_type -->
         create_by, create_time
         ) values (
         #{robotId}, #{pointId}, #{pointName}, #{pointDesc}, #{broadcastType},
         #{broadcastText}, #{audioFile}, #{voiceType}, #{speechRate}, #{intervalTime},
-        #{contentType}, #{mediaFile}, #{armAction}, #{chassisAngle}, #{orderNum}, #{tenantId},
+        #{mediaFile}, #{armAction}, #{chassisAngle}, #{orderNum}, #{tenantId},
         #{createBy}, sysdate()
         )
     </insert>
@@ -81,7 +81,7 @@
             <if test="voiceType != null">voice_type = #{voiceType},</if>
             <if test="speechRate != null">speech_rate = #{speechRate},</if>
             <if test="intervalTime != null">interval_time = #{intervalTime},</if>
-            <if test="contentType != null">content_type = #{contentType},</if>
+            <!-- 删除 content_type 更新 -->
             <if test="mediaFile != null">media_file = #{mediaFile},</if>
             <if test="armAction != null">arm_action = #{armAction},</if>
             <if test="chassisAngle != null">chassis_angle = #{chassisAngle},</if>

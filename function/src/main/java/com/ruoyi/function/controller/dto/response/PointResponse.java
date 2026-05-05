@@ -3,7 +3,6 @@ package com.ruoyi.function.controller.dto.response;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -29,12 +28,6 @@ public class PointResponse {
 
     @ApiModelProperty("点位类型文本")
     private String pointTypeText;
-
-    @ApiModelProperty("X坐标")
-    private BigDecimal coordinateX;
-
-    @ApiModelProperty("Y坐标")
-    private BigDecimal coordinateY;
 
     @ApiModelProperty("状态")
     private String status;
@@ -72,12 +65,6 @@ public class PointResponse {
 
     public String getPointTypeText() { return pointTypeText; }
     public void setPointTypeText(String pointTypeText) { this.pointTypeText = pointTypeText; }
-
-    public BigDecimal getCoordinateX() { return coordinateX; }
-    public void setCoordinateX(BigDecimal coordinateX) { this.coordinateX = coordinateX; }
-
-    public BigDecimal getCoordinateY() { return coordinateY; }
-    public void setCoordinateY(BigDecimal coordinateY) { this.coordinateY = coordinateY; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

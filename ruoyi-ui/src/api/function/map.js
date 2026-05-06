@@ -1,4 +1,3 @@
-// src/api/func/map.js
 import request from '@/utils/request'
 
 // 获取地图列表
@@ -27,10 +26,10 @@ export function addMap(data) {
   })
 }
 
-// 修改地图（注意：URL 是 '/func/map'，不是 '/func/map/update'）
+// 修改地图
 export function updateMap(data) {
   return request({
-    url: '/func/map',  // 修改这里，去掉 /update
+    url: '/func/map',
     method: 'put',
     data: data
   })
@@ -61,6 +60,14 @@ export function uploadMap(data) {
 export function getPointListByMap(mapId) {
   return request({
     url: '/func/map/points/' + mapId,
+    method: 'get'
+  })
+}
+
+// 获取默认地图点位列表（用于讲解路线选择）
+export function getDefaultPoints() {
+  return request({
+    url: '/func/point/defaultPoints',
     method: 'get'
   })
 }

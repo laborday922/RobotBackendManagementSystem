@@ -4,7 +4,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 /**
  * 点位创建请求DTO
@@ -12,9 +11,8 @@ import javax.validation.constraints.NotNull;
 @ApiModel(description = "点位创建请求")
 public class PointCreateRequest {
 
-    @ApiModelProperty(value = "所属地图ID", required = true)
-    @NotNull(message = "地图ID不能为空")
-    private Long mapId;
+    @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
+    private Long mapId;  // 移除 @NotNull 注解
 
     @ApiModelProperty(value = "点位名称", required = true)
     @NotBlank(message = "点位名称不能为空")

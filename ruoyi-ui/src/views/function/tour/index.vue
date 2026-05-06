@@ -323,14 +323,32 @@
           </el-form-item>
 
           <el-form-item label="选择地图" prop="mapId">
-            <el-select v-model="routeConfigForm.mapId" placeholder="请选择地图" style="width: 100%;" @change="onMapChange">
-              <el-option v-for="map in currentRobotMaps" :key="map.mapId" :label="map.mapName" :value="map.mapId" />
+            <el-select
+              v-model="routeConfigForm.mapId"
+              placeholder="请选择地图"
+              style="width: 100%;"
+              @change="onMapChange"
+              clearable
+            >
+              <el-option
+                v-for="map in currentRobotMaps"
+                :key="map.mapId"
+                :label="map.mapName"
+                :value="map.mapId"
+              />
             </el-select>
           </el-form-item>
 
           <el-form-item label="选择点位">
             <div style="margin-bottom: 10px;">
-              <el-checkbox v-model="routeConfigForm.selectAll" @change="toggleAllPoints">全选</el-checkbox>
+              <el-checkbox
+                v-model="routeConfigForm.selectAll"
+                @change="toggleAllPoints"
+                :disabled="!routeConfigForm.mapId || mapPoints.length === 0"
+              >全选</el-checkbox>
+              <span v-if="routeConfigForm.loadingPoints" style="margin-left: 10px;">
+                <i class="el-icon-loading"></i> 加载中...
+              </span>
             </div>
             <div class="point-checkbox-grid" v-if="mapPoints && mapPoints.length > 0">
               <el-checkbox
@@ -344,7 +362,8 @@
               </el-checkbox>
             </div>
             <div v-else class="empty-points-tip">
-              <i class="el-icon-info"></i> 请先选择地图，或该地图暂无点位数据
+              <i class="el-icon-info"></i>
+              {{ routeConfigForm.loadingPoints ? '正在加载点位...' : (routeConfigForm.mapId ? '该地图暂无点位数据，请先在导航页面添加点位' : '请先选择地图') }}
             </div>
           </el-form-item>
 
@@ -387,7 +406,7 @@ import { getTourGeneral, saveTourGeneral } from "@/api/function/tour";
 import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/function/tour";
 import { getRouteList, saveRoute, deleteRoute } from "@/api/function/tour";
 import { listRobot } from "@/api/mode/robot";
-import { getMapList, getPointListByMap } from "@/api/function/map";
+import { getMapList, getPointListByMap, getDefaultPoints } from "@/api/function/map";
 import Pagination from "@/components/Pagination";
 
 export default {
@@ -454,7 +473,8 @@ export default {
         selectAll: false,
         selectedPoints: [],
         associationList: [],
-        warningMessage: ''
+        warningMessage: '',
+        loadingPoints: false
       }
     };
   },
@@ -512,9 +532,26 @@ export default {
       return getMapList({ robotId: this.selectedRobotId }).then(response => {
         let maps = response.rows || response.data || [];
         this.currentRobotMaps = maps.filter(m => m.delFlag === '0' && m.status === '1');
+
+        const hasDefaultMap = this.currentRobotMaps.some(m => m.mapId === 0);
+        if (!hasDefaultMap) {
+          this.currentRobotMaps.unshift({
+            mapId: 0,
+            mapName: '默认地图',
+            status: '1',
+            delFlag: '0',
+            pointCount: 0
+          });
+        }
       }).catch(error => {
         console.error('获取地图列表失败:', error);
-        this.currentRobotMaps = [];
+        this.currentRobotMaps = [{
+          mapId: 0,
+          mapName: '默认地图',
+          status: '1',
+          delFlag: '0',
+          pointCount: 0
+        }];
       });
     },
 
@@ -554,15 +591,45 @@ export default {
     },
 
     loadMapPoints(mapId) {
-      if (!mapId) {
+      console.log('loadMapPoints called, mapId:', mapId);
+
+      if (mapId === null || mapId === undefined || mapId === '') {
         this.mapPoints = [];
         return;
       }
-      getPointListByMap(mapId).then(response => {
+
+      const numericMapId = Number(mapId);
+      this.routeConfigForm.loadingPoints = true;
+
+      if (numericMapId === 0) {
+        getDefaultPoints().then(response => {
+          if (response.code === 200) {
+            this.mapPoints = response.data || [];
+            if (this.mapPoints.length === 0) {
+              this.$message.warning('默认地图下暂无点位数据，请先在导航页面添加点位');
+            }
+          } else {
+            this.mapPoints = [];
+            this.$message.error(response.msg || '获取默认地图点位失败');
+          }
+          this.routeConfigForm.loadingPoints = false;
+        }).catch(error => {
+          console.error('获取默认地图点位失败:', error);
+          this.mapPoints = [];
+          this.$message.error('获取默认地图点位失败：' + (error.message || '未知错误'));
+          this.routeConfigForm.loadingPoints = false;
+        });
+        return;
+      }
+
+      getPointListByMap(numericMapId).then(response => {
         this.mapPoints = response.rows || response.data || [];
+        this.routeConfigForm.loadingPoints = false;
       }).catch(error => {
         console.error('获取地图点位失败:', error);
         this.mapPoints = [];
+        this.$message.error('获取地图点位失败：' + (error.message || '未知错误'));
+        this.routeConfigForm.loadingPoints = false;
       });
     },
 
@@ -571,11 +638,21 @@ export default {
       this.routeConfigForm.associationList = [];
       this.routeConfigForm.selectAll = false;
       this.routeConfigForm.warningMessage = '';
-      if (mapId) {
+
+      if (mapId !== null && mapId !== undefined && mapId !== '') {
         this.loadMapPoints(mapId);
       } else {
         this.mapPoints = [];
       }
+    },
+
+    getMapName(mapId) {
+      const map = this.currentRobotMaps.find(m => m.mapId === mapId);
+      return map ? map.mapName : '未知';
+    },
+
+    handleContentSelectionChange(selection) {
+      this.selectedContentIds = selection.map(item => item.contentId);
     },
 
     loadContentList() {
@@ -615,15 +692,6 @@ export default {
       } else if (tab.name === 'route') {
         this.loadAllRoutes();
       }
-    },
-
-    getMapName(mapId) {
-      const map = this.currentRobotMaps.find(m => m.mapId === mapId);
-      return map ? map.mapName : '未知';
-    },
-
-    handleContentSelectionChange(selection) {
-      this.selectedContentIds = selection.map(item => item.contentId);
     },
 
     openDrawer(mode, row) {
@@ -836,7 +904,13 @@ export default {
     addRoute() {
       this.currentRouteId = null;
       this.routeConfigForm = {
-        routeName: '', mapId: null, selectAll: false, selectedPoints: [], associationList: [], warningMessage: ''
+        routeName: '',
+        mapId: null,
+        selectAll: false,
+        selectedPoints: [],
+        associationList: [],
+        warningMessage: '',
+        loadingPoints: false
       };
       this.mapPoints = [];
       this.routeConfigDrawerVisible = true;
@@ -873,13 +947,25 @@ export default {
     openRouteConfigDrawer(row) {
       this.currentRouteId = row.routeId;
       this.routeConfigForm = {
-        routeName: row.routeName, mapId: row.mapId, selectAll: false, selectedPoints: [], associationList: [], warningMessage: ''
+        routeName: row.routeName || '',
+        mapId: row.mapId !== undefined && row.mapId !== null ? row.mapId : null,
+        selectAll: false,
+        selectedPoints: [],
+        associationList: [],
+        warningMessage: '',
+        loadingPoints: false
       };
-      if (row.mapId) { this.loadMapPoints(row.mapId); }
+
+      if (this.routeConfigForm.mapId !== null && this.routeConfigForm.mapId !== undefined) {
+        this.loadMapPoints(this.routeConfigForm.mapId);
+      }
+
       if (row.routePoints && row.routePoints.length > 0) {
         this.routeConfigForm.selectedPoints = row.routePoints.map(p => p.pointId);
         this.routeConfigForm.associationList = row.routePoints.map(p => ({
-          pointId: p.pointId, pointName: p.pointName || '', contentId: p.contentId
+          pointId: p.pointId,
+          pointName: p.pointName || '',
+          contentId: p.contentId
         }));
       }
       this.routeConfigDrawerVisible = true;
@@ -905,7 +991,9 @@ export default {
         const point = this.mapPoints.find(p => p.pointId === pointId);
         const existing = this.routeConfigForm.associationList.find(a => a.pointId === pointId);
         newAssociationList.push({
-          pointId: pointId, pointName: point?.pointName || '', contentId: existing?.contentId || null
+          pointId: pointId,
+          pointName: point?.pointName || '',
+          contentId: existing?.contentId || null
         });
       });
       this.routeConfigForm.associationList = newAssociationList;
@@ -915,7 +1003,7 @@ export default {
 
     saveRouteConfig() {
       if (!this.routeConfigForm.routeName) { this.$message.warning('请输入路线名称'); return; }
-      if (!this.routeConfigForm.mapId) { this.$message.warning('请选择地图'); return; }
+      if (!this.routeConfigForm.mapId && this.routeConfigForm.mapId !== 0) { this.$message.warning('请选择地图'); return; }
 
       const routePoints = this.routeConfigForm.associationList
         .filter(item => item.pointId)

@@ -116,3 +116,12 @@ export function importRoutes(data) {
     }
   })
 }
+
+
+// 获取默认地图点位列表（用于讲解路线选择）
+export function getDefaultPoints() {
+  return request({
+    url: '/func/point/defaultPoints',
+    method: 'get'
+  })
+}

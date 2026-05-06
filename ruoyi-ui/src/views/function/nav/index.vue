@@ -468,6 +468,30 @@ export default {
           return isNotDeleted && isEnabled;
         });
         this.mapList.forEach(map => this.loadPointCount(map));
+
+        // ========== 新增：如果没有地图或没有选中地图，自动添加/选中默认地图 ==========
+        // 检查是否有默认地图（mapId === 0）
+        const hasDefaultMap = this.mapList.some(m => m.mapId === 0);
+
+        // 如果没有默认地图，添加一个虚拟的默认地图到列表中
+        if (!hasDefaultMap) {
+          this.mapList.unshift({
+            mapId: 0,
+            mapName: '默认地图',
+            pointCount: 0,
+            status: '1',
+            delFlag: '0'
+          });
+        }
+
+        // 如果当前没有选中地图，自动选中默认地图
+        if (!this.navConfig.mapId) {
+          this.navConfig.mapId = 0;
+          this.loadPoints();
+          this.loadMapImage();
+        }
+        // ========== 新增结束 ==========
+
         if (this.navConfig.mapId && !this.mapList.some(m => m.mapId === this.navConfig.mapId)) {
           this.navConfig.mapId = null;
           this.pointList = [];
@@ -479,6 +503,16 @@ export default {
       }).catch(error => {
         console.error('加载地图列表失败:', error);
         this.mapList = [];
+        // ========== 新增：加载失败时也添加默认地图 ==========
+        this.mapList = [{
+          mapId: 0,
+          mapName: '默认地图',
+          pointCount: 0,
+          status: '1',
+          delFlag: '0'
+        }];
+        this.navConfig.mapId = 0;
+        // ========== 新增结束 ==========
       });
     },
 
@@ -490,11 +524,15 @@ export default {
     },
 
     loadMapImage() {
-      if (!this.navConfig.mapId) {
+      // ========== 修改：确保 mapId 有默认值 ==========
+      const mapId = this.navConfig.mapId || 0;
+      if (!mapId) {
         this.mapImageUrl = '';
         return;
       }
-      const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+      // ========== 修改结束 ==========
+
+      const currentMap = this.mapList.find(m => m.mapId === mapId);
       if (currentMap && currentMap.mapBase64) {
         this.mapImageUrl = currentMap.mapBase64;
         return;
@@ -503,7 +541,12 @@ export default {
         this.mapImageUrl = currentMap.mapUrl;
         return;
       }
-      getMap(this.navConfig.mapId).then(response => {
+      // 如果 mapId === 0，不请求后端，使用占位图
+      if (mapId === 0) {
+        this.mapImageUrl = '';
+        return;
+      }
+      getMap(mapId).then(response => {
         const mapData = response.data;
         if (mapData) {
           this.mapImageUrl = mapData.mapBase64 || (mapData.mapUrl && mapData.mapUrl.startsWith('data:image') ? mapData.mapUrl : '');
@@ -524,13 +567,13 @@ export default {
     },
 
     loadPoints() {
-      if (!this.navConfig.mapId) {
-        this.pointList = [];
-        return;
-      }
-      getPointListByMap(this.navConfig.mapId).then(response => {
+      // ========== 修改：确保 mapId 有默认值 ==========
+      const mapId = this.navConfig.mapId || 0;
+      // ========== 修改结束 ==========
+
+      getPointListByMap(mapId).then(response => {
         this.pointList = response.data || response.rows || [];
-        const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+        const currentMap = this.mapList.find(m => m.mapId === mapId);
         if (currentMap) currentMap.pointCount = this.pointList.length;
       }).catch(error => {
         console.error('加载点位列表失败:', error);
@@ -844,34 +887,46 @@ export default {
       if (this.$refs.pointForm) this.$refs.pointForm.resetFields();
     },
 
-    submitPointForm() {
-      this.$refs.pointForm.validate((valid) => {
-        if (!valid) return;
-        this.pointSubmitting = true;
-        const formData = {
-          mapId: this.navConfig.mapId,
-          pointName: this.pointForm.pointName,
-          pointCode: this.pointForm.pointCode,
-          pointType: this.pointForm.pointType,
-          orderNum: this.pointForm.orderNum,
-          status: this.pointForm.status,
-          remark: this.pointForm.remark,
-          robotPositionId: this.pointForm.robotPositionId
-        };
-        if (this.pointForm.pointId) {
-          formData.pointId = this.pointForm.pointId;
-        }
-        const apiCall = formData.pointId ? updatePoint(formData) : addPoint(formData);
-        apiCall.then(() => {
-          this.$message.success(this.pointForm.pointId ? '更新成功' : '添加成功');
-          this.showAddPointDialog = false;
-          this.loadPoints();
-        }).catch(error => {
-          console.error('保存点位失败:', error);
-          this.$message.error('保存失败');
-        }).finally(() => { this.pointSubmitting = false; });
+  submitPointForm() {
+    this.$refs.pointForm.validate((valid) => {
+      if (!valid) return;
+      this.pointSubmitting = true;
+
+      // ========== 修改：确保 mapId 总是有值（默认使用 0） ==========
+      // 如果当前没有选中地图，使用默认地图 ID 0
+      const mapId = this.navConfig.mapId || 0;
+      // ========== 修改结束 ==========
+
+      const formData = {
+        mapId: mapId,  // 总是有值，不会是 null
+        pointName: this.pointForm.pointName,
+        pointCode: this.pointForm.pointCode,
+        pointType: this.pointForm.pointType,
+        orderNum: this.pointForm.orderNum,
+        status: this.pointForm.status,
+        remark: this.pointForm.remark,
+        robotPositionId: this.pointForm.robotPositionId
+      };
+
+      if (this.pointForm.pointId) {
+        formData.pointId = this.pointForm.pointId;
+      }
+
+      const apiCall = formData.pointId ? updatePoint(formData) : addPoint(formData);
+      apiCall.then(() => {
+        this.$message.success(this.pointForm.pointId ? '更新成功' : '添加成功');
+        this.showAddPointDialog = false;
+        this.loadPoints();  // 加载当前选中的地图点位（默认地图）
+      }).catch(error => {
+        console.error('保存点位失败:', error);
+        this.$message.error('保存失败：' + (error.message || '未知错误'));
+      }).finally(() => {
+        this.pointSubmitting = false;
       });
-    }
+    });
+  }
+
+
   }
 };
 </script>

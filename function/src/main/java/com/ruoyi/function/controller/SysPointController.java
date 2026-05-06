@@ -3,6 +3,7 @@ package com.ruoyi.function.controller;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.function.constants.MapConstants;
 import com.ruoyi.function.controller.dto.request.PointCreateRequest;
 import com.ruoyi.function.controller.dto.request.PointUpdateRequest;
 import com.ruoyi.function.controller.dto.response.PointResponse;
@@ -64,25 +65,21 @@ public class SysPointController extends BaseController {
         try {
             log.info("开始从机器人获取点位位置, robotId={}", robotId);
 
-            // 检查 WebSocket 处理器是否可用
             if (taskRobotWebSocketHandler == null) {
                 log.warn("TaskRobotWebSocketHandler 未注入，返回模拟数据");
                 return success(getMockPositions());
             }
 
-            // 检查机器人是否在线
             if (!taskRobotWebSocketHandler.isOnline(robotId)) {
                 return error("机器人不在线，无法获取点位位置数据");
             }
 
-            // 构造 WebSocket 请求
             Map<String, Object> request = new HashMap<>();
             request.put("action", "getPoints");
             request.put("operationId", 3);
 
             String correlationId = UUID.randomUUID().toString();
 
-            // 发送请求并等待响应（超时10秒）
             CompletableFuture<com.ruoyi.common.core.websocket.RobotWebSocketMessage> future =
                     taskRobotWebSocketHandler.sendAndWaitRaw(robotId, request, correlationId, 10);
 
@@ -101,13 +98,12 @@ public class SysPointController extends BaseController {
             return error("机器人未返回点位数据");
         } catch (Exception e) {
             log.error("获取机器人点位位置失败", e);
-            // 发生异常时返回模拟数据，便于测试
             return success(getMockPositions());
         }
     }
 
     /**
-     * 获取模拟点位位置数据（用于测试，机器人端实现后删除）
+     * 获取模拟点位位置数据（用于测试）
      */
     private List<Map<String, Object>> getMockPositions() {
         List<Map<String, Object>> mockPoints = new ArrayList<>();
@@ -264,15 +260,86 @@ public class SysPointController extends BaseController {
             return error("获取失败：" + e.getMessage());
         }
     }
+    @ApiOperation("获取默认地图的点位列表")
+    @GetMapping("/defaultPoints")
+    public AjaxResult getDefaultPoints() {
+        try {
+            // 确保默认地图存在
+            ensureDefaultMapExists();
+
+            // 查询 mapId = DEFAULT_MAP_ID 的点位
+            List<SysPoint> points = sysPointService.selectByMapId(MapConstants.DEFAULT_MAP_ID);
+            if (points == null) {
+                points = new ArrayList<>();
+            }
+            log.info("获取默认地图点位成功, 数量: {}", points.size());
+            return success(points);
+        } catch (Exception e) {
+            log.error("获取默认地图点位失败", e);
+            return error("获取默认地图点位失败：" + e.getMessage());
+        }
+    }
+    /**
+     * 获取有效的地图ID（如果为空或<=0则使用默认地图）
+     */
+    private Long getEffectiveMapId(Long requestMapId) {
+        Long mapId = requestMapId;
+        if (mapId == null || mapId <= 0) {
+            mapId = MapConstants.DEFAULT_MAP_ID;
+            log.debug("地图ID为空或无效，使用默认地图ID: {}", mapId);
+        }
+        return mapId;
+    }
+
+    /**
+     * 确保默认地图存在
+     */
+    private void ensureDefaultMapExists() {
+        try {
+            SysMap defaultMap = sysMapService.selectById(MapConstants.DEFAULT_MAP_ID);
+            if (defaultMap == null) {
+                defaultMap = new SysMap();
+                defaultMap.setMapId(MapConstants.DEFAULT_MAP_ID);
+                defaultMap.setMapName(MapConstants.DEFAULT_MAP_NAME);
+                defaultMap.setRobotId(MapConstants.DEFAULT_ROBOT_ID);
+                defaultMap.setStatus(MapStatusEnum.ENABLED.getCode());
+                defaultMap.setIsEnable(1);
+                defaultMap.setDelFlag("0");
+                defaultMap.setPointCount(0);
+                defaultMap.setVersion("1.0");
+                sysMapService.insert(defaultMap);
+                log.info("自动创建默认地图成功，ID: {}", MapConstants.DEFAULT_MAP_ID);
+            }
+        } catch (Exception e) {
+            log.error("创建/检查默认地图失败", e);
+        }
+    }
 
     @ApiOperation("新增点位")
     @PostMapping
     public AjaxResult add(@Valid @RequestBody PointCreateRequest request) {
+        // 确保默认地图存在
+        ensureDefaultMapExists();
+
+        // 获取有效的地图ID（空值时自动使用默认地图）
+        Long mapId = getEffectiveMapId(request.getMapId());
+
         SysPoint point = new SysPoint();
-        BeanUtils.copyProperties(request, point);
+        // 只复制存在的字段，不复制 robotPositionId（SysPoint中没有这个字段）
+        point.setMapId(mapId);
+        point.setPointName(request.getPointName());
+        point.setPointCode(request.getPointCode());
+        point.setPointType(request.getPointType());
+        point.setStatus(request.getStatus());
+        point.setOrderNum(request.getOrderNum());
+        point.setRemark(request.getRemark());
+
         if (point.getVoiceType() == null) {
             point.setVoiceType("default");
         }
+
+        log.info("新增点位: pointName={}, mapId={}", point.getPointName(), mapId);
+
         return toAjax(sysPointService.insert(point));
     }
 
@@ -284,8 +351,39 @@ public class SysPointController extends BaseController {
             throw FunctionException.pointNotFound(request.getPointId());
         }
 
+        // 确保默认地图存在
+        ensureDefaultMapExists();
+
+        // 获取有效的地图ID（空值时自动使用默认地图）
+        Long mapId = getEffectiveMapId(request.getMapId());
+
         SysPoint point = new SysPoint();
-        BeanUtils.copyProperties(request, point);
+        point.setPointId(request.getPointId());
+        point.setMapId(mapId);
+
+        // 只复制存在的字段
+        if (request.getPointName() != null) {
+            point.setPointName(request.getPointName());
+        }
+        if (request.getPointCode() != null) {
+            point.setPointCode(request.getPointCode());
+        }
+        if (request.getPointType() != null) {
+            point.setPointType(request.getPointType());
+        }
+        if (request.getStatus() != null) {
+            point.setStatus(request.getStatus());
+        }
+        if (request.getOrderNum() != null) {
+            point.setOrderNum(request.getOrderNum());
+        }
+        if (request.getRemark() != null) {
+            point.setRemark(request.getRemark());
+        }
+
+        log.info("更新点位: pointId={}, pointName={}, mapId={}",
+                point.getPointId(), point.getPointName(), mapId);
+
         return toAjax(sysPointService.update(point));
     }
 
@@ -296,6 +394,7 @@ public class SysPointController extends BaseController {
         if (point == null) {
             throw FunctionException.pointNotFound(pointId);
         }
+        log.info("删除点位: pointId={}, pointName={}", pointId, point.getPointName());
         return toAjax(sysPointService.deleteById(pointId));
     }
 
@@ -305,6 +404,7 @@ public class SysPointController extends BaseController {
         if (pointIds == null || pointIds.length == 0) {
             return error("请选择要删除的点位");
         }
+        log.info("批量删除点位: count={}", pointIds.length);
         return toAjax(sysPointService.deleteByIds(pointIds));
     }
 }

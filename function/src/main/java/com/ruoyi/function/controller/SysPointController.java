@@ -48,6 +48,8 @@ public class SysPointController extends BaseController {
     @Autowired(required = false)
     private com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler taskRobotWebSocketHandler;
 
+    // ========== 具体路径接口放在前面，避免与路径变量冲突 ==========
+
     @ApiOperation("获取点位列表")
     @GetMapping("/list")
     public TableDataInfo list(SysPoint point) {
@@ -127,29 +129,6 @@ public class SysPointController extends BaseController {
         mockPoints.add(point2);
 
         return mockPoints;
-    }
-
-    @ApiOperation("根据ID获取点位详情")
-    @GetMapping("/{pointId}")
-    public AjaxResult getById(@PathVariable Long pointId) {
-        SysPoint point = sysPointService.selectById(pointId);
-        if (point == null) {
-            throw FunctionException.pointNotFound(pointId);
-        }
-
-        PointResponse response = new PointResponse();
-        BeanUtils.copyProperties(point, response);
-
-        PointTypeEnum typeEnum = PointTypeEnum.getByCode(point.getPointType());
-        response.setPointTypeText(typeEnum.getInfo());
-
-        if (MapStatusEnum.ENABLED.getCode().equals(point.getStatus())) {
-            response.setStatusText(MapStatusEnum.ENABLED.getInfo());
-        } else {
-            response.setStatusText(MapStatusEnum.DISABLED.getInfo());
-        }
-
-        return success(response);
     }
 
     @ApiOperation("获取点位播报配置")
@@ -260,6 +239,7 @@ public class SysPointController extends BaseController {
             return error("获取失败：" + e.getMessage());
         }
     }
+
     @ApiOperation("获取默认地图的点位列表")
     @GetMapping("/defaultPoints")
     public AjaxResult getDefaultPoints() {
@@ -279,6 +259,34 @@ public class SysPointController extends BaseController {
             return error("获取默认地图点位失败：" + e.getMessage());
         }
     }
+
+    // ========== 路径变量接口放在最后 ==========
+
+    @ApiOperation("根据ID获取点位详情")
+    @GetMapping("/{pointId}")
+    public AjaxResult getById(@PathVariable Long pointId) {
+        SysPoint point = sysPointService.selectById(pointId);
+        if (point == null) {
+            throw FunctionException.pointNotFound(pointId);
+        }
+
+        PointResponse response = new PointResponse();
+        BeanUtils.copyProperties(point, response);
+
+        PointTypeEnum typeEnum = PointTypeEnum.getByCode(point.getPointType());
+        response.setPointTypeText(typeEnum.getInfo());
+
+        if (MapStatusEnum.ENABLED.getCode().equals(point.getStatus())) {
+            response.setStatusText(MapStatusEnum.ENABLED.getInfo());
+        } else {
+            response.setStatusText(MapStatusEnum.DISABLED.getInfo());
+        }
+
+        return success(response);
+    }
+
+    // ========== 私有方法 ==========
+
     /**
      * 获取有效的地图ID（如果为空或<=0则使用默认地图）
      */
@@ -315,6 +323,8 @@ public class SysPointController extends BaseController {
         }
     }
 
+    // ========== CRUD 操作接口 ==========
+
     @ApiOperation("新增点位")
     @PostMapping
     public AjaxResult add(@Valid @RequestBody PointCreateRequest request) {
@@ -325,7 +335,6 @@ public class SysPointController extends BaseController {
         Long mapId = getEffectiveMapId(request.getMapId());
 
         SysPoint point = new SysPoint();
-        // 只复制存在的字段，不复制 robotPositionId（SysPoint中没有这个字段）
         point.setMapId(mapId);
         point.setPointName(request.getPointName());
         point.setPointCode(request.getPointCode());
@@ -361,7 +370,6 @@ public class SysPointController extends BaseController {
         point.setPointId(request.getPointId());
         point.setMapId(mapId);
 
-        // 只复制存在的字段
         if (request.getPointName() != null) {
             point.setPointName(request.getPointName());
         }

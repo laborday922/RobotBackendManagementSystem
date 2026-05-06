@@ -41,7 +41,7 @@ CREATE TABLE `t_app_api` (
 
 LOCK TABLES `t_app_api` WRITE;
 /*!40000 ALTER TABLE `t_app_api` DISABLE KEYS */;
-INSERT INTO `t_app_api` (`id`, `app_id`, `api_key`, `api_name`, `description`, `params_schema`, `created_at`) VALUES (1,'APP001','robot.move','机器人移动','控制机器人移动到指定目标位置','[{\"name\": \"target\", \"type\": \"string\", \"required\": true}, {\"name\": \"x\", \"type\": \"number\", \"required\": true}, {\"name\": \"y\", \"type\": \"number\", \"required\": true}]','2026-03-28 18:00:25'),(2,'APP001','robot.navigate','机器人导航','控制机器人导航至指定目标点','{\"speed\": {\"type\": \"number\", \"required\": false, \"description\": \"移动速度\", \"valueSource\": \"INPUT\", \"defaultValue\": 1.0}, \"weight\": {\"type\": \"number\", \"required\": true, \"description\": \"载重\", \"valueSource\": \"INPUT\"}, \"position\": {\"type\": \"number\", \"required\": true, \"description\": \"目标位置ID\", \"valueSource\": \"DYNAMIC\", \"dynamicConfig\": {\"listKey\": \"id\", \"dataSource\": \"ROBOT_POSITION\", \"displayKey\": \"name\", \"refreshOnOpen\": true}}}','2026-04-21 01:22:43');
+INSERT INTO `t_app_api` (`id`, `app_id`, `api_key`, `api_name`, `description`, `params_schema`, `created_at`) VALUES (1,'APP001','robot.move','机器人移动','控制机器人移动到指定目标位置','[{\"name\": \"target\", \"type\": \"string\", \"required\": true}, {\"name\": \"x\", \"type\": \"number\", \"required\": true}, {\"name\": \"y\", \"type\": \"number\", \"required\": true}]','2026-03-28 18:00:25'),(2,'APP001','robot.navigate','机器人导航','控制机器人导航至指定目标点','{\"speed\": {\"type\": \"number\", \"required\": false, \"description\": \"移动速度\", \"valueSource\": \"INPUT\", \"defaultValue\": 1.0}, \"weight\": {\"type\": \"number\", \"required\": true, \"description\": \"载重\", \"valueSource\": \"INPUT\"}, \"position\": {\"type\": \"integer\", \"required\": true, \"description\": \"目标位置ID\", \"valueSource\": \"DYNAMIC\", \"dynamicConfig\": {\"listKey\": \"id\", \"dataSource\": \"ROBOT_POSITION\", \"displayKey\": \"name\", \"refreshOnOpen\": true}}}','2026-04-21 01:22:43');
 /*!40000 ALTER TABLE `t_app_api` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -144,4 +144,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-22 15:05:59
+-- Dump completed on 2026-05-06 17:01:29

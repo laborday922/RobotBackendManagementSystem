@@ -838,8 +838,8 @@ export default {
               this.addDebugLog(`警告: ${offlineCount}个机器人重启后仍为离线状态`,
                 completedRobots.filter(r => parseInt(r.status) === 0), 'warning');
             } else if (onlineCount === completedRobots.length && onlineCount > 0) {
-              this.$message.success(`所有机器人重启完成，当前全部在线`);
-              this.addDebugLog(`重启成功: 所有机器人已恢复在线`, null, 'success');
+              this.$message.success(`所有被选中的机器人重启完成，当前全部在线`);
+              this.addDebugLog(`重启成功: 所有被选中的机器人已恢复在线`, null, 'success');
             } else {
               this.$message.info(`重启完成，当前状态: ${onlineCount}个在线，${offlineCount}个离线`);
             }

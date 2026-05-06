@@ -29,9 +29,9 @@
         </el-select>
       </div>
 
-      <!-- 模式切换按钮组 -->
+      <!-- 模式切换按钮组 - 过滤掉 mode_id = 0 的"无"模式 -->
       <div class="mode-buttons">
-        <div class="mode-btn" v-for="mode in modeOptions" :key="mode.modeId">
+        <div class="mode-btn" v-for="mode in switchableModes" :key="mode.modeId">
           <div
             class="mode-btn-inner"
             :class="{ active: selectedModeId === mode.modeId }"
@@ -162,7 +162,8 @@ export default {
       selectedRobotId: null,
       selectedModeId: null,
       robotOptions: [],
-      modeOptions: [],
+      allModes: [],        // 所有模式（包含"无"模式，用于显示机器人当前模式）
+      switchableModes: [], // 可切换的模式（不包含"无"模式，用于模式卡片）
       configData: {},
       savedConfigData: {},
       loading: false,
@@ -179,11 +180,11 @@ export default {
   },
   computed: {
     selectedMode() {
-      return this.modeOptions.find(m => m.modeId === this.selectedModeId);
+      return this.switchableModes.find(m => m.modeId === this.selectedModeId);
     },
     activeModeName() {
       if (this.selectedModeId) {
-        const mode = this.modeOptions.find(m => m.modeId === this.selectedModeId);
+        const mode = this.switchableModes.find(m => m.modeId === this.selectedModeId);
         return mode ? mode.modeName : '待机模式';
       }
       return '待机模式';
@@ -215,14 +216,21 @@ export default {
 
     updateRobotModeNames() {
       this.robotOptions.forEach(robot => {
-        const mode = this.modeOptions.find(m => m.modeId === robot.currentMode);
+        // 使用 allModes（包含"无"模式）来显示机器人当前模式
+        const mode = this.allModes.find(m => m.modeId === robot.currentMode);
         robot.currentModeName = mode ? mode.modeName : '未知';
       });
     },
 
     getModeList() {
       return listMode({ pageNum: 1, pageSize: 100, enabled: '1' }).then(response => {
-        const modePromises = response.rows.map(mode => {
+        // 保存所有模式（包含 mode_id = 0 的"无"模式，用于显示）
+        const allRows = response.rows || [];
+
+        // 过滤掉 mode_id = 0 的"无"模式，作为可切换的模式
+        const filteredRows = allRows.filter(mode => mode.modeId !== 0);
+
+        const modePromises = allRows.map(mode => {
           return getMode(mode.modeId).then(detail => {
             mode.modeParams = detail.data.modeParams || [];
             return mode;
@@ -233,7 +241,10 @@ export default {
         });
 
         return Promise.all(modePromises).then(modes => {
-          this.modeOptions = modes;
+          // 所有模式（包含"无"模式）
+          this.allModes = modes;
+          // 可切换的模式（不包含"无"模式）
+          this.switchableModes = modes.filter(mode => mode.modeId !== 0);
         });
       }).catch(error => {
         console.error('获取模式列表失败', error);
@@ -268,7 +279,7 @@ export default {
     /** 机器人选择变化时重新加载配置 */
     onRobotChange() {
       if (this.selectedModeId) {
-        const mode = this.modeOptions.find(m => m.modeId === this.selectedModeId);
+        const mode = this.switchableModes.find(m => m.modeId === this.selectedModeId);
         if (mode) {
           this.loadModeConfig(mode);
         }

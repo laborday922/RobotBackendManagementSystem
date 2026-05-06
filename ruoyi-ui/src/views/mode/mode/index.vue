@@ -463,15 +463,19 @@ export default {
         const rows = response.rows || [];
         console.log('返回数据条数:', rows.length);
 
+        // 过滤掉 mode_id = 0 的记录，确保完全不显示"无"模式
+        const filteredRows = rows.filter(mode => mode.modeId !== 0);
+        console.log('过滤后数据条数:', filteredRows.length);
+
         // 处理每个模式的参数
-        rows.forEach(mode => {
+        filteredRows.forEach(mode => {
           if (mode.modeParams && mode.modeParams.length > 0) {
             mode.modeParams = this.processParamsData(mode.modeParams);
           }
         });
 
-        this.modeList = rows.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0));
-        this.total = response.total;
+        this.modeList = filteredRows.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0));
+        this.total = filteredRows.length;
         this.loading = false;
 
         console.log('最终显示的模式列表数量:', this.modeList.length);

@@ -1,6 +1,7 @@
 import request from '@/utils/request'
+import { getDynamicParams } from '@/api/taskmgt/taskmgt'
 
-// 获取点位列表
+// ========== 点位基础 CRUD ==========
 export function getPointList(params) {
   return request({
     url: '/func/point/list',
@@ -9,7 +10,6 @@ export function getPointList(params) {
   })
 }
 
-// 获取点位详情
 export function getPoint(pointId) {
   return request({
     url: '/func/point/' + pointId,
@@ -17,51 +17,6 @@ export function getPoint(pointId) {
   })
 }
 
-// 获取点位播报配置
-export function getPointVoiceConfig(pointId) {
-  return request({
-    url: '/func/point/voice/' + pointId,
-    method: 'get'
-  })
-}
-
-// 保存点位播报配置
-export function savePointVoiceConfig(data) {
-  return request({
-    url: '/func/point/voice/save',
-    method: 'post',
-    data: data
-  })
-}
-
-// 根据机器人ID获取点位播报配置列表
-export function getPointVoiceListByRobot(robotId) {
-  return request({
-    url: '/func/point/voice/listByRobot',
-    method: 'get',
-    params: { robotId: robotId }
-  })
-}
-
-// 根据地图ID获取点位播报配置列表
-export function getPointVoiceListByMap(mapId) {
-  return request({
-    url: '/func/point/voice/listByMap',
-    method: 'get',
-    params: { mapId: mapId }
-  })
-}
-
-// 从机器人同步点位位置列表
-export function syncPositionsFromRobot(robotId) {
-  return request({
-    url: '/func/point/syncPositionsFromRobot',
-    method: 'get',
-    params: { robotId: robotId }
-  })
-}
-
-// 新增点位
 export function addPoint(data) {
   return request({
     url: '/func/point',
@@ -70,7 +25,6 @@ export function addPoint(data) {
   })
 }
 
-// 修改点位
 export function updatePoint(data) {
   return request({
     url: '/func/point',
@@ -79,7 +33,6 @@ export function updatePoint(data) {
   })
 }
 
-// 删除点位
 export function deletePoint(pointId) {
   return request({
     url: '/func/point/' + pointId,
@@ -87,7 +40,6 @@ export function deletePoint(pointId) {
   })
 }
 
-// 批量删除点位
 export function deletePoints(pointIds) {
   return request({
     url: '/func/point/batch',
@@ -95,3 +47,48 @@ export function deletePoints(pointIds) {
     data: pointIds
   })
 }
+
+// ========== 点位播报配置 ==========
+export function getPointVoiceConfig(pointId) {
+  return request({
+    url: '/func/point/voice/' + pointId,
+    method: 'get'
+  })
+}
+
+export function savePointVoiceConfig(data) {
+  return request({
+    url: '/func/point/voice/save',
+    method: 'post',
+    data: data
+  })
+}
+
+export function getPointVoiceListByRobot(robotId) {
+  return request({
+    url: '/func/point/voice/listByRobot',
+    method: 'get',
+    params: { robotId: robotId }
+  })
+}
+
+export function getPointVoiceListByMap(mapId) {
+  return request({
+    url: '/func/point/voice/listByMap',
+    method: 'get',
+    params: { mapId: mapId }
+  })
+}
+
+// ========== 从机器人获取点位（复用任务模块的动态参数接口）==========
+/**
+ * 从机器人获取点位选项（与任务模块“目的地”完全一致）
+ * @param {Number} robotId 机器人ID
+ * @returns {Promise} 返回 { code, data: DynamicParamVo[] }
+ */
+export function getPointOptionsFromRobot(robotId) {
+  // apiId=2 对应 robot.navigate 的 position 参数（valueSource = "DYNAMIC"）
+  return getDynamicParams(2, { robotId })
+}
+
+// 注：原有的 syncPositionsFromRobot 可以保留或丢弃，现在改用上面的统一接口

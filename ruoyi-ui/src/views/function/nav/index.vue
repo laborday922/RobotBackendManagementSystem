@@ -294,7 +294,14 @@
 <script>
 import { getNavConfig, saveNavConfig } from "@/api/function/nav";
 import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
-import { addPoint, updatePoint, deletePoint, getPointVoiceConfig, savePointVoiceConfig, syncPositionsFromRobot } from "@/api/function/point";
+import {
+  addPoint,
+  updatePoint,
+  deletePoint,
+  getPointVoiceConfig,
+  savePointVoiceConfig,
+  getPointOptionsFromRobot          // 新增：统一获取点位接口
+} from "@/api/function/point";
 import { listRobot } from "@/api/mode/robot";
 
 export default {
@@ -333,7 +340,7 @@ export default {
         orderNum: 0,
         status: '1',
         remark: '',
-        robotPositionId: null          // 新增：机器人位置ID
+        robotPositionId: null
       },
       pointSubmitting: false,
       pointRules: {
@@ -354,7 +361,7 @@ export default {
         afterMsg: ''
       },
       savingVoice: false,
-      // 机器人位置相关
+      // 机器人位置相关（从统一接口获取）
       loadingPositions: false,
       positionList: [],
       positionsCache: null,
@@ -743,27 +750,46 @@ export default {
       this.showAddPointDialog = true;
     },
 
+    /**
+     * 从机器人获取点位位置列表（与任务模块完全一致）
+     */
     async loadPositionsFromRobot() {
-      if (!this.selectedRobotId) { this.$message.warning('请先选择机器人'); return; }
+      if (!this.selectedRobotId) {
+        this.$message.warning('请先选择机器人');
+        return;
+      }
+
+      // 缓存检查
       if (this.positionsCache && this.lastRobotId === this.selectedRobotId) {
         this.positionList = this.positionsCache;
         return;
       }
+
       this.loadingPositions = true;
       try {
-        const res = await syncPositionsFromRobot(this.selectedRobotId);
+        // 调用任务模块的动态参数接口
+        const res = await getPointOptionsFromRobot(this.selectedRobotId);
         if (res.code === 200 && res.data) {
-          this.positionList = res.data;
-          this.positionsCache = res.data;
-          this.lastRobotId = this.selectedRobotId;
-          if (res.data.length === 0) this.$message.info('机器人没有返回点位数据');
-          else this.$message.success(`成功加载 ${res.data.length} 个点位`);
+          // 查找 paramKey = 'position' 的动态参数
+          const positionParam = res.data.find(p => p.paramKey === 'position');
+          if (positionParam && positionParam.options && positionParam.options.length > 0) {
+            this.positionList = positionParam.options.map(opt => ({
+              id: opt.value,
+              name: opt.label
+            }));
+            this.positionsCache = this.positionList;
+            this.lastRobotId = this.selectedRobotId;
+            this.$message.success(`成功加载 ${this.positionList.length} 个点位`);
+          } else {
+            this.positionList = [];
+            this.$message.warning('机器人未返回点位数据或接口返回格式异常');
+          }
         } else {
-          this.$message.error(res.msg || '加载失败');
           this.positionList = [];
+          this.$message.error(res.msg || '获取点位失败');
         }
       } catch (error) {
-        console.error('加载位置失败:', error);
+        console.error('加载点位失败', error);
         this.$message.error('加载失败：' + (error.message || '未知错误'));
         this.positionList = [];
       } finally {
@@ -780,7 +806,7 @@ export default {
         orderNum: point.orderNum || 0,
         status: point.status || '1',
         remark: point.remark || '',
-        robotPositionId: point.robotPositionId || null   // 如果后端返回该字段
+        robotPositionId: point.robotPositionId || null
       };
       this.positionList = [];
       this.showAddPointDialog = true;
@@ -822,7 +848,6 @@ export default {
       this.$refs.pointForm.validate((valid) => {
         if (!valid) return;
         this.pointSubmitting = true;
-        // 构建提交数据，不包含坐标字段，但包含 robotPositionId
         const formData = {
           mapId: this.navConfig.mapId,
           pointName: this.pointForm.pointName,
@@ -831,7 +856,7 @@ export default {
           orderNum: this.pointForm.orderNum,
           status: this.pointForm.status,
           remark: this.pointForm.remark,
-          robotPositionId: this.pointForm.robotPositionId   // 添加机器人位置ID
+          robotPositionId: this.pointForm.robotPositionId
         };
         if (this.pointForm.pointId) {
           formData.pointId = this.pointForm.pointId;

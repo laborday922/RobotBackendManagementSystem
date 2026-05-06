@@ -542,7 +542,8 @@ import {
   terminateTask,
   getTaskSteps,
   listLogByTask,
-  updateTaskSteps, getDynamicParams
+  updateTaskSteps,
+  getDynamicParams
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
 import { getToken } from '@/utils/auth'
@@ -806,10 +807,10 @@ export default {
       return map[type] || 'info'
     },
     canEdit(row) {
-      return  row.status===3 || row.status===4 ||row.status===5|| row.status===6
+      return   row.status===4 ||row.status===5|| row.status===6
     },
     canDelete(row) {
-      return  row.status===3 || row.status===4 ||row.status===5|| row.status===6
+      return   row.status===4 ||row.status===5|| row.status===6
     },
     handlePause(row) {
       this.$confirm('确认暂停该任务吗？', '提示', { type: 'info' })

@@ -203,19 +203,21 @@ public class TaskServiceImpl implements ITaskService {
                     }
                 }
             }
-            if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)){
+            if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)||Objects.equals(originTask.getStatus(),Task.DISABLED)){
                 task.setStatus(Task.NOTSTART);
-                List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+                List<TaskStep> steps;
+                if(StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId())){
+                    steps = retrieveSteps(task);
+                }
+                else {
+                    steps = stepRepository.findStepsByTaskId(task.getId());
+                }
                 for(TaskStep step:steps){
                     if(!Objects.equals(step.getStatus(), TaskStep.NOTSTART)){
                         step.setStatus(TaskStep.NOTSTART);
                         step.setTraceId("null");
                     }
                 }
-                stepService.updateSteps(task.getId(), steps);
-            }
-            if (StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId()) && Objects.equals(originTask.getStatus(), Task.DISABLED)) {
-                List<TaskStep> steps = retrieveSteps(task);
                 stepService.updateSteps(task.getId(), steps);
             }
             Long tenantId = TenantContext.get();

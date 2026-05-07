@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 智能讲解控制器
+ */
 @Api(tags = "智能讲解")
 @RestController
 @RequestMapping("/func/tour")
@@ -23,6 +26,7 @@ public class SysTourController extends BaseController {
     private ISysTourService tourService;
 
     // ========== 通用配置 ==========
+
     @ApiOperation("获取通用配置")
     @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
     @GetMapping("/general/{robotId}")
@@ -37,6 +41,7 @@ public class SysTourController extends BaseController {
     }
 
     // ========== 讲解内容 ==========
+
     @ApiOperation("获取讲解内容列表")
     @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
     @GetMapping("/content/list/{robotId}")
@@ -71,13 +76,26 @@ public class SysTourController extends BaseController {
     }
 
     // ========== 讲解路线 ==========
-    @ApiOperation("获取路线列表")
+
+    @ApiOperation("获取所有路线列表")
     @GetMapping("/route/list")
     public AjaxResult getRouteList() {
         return success(tourService.getRouteList());
     }
 
-    @ApiOperation("获取路线详情")
+    /**
+     * 核心接口：根据机器人ID获取讲解路线详情列表
+     * 返回该机器人的所有路线，每条路线包含完整的点位顺序和讲解内容
+     */
+    @ApiOperation("根据机器人ID获取讲解路线详情列表（包含点位顺序和讲解内容）")
+    @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
+    @GetMapping("/route/detail/list")
+    public AjaxResult getRouteDetailListByRobotId(@RequestParam Long robotId) {
+        List<SysTourRoute> routes = tourService.getRouteDetailListByRobotId(robotId);
+        return success(routes);
+    }
+
+    @ApiOperation("获取路线基本信息")
     @ApiImplicitParam(name = "routeId", value = "路线ID", required = true)
     @GetMapping("/route/{routeId}")
     public AjaxResult getRoute(@PathVariable Long routeId) {

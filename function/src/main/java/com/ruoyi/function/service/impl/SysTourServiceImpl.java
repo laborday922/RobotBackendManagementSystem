@@ -15,7 +15,6 @@ import com.ruoyi.function.mapper.SysTourRouteMapper;
 import com.ruoyi.function.service.ISysTourService;
 import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -216,6 +215,15 @@ public class SysTourServiceImpl implements ISysTourService {
         return tourRouteMapper.selectList(route);
     }
 
+    /**
+     * 根据机器人ID获取路线详情列表（包含所有点位顺序和讲解内容）
+     * 这是机器人端获取讲解路线的主要接口
+     */
+    @Override
+    public List<SysTourRoute> getRouteDetailListByRobotId(Long robotId) {
+        return tourRouteMapper.selectRouteDetailByRobotId(robotId);
+    }
+
     @Override
     public SysTourRoute getRoute(Long routeId) {
         SysTourRoute route = tourRouteMapper.selectById(routeId);
@@ -253,7 +261,7 @@ public class SysTourServiceImpl implements ISysTourService {
             }
         }
 
-        if (result > 0 && route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
+        if (result > 0) {
             syncRouteToRobot(route);
         }
 
@@ -263,9 +271,10 @@ public class SysTourServiceImpl implements ISysTourService {
     private void syncRouteToRobot(SysTourRoute route) {
         if (webSocketHandler == null) return;
 
-        // 获取该路线关联的机器人（通过地图ID或直接关联）
-        // 这里简化处理，实际可能需要根据业务逻辑获取机器人ID
         try {
+            Long robotId = route.getRobotId();
+            if (robotId == null || !webSocketHandler.isOnline(robotId)) return;
+
             Map<String, Object> requestData = new HashMap<>();
             requestData.put("action", "sync_tour_config");
             requestData.put("configType", "route");
@@ -274,8 +283,8 @@ public class SysTourServiceImpl implements ISysTourService {
             requestData.put("mapId", route.getMapId());
             requestData.put("routePoints", route.getRoutePoints());
 
-            // 发送到指定机器人（需要根据实际业务确定robotId）
-            // 这里暂时不实现具体发送逻辑
+            String correlationId = UUID.randomUUID().toString();
+            webSocketHandler.sendRequest(robotId, requestData, correlationId);
         } catch (Exception e) {
             // 处理异常
         }

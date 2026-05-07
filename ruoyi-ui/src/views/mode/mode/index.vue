@@ -75,10 +75,6 @@
 
                 <div class="mode-stats">
                   <div class="stat-item">
-                    <div class="stat-value">{{ mode.usageCount || 0 }}</div>
-                    <div class="stat-label">使用次数</div>
-                  </div>
-                  <div class="stat-item">
                     <div class="stat-value">{{ mode.robotCount || 0 }}</div>
                     <div class="stat-label">关联机器人</div>
                   </div>
@@ -432,7 +428,6 @@ export default {
         modeIcon: 'fa fa-cog',
         description: null,
         enabled: '1',
-        usageCount: 0,
         robotCount: 0,
         orderNum: 0,
         modeParams: []
@@ -894,7 +889,6 @@ export default {
         modeIcon: 'fa fa-cog',
         description: null,
         enabled: '1',
-        usageCount: 0,
         robotCount: 0,
         orderNum: 0,
         modeParams: []

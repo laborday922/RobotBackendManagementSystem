@@ -23,7 +23,7 @@ import com.ruoyi.framework.security.handle.LogoutSuccessHandlerImpl;
 
 /**
  * spring security配置
- * 
+ *
  * @author ruoyi
  */
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
@@ -35,7 +35,7 @@ public class SecurityConfig
      */
     @Autowired
     private UserDetailsService userDetailsService;
-    
+
     /**
      * 认证失败处理类
      */
@@ -53,7 +53,7 @@ public class SecurityConfig
      */
     @Autowired
     private JwtAuthenticationTokenFilter authenticationTokenFilter;
-    
+
     /**
      * 跨域过滤器
      */
@@ -97,52 +97,54 @@ public class SecurityConfig
     protected SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception
     {
         return httpSecurity
-            // CSRF禁用，因为不使用session
-            .csrf(csrf -> csrf.disable())
-            // 禁用HTTP响应标头
-            .headers((headersCustomizer) -> {
-                headersCustomizer.cacheControl(cache -> cache.disable()).frameOptions(options -> options.sameOrigin());
-            })
-            // 认证失败处理类
-            .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-            // 基于token，所以不需要session
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 注解标记允许匿名访问的url
-            .authorizeHttpRequests((requests) -> {
-                permitAllUrl.getUrls().forEach(url -> requests.antMatchers(url).permitAll());
-                // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                requests.antMatchers("/login", "/register", "/captchaImage").permitAll()
-                    // 静态资源，可匿名访问
-                    .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
-                        // 添加地图上传文件的静态资源访问权限
-                        .antMatchers("/uploads/**").permitAll()
-                        // 添加地图图片接口匿名访问
-                        .antMatchers("/func/map/image/**").permitAll()
-                    .antMatchers("/swagger-ui.html",
-                            "/swagger-resources/**",
-                            "/webjars/**",
-                            "/*/api-docs",
-                            "/druid/**",
-                            "/dev-api/swagger-ui/**",          // OpenAPI 3 UI 资源
-                            "/dev-api/swagger-ui.html",         // 兼容 Swagger 2
-                            "/dev-api/webjars/**",              // WebJars 资源
-                            "/dev-api/v3/api-docs/**",          // OpenAPI 3 规范文档
-                            "/dev-api/doc.html"                  // Knife4j 增强文档（如果有）
-                    ).permitAll()
-                        .antMatchers("/robots/robots/upload").permitAll()
-                        .antMatchers("/taskmgt/**").permitAll()//临时放行taskmgt的接口用于测试
-                        .antMatchers("/ws/**").permitAll()
-                    // 除上面外的所有请求全部需要鉴权认证
-                    .anyRequest().authenticated();
-            })
-            // 添加Logout filter
-            .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
-            // 添加JWT filter
-            .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            // 添加CORS filter
-            .addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class)
-            .addFilterBefore(corsFilter, LogoutFilter.class)
-            .build();
+                // CSRF禁用，因为不使用session
+                .csrf(csrf -> csrf.disable())
+                // 禁用HTTP响应标头
+                .headers((headersCustomizer) -> {
+                    headersCustomizer.cacheControl(cache -> cache.disable()).frameOptions(options -> options.sameOrigin());
+                })
+                // 认证失败处理类
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+                // 基于token，所以不需要session
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 注解标记允许匿名访问的url
+                .authorizeHttpRequests((requests) -> {
+                    permitAllUrl.getUrls().forEach(url -> requests.antMatchers(url).permitAll());
+                    // 对于登录login 注册register 验证码captchaImage 允许匿名访问
+                    requests.antMatchers("/login", "/register", "/captchaImage").permitAll()
+                            // 静态资源，可匿名访问
+                            .antMatchers(HttpMethod.GET, "/", "/*.html", "/**/*.html", "/**/*.css", "/**/*.js", "/profile/**").permitAll()
+                            // 添加地图上传文件的静态资源访问权限
+                            .antMatchers("/uploads/**").permitAll()
+                            // 添加地图图片接口匿名访问
+                            .antMatchers("/func/map/image/**").permitAll()
+                            // 放行导航模块所有接口（地图、点位、讲解）
+                            .antMatchers("/func/**").permitAll()
+                            .antMatchers("/swagger-ui.html",
+                                    "/swagger-resources/**",
+                                    "/webjars/**",
+                                    "/*/api-docs",
+                                    "/druid/**",
+                                    "/dev-api/swagger-ui/**",          // OpenAPI 3 UI 资源
+                                    "/dev-api/swagger-ui.html",         // 兼容 Swagger 2
+                                    "/dev-api/webjars/**",              // WebJars 资源
+                                    "/dev-api/v3/api-docs/**",          // OpenAPI 3 规范文档
+                                    "/dev-api/doc.html"                  // Knife4j 增强文档（如果有）
+                            ).permitAll()
+                            .antMatchers("/robots/robots/upload").permitAll()
+                            .antMatchers("/taskmgt/**").permitAll()     //临时放行taskmgt的接口用于测试
+                            .antMatchers("/ws/**").permitAll()
+                            // 除上面外的所有请求全部需要鉴权认证
+                            .anyRequest().authenticated();
+                })
+                // 添加Logout filter
+                .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
+                // 添加JWT filter
+                .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                // 添加CORS filter
+                .addFilterBefore(corsFilter, JwtAuthenticationTokenFilter.class)
+                .addFilterBefore(corsFilter, LogoutFilter.class)
+                .build();
     }
 
     /**

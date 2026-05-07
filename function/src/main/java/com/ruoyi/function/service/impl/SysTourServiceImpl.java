@@ -1,5 +1,6 @@
 package com.ruoyi.function.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.threadlocal.TenantContext;
@@ -14,20 +15,29 @@ import com.ruoyi.function.mapper.SysTourGeneralMapper;
 import com.ruoyi.function.mapper.SysTourRouteMapper;
 import com.ruoyi.function.service.ISysTourService;
 import com.ruoyi.robots.websocket.RobotWebSocketHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
+import lombok.extern.slf4j.Slf4j;
+
 
 @Service
 public class SysTourServiceImpl implements ISysTourService {
+
+    private static final Logger log = LoggerFactory.getLogger(SysTourServiceImpl.class);
 
     @Autowired
     private SysTourGeneralMapper tourGeneralMapper;
@@ -114,7 +124,7 @@ public class SysTourServiceImpl implements ISysTourService {
             String correlationId = UUID.randomUUID().toString();
             webSocketHandler.sendRequest(robotId, requestData, correlationId);
         } catch (IOException e) {
-            // 发送失败
+            log.error("同步通用配置到机器人失败: {}", e.getMessage());
         }
     }
 
@@ -178,7 +188,7 @@ public class SysTourServiceImpl implements ISysTourService {
             String correlationId = UUID.randomUUID().toString();
             webSocketHandler.sendRequest(robotId, requestData, correlationId);
         } catch (IOException e) {
-            // 发送失败
+            log.error("同步讲解内容到机器人失败: {}", e.getMessage());
         }
     }
 
@@ -212,12 +222,18 @@ public class SysTourServiceImpl implements ISysTourService {
         if (!isAdmin(tenantId)) {
             route.setTenantId(tenantId);
         }
-        return tourRouteMapper.selectList(route);
+        List<SysTourRoute> routes = tourRouteMapper.selectList(route);
+
+        // 临时打印
+        for (SysTourRoute r : routes) {
+            System.out.println("routeId=" + r.getRouteId() + ", pointIds from mapper=" + r.getPointIds());
+        }
+
+        return routes;
     }
 
     /**
      * 根据机器人ID获取路线详情列表（包含所有点位顺序和讲解内容）
-     * 这是机器人端获取讲解路线的主要接口
      */
     @Override
     public List<SysTourRoute> getRouteDetailListByRobotId(Long robotId) {
@@ -233,14 +249,57 @@ public class SysTourServiceImpl implements ISysTourService {
         return route;
     }
 
+    /**
+     * 根据 routePoints 生成 pointIds JSON 字符串
+     */
+    private String generatePointIds(List<SysRoutePoint> routePoints) {
+        if (routePoints == null || routePoints.isEmpty()) {
+            return null;
+        }
+
+        List<Long> pointIdList = routePoints.stream()
+                .map(SysRoutePoint::getPointId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (pointIdList.isEmpty()) {
+            return null;
+        }
+
+        try {
+            return objectMapper.writeValueAsString(pointIdList);
+        } catch (JsonProcessingException e) {
+            log.error("生成pointIds失败", e);
+            return null;
+        }
+    }
+
     @Override
     @Transactional
     public int saveRoute(SysTourRoute route) {
         route.setUpdateTime(DateUtils.getNowDate());
         route.setTenantId(TenantContext.get());
 
+        // 添加日志：查看前端传入的 routePoints
+        log.info("saveRoute - routeName: {}, routePoints数量: {}",
+                route.getRouteName(),
+                route.getRoutePoints() == null ? 0 : route.getRoutePoints().size());
+
+        // 根据 routePoints 生成 pointIds JSON 字符串
+        String pointIds = generatePointIds(route.getRoutePoints());
+        log.info("saveRoute - 生成的 pointIds: {}", pointIds);  // 添加日志
+        route.setPointIds(pointIds);
+
+        // 更新路线中的 pointCount
+        if (route.getRoutePoints() != null) {
+            route.setPointCount(route.getRoutePoints().size());
+        } else {
+            route.setPointCount(0);
+        }
+
         int result;
         if (route.getRouteId() != null) {
+            // 更新：先删除旧关联，再插入新关联
             tourRouteMapper.deleteRoutePoints(route.getRouteId());
             result = tourRouteMapper.update(route);
             if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
@@ -250,12 +309,16 @@ public class SysTourServiceImpl implements ISysTourService {
                 }
             }
         } else {
+            // 新增
             route.setCreateTime(DateUtils.getNowDate());
             route.setCreateBy(SecurityUtils.getUsername());
             result = tourRouteMapper.insert(route);
+            // 新增后打印 routeId
+            log.info("saveRoute - insert 成功, 生成的 routeId: {}", route.getRouteId());
             if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
+                Long newRouteId = route.getRouteId();
                 for (SysRoutePoint point : route.getRoutePoints()) {
-                    point.setRouteId(route.getRouteId());
+                    point.setRouteId(newRouteId);
                     tourRouteMapper.insertRoutePoint(point);
                 }
             }
@@ -281,12 +344,13 @@ public class SysTourServiceImpl implements ISysTourService {
             requestData.put("routeId", route.getRouteId());
             requestData.put("routeName", route.getRouteName());
             requestData.put("mapId", route.getMapId());
+            requestData.put("pointIds", route.getPointIds());
             requestData.put("routePoints", route.getRoutePoints());
 
             String correlationId = UUID.randomUUID().toString();
             webSocketHandler.sendRequest(robotId, requestData, correlationId);
         } catch (Exception e) {
-            // 处理异常
+            log.error("同步路线到机器人失败: {}", e.getMessage());
         }
     }
 
@@ -304,7 +368,7 @@ public class SysTourServiceImpl implements ISysTourService {
             String correlationId = UUID.randomUUID().toString();
             webSocketHandler.sendRequest(robotId, requestData, correlationId);
         } catch (IOException e) {
-            // 发送失败
+            log.error("通知机器人删除配置失败: {}", e.getMessage());
         }
     }
 
@@ -330,6 +394,16 @@ public class SysTourServiceImpl implements ISysTourService {
     @Transactional
     public int saveRoutePoints(Long routeId, List<SysRoutePoint> points) {
         tourRouteMapper.deleteRoutePoints(routeId);
+
+        // 同步更新路线的 pointIds 和 pointCount
+        SysTourRoute route = tourRouteMapper.selectById(routeId);
+        if (route != null) {
+            String pointIds = generatePointIds(points);
+            route.setPointIds(pointIds);
+            route.setPointCount(points != null ? points.size() : 0);
+            tourRouteMapper.update(route);
+        }
+
         int count = 0;
         for (SysRoutePoint point : points) {
             point.setRouteId(routeId);
@@ -347,9 +421,13 @@ public class SysTourServiceImpl implements ISysTourService {
                 route.setTenantId(tenantId);
             }
             List<SysTourRoute> routes = tourRouteMapper.selectList(route);
+            // 为每个路线填充 routePoints
+            for (SysTourRoute r : routes) {
+                r.setRoutePoints(tourRouteMapper.selectRoutePoints(r.getRouteId()));
+            }
             return objectMapper.writeValueAsString(routes);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("导出路线失败", e);
             return "[]";
         }
     }
@@ -365,12 +443,31 @@ public class SysTourServiceImpl implements ISysTourService {
                 route.setCreateTime(DateUtils.getNowDate());
                 route.setCreateBy(SecurityUtils.getUsername());
                 route.setTenantId(tenantId);
+
+                // 重新生成 pointIds
+                String pointIds = generatePointIds(route.getRoutePoints());
+                route.setPointIds(pointIds);
+
+                if (route.getRoutePoints() != null) {
+                    route.setPointCount(route.getRoutePoints().size());
+                }
+
                 count += tourRouteMapper.insert(route);
+
+                // 插入路线点位关联
+                if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
+                    Long newRouteId = route.getRouteId();
+                    for (SysRoutePoint point : route.getRoutePoints()) {
+                        point.setRouteId(newRouteId);
+                        tourRouteMapper.insertRoutePoint(point);
+                    }
+                }
             }
             return count;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("导入路线失败", e);
             return 0;
         }
     }
+
 }

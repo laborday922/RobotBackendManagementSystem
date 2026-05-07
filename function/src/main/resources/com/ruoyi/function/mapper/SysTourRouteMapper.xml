@@ -85,6 +85,7 @@
     <select id="selectRouteDetailByRobotId" resultMap="SysTourRouteDetailResult">
         SELECT
         sr.route_id, sr.route_name, sr.robot_id, sr.map_id, sr.status, sr.point_count,
+        sr.point_ids,   <!-- 关键修改：添加这一列 -->
         sr.create_by, sr.create_time, sr.update_by, sr.update_time,
         rp.id as rp_id, rp.route_id as rp_route_id, rp.point_id as rp_point_id,
         rp.content_id as rp_content_id, rp.order_num as rp_order_num,

@@ -1013,6 +1013,7 @@ export default {
         routeId: this.currentRouteId,
         routeName: this.routeConfigForm.routeName,
         mapId: this.routeConfigForm.mapId,
+        robotId: this.selectedRobotId,           // ← 添加这行
         pointCount: routePoints.length,
         routePoints: routePoints
       };

@@ -74,20 +74,20 @@ public class SysTourController extends BaseController {
 
     // ========== 讲解路线 ==========
 
-    @ApiOperation("获取所有路线列表")
-    @GetMapping("/route/list")
-    public AjaxResult getRouteList() {
-        return success(tourService.getRouteList());
-    }
-
     /**
-     * 新增接口：根据机器人ID获取路线列表
+     * 获取路线列表（支持按机器人ID过滤）
+     * @param robotId 机器人ID（可选，传参时按机器人过滤）
      */
-    @ApiOperation("根据机器人ID获取路线列表")
-    @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
-    @GetMapping("/route/list/byRobot")
-    public AjaxResult getRouteListByRobotId(@RequestParam Long robotId) {
-        return success(tourService.getRouteListByRobotId(robotId));
+    @ApiOperation("获取路线列表（支持按机器人ID过滤）")
+    @GetMapping("/route/list")
+    public AjaxResult getRouteList(@RequestParam(required = false) Long robotId) {
+        if (robotId != null) {
+            // 如果传入了 robotId，按机器人过滤
+            return success(tourService.getRouteListByRobotId(robotId));
+        } else {
+            // 否则返回所有路线
+            return success(tourService.getRouteList());
+        }
     }
 
     @ApiOperation("根据机器人ID获取讲解路线详情列表（包含点位顺序和讲解内容）")
@@ -108,7 +108,6 @@ public class SysTourController extends BaseController {
     @ApiOperation("保存路线")
     @PostMapping("/route")
     public AjaxResult saveRoute(@RequestBody SysTourRoute route) {
-        // 确保 route 中包含 robotId
         if (route.getRobotId() == null) {
             return error("机器人ID不能为空");
         }

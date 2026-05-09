@@ -12,7 +12,10 @@ import javax.validation.constraints.NotBlank;
 public class PointCreateRequest {
 
     @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
-    private Long mapId;  // 移除 @NotNull 注解
+    private Long mapId;
+
+    @ApiModelProperty(value = "所属机器人ID")
+    private Long robotId;
 
     @ApiModelProperty(value = "点位名称", required = true)
     @NotBlank(message = "点位名称不能为空")
@@ -43,6 +46,14 @@ public class PointCreateRequest {
 
     public void setMapId(Long mapId) {
         this.mapId = mapId;
+    }
+
+    public Long getRobotId() {
+        return robotId;
+    }
+
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
     }
 
     public String getPointName() {

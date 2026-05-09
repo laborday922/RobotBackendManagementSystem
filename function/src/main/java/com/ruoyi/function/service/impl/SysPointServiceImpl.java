@@ -46,6 +46,18 @@ public class SysPointServiceImpl implements ISysPointService {
     }
 
     @Override
+    public List<SysPoint> selectByRobotId(Long robotId) {
+        SysPoint point = new SysPoint();
+        point.setRobotId(robotId);
+        point.setDelFlag("0");
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            point.setTenantId(tenantId);
+        }
+        return sysPointMapper.selectList(point);
+    }
+
+    @Override
     public int insert(SysPoint point) {
         point.setCreateTime(DateUtils.getNowDate());
         point.setTenantId(TenantContext.get());

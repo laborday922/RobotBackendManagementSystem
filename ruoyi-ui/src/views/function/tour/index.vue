@@ -404,7 +404,7 @@
 <script>
 import { getTourGeneral, saveTourGeneral } from "@/api/function/tour";
 import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/function/tour";
-import { getRouteList, saveRoute, deleteRoute } from "@/api/function/tour";
+import { getRouteListByRobotId, saveRoute, deleteRoute } from "@/api/function/tour";
 import { listRobot } from "@/api/mode/robot";
 import { getMapList, getPointListByMap, getDefaultPoints } from "@/api/function/map";
 import Pagination from "@/components/Pagination";
@@ -556,7 +556,8 @@ export default {
     },
 
     loadAllRoutes() {
-      return getRouteList().then(response => {
+      if (!this.selectedRobotId) return Promise.resolve();
+      return getRouteListByRobotId(this.selectedRobotId).then(response => {
         this.allRoutes = response.rows || response.data || [];
       }).catch(error => {
         console.error('获取路线列表失败:', error);
@@ -935,7 +936,16 @@ export default {
     },
 
     toggleRouteStatus(row) {
-      saveRoute(row).then(() => {
+      const data = {
+        routeId: row.routeId,
+        routeName: row.routeName,
+        mapId: row.mapId,
+        robotId: this.selectedRobotId,
+        status: row.status,
+        pointCount: row.pointCount,
+        routePoints: row.routePoints
+      };
+      saveRoute(data).then(() => {
         this.$message.success('状态更新成功');
         this.loadAllRoutes();
       }).catch(error => {
@@ -1013,7 +1023,7 @@ export default {
         routeId: this.currentRouteId,
         routeName: this.routeConfigForm.routeName,
         mapId: this.routeConfigForm.mapId,
-        robotId: this.selectedRobotId,           // ← 添加这行
+        robotId: this.selectedRobotId,
         pointCount: routePoints.length,
         routePoints: routePoints
       };
@@ -1051,7 +1061,12 @@ export default {
           }).then(() => {
             let successCount = 0, failCount = 0;
             const promises = routesToImport.map(route => {
-              return saveRoute({ ...route, routeId: undefined }).then(() => successCount++).catch(() => failCount++);
+              const saveData = {
+                ...route,
+                routeId: undefined,
+                robotId: this.selectedRobotId
+              };
+              return saveRoute(saveData).then(() => successCount++).catch(() => failCount++);
             });
             Promise.all(promises).then(() => {
               if (successCount > 0) {
@@ -1074,8 +1089,11 @@ export default {
       const routes = this.currentRobotRoutes;
       if (routes.length === 0) { this.$message.warning('暂无路线数据可导出'); return; }
       const exportData = routes.map(route => ({
-        routeName: route.routeName, mapId: route.mapId, pointCount: route.pointCount,
-        status: route.status, routePoints: route.routePoints
+        routeName: route.routeName,
+        mapId: route.mapId,
+        pointCount: route.pointCount,
+        status: route.status,
+        routePoints: route.routePoints
       }));
       const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });

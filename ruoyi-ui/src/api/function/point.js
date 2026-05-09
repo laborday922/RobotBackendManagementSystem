@@ -92,3 +92,14 @@ export function getPointOptionsFromRobot(robotId) {
 }
 
 // 注：原有的 syncPositionsFromRobot 可以保留或丢弃，现在改用上面的统一接口
+/**
+ * 根据机器人ID直接获取点位列表
+ * @param {number} robotId 机器人ID
+ */
+export function getPointsByRobotId(robotId) {
+  return request({
+    url: '/func/point/list/byRobot',
+    method: 'get',
+    params: { robotId: robotId }
+  })
+}

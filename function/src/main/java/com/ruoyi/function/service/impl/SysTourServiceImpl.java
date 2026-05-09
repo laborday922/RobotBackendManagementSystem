@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +30,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
-import lombok.extern.slf4j.Slf4j;
-
 
 @Service
 public class SysTourServiceImpl implements ISysTourService {
@@ -222,14 +219,21 @@ public class SysTourServiceImpl implements ISysTourService {
         if (!isAdmin(tenantId)) {
             route.setTenantId(tenantId);
         }
-        List<SysTourRoute> routes = tourRouteMapper.selectList(route);
+        return tourRouteMapper.selectList(route);
+    }
 
-        // 临时打印
-        for (SysTourRoute r : routes) {
-            System.out.println("routeId=" + r.getRouteId() + ", pointIds from mapper=" + r.getPointIds());
+    /**
+     * 新增：根据机器人ID获取路线列表
+     */
+    @Override
+    public List<SysTourRoute> getRouteListByRobotId(Long robotId) {
+        SysTourRoute route = new SysTourRoute();
+        route.setRobotId(robotId);
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            route.setTenantId(tenantId);
         }
-
-        return routes;
+        return tourRouteMapper.selectList(route);
     }
 
     /**
@@ -277,17 +281,22 @@ public class SysTourServiceImpl implements ISysTourService {
     @Override
     @Transactional
     public int saveRoute(SysTourRoute route) {
+        // 验证 robotId 不能为空
+        if (route.getRobotId() == null) {
+            log.error("保存路线失败：robotId 不能为空");
+            throw new RuntimeException("机器人ID不能为空");
+        }
+
         route.setUpdateTime(DateUtils.getNowDate());
         route.setTenantId(TenantContext.get());
 
-        // 添加日志：查看前端传入的 routePoints
-        log.info("saveRoute - routeName: {}, routePoints数量: {}",
-                route.getRouteName(),
+        log.info("saveRoute - routeName: {}, robotId: {}, routePoints数量: {}",
+                route.getRouteName(), route.getRobotId(),
                 route.getRoutePoints() == null ? 0 : route.getRoutePoints().size());
 
         // 根据 routePoints 生成 pointIds JSON 字符串
         String pointIds = generatePointIds(route.getRoutePoints());
-        log.info("saveRoute - 生成的 pointIds: {}", pointIds);  // 添加日志
+        log.info("saveRoute - 生成的 pointIds: {}", pointIds);
         route.setPointIds(pointIds);
 
         // 更新路线中的 pointCount
@@ -313,7 +322,6 @@ public class SysTourServiceImpl implements ISysTourService {
             route.setCreateTime(DateUtils.getNowDate());
             route.setCreateBy(SecurityUtils.getUsername());
             result = tourRouteMapper.insert(route);
-            // 新增后打印 routeId
             log.info("saveRoute - insert 成功, 生成的 routeId: {}", route.getRouteId());
             if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
                 Long newRouteId = route.getRouteId();
@@ -469,5 +477,4 @@ public class SysTourServiceImpl implements ISysTourService {
             return 0;
         }
     }
-
 }

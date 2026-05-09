@@ -6,6 +6,7 @@
     <resultMap id="BaseResultMap" type="com.ruoyi.function.domain.SysPoint">
         <id property="pointId" column="point_id"/>
         <result property="mapId" column="map_id"/>
+        <result property="robotId" column="robot_id"/>
         <result property="pointName" column="point_name"/>
         <result property="pointCode" column="point_code"/>
         <result property="pointType" column="point_type"/>
@@ -28,7 +29,7 @@
 
     <!-- 通用查询字段列表 -->
     <sql id="BaseColumnList">
-        point_id, map_id, point_name, point_code, point_type,
+        point_id, map_id, robot_id, point_name, point_code, point_type,
         coordinate_x, coordinate_y, status, order_num, tenant_id,
         voice_type, before_msg, during_msg, after_msg,
         create_by, create_time, update_by, update_time, remark, del_flag
@@ -53,6 +54,16 @@
         AND del_flag = '0'
     </select>
 
+    <!-- 根据机器人ID查询点位列表 -->
+    <select id="selectByRobotId" resultMap="BaseResultMap" parameterType="java.lang.Long">
+        SELECT
+        <include refid="BaseColumnList"/>
+        FROM sys_point
+        WHERE robot_id = #{robotId}
+        AND del_flag = '0'
+        ORDER BY order_num ASC, point_id ASC
+    </select>
+
     <!-- 查询所有点位列表（带条件） -->
     <select id="selectList" resultMap="BaseResultMap" parameterType="com.ruoyi.function.domain.SysPoint">
         SELECT
@@ -61,6 +72,9 @@
         <where>
             <if test="mapId != null">
                 AND map_id = #{mapId}
+            </if>
+            <if test="robotId != null">
+                AND robot_id = #{robotId}
             </if>
             <if test="pointName != null and pointName != ''">
                 AND point_name LIKE CONCAT('%', #{pointName}, '%')
@@ -84,44 +98,31 @@
         ORDER BY order_num ASC, point_id ASC
     </select>
 
+    <!-- 根据多个地图ID查询点位列表 -->
+    <select id="selectByMapIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="BaseColumnList"/>
+        FROM sys_point
+        WHERE map_id IN
+        <foreach collection="mapIds" item="mapId" open="(" separator="," close=")">
+            #{mapId}
+        </foreach>
+        AND del_flag = '0'
+        ORDER BY order_num ASC, point_id ASC
+    </select>
+
     <!-- 新增点位 -->
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysPoint" useGeneratedKeys="true" keyProperty="pointId">
         INSERT INTO sys_point (
-        map_id,
-        point_name,
-        point_code,
-        point_type,
-        coordinate_x,
-        coordinate_y,
-        status,
-        order_num,
-        tenant_id,
-        voice_type,
-        before_msg,
-        during_msg,
-        after_msg,
-        create_by,
-        create_time,
-        remark,
-        del_flag
+        map_id, robot_id, point_name, point_code, point_type,
+        coordinate_x, coordinate_y, status, order_num, tenant_id,
+        voice_type, before_msg, during_msg, after_msg,
+        create_by, create_time, remark, del_flag
         ) VALUES (
-        #{mapId},
-        #{pointName},
-        #{pointCode},
-        #{pointType},
-        #{coordinateX},
-        #{coordinateY},
-        IFNULL(#{status}, '1'),
-        IFNULL(#{orderNum}, 0),
-        #{tenantId},
-        IFNULL(#{voiceType}, 'default'),
-        #{beforeMsg},
-        #{duringMsg},
-        #{afterMsg},
-        #{createBy},
-        #{createTime},
-        #{remark},
-        IFNULL(#{delFlag}, '0')
+        #{mapId}, #{robotId}, #{pointName}, #{pointCode}, #{pointType},
+        #{coordinateX}, #{coordinateY}, IFNULL(#{status}, '1'), IFNULL(#{orderNum}, 0), #{tenantId},
+        IFNULL(#{voiceType}, 'default'), #{beforeMsg}, #{duringMsg}, #{afterMsg},
+        #{createBy}, #{createTime}, #{remark}, IFNULL(#{delFlag}, '0')
         )
     </insert>
 
@@ -130,6 +131,7 @@
         UPDATE sys_point
         <set>
             <if test="mapId != null">map_id = #{mapId},</if>
+            <if test="robotId != null">robot_id = #{robotId},</if>
             <if test="pointName != null and pointName != ''">point_name = #{pointName},</if>
             <if test="pointCode != null and pointCode != ''">point_code = #{pointCode},</if>
             <if test="pointType != null and pointType != ''">point_type = #{pointType},</if>

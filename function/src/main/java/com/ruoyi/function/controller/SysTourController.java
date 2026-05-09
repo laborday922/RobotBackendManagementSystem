@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 智能讲解控制器
- */
 @Api(tags = "智能讲解")
 @RestController
 @RequestMapping("/func/tour")
@@ -84,9 +81,15 @@ public class SysTourController extends BaseController {
     }
 
     /**
-     * 核心接口：根据机器人ID获取讲解路线详情列表
-     * 返回该机器人的所有路线，每条路线包含完整的点位顺序和讲解内容
+     * 新增接口：根据机器人ID获取路线列表
      */
+    @ApiOperation("根据机器人ID获取路线列表")
+    @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
+    @GetMapping("/route/list/byRobot")
+    public AjaxResult getRouteListByRobotId(@RequestParam Long robotId) {
+        return success(tourService.getRouteListByRobotId(robotId));
+    }
+
     @ApiOperation("根据机器人ID获取讲解路线详情列表（包含点位顺序和讲解内容）")
     @ApiImplicitParam(name = "robotId", value = "机器人ID", required = true)
     @GetMapping("/route/detail/list")
@@ -105,6 +108,10 @@ public class SysTourController extends BaseController {
     @ApiOperation("保存路线")
     @PostMapping("/route")
     public AjaxResult saveRoute(@RequestBody SysTourRoute route) {
+        // 确保 route 中包含 robotId
+        if (route.getRobotId() == null) {
+            return error("机器人ID不能为空");
+        }
         return toAjax(tourService.saveRoute(route));
     }
 

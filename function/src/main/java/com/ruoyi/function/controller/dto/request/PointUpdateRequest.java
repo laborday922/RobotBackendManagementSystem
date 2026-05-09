@@ -18,6 +18,9 @@ public class PointUpdateRequest {
     @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
     private Long mapId;
 
+    @ApiModelProperty(value = "所属机器人ID")
+    private Long robotId;
+
     @ApiModelProperty(value = "点位名称")
     private String pointName;
 
@@ -54,6 +57,14 @@ public class PointUpdateRequest {
 
     public void setMapId(Long mapId) {
         this.mapId = mapId;
+    }
+
+    public Long getRobotId() {
+        return robotId;
+    }
+
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
     }
 
     public String getPointName() {

@@ -18,6 +18,9 @@ public class SysPoint extends BaseEntity {
     @ApiModelProperty("所属地图ID")
     private Long mapId;
 
+    @ApiModelProperty("所属机器人ID")
+    private Long robotId;
+
     @ApiModelProperty("点位名称")
     private String pointName;
 
@@ -77,6 +80,14 @@ public class SysPoint extends BaseEntity {
 
     public void setMapId(Long mapId) {
         this.mapId = mapId;
+    }
+
+    public Long getRobotId() {
+        return robotId;
+    }
+
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
     }
 
     public String getPointName() {
@@ -188,6 +199,7 @@ public class SysPoint extends BaseEntity {
         return "SysPoint{" +
                 "pointId=" + pointId +
                 ", mapId=" + mapId +
+                ", robotId=" + robotId +
                 ", pointName='" + pointName + '\'' +
                 ", pointCode='" + pointCode + '\'' +
                 ", pointType='" + pointType + '\'' +

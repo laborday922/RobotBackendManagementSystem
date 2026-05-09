@@ -111,15 +111,15 @@
         ORDER BY order_num ASC, point_id ASC
     </select>
 
-    <!-- 新增点位 -->
-    <insert id="insert" parameterType="com.ruoyi.function.domain.SysPoint" useGeneratedKeys="true" keyProperty="pointId">
+    <!-- 新增点位 - 允许手动指定 point_id -->
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysPoint" useGeneratedKeys="false">
         INSERT INTO sys_point (
-        map_id, robot_id, point_name, point_code, point_type,
+        point_id, map_id, robot_id, point_name, point_code, point_type,
         coordinate_x, coordinate_y, status, order_num, tenant_id,
         voice_type, before_msg, during_msg, after_msg,
         create_by, create_time, remark, del_flag
         ) VALUES (
-        #{mapId}, #{robotId}, #{pointName}, #{pointCode}, #{pointType},
+        #{pointId}, #{mapId}, #{robotId}, #{pointName}, #{pointCode}, #{pointType},
         #{coordinateX}, #{coordinateY}, IFNULL(#{status}, '1'), IFNULL(#{orderNum}, 0), #{tenantId},
         IFNULL(#{voiceType}, 'default'), #{beforeMsg}, #{duringMsg}, #{afterMsg},
         #{createBy}, #{createTime}, #{remark}, IFNULL(#{delFlag}, '0')

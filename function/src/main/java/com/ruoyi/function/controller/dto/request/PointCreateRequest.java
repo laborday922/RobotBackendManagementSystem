@@ -11,6 +11,9 @@ import javax.validation.constraints.NotBlank;
 @ApiModel(description = "点位创建请求")
 public class PointCreateRequest {
 
+    @ApiModelProperty(value = "点位ID（从机器人获取的位置ID，直接作为point_id存储）")
+    private Long pointId;
+
     @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
     private Long mapId;
 
@@ -36,10 +39,18 @@ public class PointCreateRequest {
     @ApiModelProperty(value = "备注")
     private String remark;
 
-    @ApiModelProperty(value = "机器人位置ID")
+    @ApiModelProperty(value = "机器人位置ID（从机器人获取的位置ID）")
     private Long robotPositionId;
 
     // Getters and Setters
+    public Long getPointId() {
+        return pointId;
+    }
+
+    public void setPointId(Long pointId) {
+        this.pointId = pointId;
+    }
+
     public Long getMapId() {
         return mapId;
     }

@@ -339,6 +339,26 @@ public class SysPointController extends BaseController {
         Long mapId = getEffectiveMapId(request.getMapId());
 
         SysPoint point = new SysPoint();
+
+        // 关键修改：如果前端传了 pointId，直接使用；否则自动生成或者报错
+        if (request.getPointId() != null) {
+            // 检查该 pointId 是否已存在
+            SysPoint existing = sysPointService.selectById(request.getPointId());
+            if (existing != null) {
+                return error("点位ID " + request.getPointId() + " 已存在，无法创建");
+            }
+            point.setPointId(request.getPointId());
+        } else if (request.getRobotPositionId() != null) {
+            // 兼容使用 robotPositionId 作为 pointId
+            SysPoint existing = sysPointService.selectById(request.getRobotPositionId());
+            if (existing != null) {
+                return error("点位ID " + request.getRobotPositionId() + " 已存在，无法创建");
+            }
+            point.setPointId(request.getRobotPositionId());
+        } else {
+            return error("请选择机器人点位位置");
+        }
+
         point.setMapId(mapId);
         point.setRobotId(request.getRobotId());
         point.setPointName(request.getPointName());
@@ -352,7 +372,8 @@ public class SysPointController extends BaseController {
             point.setVoiceType("default");
         }
 
-        log.info("新增点位: pointName={}, mapId={}, robotId={}", point.getPointName(), mapId, request.getRobotId());
+        log.info("新增点位: pointId={}, pointName={}, mapId={}, robotId={}",
+                point.getPointId(), point.getPointName(), mapId, request.getRobotId());
 
         return toAjax(sysPointService.insert(point));
     }

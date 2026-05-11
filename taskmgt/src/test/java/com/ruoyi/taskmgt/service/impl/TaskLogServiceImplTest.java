@@ -2,6 +2,7 @@ package com.ruoyi.taskmgt.service.impl;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.taskmgt.TestApplication;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.TaskLogRepository;
 import com.ruoyi.taskmgt.domain.TaskRepository;
@@ -14,7 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +30,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TaskLogServiceImplTest {
+public class TaskLogServiceImplTest {
 
     @Mock private TaskLogRepository taskLogRepository;
     @Mock private MessageSourceAccessor messageSourceAccessor;

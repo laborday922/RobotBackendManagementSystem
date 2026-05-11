@@ -94,6 +94,14 @@ public interface ISysRobotService
     public int emergencyStop(Long[] robotIds);
 
     /**
+     * 紧急撤离 - 立即停止当前任务并返回指定安全位置
+     *
+     * @param robotIds 机器人ID数组
+     * @return 成功操作的数量
+     */
+    public int emergencyEvacuation(Long[] robotIds);
+
+    /**
      * 刷新机器人状态
      *
      * @param robotIds 机器人ID数组
@@ -156,7 +164,8 @@ public interface ISysRobotService
      * @param robotIds 机器人ID数组
      * @return 成功切换的数量
      */
-    public int chargeMode(Long[] robotIds);
+    // 将原来的 int chargeMode(Long[] robotIds); 改为：
+    public Map<String, Object> chargeMode(Long[] robotIds);
 
     /**
      * 返回充电
@@ -205,4 +214,25 @@ public interface ISysRobotService
      * @return 结果
      */
     public int copyRobotModeConfig(Long sourceRobotId, Long targetRobotId, Long modeId);
+// ==================== WebSocket 模式切换方法 ====================
+
+    /**
+     * 通过 WebSocket 切换机器人模式（同步）
+     *
+     * @param robotId 机器人ID
+     * @param modeId 目标模式ID
+     * @param modeName 目标模式名称
+     * @return 是否成功
+     */
+    public boolean switchModeViaWebSocketSync(Long robotId, Long modeId, String modeName);
+
+    /**
+     * 通过 WebSocket 切换机器人模式（异步）
+     *
+     * @param robotId 机器人ID
+     * @param modeId 目标模式ID
+     * @param modeName 目标模式名称
+     * @return 追踪ID
+     */
+    public String switchModeViaWebSocketAsync(Long robotId, Long modeId, String modeName);
 }

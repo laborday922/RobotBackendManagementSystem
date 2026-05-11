@@ -14,9 +14,10 @@
         <result property="paramOptions"      column="param_options"     />
         <result property="paramMin"          column="param_min"         />
         <result property="paramMax"          column="param_max"         />
-        <result property="paramUnit"          column="param_unit"        />
+        <result property="paramUnit"         column="param_unit"        />
         <result property="orderNum"          column="order_num"         />
         <result property="delFlag"           column="del_flag"          />
+        <result property="tenantId"          column="tenant_id"         />
         <result property="createBy"          column="create_by"         />
         <result property="createTime"        column="create_time"       />
         <result property="updateBy"          column="update_by"         />
@@ -26,11 +27,11 @@
     <sql id="selectParamVo">
         select param_id, mode_id, param_name, param_type, param_description,
         param_value, param_options, param_min, param_max, param_unit,
-        order_num, del_flag, create_by, create_time, update_by, update_time
+        order_num, del_flag, tenant_id, create_by, create_time, update_by, update_time
         from sys_mode_param
     </sql>
 
-    <!-- 查询参数列表 - 只查询未删除的数据 -->
+    <!-- 查询参数列表 -->
     <select id="selectSysModeParamList" parameterType="SysModeParam" resultMap="SysModeParamResult">
         <include refid="selectParamVo"/>
         <where>
@@ -40,20 +41,22 @@
             <if test="paramName != null and paramName != ''">
                 AND param_name like concat('%', #{paramName}, '%')
             </if>
-            <!-- 关键：只查询未删除的数据 -->
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
             AND del_flag = '0'
         </where>
         order by order_num
     </select>
 
-    <!-- 根据模式ID查询参数列表 - 只查询未删除的数据 -->
+    <!-- 根据模式ID查询参数列表 -->
     <select id="selectSysModeParamByModeId" parameterType="Long" resultMap="SysModeParamResult">
         <include refid="selectParamVo"/>
         where mode_id = #{modeId} and del_flag = '0'
         order by order_num
     </select>
 
-    <!-- 根据参数ID查询 - 只查询未删除的数据 -->
+    <!-- 根据参数ID查询 -->
     <select id="selectSysModeParamById" parameterType="Long" resultMap="SysModeParamResult">
         <include refid="selectParamVo"/>
         where param_id = #{paramId} and del_flag = '0'
@@ -72,6 +75,7 @@
         <if test="paramMax != null">param_max,</if>
         <if test="paramUnit != null">param_unit,</if>
         <if test="orderNum != null">order_num,</if>
+        <if test="tenantId != null">tenant_id,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
         create_time
         )values(
@@ -85,6 +89,7 @@
         <if test="paramMax != null">#{paramMax},</if>
         <if test="paramUnit != null">#{paramUnit},</if>
         <if test="orderNum != null">#{orderNum},</if>
+        <if test="tenantId != null">#{tenantId},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
         sysdate()
         )

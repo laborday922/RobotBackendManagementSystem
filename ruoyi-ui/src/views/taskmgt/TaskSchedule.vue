@@ -316,7 +316,7 @@
           <el-descriptions-item label="机器人组">{{ currentTask.robotGroupName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ currentTask.createTime }}</el-descriptions-item>
           <el-descriptions-item label="更新时间">{{ currentTask.updateTime }}</el-descriptions-item>
-          <el-descriptions-item label="任务时长">{{ currentTask.duration }}分钟</el-descriptions-item>
+          <el-descriptions-item label="任务时长">{{ formatDuration(currentTask.duration) }}分钟</el-descriptions-item>
           <el-descriptions-item label="终止原因" v-if="currentTask.terminateReason">{{
               currentTask.terminateReason
             }}
@@ -347,6 +347,12 @@
               <span :class="'status-tag status-' + getStepStatusClass(scope.row.status)">{{
                   getStepStatusText(scope.row.status)
                 }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="参数详情" min-width="200">
+            <template slot-scope="scope">
+              <pre v-if="scope.row.operationJsonDisplay" style="margin:0; font-size:12px; background:#f5f7fa; padding:8px; border-radius:4px;">{{ scope.row.operationJsonDisplay }}</pre>
+              <span v-else>-</span>
             </template>
           </el-table-column>
         </el-table>
@@ -383,7 +389,8 @@ import {
   listLogByTask,
   resumeTask,
   updatePendingOrder,
-  updateGlobalOrder
+  updateGlobalOrder,
+  listTemplate, getDynamicParams
 } from '@/api/taskmgt/taskmgt'
 import {listRobots} from '@/api/system/robots'
 import { listGroups } from '@/api/system/robots'
@@ -392,7 +399,6 @@ export default {
   name: 'TaskSchedule',
   data() {
     return {
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -400,17 +406,14 @@ export default {
         status: undefined,
         displayOrder: 'status ASC, pending_order ASC, priority DESC, create_time DESC'
       },
-      // 前端筛选
       filter: {
         robotId: undefined,
         status: undefined
       },
-      // 资源筛选（用于资源内排序）
       resourceFilter: {
         resourceId: undefined,
         isGroupTask: false
       },
-      // 排序模式：none-普通模式, global-全局排序, local-资源内排序
       sortMode: 'none',
       loading: false,
       taskList: [],
@@ -418,22 +421,20 @@ export default {
       robotOptions: [],
       robotGroupOptions: [],
       templateOptions: [],
-      // 拖拽排序相关
       tableKey: 0,
       sortableInstance: null,
-      // 用于回滚的原始数据备份
       originalTaskList: [],
-      // 详情
       detailVisible: false,
       detailLoading: false,
       currentTask: null,
       taskSteps: [],
       taskLogs: [],
-      formFields: []
+      formFields: [],
+      // 动态选项缓存，用于详情页展示
+      dynamicOptionsCache: {}
     }
   },
   computed: {
-    // 统计
     totalTasks() {
       return this.taskList.length
     },
@@ -446,33 +447,24 @@ export default {
     pausedCount() {
       return this.taskList.filter(t => t.status === 2).length
     },
-    // 是否显示拖拽手柄列
     showSortHandle() {
       return this.sortMode !== 'none'
     },
-    // 是否启用拖拽
     isSortableEnabled() {
       return this.sortMode === 'global' || (this.sortMode === 'local' && this.resourceFilter.resourceId)
     },
-    // 显示的任务列表
     displayedTasks() {
       if (this.sortMode === 'none') {
-        // 普通模式：返回过滤后的任务
         return this.taskList
       } else if (this.sortMode === 'global') {
-        // 全局排序模式：只显示准备中状态的任务，按globalPendingOrder排序，同时确保资源内按pendingOrder排序
         return this.taskList
           .filter(t => t.status === 1)
           .sort((a, b) => {
-            // 首先按globalPendingOrder排序
             const globalOrderDiff = (a.globalPendingOrder || 0) - (b.globalPendingOrder || 0)
             if (globalOrderDiff !== 0) return globalOrderDiff
-
-            // 如果全局顺序相同，按资源内顺序排序
             return (a.pendingOrder || 0) - (b.pendingOrder || 0)
           })
       } else if (this.sortMode === 'local') {
-        // 资源内排序模式：只显示选定资源的准备中任务
         if (!this.resourceFilter.resourceId) {
           return []
         }
@@ -491,7 +483,6 @@ export default {
     }
   },
   watch: {
-    // 监听表格数据变化，重新初始化拖拽
     taskList: {
       handler() {
         this.$nextTick(() => {
@@ -500,7 +491,6 @@ export default {
       },
       deep: true
     },
-    // 监听排序模式变化
     sortMode(val) {
       if (val === 'none') {
         this.destroySortable()
@@ -514,7 +504,6 @@ export default {
         this.taskList = []
       }
     },
-    // 监听资源选择变化
     'resourceFilter.resourceId'(val) {
       if (this.sortMode === 'local' && val) {
         this.getLocalPendingTasks()
@@ -524,13 +513,13 @@ export default {
   created() {
     this.getRobotList()
     this.getRobotGroupList()
+    this.getTemplates()
     this.getList()
   },
   beforeDestroy() {
     this.destroySortable()
   },
   methods: {
-    // 获取机器人列表
     async getRobotList() {
       try {
         const res = await listRobots({pageSize: 1000})
@@ -540,7 +529,6 @@ export default {
         console.error(error)
       }
     },
-    // 获取机器人组列表
     async getRobotGroupList() {
       try {
         const res = await listGroups({pageSize: 1000})
@@ -550,7 +538,46 @@ export default {
         console.error(error)
       }
     },
-    // 获取任务列表（普通模式）
+    // 获取模板列表（用于详情解析）
+    async getTemplates() {
+      try {
+        const res = await listTemplate({ pageSize: 100 })
+        this.templateOptions = (res.rows || []).map(tpl => {
+          let fields = []
+          try {
+            if (tpl.formContent) {
+              const content = JSON.parse(tpl.formContent)
+              fields = content.fields || []
+            }
+          } catch (e) {
+            console.warn('解析模板内容失败', e)
+          }
+          return { ...tpl, fields }
+        })
+      } catch (error) {
+        console.error('获取模板列表失败', error)
+      }
+    },
+    // 加载动态选项（用于详情页 ID 转名称）
+    async loadDynamicOptions(task) {
+      if (!task || !task.robotId || !task.templateId) return
+      const template = this.templateOptions.find(t => t.id === task.templateId)
+      if (!template || !template.fields) return
+      const dynamicFields = template.fields.filter(f => f.type === 'dynamicSelect')
+      for (const field of dynamicFields) {
+        if (!field.apiId) continue
+        try {
+          const res = await getDynamicParams(field.apiId, { robotId: task.robotId })
+          const params = res.data || []
+          const targetParam = params.find(p => p.paramKey === field.paramKey)
+          if (targetParam && targetParam.options) {
+            this.dynamicOptionsCache[field.paramKey] = targetParam.options
+          }
+        } catch (e) {
+          console.warn('加载动态参数失败', e)
+        }
+      }
+    },
     async getList() {
       this.loading = true
       try {
@@ -558,7 +585,6 @@ export default {
         const res = await listTask(params)
         this.taskList = res.rows || []
         this.total = res.total || 0
-        // 备份原始数据
         this.backupOriginalData()
       } catch (error) {
         this.$message.error('获取任务列表失败')
@@ -566,20 +592,18 @@ export default {
         this.loading = false
       }
     },
-    // 获取所有准备中任务（全局排序模式）
     async getAllPendingTasks() {
       this.loading = true
       try {
         const params = {
           pageNum: 1,
           pageSize: 9999,
-          status: 1, // 准备中
+          status: 1,
           displayOrder: 'global_pending_order ASC, pending_order ASC'
         }
         const res = await listTask(params)
         this.taskList = res.rows || []
         this.total = res.total || 0
-        // 备份原始数据
         this.backupOriginalData()
       } catch (error) {
         this.$message.error('获取任务列表失败')
@@ -587,7 +611,6 @@ export default {
         this.loading = false
       }
     },
-    // 获取资源内准备中任务（资源内排序模式）
     async getLocalPendingTasks() {
       if (!this.resourceFilter.resourceId) return
 
@@ -596,11 +619,10 @@ export default {
         const params = {
           pageNum: 1,
           pageSize: 9999,
-          status: 1, // 准备中
+          status: 1,
           displayOrder: 'pending_order ASC'
         }
 
-        // 根据选择的资源类型设置查询参数
         if (this.resourceFilter.isGroupTask) {
           params.robotGroupId = this.resourceFilter.resourceId
           params.isGroupTask = 1
@@ -612,7 +634,6 @@ export default {
         const res = await listTask(params)
         this.taskList = res.rows || []
         this.total = res.total || 0
-        // 备份原始数据
         this.backupOriginalData()
       } catch (error) {
         this.$message.error('获取任务列表失败')
@@ -620,14 +641,11 @@ export default {
         this.loading = false
       }
     },
-    // 备份原始数据用于回滚
     backupOriginalData() {
       this.originalTaskList = JSON.parse(JSON.stringify(this.taskList))
     },
-    // 回滚到原始数据
     rollbackData() {
       this.taskList = JSON.parse(JSON.stringify(this.originalTaskList))
-      // 强制刷新表格
       this.tableKey += 1
       this.$nextTick(() => {
         this.initSortable()
@@ -642,41 +660,34 @@ export default {
         this.getLocalPendingTasks()
       }
     },
-    // 排序模式切换
     onSortModeChange(val) {
       this.sortMode = val
       this.resourceFilter.resourceId = undefined
       this.filter.status = undefined
       this.queryParams.status = undefined
     },
-    // 资源筛选变化
     onResourceFilterChange(val) {
       if (!val) {
         this.resourceFilter.isGroupTask = false
         this.taskList = []
         return
       }
-      // 判断选择的是机器人还是机器人组
       const isRobot = this.robotOptions.some(r => r.id === val)
       this.resourceFilter.isGroupTask = !isRobot
       this.getLocalPendingTasks()
     },
-    // 状态筛选变化
     onStatusFilterChange(val) {
       this.filter.status = val
       this.queryParams.status = val !== undefined ? val : undefined
       this.queryParams.pageNum = 1
       this.getList()
     },
-    // 获取行类名（用于样式控制）
     getRowClassName({row}) {
       if (this.sortMode === 'global' && row.status === 1) {
-        // 全局排序模式下，为不同资源的任务添加不同背景色
         const resourceKey = row.isGroupTask === 1
           ? `group-${row.robotGroupId}`
           : `robot-${row.robotId}`
         const colors = ['row-resource-1', 'row-resource-2', 'row-resource-3', 'row-resource-4', 'row-resource-5']
-        // 使用简单的hash来选择颜色
         let hash = 0
         for (let i = 0; i < resourceKey.length; i++) {
           hash = resourceKey.charCodeAt(i) + ((hash << 5) - hash)
@@ -685,7 +696,6 @@ export default {
       }
       return ''
     },
-    // 获取任务的资源标识（用于判断是否同一资源）
     getResourceKey(task) {
       if (!task) return null
       if (task.isGroupTask === 1) {
@@ -694,7 +704,6 @@ export default {
         return `robot-${task.robotId}`
       }
     },
-    // 拖拽排序初始化
     initSortable() {
       if (!this.isSortableEnabled) {
         this.destroySortable()
@@ -708,7 +717,6 @@ export default {
         const tbody = tableEl.querySelector('.el-table__body tbody')
         if (!tbody) return
 
-        // 根据排序模式配置不同的拖拽行为
         const config = {
           animation: 150,
           ghostClass: 'sortable-ghost',
@@ -727,11 +735,8 @@ export default {
         this.sortableInstance = null
       }
     },
-    // 拖拽移动时的校验（前端校验）
     handleSortMove(evt, originalEvent) {
       const {dragged, related} = evt
-
-      // 获取拖拽的元素索引
       const draggedIndex = Array.from(dragged.parentNode.children).indexOf(dragged)
       const relatedIndex = Array.from(related.parentNode.children).indexOf(related)
 
@@ -740,25 +745,18 @@ export default {
 
       if (!draggedTask || !relatedTask) return false
 
-      // 全局排序模式：允许跨资源拖拽，但禁止同一资源内改变相对顺序
       if (this.sortMode === 'global') {
         const draggedResource = this.getResourceKey(draggedTask)
         const relatedResource = this.getResourceKey(relatedTask)
-
-        // 如果同一资源内拖拽，禁止（应该去资源内排序模式）
         if (draggedResource === relatedResource) {
-          return false // 返回false会显示禁止放置的样式
+          return false
         }
       }
 
-      return true // 允许放置
+      return true
     },
-    // 处理全局排序结束
-    // 处理全局排序结束
     async handleGlobalSortEnd(evt) {
       const {oldIndex, newIndex} = evt
-
-      // 如果位置没变，直接返回
       if (oldIndex === newIndex) return
 
       const movedTask = this.displayedTasks[oldIndex]
@@ -769,12 +767,10 @@ export default {
         return
       }
 
-      // 【关键修复】获取所有准备中任务的新顺序（拖拽后的临时顺序）
       const newOrderList = [...this.displayedTasks]
       const [removed] = newOrderList.splice(oldIndex, 1)
       newOrderList.splice(newIndex, 0, removed)
 
-      // 【关键修复】按资源分组，校验每个资源内的相对顺序是否与 pendingOrder 一致
       const resourceGroups = {}
       newOrderList.forEach(task => {
         const key = this.getResourceKey(task)
@@ -784,17 +780,13 @@ export default {
         resourceGroups[key].push(task)
       })
 
-      // 校验每个资源组内的顺序是否按 pendingOrder 递增
       for (const key in resourceGroups) {
         const groupTasks = resourceGroups[key]
-        // 按当前列表中的顺序获取ID
         const currentOrderIds = groupTasks.map(t => t.id)
-        // 按 pendingOrder 排序应该得到的顺序
         const sortedByPendingOrder = [...groupTasks]
           .sort((a, b) => (a.pendingOrder || 0) - (b.pendingOrder || 0))
           .map(t => t.id)
 
-        // 如果顺序不一致，说明改变了资源内相对顺序，不允许
         if (JSON.stringify(currentOrderIds) !== JSON.stringify(sortedByPendingOrder)) {
           this.$message.error('全局排序不允许改变资源内的相对顺序，请使用"资源内排序"模式')
           this.rollbackData()
@@ -802,27 +794,20 @@ export default {
         }
       }
 
-      // 校验通过，提取任务ID列表
       const taskIds = newOrderList.map(t => t.id)
 
       try {
         await updateGlobalOrder({}, taskIds)
         this.$message.success('全局排序已保存')
-        // 更新备份数据
         this.backupOriginalData()
-        // 刷新列表获取最新顺序
         await this.getAllPendingTasks()
       } catch (error) {
-        // 后端校验失败或网络错误，回滚并提示
         this.$message.error(error.response?.data?.msg || '保存全局排序失败，任务已恢复原位置')
         this.rollbackData()
       }
     },
-    // 处理资源内排序结束
     async handleLocalSortEnd(evt) {
       const {oldIndex, newIndex} = evt
-
-      // 如果位置没变，直接返回
       if (oldIndex === newIndex) return
 
       const movedTask = this.displayedTasks[oldIndex]
@@ -832,12 +817,10 @@ export default {
         return
       }
 
-      // 获取当前资源内任务的新顺序
       const newOrderList = [...this.displayedTasks]
       const [removed] = newOrderList.splice(oldIndex, 1)
       newOrderList.splice(newIndex, 0, removed)
 
-      // 提取任务ID列表
       const taskIds = newOrderList.map(t => t.id)
 
       try {
@@ -847,17 +830,13 @@ export default {
         }
         await updatePendingOrder(query, taskIds)
         this.$message.success('资源内排序已保存')
-        // 更新备份数据
         this.backupOriginalData()
-        // 刷新列表获取最新顺序
         await this.getLocalPendingTasks()
       } catch (error) {
-        // 后端校验失败或网络错误，回滚并提示
         this.$message.error(error.response?.data?.msg || '保存资源内排序失败，任务已恢复原位置')
         this.rollbackData()
       }
     },
-    // 状态操作
     async pauseTask(row) {
       try {
         await pauseTaskApi(Number(row.id))
@@ -917,7 +896,6 @@ export default {
         if (error !== 'cancel') this.$message.error('操作失败')
       }
     },
-    // 查看详情
     async handleView(row) {
       const id = Number(row.id)
       if (isNaN(id)) {
@@ -936,16 +914,36 @@ export default {
 
         this.currentTask = taskRes.data
 
+        // 解析表单数据
+        if (this.currentTask.formContent) {
+          try {
+            this.currentTask.formData = JSON.parse(this.currentTask.formContent)
+          } catch (e) {
+            this.currentTask.formData = {}
+          }
+        } else {
+          this.currentTask.formData = {}
+        }
+
+        // 加载动态选项（用于转换 ID 为名称）
+        await this.loadDynamicOptions(this.currentTask)
+
         // 解析表单字段定义
         if (this.currentTask.templateId && this.templateOptions) {
           const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
-          if (template && template.formContent) {
-            try {
-              const content = JSON.parse(template.formContent)
-              this.formFields = content.fields || []
-            } catch (e) {
-              this.formFields = []
-            }
+          if (template && template.fields) {
+            this.formFields = template.fields || []
+            // 确保文件字段格式正确
+            this.formFields.forEach(field => {
+              if (['image','video','audio','file'].includes(field.type)) {
+                const value = this.currentTask.formData[field.id]
+                if (value && typeof value === 'string') {
+                  this.currentTask.formData[field.id] = [{ name: '已上传文件', url: value }]
+                } else if (!value || !Array.isArray(value)) {
+                  this.currentTask.formData[field.id] = []
+                }
+              }
+            })
           } else {
             this.formFields = []
           }
@@ -953,7 +951,30 @@ export default {
           this.formFields = []
         }
 
-        this.taskSteps = stepsRes.data || []
+        // 处理步骤数据，将 operationJson 中的ID转为名称显示
+        const stepsData = stepsRes.data || []
+        for (let step of stepsData) {
+          if (step.operationJson) {
+            try {
+              const json = JSON.parse(step.operationJson)
+              for (let key in json) {
+                if (this.dynamicOptionsCache[key]) {
+                  const opt = this.dynamicOptionsCache[key].find(o => o.value === String(json[key]))
+                  if (opt) json[key] = opt.label
+                }
+              }
+              step.operationJsonDisplay = JSON.stringify(json, null, 2)
+            } catch (e) {}
+          }
+        }
+        this.taskSteps = stepsData.map(step => ({
+          ...step,
+          orderNum: step.orderNum || 0,
+          stepName: step.stepName || step.name || '未命名步骤',
+          description: step.description || '-',
+          status: step.status || 0
+        })).sort((a, b) => a.orderNum - b.orderNum)
+
         this.taskLogs = logsRes.rows || []
       } catch (error) {
         this.$message.error('获取任务详情失败')
@@ -962,7 +983,17 @@ export default {
         this.detailLoading = false
       }
     },
-    // 辅助函数
+    formatDuration(seconds) {
+      if (seconds == null || isNaN(seconds) || seconds < 0) return '0秒';
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      const parts = [];
+      if (hours > 0) parts.push(`${hours}小时`);
+      if (minutes > 0) parts.push(`${minutes}分钟`);
+      if (secs > 0 || parts.length === 0) parts.push(`${secs}秒`);
+      return parts.join('');
+    },
     getStatusText(status) {
       const map = {3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止'}
       return map[status] || status
@@ -987,6 +1018,11 @@ export default {
       if (value === null || value === undefined) return '-'
       if (Array.isArray(value)) {
         return value.map(v => v.name || v).join(', ')
+      }
+      // dynamicSelect 类型：尝试通过缓存转换为名称
+      if (field.type === 'dynamicSelect' && this.dynamicOptionsCache[field.paramKey]) {
+        const opt = this.dynamicOptionsCache[field.paramKey].find(o => String(o.value) === String(value))
+        if (opt) return opt.label
       }
       return String(value)
     },

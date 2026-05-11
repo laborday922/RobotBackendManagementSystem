@@ -6,8 +6,8 @@ import com.ruoyi.taskmgt.event.AsyncTaskCompletedEvent;
 import com.ruoyi.taskmgt.event.AsyncTaskTimeoutEvent;
 import com.ruoyi.taskmgt.event.RobotCallbackEvent;
 import com.ruoyi.taskmgt.event.StepCompletedEvent;
-import com.ruoyi.taskmgt.monitor.AsyncOperationMonitor;
-import com.ruoyi.taskmgt.operation.model.OperationResult;
+import com.ruoyi.taskmgt.monitor.dto.RobotCallbackData;
+import com.ruoyi.taskmgt.monitor.dto.OperationResult;
 import com.ruoyi.taskmgt.service.impl.StepExecutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +74,7 @@ public class AsyncStepListener {
     @Transactional
     public void onRobotCallback(RobotCallbackEvent event) {
         String traceId = event.getTraceId();
-        AsyncOperationMonitor.RobotCallbackData callbackData = event.getCallbackData();
+        RobotCallbackData callbackData = event.getCallbackData();
 
         log.info("处理机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
 

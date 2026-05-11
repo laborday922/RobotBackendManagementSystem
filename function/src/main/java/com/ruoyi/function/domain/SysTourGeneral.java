@@ -40,6 +40,9 @@ public class SysTourGeneral extends BaseEntity {
     @ApiModelProperty("结束后动作(stay停留/charge充电)")
     private String afterAction;
 
+    /** 租户ID */
+    private Long tenantId;
+
     public Long getConfigId() { return configId; }
     public void setConfigId(Long configId) { this.configId = configId; }
 
@@ -69,4 +72,7 @@ public class SysTourGeneral extends BaseEntity {
 
     public String getAfterAction() { return afterAction; }
     public void setAfterAction(String afterAction) { this.afterAction = afterAction; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

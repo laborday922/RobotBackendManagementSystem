@@ -171,7 +171,7 @@
               v-for="group in groupsList"
               :key="group.id"
               :label="group.name"
-              :value="group.id"
+              :value="String(group.id)"
             ></el-option>
           </el-select>
         </el-form-item>
@@ -341,7 +341,10 @@ export default {
       this.getGroupsList().then(() => {
         const id = row.id || this.ids
         getRobots(id).then(response => {
-          this.form = { ...response.data, groupId: String(response.data.groupId||null) }
+          const groupId = response.data.groupId === null || response.data.groupId === undefined
+            ? null
+            : String(response.data.groupId)
+          this.form = { ...response.data, groupId }
           this.open = true
           this.title = "修改机器人基础信息"
         })

@@ -9,6 +9,7 @@ import com.ruoyi.function.enums.NavVoiceTypeEnum;
 import com.ruoyi.function.service.ISysNavConfigService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,14 +25,26 @@ public class SysNavController extends BaseController {
 
     @ApiOperation("获取导航配置")
     @GetMapping("/config")
-    public AjaxResult getConfig() {
-        SysNavConfig config = navConfigService.getCurrentConfig();
+    public AjaxResult getConfig(
+            @ApiParam(value = "机器人ID", required = true)
+            @RequestParam(required = false) String robotId) {
+
+        if (robotId == null || robotId.isEmpty()) {
+            return error("机器人ID不能为空");
+        }
+
+        SysNavConfig config = navConfigService.getConfigByRobotId(robotId);
         return success(config);
     }
 
     @ApiOperation("保存导航配置")
     @PostMapping("/config")
     public AjaxResult saveConfig(@Valid @RequestBody SysNavConfig config) {
+        // 验证机器人ID
+        if (config.getRobotId() == null || config.getRobotId().isEmpty()) {
+            return error("机器人ID不能为空");
+        }
+
         // 验证播报类型
         if (config.getVoiceType() != null) {
             boolean valid = false;

@@ -18,6 +18,9 @@ public class SysTourRoute extends BaseEntity {
     @ApiModelProperty("路线名称")
     private String routeName;
 
+    @ApiModelProperty("机器人ID")
+    private Long robotId;
+
     @ApiModelProperty("地图ID")
     private Long mapId;
 
@@ -30,14 +33,21 @@ public class SysTourRoute extends BaseEntity {
     @ApiModelProperty("状态(0禁用 1启用)")
     private String status;
 
-    @ApiModelProperty("关联的点位列表")
+    /** 租户ID */
+    private Long tenantId;
+
+    @ApiModelProperty("关联的点位列表（包含顺序和讲解内容）")
     private List<SysRoutePoint> routePoints;
 
+    // Getters and Setters
     public Long getRouteId() { return routeId; }
     public void setRouteId(Long routeId) { this.routeId = routeId; }
 
     public String getRouteName() { return routeName; }
     public void setRouteName(String routeName) { this.routeName = routeName; }
+
+    public Long getRobotId() { return robotId; }
+    public void setRobotId(Long robotId) { this.robotId = robotId; }
 
     public Long getMapId() { return mapId; }
     public void setMapId(Long mapId) { this.mapId = mapId; }
@@ -50,6 +60,9 @@ public class SysTourRoute extends BaseEntity {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 
     public List<SysRoutePoint> getRoutePoints() { return routePoints; }
     public void setRoutePoints(List<SysRoutePoint> routePoints) { this.routePoints = routePoints; }

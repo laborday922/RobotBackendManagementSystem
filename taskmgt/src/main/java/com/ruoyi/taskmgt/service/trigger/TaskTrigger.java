@@ -16,10 +16,12 @@ import com.ruoyi.taskmgt.event.ExecuteStepEvent;
 import com.ruoyi.taskmgt.event.StepCompletedEvent;
 import com.ruoyi.taskmgt.service.impl.TaskLogReuseService;
 import com.ruoyi.taskmgt.service.impl.TaskReuseService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -29,31 +31,16 @@ import java.util.*;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class TaskTrigger {
-
-    @Autowired
-    private TaskRepository taskRepository;
-
-    @Autowired
-    private StepRepository stepRepository;
-
-    @Autowired
-    private TaskLogReuseService taskLogService;
-
-    @Autowired
-    private RedisCache redisUtil;
-
-    @Autowired
-    private IRobotsService robotService;
-
-    @Autowired
-    private IRobotWarningsService robotWarningsService;
-
-    @Autowired
-    private TaskReuseService taskService;
-
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final TaskRepository taskRepository;
+    private final StepRepository stepRepository;
+    private final TaskLogReuseService taskLogService;
+    private final RedisCache redisUtil;
+    private final IRobotsService robotService;
+    private final IRobotWarningsService robotWarningsService;
+    private final TaskReuseService taskService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 每分钟执行一次触发检查
@@ -85,9 +72,12 @@ public class TaskTrigger {
     private void checkBatteryTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 2, null, null, null);
         for (Task task : tasks) {
-            Integer battery = robotService.selectRobotsById(task.getRobotId()).getBattery();
-            if (battery != null && battery >= task.getBatteryThreshold()) {
-                triggerTask(task);
+            Robot robot = robotService.selectRobotsById(task.getRobotId());
+            if(StringUtils.isNotNull(robot)){
+                Integer battery = robot.getBattery();
+                if (battery != null && battery >= task.getBatteryThreshold()) {
+                    triggerTask(task);
+                }
             }
         }
     }
@@ -98,12 +88,15 @@ public class TaskTrigger {
     private void checkIdleTasks() {
         List<Task> tasks = taskRepository.getTasks(Task.NOTSTART, null, null, null, null, 3, null, null,null);
         for (Task task : tasks) {
-            Integer taskStatus = robotService.selectRobotsById(task.getRobotId()).getTaskStatus();
-            Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
-            if (taskStatus == 2 && idleSince != null) {
-                long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
-                if (idleMinutes >= task.getIdleTime()) {
-                    triggerTask(task);
+            Robot robot = robotService.selectRobotsById(task.getRobotId());
+            if(StringUtils.isNotNull(robot)){
+                Integer taskStatus = robot.getTaskStatus();
+                Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
+                if (taskStatus == 2 && idleSince != null) {
+                    long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
+                    if (idleMinutes >= task.getIdleTime()) {
+                        triggerTask(task);
+                    }
                 }
             }
         }

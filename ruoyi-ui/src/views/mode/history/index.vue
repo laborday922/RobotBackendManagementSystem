@@ -25,12 +25,13 @@
           style="width: 300px;">
         </el-date-picker>
 
+        <!-- 机器人下拉框 - 兼容后端返回的 id 和 name 字段 -->
         <el-select v-model="queryParams.robotId" placeholder="机器人" clearable filterable style="width: 150px;">
           <el-option
             v-for="robot in robotOptions"
-            :key="robot.robotId"
-            :label="robot.robotName"
-            :value="robot.robotId" />
+            :key="robot.id || robot.robotId"
+            :label="robot.name || robot.robotName"
+            :value="robot.id || robot.robotId" />
         </el-select>
 
         <el-button type="primary" @click="handleQuery">
@@ -107,9 +108,14 @@
       </div>
     </div>
 
-    <!-- 详情对话框 -->
-    <el-dialog :title="detailTitle" :visible.sync="detailVisible" width="500px">
-      <el-descriptions :column="1" border>
+    <!-- 详情对话框 - 调整垂直位置靠下一些 -->
+    <el-dialog
+      :title="detailTitle"
+      :visible.sync="detailVisible"
+      width="500px"
+      top="15vh"
+      :before-close="handleClose">
+      <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="操作时间">{{ parseTime(detailData.operationTime) }}</el-descriptions-item>
         <el-descriptions-item label="操作类型">{{ getOperationTypeText(detailData.operationType) }}</el-descriptions-item>
         <el-descriptions-item label="操作分类">{{ getCategoryText(detailData.operationCategory) }}</el-descriptions-item>
@@ -123,6 +129,9 @@
         </el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ parseTime(detailData.createTime) }}</el-descriptions-item>
       </el-descriptions>
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="detailVisible = false">关 闭</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
@@ -143,52 +152,46 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        operationType: null,     // 单个操作类型或逗号分隔的多个类型
-        operationTypes: null,    // 操作类型数组（用于分类筛选）
+        operationType: null,
+        operationTypes: null,
         robotId: null,
         dateRange: null
       },
       detailVisible: false,
       detailTitle: '操作详情',
       detailData: {},
-      // 统计卡片 - 显示全量统计数据
       statistics: [
         { type: 'total', label: '总记录', icon: 'fas fa-database', count: 0 },
         { type: 'emergency', label: '紧急操作', icon: 'fas fa-exclamation-triangle', count: 0 },
         { type: 'status', label: '状态操作', icon: 'fas fa-chart-line', count: 0 },
         { type: 'system', label: '系统操作', icon: 'fas fa-cogs', count: 0 }
       ],
-      // 操作类型分类映射（用于筛选）
       categoryTypeMap: {
-        'emergency': ['emergency_stop', 'return_charge', 'batch_restart', 'emergency'],
+        'emergency': ['emergency_stop', 'return_charge', 'batch_restart', 'emergency', 'emergency_evacuation'],
         'status': ['refresh_status', 'test_alert', 'clear_alerts', 'alert'],
         'system': ['standby_mode', 'maintenance_mode', 'charge_mode', 'mode-switch', 'config-change']
       },
-      // 操作类型分类映射（用于显示）
       operationCategoryMap: {
-        // 紧急操作
         'emergency_stop': 'emergency',
         'return_charge': 'emergency',
         'batch_restart': 'emergency',
-        // 状态操作
+        'emergency_evacuation': 'emergency',
         'refresh_status': 'status',
         'test_alert': 'status',
         'clear_alerts': 'status',
-        // 系统操作
         'standby_mode': 'system',
         'maintenance_mode': 'system',
         'charge_mode': 'system',
-        // 其他兼容旧数据
         'mode-switch': 'system',
         'config-change': 'system',
         'alert': 'status',
         'emergency': 'emergency'
       },
-      // 操作类型中文映射
       operationTypeTextMap: {
         'emergency_stop': '紧急停止',
         'return_charge': '返回充电',
         'batch_restart': '批量重启',
+        'emergency_evacuation': '紧急撤离',
         'refresh_status': '刷新状态',
         'test_alert': '测试告警',
         'clear_alerts': '清除告警',
@@ -200,19 +203,16 @@ export default {
         'alert': '告警记录',
         'emergency': '紧急操作'
       },
-      // 操作类型标签颜色映射 - 紧急操作红色(danger)，状态操作黄色(warning)，系统操作蓝色(primary)
       operationTypeTagMap: {
-        // 紧急操作 - 红色
         'emergency_stop': 'danger',
         'return_charge': 'danger',
         'batch_restart': 'danger',
+        'emergency_evacuation': 'danger',
         'emergency': 'danger',
-        // 状态操作 - 黄色
         'refresh_status': 'warning',
         'test_alert': 'warning',
         'clear_alerts': 'warning',
         'alert': 'warning',
-        // 系统操作 - 蓝色
         'standby_mode': 'primary',
         'maintenance_mode': 'primary',
         'charge_mode': 'primary',
@@ -224,80 +224,68 @@ export default {
   created() {
     this.getList();
     this.getRobotList();
-    // 初始加载全量统计数据
     this.loadFullStatistics();
   },
   methods: {
     parseTime,
 
-   /** 加载全量统计数据（不受分类筛选影响） */
-   loadFullStatistics() {
-     const statsParams = {
-       pageNum: 1,
-       pageSize: 10000  // 设置一个足够大的数字，确保获取所有数据
-     };
+    /** 加载全量统计数据（不受分类筛选影响） */
+    loadFullStatistics() {
+      const statsParams = {
+        pageNum: 1,
+        pageSize: 10000
+      };
 
-     // 添加日期范围筛选
-     if (this.queryParams.dateRange) {
-       statsParams.beginTime = this.queryParams.dateRange[0];
-       statsParams.endTime = this.queryParams.dateRange[1];
-     }
+      if (this.queryParams.dateRange) {
+        statsParams.beginTime = this.queryParams.dateRange[0];
+        statsParams.endTime = this.queryParams.dateRange[1];
+      }
 
-     // 添加机器人筛选
-     if (this.queryParams.robotId) {
-       statsParams.robotId = this.queryParams.robotId;
-     }
+      if (this.queryParams.robotId) {
+        statsParams.robotId = this.queryParams.robotId;
+      }
 
-     listHistory(statsParams).then(response => {
-       const allData = response.rows || [];
+      listHistory(statsParams).then(response => {
+        const allData = response.rows || [];
 
-       // 为每条记录添加分类字段
-       allData.forEach(item => {
-         item.operationCategory = this.getOperationCategory(item.operationType);
-       });
+        allData.forEach(item => {
+          item.operationCategory = this.getOperationCategory(item.operationType);
+        });
 
-       // 更新统计数据（全量）
-       this.statistics[0].count = allData.length;
-       this.statistics[1].count = allData.filter(h => h.operationCategory === 'emergency').length;
-       this.statistics[2].count = allData.filter(h => h.operationCategory === 'status').length;
-       this.statistics[3].count = allData.filter(h => h.operationCategory === 'system').length;
-     }).catch(error => {
-       console.error('获取统计数据失败:', error);
-     });
-   },
+        this.statistics[0].count = allData.length;
+        this.statistics[1].count = allData.filter(h => h.operationCategory === 'emergency').length;
+        this.statistics[2].count = allData.filter(h => h.operationCategory === 'status').length;
+        this.statistics[3].count = allData.filter(h => h.operationCategory === 'system').length;
+      }).catch(error => {
+        console.error('获取统计数据失败:', error);
+      });
+    },
 
     /** 查询历史记录列表（应用筛选） */
     getList() {
       this.loading = true;
 
-      // 构建查询参数
       const params = {
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         robotId: this.queryParams.robotId
       };
 
-      // 处理日期范围
       if (this.queryParams.dateRange) {
         params.beginTime = this.queryParams.dateRange[0];
         params.endTime = this.queryParams.dateRange[1];
       }
 
-      // 处理操作类型筛选
       if (this.queryParams.operationTypes && this.queryParams.operationTypes.length > 0) {
-        // 有分类筛选，使用逗号分隔的字符串传给后端
         params.operationType = this.queryParams.operationTypes.join(',');
       } else if (this.queryParams.operationType) {
-        // 单个操作类型
         params.operationType = this.queryParams.operationType;
       }
 
-      // 获取分页数据
       listHistory(params).then(response => {
         this.historyList = response.rows || [];
         this.total = response.total || 0;
 
-        // 为每条记录添加分类字段
         this.historyList.forEach(item => {
           item.operationCategory = this.getOperationCategory(item.operationType);
         });
@@ -309,10 +297,19 @@ export default {
       });
     },
 
-    /** 查询机器人列表 */
+    /** 查询机器人列表 - 兼容后端返回的字段名 */
     getRobotList() {
       listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        this.robotOptions = response.rows || [];
+        const rows = response.rows || [];
+        // 转换数据格式，统一为 robotId 和 robotName
+        this.robotOptions = rows.map(robot => ({
+          robotId: robot.id || robot.robotId,
+          robotName: robot.name || robot.robotName,
+          robotCode: robot.code || robot.robotCode
+        }));
+        console.log('机器人列表加载完成:', this.robotOptions);
+      }).catch(error => {
+        console.error('获取机器人列表失败:', error);
       });
     },
 
@@ -325,7 +322,7 @@ export default {
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
-      this.loadFullStatistics(); // 重新加载统计数据
+      this.loadFullStatistics();
     },
 
     /** 重置按钮操作 */
@@ -351,7 +348,7 @@ export default {
         clearHistory().then(() => {
           this.$message.success('清空成功');
           this.getList();
-          this.loadFullStatistics(); // 清空后重新加载统计数据
+          this.loadFullStatistics();
         });
       }).catch(() => {});
     },
@@ -359,17 +356,19 @@ export default {
     /** 按分类筛选 */
     filterByType(type) {
       if (type === 'total') {
-        // 总记录：清空所有筛选条件
         this.queryParams.operationType = null;
         this.queryParams.operationTypes = null;
       } else {
-        // 根据分类获取对应的操作类型列表
         this.queryParams.operationTypes = this.categoryTypeMap[type] || [];
         this.queryParams.operationType = null;
       }
       this.queryParams.pageNum = 1;
       this.getList();
-      // 注意：点击筛选时不需要重新加载统计数据，统计数据应该保持不变
+    },
+
+    /** 关闭对话框 */
+    handleClose(done) {
+      done();
     },
 
     /** 获取操作类型标签类型（颜色） */
@@ -402,12 +401,15 @@ export default {
       return map[category] || category;
     },
 
-    /** 获取状态标签类型 */
+    /** 获取状态标签类型 - 失败状态显示为红色(danger) */
     getStatusTag(status) {
       const map = {
         'success': 'success',
         'warning': 'warning',
-        'danger': 'danger'
+        'danger': 'danger',
+        'fail': 'danger',      // 失败状态改为红色
+        'error': 'danger',     // 错误状态改为红色
+        'failed': 'danger'     // failed 状态改为红色
       };
       return map[status] || 'info';
     },
@@ -417,7 +419,10 @@ export default {
       const map = {
         'success': '成功',
         'warning': '告警',
-        'danger': '紧急'
+        'danger': '紧急',
+        'fail': '失败',
+        'error': '错误',
+        'failed': '失败'
       };
       return map[status] || status;
     },
@@ -432,7 +437,6 @@ export default {
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .card {
   background: white;
   border-radius: 10px;
@@ -589,6 +593,34 @@ export default {
   border-bottom: 1px solid #F0F0F0 !important;
 }
 
+/* 详情对话框样式优化 */
+::v-deep .el-dialog {
+  border-radius: 8px;
+}
+
+::v-deep .el-dialog .el-dialog__body {
+  padding: 15px 20px;
+}
+
+::v-deep .el-descriptions {
+  font-size: 13px;
+}
+
+::v-deep .el-descriptions .el-descriptions__label {
+  width: 100px;
+  background-color: #fafafa;
+}
+
+::v-deep .el-descriptions .el-descriptions__cell {
+  padding: 8px 12px;
+}
+
+::v-deep .el-dialog__footer {
+  padding: 10px 20px 15px;
+  border-top: 1px solid #EBEEF5;
+}
+
+/* 响应式样式 */
 @media (max-width: 992px) {
   .stats-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -621,6 +653,10 @@ export default {
 @media (max-width: 576px) {
   .stats-cards {
     grid-template-columns: 1fr;
+  }
+
+  ::v-deep .el-dialog {
+    width: 90% !important;
   }
 }
 </style>

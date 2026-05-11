@@ -1,7 +1,6 @@
 package com.ruoyi.mode.mapper;
 
 import com.ruoyi.mode.domain.SysRobot;
-import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -9,40 +8,39 @@ import java.util.Map;
 
 /**
  * 机器人模式扩展Mapper接口
- * 注意：基础信息请使用 IRobotsService
  *
  * @author ruoyi
  */
 public interface SysRobotMapper
 {
     /**
-     * 查询机器人模式扩展信息
+     * 查询机器人扩展信息
      *
      * @param robotId 机器人ID
-     * @return 机器人模式扩展信息
+     * @return 机器人扩展信息
      */
     public SysRobot selectSysRobotById(Long robotId);
 
     /**
-     * 查询机器人模式扩展信息列表
+     * 查询机器人扩展信息列表
      *
-     * @param sysRobot 机器人模式扩展信息
-     * @return 机器人模式扩展信息集合
+     * @param sysRobot 机器人扩展信息
+     * @return 机器人扩展信息集合
      */
     public List<SysRobot> selectSysRobotList(SysRobot sysRobot);
 
     /**
-     * 新增机器人模式扩展信息
+     * 新增机器人扩展信息
      *
-     * @param sysRobot 机器人模式扩展信息
+     * @param sysRobot 机器人扩展信息
      * @return 结果
      */
     public int insertSysRobot(SysRobot sysRobot);
 
     /**
-     * 修改机器人模式扩展信息
+     * 修改机器人扩展信息
      *
-     * @param sysRobot 机器人模式扩展信息
+     * @param sysRobot 机器人扩展信息
      * @return 结果
      */
     public int updateSysRobot(SysRobot sysRobot);
@@ -66,16 +64,39 @@ public interface SysRobotMapper
     public int batchUpdateRobotMode(@Param("robotIds") Long[] robotIds, @Param("modeId") Long modeId);
 
     /**
-     * 批量更新机器人扩展信息状态
+     * 批量更新扩展信息状态
      *
      * @param robotIds 机器人ID数组
-     * @param status 状态（仅用于扩展表）
      * @return 结果
      */
-    public int batchUpdateExtStatus(@Param("robotIds") Long[] robotIds, @Param("status") Integer status);
+    public int batchUpdateExtStatus(@Param("robotIds") Long[] robotIds);
 
     /**
-     * 删除机器人模式扩展信息（逻辑删除）
+     * 标记需要自动充电
+     *
+     * @param robotId 机器人ID
+     * @return 结果
+     */
+    public int markNeedAutoCharge(Long robotId);
+
+    /**
+     * 清除自动充电标记
+     *
+     * @param robotId 机器人ID
+     * @return 结果
+     */
+    public int clearNeedAutoCharge(Long robotId);
+
+    /**
+     * 检查是否需要自动充电
+     *
+     * @param robotId 机器人ID
+     * @return 1-需要，0-不需要
+     */
+    public int checkNeedAutoCharge(Long robotId);
+
+    /**
+     * 删除机器人扩展信息（逻辑删除）
      *
      * @param robotId 机器人ID
      * @return 结果
@@ -83,15 +104,15 @@ public interface SysRobotMapper
     public int deleteSysRobotById(Long robotId);
 
     /**
-     * 批量删除机器人模式扩展信息（逻辑删除）
+     * 批量删除机器人扩展信息（逻辑删除）
      *
-     * @param robotIds 需要删除的数据ID
+     * @param robotIds 机器人ID数组
      * @return 结果
      */
     public int deleteSysRobotByIds(Long[] robotIds);
 
     /**
-     * 物理删除机器人模式扩展信息（慎用）
+     * 物理删除机器人扩展信息
      *
      * @param robotId 机器人ID
      * @return 结果
@@ -99,9 +120,9 @@ public interface SysRobotMapper
     public int deleteSysRobotPhysically(Long robotId);
 
     /**
-     * 批量物理删除机器人模式扩展信息（慎用）
+     * 批量物理删除机器人扩展信息
      *
-     * @param robotIds 需要删除的数据ID
+     * @param robotIds 机器人ID数组
      * @return 结果
      */
     public int deleteSysRobotPhysicallyByIds(Long[] robotIds);
@@ -110,28 +131,26 @@ public interface SysRobotMapper
      * 检查机器人是否存在扩展信息
      *
      * @param robotId 机器人ID
-     * @return 结果
+     * @return 数量
      */
     public int checkSysRobotExists(Long robotId);
 
     /**
-     * 保存机器人模式配置（JSON格式）
+     * 保存机器人模式配置
      *
      * @param robotId 机器人ID
      * @param modeId 模式ID
-     * @param config 配置JSON字符串
+     * @param config 配置JSON
      * @return 结果
      */
-    public int saveRobotModeConfig(@Param("robotId") Long robotId,
-                                   @Param("modeId") Long modeId,
-                                   @Param("config") String config);
+    public int saveRobotModeConfig(@Param("robotId") Long robotId, @Param("modeId") Long modeId, @Param("config") String config);
 
     /**
      * 获取机器人模式配置
      *
      * @param robotId 机器人ID
      * @param modeId 模式ID
-     * @return 配置JSON字符串
+     * @return 配置JSON
      */
     public String getRobotModeConfig(@Param("robotId") Long robotId, @Param("modeId") Long modeId);
 
@@ -149,7 +168,6 @@ public interface SysRobotMapper
      *
      * @return 统计结果
      */
-    @MapKey("currentMode")
     public List<Map<String, Object>> selectRobotModeStats();
 
     /**
@@ -158,7 +176,7 @@ public interface SysRobotMapper
      * @param limit 限制数量
      * @return 机器人列表
      */
-    public List<SysRobot> selectRecentModeSwitchRobots(@Param("limit") Integer limit);
+    public List<SysRobot> selectRecentModeSwitchRobots(@Param("limit") int limit);
 
     /**
      * 更新最后模式切换时间

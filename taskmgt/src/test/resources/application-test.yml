@@ -70,3 +70,10 @@ logging:
   level:
     com.ruoyi: debug
     org.hibernate.SQL: debug
+
+task:
+  callback:
+    base-url: http://localhost/taskmgt
+robot:
+  api:
+    token: 机器人端鉴权token

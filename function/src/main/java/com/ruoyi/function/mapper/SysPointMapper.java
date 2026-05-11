@@ -37,6 +37,22 @@ public interface SysPointMapper {
     List<SysPoint> selectList(SysPoint point);
 
     /**
+     * 根据多个地图ID查询点位列表
+     *
+     * @param mapIds 地图ID列表
+     * @return 点位列表
+     */
+    List<SysPoint> selectByMapIds(@Param("mapIds") List<Long> mapIds);
+
+    /**
+     * 根据机器人ID查询点位列表
+     *
+     * @param robotId 机器人ID
+     * @return 点位列表
+     */
+    List<SysPoint> selectByRobotId(@Param("robotId") Long robotId);
+
+    /**
      * 新增点位
      *
      * @param point 点位信息

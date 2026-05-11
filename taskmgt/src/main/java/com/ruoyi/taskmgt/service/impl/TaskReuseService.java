@@ -34,7 +34,7 @@ public class TaskReuseService {
         }
 
         Date nextTime = calculateNextScheduledTime(task);
-        boolean isPeriodic = (task.getTaskType() != null && task.getTaskType() == 1) || StringUtils.isNotBlank(task.getCronExpression());
+        boolean isPeriodic = task.getTaskType() != null && task.getTaskType() == 1 && StringUtils.isNotBlank(task.getCronExpression());
 
         if (isPeriodic && nextTime != null) {
             // 定时任务，重置为未开始状态
@@ -57,6 +57,18 @@ public class TaskReuseService {
         } else {
             // 一次性任务，直接完成
             task.setStatus(Task.FINISHED);
+            List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+            Integer duration = 0 ;
+            for (TaskStep step : steps) {
+                Date startTime = step.getStartTime();
+                Date endTime = step.getEndTime();
+                if (startTime != null && endTime != null) {
+                    long diffMillis = endTime.getTime() - startTime.getTime();
+                    int seconds = (int) (diffMillis / 1000);
+                    duration += seconds;
+                }
+            }
+            task.setDuration(duration);
             taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
                     "任务执行完成", "system", null);
         }
@@ -69,7 +81,7 @@ public class TaskReuseService {
         log.info("任务 {} 已完成处理，最终状态: {}", task.getId(), task.getStatus());
     }
 
-    private Date calculateNextScheduledTime(Task task) {
+    public Date calculateNextScheduledTime(Task task) {
         String cron = task.getCronExpression();
         if (cron == null || cron.trim().isEmpty()) {
             return null;

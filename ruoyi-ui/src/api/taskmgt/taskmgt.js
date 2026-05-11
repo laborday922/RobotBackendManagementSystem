@@ -175,13 +175,13 @@ export function resolveTaskRisk(id) {
     method: 'put'
   })
 }
-export function addTaskSteps(id, data) {
-  return request({
-    url: '/taskmgt/tasks/' +  id + '/steps',
-    method: 'post',
-    data: data
-  })
-}
+// export function addTaskSteps(id, data) {
+//   return request({
+//     url: '/taskmgt/tasks/' +  id + '/steps',
+//     method: 'post',
+//     data: data
+//   })
+// }
 
 export function getTaskSteps(id) {
   return request({
@@ -199,12 +199,12 @@ export function updateTaskSteps(id, data) {
   })
 }
 
-export function completeTaskSteps(id){
-  return request({
-    url: '/taskmgt/steps/' + id,
-    method: 'put'
-  })
-}
+// export function completeTaskSteps(id){
+//   return request({
+//     url: '/taskmgt/steps/' + id,
+//     method: 'put'
+//   })
+// }
 
 export function listLogByTask(query = {}){
   return request({
@@ -229,3 +229,10 @@ export function listLogByTask(query = {}){
 //     method: 'get'
 //   })
 // }
+export function getDynamicParams(id, params) {
+    return request({
+        url: '/taskmgt/' + id + "/dynamic-params",
+        method: 'get',
+        params: params
+    })
+}

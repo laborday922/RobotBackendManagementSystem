@@ -75,10 +75,6 @@
 
                 <div class="mode-stats">
                   <div class="stat-item">
-                    <div class="stat-value">{{ mode.usageCount || 0 }}</div>
-                    <div class="stat-label">使用次数</div>
-                  </div>
-                  <div class="stat-item">
                     <div class="stat-value">{{ mode.robotCount || 0 }}</div>
                     <div class="stat-label">关联机器人</div>
                   </div>
@@ -194,6 +190,9 @@
 
         <el-divider content-position="left">
           <i class="fas fa-sliders-h"></i> 配置参数
+          <el-tooltip content="充电模式建议添加【充电策略】参数" placement="top">
+            <i class="el-icon-question" style="margin-left: 8px; color: #909399; cursor: pointer;"></i>
+          </el-tooltip>
         </el-divider>
 
         <div class="params-config">
@@ -242,9 +241,20 @@
             </div>
           </div>
 
-          <el-button type="primary" plain icon="el-icon-plus" size="small" @click="addParam" class="add-param-btn">
-            添加参数
-          </el-button>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <el-button type="primary" plain icon="el-icon-plus" size="small" @click="addParam" class="add-param-btn">
+              添加参数
+            </el-button>
+            <el-button
+              type="success"
+              plain
+              icon="el-icon-setting"
+              size="small"
+              @click="addChargeStrategyParam"
+              v-if="form.modeName === '充电模式' || form.modeId === 3">
+              快速添加充电策略
+            </el-button>
+          </div>
         </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -372,7 +382,7 @@
 </template>
 
 <script>
-import { listMode, getMode, delMode, addMode, updateMode, changeModeStatus } from "@/api/mode/mode";
+import { listMode, getMode, delMode, addMode, updateMode, changeModeStatus, getChargeStrategyParam } from "@/api/mode/mode";
 
 export default {
   name: "Mode",
@@ -418,7 +428,6 @@ export default {
         modeIcon: 'fa fa-cog',
         description: null,
         enabled: '1',
-        usageCount: 0,
         robotCount: 0,
         orderNum: 0,
         modeParams: []
@@ -449,15 +458,19 @@ export default {
         const rows = response.rows || [];
         console.log('返回数据条数:', rows.length);
 
+        // 过滤掉 mode_id = 0 的记录，确保完全不显示"无"模式
+        const filteredRows = rows.filter(mode => mode.modeId !== 0);
+        console.log('过滤后数据条数:', filteredRows.length);
+
         // 处理每个模式的参数
-        rows.forEach(mode => {
+        filteredRows.forEach(mode => {
           if (mode.modeParams && mode.modeParams.length > 0) {
             mode.modeParams = this.processParamsData(mode.modeParams);
           }
         });
 
-        this.modeList = rows.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0));
-        this.total = response.total;
+        this.modeList = filteredRows.sort((a, b) => (a.orderNum || 0) - (b.orderNum || 0));
+        this.total = filteredRows.length;
         this.loading = false;
 
         console.log('最终显示的模式列表数量:', this.modeList.length);
@@ -533,8 +546,25 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset();
+
+      // 自动计算排序值：取现有模式中最大的 orderNum + 1
+      let maxOrderNum = 0;
+      if (this.modeList && this.modeList.length > 0) {
+        const orderNums = this.modeList.map(mode => mode.orderNum || 0);
+        maxOrderNum = Math.max(...orderNums);
+      }
+      this.form.orderNum = maxOrderNum + 1;
+
       this.open = true;
       this.title = "添加模式";
+    },
+
+    /** 快速添加充电策略参数 */
+    addChargeStrategyParam() {
+      const chargeStrategyParam = getChargeStrategyParam();
+      chargeStrategyParam._tempId = Date.now();
+      this.form.modeParams.push(chargeStrategyParam);
+      this.$message.success('已添加充电策略参数');
     },
 
     /** 修改按钮操作 */
@@ -576,7 +606,6 @@ export default {
         type: 'warning',
         dangerouslyUseHTMLString: true
       }).then(() => {
-        // 显示加载中
         const loading = this.$loading({
           lock: true,
           text: '正在删除中...',
@@ -590,11 +619,8 @@ export default {
           loading.close();
           console.log('删除API返回:', response);
 
-          // 检查返回结果
           if (response && response.code === 200) {
             this.$modal.msgSuccess(`删除"${modeName}"成功`);
-
-            // 重新查询列表
             console.log('重新加载模式列表...');
             this.getList();
           } else {
@@ -616,7 +642,6 @@ export default {
           throw error;
         });
       }).catch(() => {
-        // 用户取消删除
         console.log('用户取消了删除操作');
       });
     },
@@ -864,7 +889,6 @@ export default {
         modeIcon: 'fa fa-cog',
         description: null,
         enabled: '1',
-        usageCount: 0,
         robotCount: 0,
         orderNum: 0,
         modeParams: []

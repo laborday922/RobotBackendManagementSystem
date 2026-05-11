@@ -106,7 +106,7 @@ public class TaskRepository {
     }
 
     public Task insert(Task task) {
-        Assert.notNull(task, "TaskRepository.insert: taskcore can not be null.");
+        Assert.notNull(task, "TaskRepository.insert: task can not be null.");
         task.setId(null);
         TaskPo taskPo = CloneFactory.copyNotNull(new TaskPo(), task);
         taskPo.setCreateTime(new Date());

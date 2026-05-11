@@ -9,9 +9,6 @@ import java.util.Date;
 
 /**
  * 机器人模式扩展对象
- * 注意：基础信息请使用 Robot 类
- *
- * @author ruoyi
  */
 public class SysRobot implements Serializable
 {
@@ -20,21 +17,21 @@ public class SysRobot implements Serializable
     /** 机器人ID（关联robots表） */
     private Long robotId;
 
-    private String name;           // 对应 name 字段
+    private String name;
 
-    private String code;           // 对应 code 字段
+    private String code;
 
     /** 组ID */
-    private Long groupId;          // 对应 group_id 字段
+    private Long groupId;
 
     /** 状态 */
-    private Integer status;        // 对应 status 字段
+    private Integer status;
 
     /** 电池电量 */
-    private Integer battery;       // 对应 battery 字段
+    private Integer battery;
 
     /** 区域 */
-    private String area;           // 对应 area 字段
+    private String area;
 
     /** 当前模式ID */
     private Long currentMode;
@@ -48,6 +45,12 @@ public class SysRobot implements Serializable
 
     /** 模式切换次数 */
     private Integer modeSwitchCount;
+
+    /** 是否需要自动充电（0-否，1-是） */
+    private Integer needAutoCharge;
+
+    /** 租户ID */
+    private Long tenantId;
 
     /** 创建者 */
     private String createBy;
@@ -156,6 +159,22 @@ public class SysRobot implements Serializable
         this.modeSwitchCount = modeSwitchCount;
     }
 
+    public Integer getNeedAutoCharge() {
+        return needAutoCharge;
+    }
+
+    public void setNeedAutoCharge(Integer needAutoCharge) {
+        this.needAutoCharge = needAutoCharge;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public String getCreateBy() {
         return createBy;
     }
@@ -196,7 +215,6 @@ public class SysRobot implements Serializable
         this.delFlag = delFlag;
     }
 
-    // 兼容前端的 robotName 和 robotCode
     public String getRobotName() {
         return this.name;
     }
@@ -227,6 +245,8 @@ public class SysRobot implements Serializable
                 .append("currentModeName", getCurrentModeName())
                 .append("lastModeSwitchTime", getLastModeSwitchTime())
                 .append("modeSwitchCount", getModeSwitchCount())
+                .append("needAutoCharge", getNeedAutoCharge())
+                .append("tenantId", getTenantId())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

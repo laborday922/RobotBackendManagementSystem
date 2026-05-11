@@ -1,71 +1,185 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.function.mapper.SysMapMapper">
 
-    <resultMap type="SysMap" id="SysMapResult">
+    <resultMap id="SysMapResult" type="com.ruoyi.function.domain.SysMap">
         <id property="mapId" column="map_id"/>
+        <result property="robotId" column="robot_id"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="mapName" column="map_name"/>
+        <result property="mapType" column="map_type"/>
+        <result property="mapPath" column="map_path"/>
+        <result property="thumbnail" column="thumbnail"/>
+        <result property="description" column="description"/>
         <result property="mapFile" column="map_file"/>
+        <result property="pointCount" column="point_count"/>
+        <result property="version" column="version"/>
         <result property="status" column="status"/>
+        <result property="isEnable" column="is_enable"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="mapBase64" column="map_base64"/>
+        <result property="remark" column="remark"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
-        <result property="remark" column="remark"/>
-        <!-- 动态计算点位数量 -->
-        <result property="pointCountTemp" column="point_count"/>
     </resultMap>
 
-    <sql id="selectMapVo">
-        SELECT m.*,
-        (SELECT COUNT(*) FROM sys_point p WHERE p.map_id = m.map_id AND p.del_flag = '0') as point_count
-        FROM sys_map m
+    <!-- Base_Column_List SQL片段 -->
+    <sql id="Base_Column_List">
+        map_id, robot_id, tenant_id, map_name, map_type, map_path, thumbnail,
+        description, map_file, point_count, version, status, is_enable, del_flag,
+        map_base64, remark, create_by, create_time, update_by, update_time
     </sql>
 
+    <!-- 条件查询地图列表 -->
+    <select id="selectList" parameterType="com.ruoyi.function.domain.SysMap" resultMap="SysMapResult">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_map
+        <where>
+            <if test="delFlag == null or delFlag == ''">
+                AND del_flag = '0'
+            </if>
+            <if test="mapId != null and mapId != ''">
+                AND map_id = #{mapId}
+            </if>
+            <if test="robotId != null and robotId != ''">
+                AND robot_id = #{robotId}
+            </if>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+            <if test="mapName != null and mapName != ''">
+                AND map_name LIKE CONCAT('%', #{mapName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据ID查询地图 -->
     <select id="selectById" parameterType="Long" resultMap="SysMapResult">
-        <include refid="selectMapVo"/>
-        WHERE m.map_id = #{mapId} AND m.del_flag = '0'
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_map
+        WHERE map_id = #{mapId} AND del_flag = '0'
     </select>
 
-    <select id="selectList" parameterType="SysMap" resultMap="SysMapResult">
-        <include refid="selectMapVo"/>
-        WHERE m.del_flag = '0'
-        <if test="mapName != null and mapName != ''">
-            AND m.map_name like concat('%', #{mapName}, '%')
-        </if>
-        <if test="status != null and status != ''">
-            AND m.status = #{status}
-        </if>
-        ORDER BY m.create_time DESC
+    <!-- 根据机器人ID查询地图列表 -->
+    <select id="selectByRobotId" parameterType="String" resultMap="SysMapResult">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_map
+        WHERE robot_id = #{robotId} AND del_flag = '0' AND status = '1'
+        ORDER BY create_time DESC
     </select>
 
-    <insert id="insert" parameterType="SysMap" useGeneratedKeys="true" keyProperty="mapId">
+    <!-- 新增地图 -->
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysMap" useGeneratedKeys="true" keyProperty="mapId">
         INSERT INTO sys_map (
-        map_name, map_file, status, del_flag,
-        create_by, create_time, remark
+        robot_id,
+        tenant_id,
+        map_name,
+        map_type,
+        map_path,
+        thumbnail,
+        description,
+        map_file,
+        point_count,
+        version,
+        status,
+        is_enable,
+        del_flag,
+        map_base64,
+        remark,
+        create_by,
+        create_time
         ) VALUES (
-        #{mapName}, #{mapFile}, #{status}, '0',
-        #{createBy}, #{createTime}, #{remark}
+        #{robotId},
+        #{tenantId},
+        #{mapName},
+        #{mapType},
+        #{mapPath},
+        #{thumbnail},
+        #{description},
+        #{mapFile},
+        #{pointCount},
+        #{version},
+        #{status},
+        #{isEnable},
+        '0',
+        #{mapBase64},
+        #{remark},
+        #{createBy},
+        #{createTime}
         )
     </insert>
 
-    <update id="update" parameterType="SysMap">
+    <!-- 更新地图 -->
+    <update id="update" parameterType="com.ruoyi.function.domain.SysMap">
         UPDATE sys_map
         <set>
-            <if test="mapName != null and mapName != ''">map_name = #{mapName},</if>
-            <if test="mapFile != null and mapFile != ''">map_file = #{mapFile},</if>
+            <if test="robotId != null">robot_id = #{robotId},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            <if test="mapName != null">map_name = #{mapName},</if>
+            <if test="mapType != null">map_type = #{mapType},</if>
+            <if test="mapPath != null">map_path = #{mapPath},</if>
+            <if test="thumbnail != null">thumbnail = #{thumbnail},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="mapFile != null">map_file = #{mapFile},</if>
+            <if test="pointCount != null">point_count = #{pointCount},</if>
+            <if test="version != null">version = #{version},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="updateBy != null">update_by = #{updateBy},</if>
-            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="isEnable != null">is_enable = #{isEnable},</if>
+            <if test="mapBase64 != null">map_base64 = #{mapBase64},</if>
             <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
         </set>
         WHERE map_id = #{mapId}
     </update>
 
+    <!-- 删除地图（逻辑删除） -->
     <update id="deleteById" parameterType="Long">
-        UPDATE sys_map SET del_flag = '2' WHERE map_id = #{mapId}
+        UPDATE sys_map SET del_flag = '1' WHERE map_id = #{mapId}
     </update>
+
+    <!-- 物理删除（慎用） -->
+    <delete id="physicalDeleteById" parameterType="Long">
+        DELETE FROM sys_map WHERE map_id = #{mapId}
+    </delete>
+
+    <!-- 批量逻辑删除 -->
+    <update id="deleteByIds" parameterType="Long">
+        UPDATE sys_map SET del_flag = '1' WHERE map_id IN
+        <foreach collection="array" item="mapId" open="(" separator="," close=")">
+            #{mapId}
+        </foreach>
+    </update>
+
+    <!-- 获取地图点位列表 -->
+    <select id="selectPointsByMapId" parameterType="Long" resultType="com.ruoyi.function.domain.SysPoint">
+        SELECT
+        point_id AS pointId,
+        map_id AS mapId,
+        point_name AS pointName,
+        point_code AS pointCode,
+        point_type AS pointType,
+        coordinate_x AS coordinateX,
+        coordinate_y AS coordinateY,
+        order_num AS orderNum,
+        status,
+        remark,
+        create_time AS createTime,
+        update_time AS updateTime
+        FROM sys_point
+        WHERE map_id = #{mapId} AND del_flag = '0'
+        ORDER BY order_num ASC, create_time ASC
+    </select>
+
+    <!-- 统计地图下的点位数量 -->
+    <select id="countPointsByMapId" parameterType="Long" resultType="Integer">
+        SELECT COUNT(*) FROM sys_point WHERE map_id = #{mapId} AND del_flag = '0'
+    </select>
 
 </mapper>

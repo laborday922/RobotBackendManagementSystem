@@ -18,6 +18,9 @@ public class SysPoint extends BaseEntity {
     @ApiModelProperty("所属地图ID")
     private Long mapId;
 
+    @ApiModelProperty("所属机器人ID")
+    private Long robotId;
+
     @ApiModelProperty("点位名称")
     private String pointName;
 
@@ -42,6 +45,25 @@ public class SysPoint extends BaseEntity {
     @ApiModelProperty("删除标志(0存在 2删除)")
     private String delFlag;
 
+    /** 租户ID */
+    private Long tenantId;
+
+    /** 播报类型(default-全局配置/custom-自定义/none-无播报) */
+    @ApiModelProperty("播报类型(default/custom/none)")
+    private String voiceType;
+
+    /** 出发前播报 */
+    @ApiModelProperty("出发前播报")
+    private String beforeMsg;
+
+    /** 导航中播报 */
+    @ApiModelProperty("导航中播报")
+    private String duringMsg;
+
+    /** 到达后播报 */
+    @ApiModelProperty("到达后播报")
+    private String afterMsg;
+
     // ========== Getters and Setters ==========
 
     public Long getPointId() {
@@ -58,6 +80,14 @@ public class SysPoint extends BaseEntity {
 
     public void setMapId(Long mapId) {
         this.mapId = mapId;
+    }
+
+    public Long getRobotId() {
+        return robotId;
+    }
+
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
     }
 
     public String getPointName() {
@@ -124,11 +154,52 @@ public class SysPoint extends BaseEntity {
         this.delFlag = delFlag;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getVoiceType() {
+        return voiceType;
+    }
+
+    public void setVoiceType(String voiceType) {
+        this.voiceType = voiceType;
+    }
+
+    public String getBeforeMsg() {
+        return beforeMsg;
+    }
+
+    public void setBeforeMsg(String beforeMsg) {
+        this.beforeMsg = beforeMsg;
+    }
+
+    public String getDuringMsg() {
+        return duringMsg;
+    }
+
+    public void setDuringMsg(String duringMsg) {
+        this.duringMsg = duringMsg;
+    }
+
+    public String getAfterMsg() {
+        return afterMsg;
+    }
+
+    public void setAfterMsg(String afterMsg) {
+        this.afterMsg = afterMsg;
+    }
+
     @Override
     public String toString() {
         return "SysPoint{" +
                 "pointId=" + pointId +
                 ", mapId=" + mapId +
+                ", robotId=" + robotId +
                 ", pointName='" + pointName + '\'' +
                 ", pointCode='" + pointCode + '\'' +
                 ", pointType='" + pointType + '\'' +
@@ -137,6 +208,11 @@ public class SysPoint extends BaseEntity {
                 ", status='" + status + '\'' +
                 ", orderNum=" + orderNum +
                 ", delFlag='" + delFlag + '\'' +
+                ", tenantId=" + tenantId +
+                ", voiceType='" + voiceType + '\'' +
+                ", beforeMsg='" + beforeMsg + '\'' +
+                ", duringMsg='" + duringMsg + '\'' +
+                ", afterMsg='" + afterMsg + '\'' +
                 ", createBy='" + getCreateBy() + '\'' +
                 ", createTime=" + getCreateTime() +
                 ", updateBy='" + getUpdateBy() + '\'' +

@@ -18,26 +18,23 @@
         <result property="lastExecuteTime"  column="last_execute_time"  />
         <result property="lastExecuteStatus" column="last_execute_status" />
         <result property="delFlag"          column="del_flag"           />
+        <result property="tenantId"         column="tenant_id"          />
         <result property="createBy"         column="create_by"          />
         <result property="createTime"       column="create_time"        />
         <result property="updateBy"         column="update_by"          />
         <result property="updateTime"       column="update_time"        />
     </resultMap>
 
-    <!-- 机器人结果映射 - 根据实际表 robots 的字段 -->
+    <!-- 机器人结果映射 -->
     <resultMap type="com.ruoyi.mode.domain.SysRobot" id="SysRobotResult">
         <id     property="robotId"          column="id"                 />
-        <result property="robotName"        column="name"               />
-        <result property="robotCode"        column="code"               />
+        <result property="name"             column="name"               />
+        <result property="code"             column="code"               />
         <result property="groupId"          column="group_id"           />
         <result property="battery"          column="battery"            />
         <result property="status"           column="status"             />
-        <result property="location"         column="area"               />
+        <result property="area"             column="area"               />
         <result property="currentMode"      column="current_mode"       />
-        <result property="runtime"          column="runtime"            />
-        <result property="speed"            column="speed"              />
-        <result property="temperature"      column="temperature"        />
-        <result property="tasksCompleted"   column="tasks_completed"    />
         <result property="delFlag"          column="del_flag"           />
         <result property="createBy"         column="create_by"          />
         <result property="createTime"       column="created_at"         />
@@ -60,6 +57,7 @@
         last_execute_time,
         last_execute_status,
         del_flag,
+        tenant_id,
         create_by,
         create_time,
         update_by,
@@ -80,6 +78,9 @@
             <if test="status != null and status != ''">
                 AND status = #{status}
             </if>
+            <if test="tenantId != null and tenantId != ''">
+                AND tenant_id = #{tenantId}
+            </if>
             AND del_flag = '0'
         </where>
         order by create_time desc
@@ -92,8 +93,8 @@
         and del_flag = '0'
     </select>
 
-    <!-- 查询排程关联的机器人 - 使用正确的表名 robots -->
-    <select id="selectRobotsByScheduleId" parameterType="Long" resultMap="SysRobotResult">
+    <!-- 查询排程关联的机器人 -->
+    <select id="selectRobotsByScheduleId" resultMap="SysRobotResult">
         select
         r.id,
         r.name,
@@ -101,17 +102,20 @@
         r.group_id,
         r.battery,
         r.status,
-        r.area as location,
+        r.area,
         r.current_mode,
         r.del_flag,
         r.create_by,
-        r.created_at as create_time,
+        r.created_at,
         r.update_by,
-        r.updated_at as update_time
+        r.updated_at
         from robots r
         inner join sys_schedule_robot sr on r.id = sr.robot_id
         where sr.schedule_id = #{scheduleId}
         and r.del_flag = '0'
+        <if test="tenantId != null">
+            and r.tenant_id = #{tenantId}
+        </if>
         order by r.id
     </select>
 
@@ -127,6 +131,7 @@
         <if test="startTime != null and startTime != ''">start_time,</if>
         <if test="duration != null">duration,</if>
         <if test="status != null and status != ''">status,</if>
+        <if test="tenantId != null">tenant_id,</if>
         <if test="createBy != null and createBy != ''">create_by,</if>
         create_time
         )values(
@@ -139,6 +144,7 @@
         <if test="startTime != null and startTime != ''">#{startTime},</if>
         <if test="duration != null">#{duration},</if>
         <if test="status != null and status != ''">#{status},</if>
+        <if test="tenantId != null">#{tenantId},</if>
         <if test="createBy != null and createBy != ''">#{createBy},</if>
         sysdate()
         )
@@ -189,7 +195,7 @@
         </foreach>
     </update>
 
-    <!-- 批量插入排程机器人关联 - 使用正确的表名 robots -->
+    <!-- 批量插入排程机器人关联 -->
     <insert id="insertScheduleRobots">
         INSERT IGNORE INTO sys_schedule_robot (schedule_id, robot_id, robot_name)
         SELECT #{scheduleId}, id, name

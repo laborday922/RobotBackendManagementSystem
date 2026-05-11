@@ -60,7 +60,8 @@ public enum ReturnNo {
 
     //状态码 403
     AUTH_NO_RIGHT(16, "ReturnNo.AUTH_NO_RIGHT"),
-    RESOURCE_ID_OUTSCOPE(17, "ReturnNo.RESOURCE_ID_OUTSCOPE");
+    RESOURCE_ID_OUTSCOPE(17, "ReturnNo.RESOURCE_ID_OUTSCOPE"),
+    ROBOT_OFFLINE(52, "ReturnNo.ROBOT_OFFLINE");
 
 
 

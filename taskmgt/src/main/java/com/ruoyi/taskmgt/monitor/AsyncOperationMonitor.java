@@ -1,17 +1,20 @@
 package com.ruoyi.taskmgt.monitor;
 
+import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
+import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
 import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.event.AsyncTaskCompletedEvent;
 import com.ruoyi.taskmgt.event.AsyncTaskTimeoutEvent;
 import com.ruoyi.taskmgt.event.RobotCallbackEvent;
-import com.ruoyi.taskmgt.operation.OperationHandler;
-import com.ruoyi.taskmgt.operation.OperationRegistry;
-import com.ruoyi.taskmgt.operation.model.OperationResult;
+import com.ruoyi.taskmgt.invoker.RobotInvoker;
+import com.ruoyi.taskmgt.monitor.dto.RobotCallbackData;
+import com.ruoyi.taskmgt.monitor.dto.OperationResult;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -25,13 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 @RequiredArgsConstructor
 public class AsyncOperationMonitor {
-    private final OperationRegistry operationRegistry;
     private final StepRepository stepRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RobotInvoker robotInvoker;
+
     private ScheduledExecutorService executor;
     private final Map<String, ScheduledFuture<?>> pollingTasks = new ConcurrentHashMap<>();
     private final Map<String, PollingContext> pollingContexts = new ConcurrentHashMap<>();
-    private final ApplicationEventPublisher eventPublisher;
-    // 记录已完成的异步任务（防止回调与轮询重复处理）
     private final Map<String, AtomicBoolean> completedTraceIds = new ConcurrentHashMap<>();
 
     @PostConstruct
@@ -48,9 +51,7 @@ public class AsyncOperationMonitor {
         }
     }
 
-    public void registerPolling(Long stepId, String traceId, Long operationId, Date estimatedFinishTime) {
-        OperationHandler handler = operationRegistry.getHandler(operationId);
-
+    public void registerPolling(Long stepId, String traceId, Long operationId, Long robotId, Date estimatedFinishTime) {
         long initialDelay = 1000;
         long period = calculatePeriod(estimatedFinishTime);
 
@@ -58,7 +59,7 @@ public class AsyncOperationMonitor {
         context.setStepId(stepId);
         context.setTraceId(traceId);
         context.setOperationId(operationId);
-        context.setHandler(handler);
+        context.setRobotId(robotId);
         context.setStartTime(new Date());
         context.setEstimatedFinishTime(estimatedFinishTime);
         context.setPollCount(0);
@@ -91,18 +92,24 @@ public class AsyncOperationMonitor {
         context.setPollCount(context.getPollCount() + 1);
 
         try {
-            OperationResult status = queryStatus(context.getHandler(), traceId, context.getRobotId());
+            TaskStatusResponse status = robotInvoker.queryStatus(context.getRobotId(), traceId);
             if (status == null) {
                 log.warn("轮询返回空状态, traceId={}", traceId);
                 return;
             }
 
-            log.debug("轮询状态: traceId={}, 完成={}, 进度={}", traceId, status.isCompleted(), status.getProgress());
+            log.debug("轮询状态: traceId={}, completed={}, progress={}", traceId, status.isCompleted(), status.getProgress());
 
             if (status.isCompleted()) {
                 if (completedFlag != null && completedFlag.compareAndSet(false, true)) {
                     log.info("异步任务已完成, traceId={}", traceId);
-                    eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, context.getStepId(), status));
+                    boolean success = "SUCCESS".equals(status.getStatus()) || "COMPLETED".equals(status.getStatus());
+                    OperationResult result = OperationResult.builder()
+                            .success(success)
+                            .data(success ? status.getData() : null)
+                            .message(success ? null : status.getErrorMsg())
+                            .build();
+                    eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, context.getStepId(), result));
                     cancelPolling(traceId);
                 }
             } else if (isTimeout(context)) {
@@ -124,6 +131,11 @@ public class AsyncOperationMonitor {
         }
     }
 
+    @EventListener
+    public void onWebSocketAsyncResult(WebSocketAsyncResultEvent event) {
+        handleWebSocketCallback(event.getTraceId(), event.isSuccess(), event.getData(), event.getErrorMsg());
+    }
+
     public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
         log.info("收到机器人回调, traceId={}, success={}", traceId, callbackData.isSuccess());
         AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
@@ -138,95 +150,85 @@ public class AsyncOperationMonitor {
         }
         eventPublisher.publishEvent(new RobotCallbackEvent(this, traceId, callbackData));
         cancelPolling(traceId);
-
-    }
-
-    public void cancelPolling(String traceId) {
-        ScheduledFuture<?> future = pollingTasks.remove(traceId);
-        if (future != null) {
-            future.cancel(false);
-            log.debug("已取消轮询: {}", traceId);
-        }
-        pollingContexts.remove(traceId);
     }
 
     /**
-     * 查询任务状态（通过handler）
+     * 处理通过 WebSocket 推送的异步结果
      */
-    private OperationResult queryStatus(OperationHandler handler, String traceId, Long robotId) {
-        // 创建查询用的虚拟step
-        TaskStep queryStep = new TaskStep();
-        queryStep.setTraceId(traceId);
-
-        // 构造查询参数
-        Map<String, Object> queryParams = Map.of(
-                "traceId", traceId,
-                "action", "query"
-        );
-
-        // 执行查询（复用handler的execute，通过特殊参数标识为查询）
-        OperationResult result = handler.execute(queryStep, robotId, queryParams);
-
-        // 转换结果为状态查询结果
-        return OperationResult.builder()
-                .success(result.isSuccess())
-                .completed(isTaskCompleted(result))
-                .progress(getProgressFromResult(result))
-                .message(result.getMessage())
-                .data(result.getData())
+    public void handleWebSocketCallback(String traceId, boolean success, Object data, String errorMsg) {
+        log.info("收到WebSocket异步结果, traceId={}, success={}", traceId, success);
+        AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
+        if (!completedFlag.compareAndSet(false, true)) {
+            log.warn("重复处理异步结果, traceId={}", traceId);
+            return;
+        }
+        TaskStep step = stepRepository.findByTraceId(traceId);
+        if (step == null) {
+            log.error("异步结果traceId不存在: {}", traceId);
+            return;
+        }
+        OperationResult result = OperationResult.builder()
+                .success(success)
+                .data(data)
+                .message(errorMsg)
                 .build();
+        eventPublisher.publishEvent(new AsyncTaskCompletedEvent(this, step.getId(), result));
+        cancelPolling(traceId);
     }
 
     private long calculatePeriod(Date estimatedFinishTime) {
         if (estimatedFinishTime == null) {
-            return 2000; // 默认2秒
+            return 2000;
         }
-
         long remaining = estimatedFinishTime.getTime() - System.currentTimeMillis();
-
         if (remaining < 5000) {
-            return 500; // 剩余5秒内，每500ms查一次
+            return 500;
         } else if (remaining < 30000) {
-            return 2000; // 剩余30秒内，每2秒查一次
+            return 2000;
         } else {
-            return 5000; // 否则每5秒查一次
+            return 5000;
         }
     }
 
+    // 新增：存储超时任务的 Map
+    private final Map<String, ScheduledFuture<?>> timeoutTasks = new ConcurrentHashMap<>();
+
+    /**
+     * 为回调模式注册超时检测
+     * @param stepId 步骤ID
+     * @param traceId 追踪ID
+     * @param timeoutMillis 超时毫秒数
+     */
+    public void registerCallbackTimeout(Long stepId, String traceId, long timeoutMillis) {
+        ScheduledFuture<?> future = executor.schedule(() -> {
+            AtomicBoolean completedFlag = completedTraceIds.get(traceId);
+            if (completedFlag != null && !completedFlag.get()) {
+                if (completedFlag.compareAndSet(false, true)) {
+                    log.warn("回调超时, traceId={}, stepId={}", traceId, stepId);
+                    eventPublisher.publishEvent(new AsyncTaskTimeoutEvent(this, stepId));
+                    cancelPolling(traceId);
+                }
+            }
+        }, timeoutMillis, TimeUnit.MILLISECONDS);
+        timeoutTasks.put(traceId, future);
+    }
+    public void cancelPolling(String traceId) {
+        ScheduledFuture<?> future = pollingTasks.remove(traceId);
+        if (future != null) future.cancel(false);
+        ScheduledFuture<?> timeoutFuture = timeoutTasks.remove(traceId);
+        if (timeoutFuture != null) timeoutFuture.cancel(false);
+        pollingContexts.remove(traceId);
+    }
     private boolean isTimeout(PollingContext context) {
-        // 超过预计完成时间30%或绝对超时1小时
         Date estimated = context.getEstimatedFinishTime();
         if (estimated == null) return false;
-
         long elapsed = System.currentTimeMillis() - context.getStartTime().getTime();
         long expected = estimated.getTime() - context.getStartTime().getTime();
-
-        return elapsed > expected * 1.3 || elapsed > 3600000; // 1小时绝对超时
+        return elapsed > expected * 1.3 || elapsed > 3600000;
     }
 
     private long getElapsedSeconds(PollingContext context) {
         return (System.currentTimeMillis() - context.getStartTime().getTime()) / 1000;
-    }
-
-    private boolean isTaskCompleted(OperationResult result) {
-        // 从结果判断是否完成
-        if (result.getData() instanceof Map) {
-            Map<?, ?> data = (Map<?, ?>) result.getData();
-            Object status = data.get("status");
-            return "COMPLETED".equals(status) || "FINISHED".equals(status) || "SUCCESS".equals(status);
-        }
-        return result.isSuccess(); // 简化判断
-    }
-
-    private int getProgressFromResult(OperationResult result) {
-        if (result.getData() instanceof Map) {
-            Map<?, ?> data = (Map<?, ?>) result.getData();
-            Object progress = data.get("progress");
-            if (progress instanceof Number) {
-                return ((Number) progress).intValue();
-            }
-        }
-        return result.isSuccess() ? 100 : 0;
     }
 
     @Data
@@ -235,19 +237,8 @@ public class AsyncOperationMonitor {
         private String traceId;
         private Long operationId;
         private Long robotId;
-        private OperationHandler handler;
         private Date startTime;
         private Date estimatedFinishTime;
         private int pollCount;
-    }
-
-    @Data
-    public static class RobotCallbackData {
-        private boolean success;
-        private String errorMsg;
-        private Object data;
-        private String traceId;
-        private Long robotId;
-        private Date timestamp;
     }
 }

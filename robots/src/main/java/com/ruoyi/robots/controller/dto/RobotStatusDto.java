@@ -44,4 +44,7 @@ public class RobotStatusDto {
 
     /** 状态描述（含主状态和子状态，如：待命 准备执行配送任务） */
     private String statusDesc;
+
+    /** 最后一次心跳时间 */
+    private Date lastHeartbeatTime;
 }

@@ -3,6 +3,7 @@ package com.ruoyi.taskmgt.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
 import com.ruoyi.common.utils.StringUtils;
@@ -13,15 +14,14 @@ import com.ruoyi.taskmgt.domain.StepRepository;
 import com.ruoyi.taskmgt.domain.bo.Task;
 import com.ruoyi.taskmgt.domain.bo.TaskStep;
 import com.ruoyi.taskmgt.event.StepCompletedEvent;
+import com.ruoyi.taskmgt.invoker.RobotInvoker;
+import com.ruoyi.taskmgt.invoker.dto.RobotTaskRequest;
+import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
 import com.ruoyi.taskmgt.loadbalancer.RobotLoadBalancer;
 import com.ruoyi.taskmgt.monitor.AsyncOperationMonitor;
-import com.ruoyi.taskmgt.operation.OperationHandler;
-import com.ruoyi.taskmgt.operation.OperationRegistry;
-import com.ruoyi.taskmgt.operation.model.OperationResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,6 @@ import java.util.*;
 @Transactional
 @RequiredArgsConstructor
 public class StepExecutionService {
-    private final OperationRegistry operationRegistry;
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogService;
     private final IRobotsService robotService;
@@ -43,56 +42,109 @@ public class StepExecutionService {
     private final MessageSourceAccessor messageSourceAccessor;
     private final ApplicationEventPublisher eventPublisher;
     private final AsyncOperationMonitor asyncMonitor;
-    /**
-     * 启动步骤执行 - 由TaskTriggerService调用
-     * @param step 要执行的步骤
-     * @param task 所属任务（已包含robotId等信息）
-     */
+    private final RobotInvoker robotInvoker;
+    private final RedisCache redisCache;
+
+//    @Value("${task.callback.base-url:http://localhost:8080}")
+//    private String callbackBaseUrl;
+
     @Transactional
     public void executeStep(TaskStep step, Task task) {
         Long stepId = step.getId();
         log.info("开始执行步骤: {}", stepId);
         try {
-            //更新步骤状态为执行中
             step.setStatus(TaskStep.EXECUTING);
             step.setStartTime(new Date());
-            stepRepository.update(step);
-            //记录日志
+            redisCache.deleteObject(stepRepository.update(step));
+
             taskLogService.record(step.getTaskId(), step.getId(),
                     TaskLogEventType.STEP_START,
                     String.format("步骤[%s]开始执行, 操作ID=%d", step.getStepName(), step.getOperationId()),
                     "system", null);
-            //解析机器人ID（单任务/组任务）
+
             Long robotId = resolveRobotId(task, step);
             if (robotId == null) {
-                throw new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,new String[]{this.messageSourceAccessor.getMessage("机器人", robotId.toString())},messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
+                throw new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
+                        new String[]{messageSourceAccessor.getMessage("机器人", "未知")},
+                        messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
             }
-            //解析operationJson参数
-            Map<String, Object> params = parseOperationJson(step.getOperationJson());
-            //获取操作处理器
-            OperationHandler handler = operationRegistry.getHandler(step.getOperationId());
-            if (handler == null) {
-                throw new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,new String[]{this.messageSourceAccessor.getMessage("操作处理器", step.getOperationId().toString())},messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));
-            }
-            //参数校验
-            if (!handler.validateParams(params)) {
-                throw new TaskmgtException(ReturnNo.DATA_INVALID,new String[]{this.messageSourceAccessor.getMessage("参数校验失败", params.toString())},messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
-            }
-            log.info("步骤{}使用处理器[{}]执行, 机器人={}, 参数={}",
-                    stepId, handler.getOperationName(), robotId, params);
-
-            OperationResult result = handler.execute(step, robotId, params);
-            //处理执行结果
-            handleResult(step, task, result);
-
+            sendAndWait(robotId,step);
         } catch (Exception e) {
-            log.error("步骤执行异常: {}", stepId, e);
             failStep(step.getId(), e.getMessage());
+            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
         }
     }
-    /**
-     * 解析operationJson
-     */
+
+    public void sendAndWait(Long robotId,TaskStep step){
+        Long stepId=step.getId();
+        if (!robotInvoker.isRobotOnline(robotId)) {
+            throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
+                    new String[]{robotId.toString()},
+                    "机器人不在线");
+        }
+        try{
+            Map<String, Object> params = parseOperationJson(step.getOperationJson());
+
+            RobotTaskRequest request = new RobotTaskRequest();
+            String traceId = step.getTraceId() != null ? step.getTraceId() : UUID.randomUUID().toString();
+            request.setTraceId(traceId);
+            request.setOperationId(step.getOperationId());
+            request.setParams(params);
+            //request.setCallbackUrl(callbackBaseUrl + "/callback/robot");
+            request.setMode(null);
+
+            RobotTaskResponse response = robotInvoker.execute(robotId, request);
+
+            String respMode = response.getMode() != null ? response.getMode() : "SYNC";
+
+            switch (respMode) {
+                case "SYNC":
+                    if (response.isSuccess()) {
+                        log.info("步骤{}同步执行成功", stepId);
+                        completeStep(step.getId(), response.getData());
+                        eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), true));
+                    } else {
+                        log.warn("步骤{}同步执行失败: {}", stepId, response.getErrorMsg());
+                        failStep(step.getId(), response.getErrorMsg());
+                        eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
+                    }
+                    break;
+                case "ASYNC":
+                    log.info("步骤{}异步执行，注册轮询监控, traceId={}", stepId, response.getTraceId());
+                    step.setTraceId(response.getTraceId());
+                    step.setStatus(TaskStep.WAITING);
+                    stepRepository.update(step);
+                    asyncMonitor.registerPolling(step.getId(), response.getTraceId(),
+                            step.getOperationId(), robotId, response.getEstimatedFinishTime());
+                    taskLogService.record(step.getTaskId(), step.getId(),
+                            TaskLogEventType.STEP_ASYNC_SUBMITTED,
+                            "异步任务已提交, traceId=" + response.getTraceId(), "system", null);
+                    break;
+                case "CALLBACK":
+                    log.info("步骤{}等待回调, traceId={}", stepId, response.getTraceId());
+                    step.setTraceId(response.getTraceId());
+                    step.setStatus(TaskStep.WAITING_CALLBACK);
+                    stepRepository.update(step);
+                    // 注册超时检测（estimatedFinishTime若无默认30分钟）
+                    long timeout = response.getEstimatedFinishTime() != null ?
+                            response.getEstimatedFinishTime().getTime() - System.currentTimeMillis() :
+                            30 * 60 * 1000;
+                    asyncMonitor.registerCallbackTimeout(step.getId(), response.getTraceId(), timeout);
+                    taskLogService.record(step.getTaskId(), step.getId(),
+                            TaskLogEventType.STEP_WAITING_CALLBACK,
+                            "等待异步结果, traceId=" + response.getTraceId(), "system", null);
+                    break;
+                default:
+                    log.error("步骤{}未知的结果类型: {}", stepId, respMode);
+                    failStep(step.getId(), "未知的结果类型: " + respMode);
+        }
+        }catch(Exception e){
+            log.error("步骤执行异常: {}", stepId, e);
+            failStep(step.getId(), e.getMessage());
+            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
+        }
+    }
+
     private Map<String, Object> parseOperationJson(String json) throws Exception {
         if (StringUtils.isBlank(json)) {
             return new HashMap<>();
@@ -100,76 +152,19 @@ public class StepExecutionService {
         return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
     }
 
-    /**
-     * 处理执行结果
-     */
-    private void handleResult(TaskStep step, Task task, OperationResult result) {
-        Long stepId = step.getId();
-
-        switch (result.getType()) {
-            case SYNC:
-                // 同步结果，立即处理
-                if (result.isSuccess()) {
-                    log.info("步骤{}同步执行成功", stepId);
-                    completeStep(step.getId(), result.getData());
-                    // 触发下一步
-                    eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), true));
-                } else {
-                    log.warn("步骤{}同步执行失败: {}", stepId, result.getMessage());
-                    failStep(step.getId(), result.getMessage());
-                    eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
-                }
-                break;
-
-            case ASYNC:
-                // 异步任务，注册轮询监控
-                log.info("步骤{}异步执行，注册监控, traceId={}", stepId, result.getTraceId());
-                step.setTraceId(result.getTraceId());
-                step.setStatus(TaskStep.WAITING);  // 等待中状态
-                stepRepository.update(step);
-                asyncMonitor.registerPolling(step.getId(), result.getTraceId(),
-                        step.getOperationId(), result.getEstimatedFinishTime());
-
-                taskLogService.record(step.getTaskId(), step.getId(),
-                        TaskLogEventType.STEP_ASYNC_SUBMITTED,
-                        "异步任务已提交, traceId=" + result.getTraceId(), "system", null);
-                break;
-
-            case CALLBACK:
-                // 回调模式，只记录traceId等待机器人回调
-                log.info("步骤{}等待回调, traceId={}", stepId, result.getTraceId());
-                step.setTraceId(result.getTraceId());
-                step.setStatus(TaskStep.WAITING_CALLBACK);
-                stepRepository.update(step);
-
-                taskLogService.record(step.getTaskId(), step.getId(),
-                        TaskLogEventType.STEP_WAITING_CALLBACK,
-                        "等待机器人回调, traceId=" + result.getTraceId(), "system", null);
-                break;
-
-            default:
-                log.error("步骤{}未知的结果类型: {}", stepId, result.getType());
-                failStep(step.getId(), "未知的结果类型: " + result.getType());
-        }
-    }
-    /**
-     * 解析机器人ID（处理单任务/组任务）
-     */
-    private Long resolveRobotId(Task task, TaskStep step) {
-        // 单任务使用任务绑定的机器人
+    Long resolveRobotId(Task task, TaskStep step) {
         if (task.getIsGroupTask() == 0) {
             return task.getRobotId();
         }
-        // 步骤已指定机器人
         if (step.getAssignedRobotId() != null) {
             return step.getAssignedRobotId();
         }
-
-        // 组任务使用负载均衡调度策略
         Long groupId = task.getRobotGroupId();
         if (groupId == null) {
             log.error("组任务缺少 robotGroupId, taskId={}", task.getId());
-            throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{messageSourceAccessor.getMessage("Task.name",LocaleContextHolder.getLocale()),"组任务未指定机器人组",task.getId().toString()},messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
+            throw new TaskmgtException(ReturnNo.DATA_INVALID,
+                    new String[]{messageSourceAccessor.getMessage("Task.name"), "组任务未指定机器人组", task.getId().toString()},
+                    messageSourceAccessor.getMessage(ReturnNo.DATA_INVALID.getMessage()));
         }
         Robot robot = new Robot();
         robot.setGroupId(groupId);
@@ -179,32 +174,28 @@ public class StepExecutionService {
         List<Long> availableRobots = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
         if (availableRobots.isEmpty()) {
             log.warn("机器人组 {} 无可用机器人, taskId={}", groupId, task.getId());
-            throw new TaskmgtException(ReturnNo.SOURCE_IN_USE, new String[]{"机器人组"+groupId+"内无任务可用机器人"},messageSourceAccessor.getMessage(ReturnNo.SOURCE_IN_USE.getMessage()));
+            throw new TaskmgtException(ReturnNo.SOURCE_IN_USE,
+                    new String[]{"机器人组" + groupId + "内无任务可用机器人"},
+                    messageSourceAccessor.getMessage(ReturnNo.SOURCE_IN_USE.getMessage()));
         }
-
         Long selectedRobot = robotLoadBalancer.selectRobot(availableRobots, step);
         if (selectedRobot == null) {
-
-            throw new TaskmgtException(ReturnNo.INTERNAL_SERVER_ERR, new String[]{"负载均衡失败"},messageSourceAccessor.getMessage(ReturnNo.INTERNAL_SERVER_ERR.getMessage()));
+            throw new TaskmgtException(ReturnNo.INTERNAL_SERVER_ERR,
+                    new String[]{"负载均衡失败"},
+                    messageSourceAccessor.getMessage(ReturnNo.INTERNAL_SERVER_ERR.getMessage()));
         }
-
         step.setAssignedRobotId(selectedRobot);
         stepRepository.update(step);
-        return null;
+        return selectedRobot;
     }
-    /**
-     * 完成步骤
-     * @param stepId 步骤ID
-     * @param resultData 结果数据
-     */
+
     @Transactional
     public void completeStep(Long stepId, Object resultData) {
         try {
-            // 查询步骤（不带锁，乐观锁由 version 保证）
             TaskStep step = stepRepository.findById(stepId)
-                    .orElseThrow(() -> {
-                        String[] args = new String[]{this.messageSourceAccessor.getMessage("Step.name", LocaleContextHolder.getLocale()), stepId.toString()};
-                        return new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST, args, messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage()));});
+                    .orElseThrow(() -> new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
+                            new String[]{messageSourceAccessor.getMessage("Step.name"), stepId.toString()},
+                            messageSourceAccessor.getMessage(ReturnNo.RESOURCE_ID_NOTEXIST.getMessage())));
             if (!(Objects.equals(step.getStatus(), TaskStep.EXECUTING) ||
                     Objects.equals(step.getStatus(), TaskStep.WAITING) ||
                     Objects.equals(step.getStatus(), TaskStep.WAITING_CALLBACK))) {
@@ -214,6 +205,7 @@ public class StepExecutionService {
             step.setStatus(TaskStep.FINISHED);
             step.setEndTime(new Date());
             step.setResultData(convertToJson(resultData));
+
             stepRepository.update(step);
             taskLogService.record(step.getTaskId(), stepId,
                     TaskLogEventType.STEP_COMPLETE, "步骤执行完成", "system", null);
@@ -225,31 +217,23 @@ public class StepExecutionService {
                     new String[]{}, messageSourceAccessor.getMessage(ReturnNo.RESOURCE_FALSIFY.getMessage()));
         }
     }
-    /**
-     * 步骤失败
-     * @param stepId 步骤ID
-     * @param errorMsg 错误信息
-     */
+
     @Transactional
     public void failStep(Long stepId, String errorMsg) {
         try {
             TaskStep step = stepRepository.findById(stepId)
                     .orElseThrow(() -> new TaskmgtException(ReturnNo.RESOURCE_ID_NOTEXIST,
                             new String[]{"步骤", stepId.toString()}, "步骤不存在"));
-
             if (Objects.equals(step.getStatus(), TaskStep.FINISHED) || Objects.equals(step.getStatus(), TaskStep.TERMINATED)) {
                 log.warn("步骤 {} 状态 {} 不允许转为失败", stepId, step.getStatus());
                 return;
             }
-
             step.setStatus(TaskStep.PAUSED);
             step.setErrorMsg(errorMsg);
             stepRepository.update(step);
-
             taskLogService.record(step.getTaskId(), stepId,
                     TaskLogEventType.STEP_FAILED, "执行失败: " + errorMsg, "system", null);
             log.warn("步骤{}已失败: {}", stepId, errorMsg);
-
         } catch (OptimisticLockingFailureException e) {
             log.error("步骤 {} 乐观锁冲突", stepId, e);
             throw new TaskmgtException(ReturnNo.RESOURCE_FALSIFY,
@@ -257,9 +241,6 @@ public class StepExecutionService {
         }
     }
 
-    /**
-     * 对象转JSON字符串
-     */
     private String convertToJson(Object data) {
         if (data == null) return null;
         if (data instanceof String) return (String) data;

@@ -10,6 +10,7 @@ import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.robots.domain.RobotGroups;
 import com.ruoyi.robots.service.IRobotGroupsService;
+import com.ruoyi.taskmgt.TestApplication;
 import com.ruoyi.taskmgt.domain.TemplateRepository;
 import com.ruoyi.taskmgt.domain.bo.Template;
 import com.ruoyi.taskmgt.service.vo.TemplateVo;
@@ -19,7 +20,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -29,7 +34,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TemplateServiceImplTest {
+public class TemplateServiceImplTest {
 
     @Mock private TemplateRepository templateRepository;
     @Mock private MessageSourceAccessor messageSourceAccessor;

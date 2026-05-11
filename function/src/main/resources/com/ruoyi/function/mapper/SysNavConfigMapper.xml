@@ -2,66 +2,72 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.function.mapper.SysNavConfigMapper">
 
-    <!-- 修复：移除 remark 映射，因为实体类中没有该属性 -->
-    <resultMap id="SysNavConfigResult" type="com.ruoyi.function.domain.SysNavConfig">
+    <resultMap type="SysNavConfig" id="SysNavConfigResult">
         <id property="navId" column="nav_id"/>
+        <result property="robotId" column="robot_id"/>
         <result property="mapId" column="map_id"/>
         <result property="voiceType" column="voice_type"/>
         <result property="beforeMsg" column="before_msg"/>
         <result property="duringMsg" column="during_msg"/>
         <result property="afterMsg" column="after_msg"/>
+        <result property="tenantId" column="tenant_id"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
-        <result property="createBy" column="create_by"/>
-        <result property="updateBy" column="update_by"/>
     </resultMap>
 
-    <!-- 修复：移除 remark 字段 -->
-    <sql id="selectNavConfigVo">
-        select nav_id, map_id, voice_type, before_msg, during_msg, after_msg,
-        create_time, update_time, create_by, update_by
-        from sys_nav_config
+    <sql id="Base_Column_List">
+        nav_id, robot_id, map_id, voice_type, before_msg, during_msg, after_msg, tenant_id, create_time, update_time
     </sql>
 
+    <!-- 获取当前配置（取第一条，保留兼容） -->
     <select id="selectCurrent" resultMap="SysNavConfigResult">
-        <include refid="selectNavConfigVo"/>
-        order by create_time desc limit 1
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_nav_config
+        LIMIT 1
     </select>
 
-    <insert id="insert" parameterType="com.ruoyi.function.domain.SysNavConfig" useGeneratedKeys="true" keyProperty="navId">
-        insert into sys_nav_config (
-        <if test="mapId != null">map_id,</if>
-        <if test="voiceType != null and voiceType != ''">voice_type,</if>
-        <if test="beforeMsg != null and beforeMsg != ''">before_msg,</if>
-        <if test="duringMsg != null and duringMsg != ''">during_msg,</if>
-        <if test="afterMsg != null and afterMsg != ''">after_msg,</if>
-        <if test="createTime != null">create_time,</if>
-        <if test="createBy != null and createBy != ''">create_by,</if>
-        update_time
-        ) values (
-        <if test="mapId != null">#{mapId},</if>
-        <if test="voiceType != null and voiceType != ''">#{voiceType},</if>
-        <if test="beforeMsg != null and beforeMsg != ''">#{beforeMsg},</if>
-        <if test="duringMsg != null and duringMsg != ''">#{duringMsg},</if>
-        <if test="afterMsg != null and afterMsg != ''">#{afterMsg},</if>
-        <if test="createTime != null">#{createTime},</if>
-        <if test="createBy != null and createBy != ''">#{createBy},</if>
-        #{updateTime}
+    <!-- 根据机器人ID获取配置 -->
+    <select id="selectByRobotId" resultMap="SysNavConfigResult">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_nav_config
+        WHERE robot_id = #{robotId}
+    </select>
+
+    <insert id="insert" parameterType="SysNavConfig" useGeneratedKeys="true" keyProperty="navId">
+        INSERT INTO sys_nav_config (
+        robot_id, map_id, voice_type, before_msg, during_msg, after_msg, tenant_id
+        ) VALUES (
+        #{robotId}, #{mapId}, #{voiceType}, #{beforeMsg}, #{duringMsg}, #{afterMsg}, #{tenantId}
         )
     </insert>
 
-    <update id="update" parameterType="com.ruoyi.function.domain.SysNavConfig">
-        update sys_nav_config
+    <update id="update" parameterType="SysNavConfig">
+        UPDATE sys_nav_config
+        <set>
+            <if test="robotId != null">robot_id = #{robotId},</if>
+            <if test="mapId != null">map_id = #{mapId},</if>
+            <if test="voiceType != null">voice_type = #{voiceType},</if>
+            <if test="beforeMsg != null">before_msg = #{beforeMsg},</if>
+            <if test="duringMsg != null">during_msg = #{duringMsg},</if>
+            <if test="afterMsg != null">after_msg = #{afterMsg},</if>
+            <if test="tenantId != null">tenant_id = #{tenantId},</if>
+            update_time = NOW()
+        </set>
+        WHERE nav_id = #{navId}
+    </update>
+
+    <!-- 根据机器人ID更新配置 -->
+    <update id="updateByRobotId" parameterType="SysNavConfig">
+        UPDATE sys_nav_config
         <set>
             <if test="mapId != null">map_id = #{mapId},</if>
-            <if test="voiceType != null and voiceType != ''">voice_type = #{voiceType},</if>
-            <if test="beforeMsg != null and beforeMsg != ''">before_msg = #{beforeMsg},</if>
-            <if test="duringMsg != null and duringMsg != ''">during_msg = #{duringMsg},</if>
-            <if test="afterMsg != null and afterMsg != ''">after_msg = #{afterMsg},</if>
-            <if test="updateTime != null">update_time = #{updateTime},</if>
-            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="voiceType != null">voice_type = #{voiceType},</if>
+            <if test="beforeMsg != null">before_msg = #{beforeMsg},</if>
+            <if test="duringMsg != null">during_msg = #{duringMsg},</if>
+            <if test="afterMsg != null">after_msg = #{afterMsg},</if>
+            update_time = NOW()
         </set>
-        where nav_id = #{navId}
+        WHERE robot_id = #{robotId}
     </update>
 
 </mapper>

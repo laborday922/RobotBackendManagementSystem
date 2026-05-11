@@ -78,4 +78,28 @@ public class Robot extends BaseEntity
 
     private Long tenantId;
 
+    private Date lastHeartbeatTime;
+
+    /** 当前模式名称（非数据库字段） */
+    private Long currentMode;
+
+    public Long getCurrentMode() {
+        return currentMode;
+    }
+
+    public void setCurrentMode(Long currentMode) {
+        this.currentMode = currentMode;
+    }
+
+    private String currentModeName;
+
+    public String getCurrentModeName() {
+        return currentModeName;
+    }
+
+
+    public void setCurrentModeName(String currentModeName) {
+        this.currentModeName = currentModeName;
+    }
+
 }

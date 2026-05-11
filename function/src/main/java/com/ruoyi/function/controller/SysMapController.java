@@ -12,6 +12,7 @@ import com.ruoyi.function.exception.FunctionException;
 import com.ruoyi.function.service.ISysMapService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -46,13 +47,26 @@ public class SysMapController extends BaseController {
 
     @ApiOperation("获取地图列表")
     @GetMapping("/list")
-    public TableDataInfo list(SysMap map) {
+    public TableDataInfo list(
+            @ApiParam(value = "地图名称") @RequestParam(required = false) String mapName,
+            @ApiParam(value = "机器人ID", required = false) @RequestParam(required = false) String robotId,
+            @ApiParam(value = "状态") @RequestParam(required = false) String status) {
+
         startPage();
-        List<SysMap> list = sysMapService.selectList(map);
-        // 为每个地图设置Base64图片数据（只返回前100个字符用于前端判断，完整数据在详情接口）
+
+        // 构建查询参数
+        SysMap queryParam = new SysMap();
+        queryParam.setMapName(mapName);
+        queryParam.setRobotId(robotId);
+        queryParam.setStatus(status);
+        queryParam.setDelFlag("0"); // 只查询未删除的
+
+        List<SysMap> list = sysMapService.selectList(queryParam);
+
+        // 为每个地图设置Base64图片数据
         for (SysMap sysMap : list) {
             if (StringUtils.isNotEmpty(sysMap.getMapBase64())) {
-                // 标记有图片数据
+                // 标记有图片数据，前端可以直接使用
                 sysMap.setHasImage(true);
             }
         }
@@ -72,7 +86,6 @@ public class SysMapController extends BaseController {
 
         // 直接返回Base64图片数据
         if (StringUtils.isNotEmpty(map.getMapBase64())) {
-            response.setMapUrl(map.getMapBase64());
             response.setMapBase64(map.getMapBase64());
         }
 
@@ -88,9 +101,13 @@ public class SysMapController extends BaseController {
     @ApiOperation("新增地图")
     @PostMapping
     public AjaxResult add(@Valid @RequestBody SysMap map) {
+        if (StringUtils.isEmpty(map.getRobotId())) {
+            return error("机器人ID不能为空");
+        }
         if (StringUtils.isNotEmpty(map.getStatus()) && !MapStatusEnum.isValid(map.getStatus())) {
             return error("状态值无效");
         }
+        map.setDelFlag("0");
         return toAjax(sysMapService.insert(map));
     }
 
@@ -118,11 +135,15 @@ public class SysMapController extends BaseController {
 
     @ApiOperation("上传地图文件")
     @PostMapping("/upload")
-    public AjaxResult upload(@RequestParam("file") MultipartFile file,
-                             @RequestParam(value = "mapId", required = false) Long mapId,
-                             @RequestParam(value = "mapName", required = false) String mapName) {
+    public AjaxResult upload(
+            @ApiParam(value = "地图文件", required = true) @RequestParam("file") MultipartFile file,
+            @ApiParam(value = "地图ID（更新时传入）") @RequestParam(value = "mapId", required = false) Long mapId,
+            @ApiParam(value = "地图名称（新增时传入）") @RequestParam(value = "mapName", required = false) String mapName,
+            @ApiParam(value = "机器人ID（新增时传入）", required = false) @RequestParam(value = "robotId", required = false) String robotId) {
+
         try {
-            log.info("开始上传地图文件: {}, 大小: {} bytes", file.getOriginalFilename(), file.getSize());
+            log.info("开始上传地图文件: {}, 大小: {} bytes, mapId: {}, robotId: {}",
+                    file.getOriginalFilename(), file.getSize(), mapId, robotId);
 
             // 验证文件类型
             String contentType = file.getContentType();
@@ -147,6 +168,7 @@ public class SysMapController extends BaseController {
             SysMap resultMap = null;
 
             if (mapId != null && mapId > 0) {
+                // 更新现有地图
                 SysMap existingMap = sysMapService.selectById(mapId);
                 if (existingMap != null) {
                     existingMap.setMapBase64(base64Data);
@@ -158,25 +180,36 @@ public class SysMapController extends BaseController {
                 } else {
                     throw FunctionException.mapNotFound(mapId);
                 }
-            }
+            } else {
+                // 新增地图，需要 robotId
+                if (StringUtils.isEmpty(robotId)) {
+                    return error("机器人ID不能为空");
+                }
 
-            if (resultMap == null) {
                 resultMap = new SysMap();
                 String defaultName = StringUtils.isNotEmpty(mapName) ? mapName :
                         file.getOriginalFilename().substring(0, file.getOriginalFilename().lastIndexOf("."));
                 resultMap.setMapName(defaultName);
+                resultMap.setRobotId(robotId);
                 resultMap.setMapBase64(base64Data);
                 resultMap.setMapFile(file.getOriginalFilename());
                 resultMap.setStatus(MapStatusEnum.ENABLED.getCode());
+                resultMap.setDelFlag("0");
+                resultMap.setPointCount(0);
+                resultMap.setVersion("1.0");
+                resultMap.setIsEnable(1);
                 resultMap.setCreateTime(getNowDate());
                 sysMapService.insert(resultMap);
-                log.info("新增地图，ID: {}", resultMap.getMapId());
+                log.info("新增地图，ID: {}，关联机器人: {}", resultMap.getMapId(), robotId);
             }
 
-            MapDetailResponse response = new MapDetailResponse();
-            BeanUtils.copyProperties(resultMap, response);
-            response.setMapUrl(base64Data);
-            response.setMapBase64(base64Data);
+            // 设置返回数据
+            Map<String, Object> response = new HashMap<>();
+            response.put("mapId", resultMap.getMapId());
+            response.put("mapName", resultMap.getMapName());
+            response.put("robotId", resultMap.getRobotId());
+            response.put("mapBase64", base64Data);
+            response.put("status", resultMap.getStatus());
 
             log.info("地图上传成功，ID: {}", resultMap.getMapId());
             return success(response);
@@ -208,8 +241,34 @@ public class SysMapController extends BaseController {
         Map<String, String> result = new HashMap<>();
         result.put("base64", map.getMapBase64());
         result.put("mapName", map.getMapName());
+        result.put("robotId", map.getRobotId());
 
         return success(result);
+    }
+
+    @ApiOperation("根据机器人ID获取地图列表")
+    @GetMapping("/list/byRobot")
+    public AjaxResult getListByRobotId(
+            @ApiParam(value = "机器人ID", required = true) @RequestParam String robotId) {
+        if (StringUtils.isEmpty(robotId)) {
+            return error("机器人ID不能为空");
+        }
+
+        SysMap queryParam = new SysMap();
+        queryParam.setRobotId(robotId);
+        queryParam.setStatus(MapStatusEnum.ENABLED.getCode());
+        queryParam.setDelFlag("0");
+
+        List<SysMap> list = sysMapService.selectList(queryParam);
+
+        // 为每个地图设置Base64图片数据
+        for (SysMap sysMap : list) {
+            if (StringUtils.isNotEmpty(sysMap.getMapBase64())) {
+                sysMap.setHasImage(true);
+            }
+        }
+
+        return success(list);
     }
 
     private java.util.Date getNowDate() {

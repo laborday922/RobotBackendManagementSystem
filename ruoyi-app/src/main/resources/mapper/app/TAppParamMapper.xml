@@ -16,22 +16,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTAppParamVo">
-        select id, app_id, param_key, param_name, param_type, default_value, validation_rule, created_at from t_app_param
+        select id, app_id, param_key, param_name, param_type,
+               default_value, validation_rule, created_at
+        from t_app_param
     </sql>
 
     <select id="selectTAppParamList" parameterType="TAppParam" resultMap="TAppParamResult">
         <include refid="selectTAppParamVo"/>
-        <where>  
-            <if test="appId != null  and appId != ''"> and app_id = #{appId}</if>
-            <if test="paramKey != null  and paramKey != ''"> and param_key = #{paramKey}</if>
-            <if test="paramName != null  and paramName != ''"> and param_name like concat('%', #{paramName}, '%')</if>
-            <if test="paramType != null  and paramType != ''"> and param_type = #{paramType}</if>
-            <if test="defaultValue != null  and defaultValue != ''"> and default_value = #{defaultValue}</if>
-            <if test="validationRule != null  and validationRule != ''"> and validation_rule = #{validationRule}</if>
-            <if test="createdAt != null "> and created_at = #{createdAt}</if>
+        <where>
+            <if test="appId != null and appId != ''"> and app_id = #{appId}</if>
+            <if test="paramKey != null and paramKey != ''"> and param_key = #{paramKey}</if>
+            <if test="paramName != null and paramName != ''"> and param_name like concat('%', #{paramName}, '%')</if>
         </where>
     </select>
-    
+
     <select id="selectTAppParamById" parameterType="Long" resultMap="TAppParamResult">
         <include refid="selectTAppParamVo"/>
         where id = #{id}
@@ -47,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="defaultValue != null">default_value,</if>
             <if test="validationRule != null">validation_rule,</if>
             <if test="createdAt != null">created_at,</if>
-         </trim>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="appId != null and appId != ''">#{appId},</if>
             <if test="paramKey != null and paramKey != ''">#{paramKey},</if>
@@ -56,7 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="defaultValue != null">#{defaultValue},</if>
             <if test="validationRule != null">#{validationRule},</if>
             <if test="createdAt != null">#{createdAt},</if>
-         </trim>
+        </trim>
     </insert>
 
     <update id="updateTAppParam" parameterType="TAppParam">

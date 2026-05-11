@@ -120,10 +120,7 @@ public class TAppParam extends BaseEntity
         return validationRule;
     }
 
-    public void setCreatedAt(Date createdAt) 
-    {
-        this.createdAt = createdAt;
-    }
+
 
     public Date getCreatedAt() 
     {
@@ -143,4 +140,6 @@ public class TAppParam extends BaseEntity
             .append("createdAt", getCreatedAt())
             .toString();
     }
+
+
 }

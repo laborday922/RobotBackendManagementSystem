@@ -29,7 +29,7 @@ public class RobotWarnings extends BaseEntity
     private Long robotId;
 
     /** 预警类型（0-低电量，1-硬件故障，2-硬件异常，3-离线） */
-    @Excel(name = "预警类型", readConverterExp = "0=-低电量，1-硬件故障，2-硬件异常，3-离线")
+    @Excel(name = "预警类型", readConverterExp = "0=-低电量，1-硬件异常，2-硬件损坏，3-离线")
     private String warningType;
 
     /** 预警描述内容 */

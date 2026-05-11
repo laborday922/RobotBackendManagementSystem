@@ -43,9 +43,6 @@ public class SysTourContent extends BaseEntity {
     @ApiModelProperty("间隔时间(毫秒)")
     private Integer intervalTime;
 
-    @ApiModelProperty("内容类型(text/audio/image/video)")
-    private String contentType;
-
     @ApiModelProperty("媒体文件路径")
     private String mediaFile;
 
@@ -57,6 +54,9 @@ public class SysTourContent extends BaseEntity {
 
     @ApiModelProperty("显示顺序")
     private Integer orderNum;
+
+    /** 租户ID */
+    private Long tenantId;
 
     // getters and setters
     public Long getContentId() { return contentId; }
@@ -92,8 +92,7 @@ public class SysTourContent extends BaseEntity {
     public Integer getIntervalTime() { return intervalTime; }
     public void setIntervalTime(Integer intervalTime) { this.intervalTime = intervalTime; }
 
-    public String getContentType() { return contentType; }
-    public void setContentType(String contentType) { this.contentType = contentType; }
+
 
     public String getMediaFile() { return mediaFile; }
     public void setMediaFile(String mediaFile) { this.mediaFile = mediaFile; }
@@ -106,4 +105,7 @@ public class SysTourContent extends BaseEntity {
 
     public Integer getOrderNum() { return orderNum; }
     public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

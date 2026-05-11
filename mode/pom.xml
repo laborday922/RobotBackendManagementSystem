@@ -2,7 +2,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>com.ruoyi</groupId>
@@ -11,19 +10,41 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <modelVersion>4.0.0</modelVersion>
+
     <artifactId>mode</artifactId>
     <packaging>jar</packaging>
 
-    <properties>
-        <mybatis.version>3.5.14</mybatis.version>
-        <swagger.version>1.6.2</swagger.version>
-    </properties>
+    <description>
+        机器人后台管理-模式管理模块
+    </description>
 
     <dependencies>
-        <!-- 核心模块 -->
+        <!-- 通用工具 -->
         <dependency>
             <groupId>com.ruoyi</groupId>
             <artifactId>ruoyi-common</artifactId>
+        </dependency>
+
+        <!-- 机器人模块 -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>robots</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+
+        <!-- 任务模块（WebSocket 核心，用于模式切换通信） -->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>taskmgt</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Spring Boot Web -->
@@ -32,25 +53,10 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- MyBatis -->
+        <!-- Spring WebSocket 支持 -->
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>${mybatis.version}</version>
-        </dependency>
-
-        <!-- MySQL 驱动（关键！） -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.33</version>
-        </dependency>
-
-        <!-- Swagger 注解 -->
-        <dependency>
-            <groupId>io.swagger</groupId>
-            <artifactId>swagger-annotations</artifactId>
-            <version>${swagger.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- Spring Boot Test -->
@@ -60,20 +66,20 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring Security Test -->
+        <!-- Spring Security 测试支持 -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Mockito -->
         <dependency>
-            <groupId>com.ruoyi</groupId>
-            <artifactId>robots</artifactId>
-            <version>3.9.1</version>
-            <scope>compile</scope>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>3.12.4</version>
+            <scope>test</scope>
         </dependency>
-
-
     </dependencies>
 
     <build>

@@ -1,6 +1,7 @@
 package com.ruoyi.robots.task;
 
 import com.ruoyi.common.core.redis.RedisCache;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.robots.domain.RobotPositionHistory;
 import com.ruoyi.robots.mapper.RobotPositionHistoryMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class RobotPositionSyncTask {
      * 每小时执行一次
      */
     @Scheduled(cron = "0 0 */1 * * ?")
+//    @Scheduled(cron = "0/10 * * * * ?")
     public void syncRobotPositionToDb() {
         log.info("===== 开始每小时同步机器人位置数据到数据库 =====");
 
@@ -43,11 +45,12 @@ public class RobotPositionSyncTask {
                 historyList.add(history);
             }
         }
-
+//todo
         // 3. 循环单条插入（适配你现有的 insert 方法）
         int successCount = 0;
         for (RobotPositionHistory history : historyList) {
             try {
+                history.setRecordTime(DateUtils.getNowDate());
                 robotPositionHistoryMapper.insertRobotPositionHistory(history);
                 successCount++;
             } catch (Exception e) {

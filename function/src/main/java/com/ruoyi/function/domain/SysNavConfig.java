@@ -13,6 +13,9 @@ public class SysNavConfig extends BaseEntity {
     @ApiModelProperty("导航ID")
     private Long navId;
 
+    @ApiModelProperty("机器人ID")
+    private String robotId;
+
     @ApiModelProperty("当前地图ID")
     private Long mapId;
 
@@ -28,8 +31,14 @@ public class SysNavConfig extends BaseEntity {
     @ApiModelProperty("到达后播报")
     private String afterMsg;
 
+    /** 租户ID */
+    private Long tenantId;
+
     public Long getNavId() { return navId; }
     public void setNavId(Long navId) { this.navId = navId; }
+
+    public String getRobotId() { return robotId; }
+    public void setRobotId(String robotId) { this.robotId = robotId; }
 
     public Long getMapId() { return mapId; }
     public void setMapId(Long mapId) { this.mapId = mapId; }
@@ -45,4 +54,7 @@ public class SysNavConfig extends BaseEntity {
 
     public String getAfterMsg() { return afterMsg; }
     public void setAfterMsg(String afterMsg) { this.afterMsg = afterMsg; }
+
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

@@ -9,11 +9,6 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import javax.validation.constraints.*;
 import java.util.List;
 
-/**
- * 模式对象 sys_mode
- *
- * @author ruoyi
- */
 @ApiModel(value = "SysMode", description = "模式实体类")
 public class SysMode extends BaseEntity
 {
@@ -78,6 +73,10 @@ public class SysMode extends BaseEntity
     /** 删除标志（0代表存在 2代表删除） */
     @ApiModelProperty(value = "删除标志", allowableValues = "0,2", example = "0", notes = "0-存在，2-删除", hidden = true)
     private String delFlag;
+
+    /** 租户ID */
+    @ApiModelProperty(value = "租户ID", hidden = true)
+    private Long tenantId;
 
     // 非数据库字段 - 分类名称
     @ApiModelProperty(value = "分类名称", example = "日常工作", notes = "关联的分类名称（非数据库字段）")
@@ -189,6 +188,14 @@ public class SysMode extends BaseEntity
         this.delFlag = delFlag;
     }
 
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
     public String getCategoryName() {
         return categoryName;
     }
@@ -220,6 +227,7 @@ public class SysMode extends BaseEntity
                 .append("robotCount", getRobotCount())
                 .append("orderNum", getOrderNum())
                 .append("delFlag", getDelFlag())
+                .append("tenantId", getTenantId())
                 .append("createBy", getCreateBy())
                 .append("createTime", getCreateTime())
                 .append("updateBy", getUpdateBy())

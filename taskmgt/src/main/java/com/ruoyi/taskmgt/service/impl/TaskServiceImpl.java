@@ -54,6 +54,7 @@ public class TaskServiceImpl implements ITaskService {
     private final RedisCache redisUtil;
     private final TemplateRepository templateRepository;
     private final StepReuseService stepReuseService;
+    private final TaskReuseService taskReuseService;
     private final IStepService stepService;
     private final StepRepository stepRepository;
     private final TaskLogReuseService taskLogService;
@@ -76,6 +77,7 @@ public class TaskServiceImpl implements ITaskService {
         if(!isAdmin(tenantId))task.setTenantId(tenantId);
         task.setStatus(Task.NOTSTART);
         task.setRiskLevel(0);
+        if(task.getCronExpression()!=null&&task.getScheduledTime()==null)task.setScheduledTime(taskReuseService.calculateNextScheduledTime(task));
         Task newTask = this.taskRepository.insert(task);
         List<TaskStep> steps = retrieveSteps(newTask);
         stepService.createSteps(newTask.getId(),steps);
@@ -201,14 +203,27 @@ public class TaskServiceImpl implements ITaskService {
                     }
                 }
             }
-
-            if (StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId()) && Objects.equals(originTask.getStatus(), Task.DISABLED)) {
-                List<TaskStep> steps = retrieveSteps(task);
+            if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)||Objects.equals(originTask.getStatus(),Task.DISABLED)){
+                task.setStatus(Task.NOTSTART);
+                List<TaskStep> steps;
+                if(StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId())){
+                    steps = retrieveSteps(task);
+                }
+                else {
+                    steps = stepRepository.findStepsByTaskId(task.getId());
+                }
+                for(TaskStep step:steps){
+                    if(!Objects.equals(step.getStatus(), TaskStep.NOTSTART)){
+                        step.setStatus(TaskStep.NOTSTART);
+                        step.setTraceId("null");
+                    }
+                }
                 stepService.updateSteps(task.getId(), steps);
             }
             Long tenantId = TenantContext.get();
             if(!isAdmin(tenantId))task.setTenantId(tenantId);
             task.setUpdateBy(SecurityUtils.getUsername());
+            if(task.getCronExpression()!=null&&task.getScheduledTime()==null)task.setScheduledTime(taskReuseService.calculateNextScheduledTime(task));
             List<String> redisKeys = this.taskRepository.update(task);
             this.redisUtil.deleteObject(redisKeys);
         }
@@ -430,7 +445,7 @@ public class TaskServiceImpl implements ITaskService {
                 SecurityUtils.getUsername(),
                 tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
-            List<String> stepRedisKeys = this.stepReuseService.pauseStepsByTaskId(id);
+            List<String> stepRedisKeys = this.stepReuseService.pauseStepsByTask(task);
             redisKeys.addAll(stepRedisKeys);
         }
         this.redisUtil.deleteObject(redisKeys);
@@ -460,10 +475,11 @@ public class TaskServiceImpl implements ITaskService {
 
         else{
             redisKeys = this.updateTaskStatus(task, Task.EXECUTING);
+
             this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
                     "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId);
             if (StringUtils.isNotNull(task.getTemplateId())) {
-                List<String> stepRedisKeys = this.stepReuseService.continueStepsByTaskId(id);
+                List<String> stepRedisKeys = this.stepReuseService.continueStepsByTask(task);
                 redisKeys.addAll(stepRedisKeys);
             }
         }
@@ -525,7 +541,7 @@ public class TaskServiceImpl implements ITaskService {
                 SecurityUtils.getUsername(),
                 tenantId);
         if(StringUtils.isNotNull(task.getTemplateId())){
-            List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTaskId(id);
+            List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTask(task);
             redisKeys.addAll(stepRedisKeys);
         }
         this.redisUtil.deleteObject(redisKeys);
@@ -668,13 +684,11 @@ public class TaskServiceImpl implements ITaskService {
         for (Map.Entry<String, List<Long>> entry : inputResourceGroups.entrySet()) {
             String resourceKey = entry.getKey();
             List<Long> inputIdsForResource = entry.getValue();
-
             // 获取该资源下任务按pendingOrder排序的ID列表
             List<Long> sortedByPendingOrder = resourceGroups.get(resourceKey).stream()
                     .sorted(Comparator.comparingInt(Task::getPendingOrder))
                     .map(Task::getId)
                     .toList();
-
             // 校验传入的顺序是否与pendingOrder一致
             if (!inputIdsForResource.equals(sortedByPendingOrder)) {
                 throw new TaskmgtException(ReturnNo.DATA_INVALID, new String[]{},
@@ -911,6 +925,7 @@ public class TaskServiceImpl implements ITaskService {
                     // 统一使用 Double 进行数值比较
                     return Double.parseDouble(valueStr);
 
+                case "dynamicselect":
                 case "integer":
                 case "int":
                 case "long":

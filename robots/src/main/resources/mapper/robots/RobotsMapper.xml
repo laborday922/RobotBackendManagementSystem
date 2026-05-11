@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper
-PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.robots.mapper.RobotsMapper">
-    
-    <resultMap type="Robot" id="RobotsResult">
+
+    <resultMap type="com.ruoyi.robots.domain.Robot" id="RobotsResult">
         <result property="id"    column="id"    />
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
@@ -16,31 +16,34 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hardwareStatus"    column="hardware_status"    />
         <result property="taskStatus"    column="task_status"    />
         <result property="battery"    column="battery"    />
+        <result property="currentMode"    column="current_mode"    />
         <result property="idleStartTime"    column="idle_start_time" />
         <result property="createdAt"    column="created_at"    />
     </resultMap>
 
     <sql id="selectRobotsVo">
-        select id, code, name, group_id, manufacturer, production_date, area, status, hardware_status, task_status, battery, idle_start_time, created_at from robots
+        select id, code, name, group_id, manufacturer, production_date,
+        area, status, hardware_status, task_status, battery,
+        current_mode, idle_start_time, created_at
+        from robots
     </sql>
 
-    <select id="selectRobotsList" parameterType="Robot" resultMap="RobotsResult">
+    <select id="selectRobotsList" parameterType="com.ruoyi.robots.domain.Robot" resultMap="RobotsResult">
         <include refid="selectRobotsVo"/>
-        <where>  
-            <if test="groupId != null  and groupId != ''"> and group_id = #{groupId}</if>
-            <if test="status != null  and status != ''"> and status = #{status}</if>
-            <if test="hardwareStatus != null  and hardwareStatus != ''"> and hardware_status = #{hardwareStatus}</if>
-            <if test="taskStatus != null  and taskStatus != ''"> and task_status = #{taskStatus}</if>
-            <if test="tenantId != null  and tenantId != ''"> and tenant_id = #{tenantId}</if>
+        <where>
+            <if test="groupId != null and groupId != ''"> and group_id = #{groupId}</if>
+            <if test="status != null and status != ''"> and status = #{status}</if>
+            <if test="hardwareStatus != null and hardwareStatus != ''"> and hardware_status = #{hardwareStatus}</if>
+            <if test="taskStatus != null and taskStatus != ''"> and task_status = #{taskStatus}</if>
         </where>
     </select>
-    
+
     <select id="selectRobotsById" parameterType="Long" resultMap="RobotsResult">
         <include refid="selectRobotsVo"/>
         where id = #{id}
     </select>
 
-    <insert id="insertRobots" parameterType="Robot" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertRobots" parameterType="com.ruoyi.robots.domain.Robot" useGeneratedKeys="true" keyProperty="id">
         insert into robots
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">code,</if>
@@ -53,9 +56,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hardwareStatus != null">hardware_status,</if>
             <if test="taskStatus != null">task_status,</if>
             <if test="battery != null and battery != ''">battery,</if>
+            <if test="currentMode != null and currentMode != ''">current_mode,</if>
+            <if test="idleStartTime != null">idle_start_time,</if>
             <if test="createdAt != null">created_at,</if>
-            <if test="tenantId != null and tenantId != ''">tenant_id,</if>
-         </trim>
+        </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null and name != ''">#{name},</if>
@@ -65,15 +69,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="area != null and area != ''">#{area},</if>
             <if test="status != null">#{status},</if>
             <if test="hardwareStatus != null">#{hardwareStatus},</if>
-            <if test="taskStatus != null">#{taskStatus}</if>
+            <if test="taskStatus != null">#{taskStatus},</if>
             <if test="battery != null and battery != ''">#{battery},</if>
-            <if test="idleStartTime != null">#{idleStartTime}</if>
+            <if test="currentMode != null and currentMode != ''">#{currentMode},</if>
+            <if test="idleStartTime != null">#{idleStartTime},</if>
             <if test="createdAt != null">#{createdAt},</if>
-            <if test="tenantId != null and tenantId != ''">#{tenantId},</if>
-         </trim>
+        </trim>
     </insert>
 
-    <update id="updateRobots" parameterType="Robot">
+    <update id="updateRobots" parameterType="com.ruoyi.robots.domain.Robot">
         update robots
         <trim prefix="SET" suffixOverrides=",">
             <if test="code != null and code != ''">code = #{code},</if>
@@ -86,7 +90,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="hardwareStatus != null">hardware_status = #{hardwareStatus},</if>
             <if test="taskStatus != null">task_status = #{taskStatus},</if>
             <if test="battery != null and battery != ''">battery = #{battery},</if>
-            <if test="idleStartTime != null">idle_start_time = #{idleStartTime}</if>
+            <if test="currentMode != null and currentMode != ''">current_mode = #{currentMode},</if>
+            <if test="idleStartTime != null">idle_start_time = #{idleStartTime},</if>
+            <if test="lastHeartbeatTime != null">
+                last_heartbeat_time =
+                <choose>
+                    <when test="lastHeartbeatTime.getTime() == 0">
+                        null
+                    </when>
+                    <otherwise>
+                        #{lastHeartbeatTime}
+                    </otherwise>
+                </choose>,
+            </if>
             <if test="createdAt != null">created_at = #{createdAt},</if>
         </trim>
         where id = #{id}
@@ -96,10 +112,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         delete from robots where id = #{id}
     </delete>
 
-    <delete id="deleteRobotsByIds" parameterType="Long">
+    <delete id="deleteRobotsByIds" parameterType="String">
         delete from robots where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
 </mapper>

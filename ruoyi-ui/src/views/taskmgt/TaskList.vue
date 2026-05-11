@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <!-- 搜索栏 - 实时筛选，无重置按钮 -->
+    <!-- 搜索栏 -->
     <el-card class="search-card">
       <el-form :model="queryParams" ref="queryRef" :inline="true" label-width="90px">
         <el-form-item label="任务名称" prop="name">
@@ -123,7 +123,7 @@
           </template>
         </el-table-column>
         <el-table-column label="创建时间" prop="createTime" width="160" align="center" />
-        <!-- 操作列改为图标按钮 -->
+        <!-- 操作列 -->
         <el-table-column label="操作" width="320" fixed="right" align="center">
           <template slot-scope="scope">
             <!-- 详情 -->
@@ -230,7 +230,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <pagination
         v-show="total > 0"
         :total="total"
@@ -273,14 +272,89 @@
         <!-- 动态表单字段（根据模板渲染） -->
         <template v-if="taskForm.templateId && currentTemplate">
           <el-divider content-position="left">填写表单字段</el-divider>
-          <dynamic-form-fields
-            :fields="currentTemplate.fields"
-            :form-data="taskForm.formData"
-            :upload-action="uploadAction"
-            :upload-headers="uploadHeaders"
-            @field-change="updateStepPreview"
-            @file-change="updateStepPreview"
-          />
+          <div class="dynamic-form-container">
+            <el-form-item
+              v-for="field in currentTemplate.fields"
+              :key="field.id"
+              :label="field.label"
+              :required="field.required"
+            >
+              <!-- 普通文本/数字 -->
+              <el-input
+                v-if="field.type === 'text' || field.type === 'number'"
+                v-model="taskForm.formData[field.id]"
+                :type="field.type === 'number' ? 'number' : 'text'"
+                :placeholder="`请输入${field.label}`"
+              />
+              <!-- 日期 -->
+              <el-date-picker
+                v-else-if="field.type === 'date'"
+                v-model="taskForm.formData[field.id]"
+                type="date"
+                placeholder="选择日期"
+                style="width:100%"
+              />
+              <!-- 时间 -->
+              <el-time-picker
+                v-else-if="field.type === 'time'"
+                v-model="taskForm.formData[field.id]"
+                placeholder="选择时间"
+                style="width:100%"
+              />
+              <!-- 下拉选择 -->
+              <el-select
+                v-else-if="field.type === 'select'"
+                v-model="taskForm.formData[field.id]"
+                placeholder="请选择"
+                style="width:100%"
+              >
+                <el-option
+                  v-for="opt in field.options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+              <!-- 动态下拉（如位置） -->
+              <el-select
+                v-else-if="field.type === 'dynamicSelect'"
+                v-model="taskForm.formData[field.id]"
+                :placeholder="`请选择${field.label}`"
+                style="width:100%"
+                :loading="field.loading"
+                @focus="() => loadFieldOptions(field)"
+                clearable
+              >
+                <el-option
+                  v-for="opt in field.options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+              <!-- 文件上传（图片/视频等） -->
+              <el-upload
+                v-else-if="['image','video','audio','file'].includes(field.type)"
+                :action="uploadAction"
+                :headers="uploadHeaders"
+                :file-list="taskForm.formData[field.id] || []"
+                :on-success="(res, file) => handleUploadSuccess(field.id, res, file)"
+                :before-upload="(file) => beforeUpload(file, field)"
+                :list-type="field.type === 'image' ? 'picture-card' : 'text'"
+                :multiple="field.maxCount > 1"
+                :limit="field.maxCount"
+                :accept="getAcceptByType(field.type)"
+              >
+                <i class="el-icon-plus"></i>
+              </el-upload>
+              <!-- 位置类型（地图选点，简化处理） -->
+              <el-input
+                v-else-if="field.type === 'location'"
+                v-model="taskForm.formData[field.id]"
+                placeholder="经纬度或位置描述"
+              />
+            </el-form-item>
+          </div>
         </template>
 
         <!-- 步骤预览 -->
@@ -306,8 +380,35 @@
           <span class="el-form-item-msg">组任务可由多个机器人协同完成</span>
         </el-form-item>
 
-        <el-form-item label="任务时长(分钟)" prop="duration">
-          <el-input-number v-model="taskForm.duration" :min="1" :max="480" style="width:100%" />
+        <!-- 任务预计时长 - 时分秒选择器 -->
+        <el-form-item label="任务预计时长" prop="durationHMS">
+          <div class="duration-picker">
+            <el-input-number
+              v-model="taskForm.durationHMS.hours"
+              :min="0"
+              :max="23"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">小时</span>
+            <el-input-number
+              v-model="taskForm.durationHMS.minutes"
+              :min="0"
+              :max="59"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">分</span>
+            <el-input-number
+              v-model="taskForm.durationHMS.seconds"
+              :min="0"
+              :max="59"
+              controls-position="right"
+              style="width: 100px"
+            />
+            <span class="duration-label">秒</span>
+          </div>
+          <div class="el-form-item-msg">默认10分钟（0小时10分0秒）</div>
         </el-form-item>
 
         <!-- 触发类型 -->
@@ -321,17 +422,19 @@
 
         <!-- 定时任务设置 -->
         <template v-if="taskForm.taskType === 1">
-          <el-form-item label="Cron表达式" prop="cronExpression">
-            <el-input v-model="taskForm.cronExpression" placeholder="如：0 0 9 * * ?" />
-            <div class="el-form-item-msg">留空表示立即执行</div>
-          </el-form-item>
           <el-form-item label="定时开始时间" prop="scheduledTime">
             <el-date-picker
               v-model="taskForm.scheduledTime"
               type="datetime"
-              placeholder="选择开始时间"
+              placeholder="留空表示立即执行"
               style="width:100%"
+              clearable
             />
+            <div class="el-form-item-msg">不填写则默认当前时间，任务提交后立即执行</div>
+          </el-form-item>
+          <el-form-item label="Cron表达式" prop="cronExpression">
+            <el-input v-model="taskForm.cronExpression" placeholder="如：0 0 9 * * ?，留空则根据开始时间自动生成" />
+            <div class="el-form-item-msg">留空将根据开始时间自动生成（一次性执行）</div>
           </el-form-item>
         </template>
 
@@ -355,7 +458,7 @@
           required
         >
           <template v-if="taskForm.isGroupTask">
-            <el-select v-model="taskForm.robotGroupId" placeholder="请选择机器人组" style="width:100%">
+            <el-select v-model="taskForm.robotGroupId" placeholder="请选择机器人组" style="width:100%" @change="onRobotGroupChange">
               <el-option
                 v-for="item in robotGroupOptions"
                 :key="item.id"
@@ -365,7 +468,7 @@
             </el-select>
           </template>
           <template v-else>
-            <el-select v-model="taskForm.robotId" placeholder="请选择机器人" style="width:100%">
+            <el-select v-model="taskForm.robotId" placeholder="请选择机器人" style="width:100%" @change="onRobotChange">
               <el-option
                 v-for="item in availableRobots"
                 :key="item.id"
@@ -406,6 +509,7 @@
         :task-steps="taskSteps"
         :task-logs="taskLogs"
         :operation-list="operationList"
+        :dynamic-options-cache="dynamicOptionsCache"
         @download="downloadFile"
       />
     </el-dialog>
@@ -438,25 +542,23 @@ import {
   terminateTask,
   getTaskSteps,
   listLogByTask,
-  updateTaskSteps
+  updateTaskSteps,
+  getDynamicParams
 } from '@/api/taskmgt/taskmgt'
 import { listRobots, listGroups } from '@/api/system/robots'
 import { getToken } from '@/utils/auth'
 import debounce from 'lodash/debounce'
 import StepPreview from './components/StepPreview'
-import DynamicFormFields from './components/DynamicFormFields'
 import TaskDetail from './components/TaskDetail'
 
 export default {
   name: 'TaskList',
   components: {
     StepPreview,
-    DynamicFormFields,
     TaskDetail
   },
   data() {
     return {
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -473,12 +575,10 @@ export default {
       robotOptions: [],
       robotGroupOptions: [],
       templateOptions: [],
-      // 上传配置
       uploadAction: process.env.VUE_APP_BASE_API + '/common/upload',
       uploadHeaders: {
         Authorization: 'Bearer ' + getToken()
       },
-      // 对话框
       dialog: {
         visible: false,
         title: '',
@@ -492,7 +592,6 @@ export default {
         batteryThreshold: [{ required: true, message: '请输入触发电量', trigger: 'blur' }],
         idleTime: [{ required: true, message: '请输入闲时等待时间', trigger: 'blur' }],
       },
-      // 详情对话框
       detailDialog: {
         visible: false
       },
@@ -502,13 +601,14 @@ export default {
       taskLogs: [],
       formFields: [],
       operationList: [],
-      // 生成的步骤预览
       generatedSteps: [],
-      // 视频预览
       videoPreview: {
         visible: false,
         url: ''
-      }
+      },
+      // 动态选项缓存 { paramKey: { options: [], loading: false } }
+      dynamicOptionsCache: {},
+      debouncedQuery: null
     }
   },
   computed: {
@@ -522,7 +622,6 @@ export default {
         robot.battery > 20
       )
     },
-    // 可用机器人：根据当前模板过滤
     availableRobots() {
       if (!this.currentTemplate || !this.currentTemplate.robotGroupIds || this.currentTemplate.robotGroupIds.length === 0) {
         return []
@@ -538,33 +637,31 @@ export default {
         return bHealthy - aHealthy
       })
     },
-    watch: {
-      'taskForm.robotGroupId': {
-        handler(newVal, oldVal) {
-          // 仅在组任务模式下且机器人组发生变化时，清空所有步骤的机器人分配
-          if (this.taskForm.isGroupTask && newVal !== oldVal && this.generatedSteps.length) {
-            this.generatedSteps.forEach(step => {
-              step.assignedRobotId = null
-            })
-            if (oldVal !== undefined) {
-              this.$message.info('机器人组已变更，已清空步骤机器人分配，请重新分配')
-            }
-          }
-        }
-      }
-    },
-    // 当前选中的模板
     currentTemplate() {
       if (!this.taskForm.templateId) return null
       return this.templateOptions.find(t => t.id === this.taskForm.templateId)
     }
   },
+  watch: {
+    'taskForm.robotGroupId': {
+      handler(newVal, oldVal) {
+        if (this.taskForm.isGroupTask && newVal !== oldVal && this.generatedSteps.length) {
+          this.generatedSteps.forEach(step => {
+            step.assignedRobotId = null
+          })
+          if (oldVal !== undefined) {
+            this.$message.info('机器人组已变更，已清空步骤机器人分配，请重新分配')
+          }
+        }
+      }
+    }
+  },
   created() {
+    this.debouncedQuery = debounce(this.handleQuery, 500)
     this.getRobotData()
     this.getRobotGroups()
     this.getTemplates()
     this.getList()
-    this.debouncedQuery = debounce(this.handleQuery, 500)
   },
   beforeDestroy() {
     this.debouncedQuery.cancel()
@@ -578,7 +675,8 @@ export default {
         formData: {},
         priority: 2,
         isGroupTask: false,
-        duration: 30,
+        // 时长对象：小时、分钟、秒，默认10分钟
+        durationHMS: { hours: 0, minutes: 10, seconds: 0 },
         taskType: 1,
         cronExpression: '',
         scheduledTime: undefined,
@@ -588,7 +686,32 @@ export default {
         robotGroupId: undefined,
       }
     },
-    // 格式化机器人状态显示
+    // 将秒数转换为时分秒对象
+    secondsToHMS(totalSeconds) {
+      if (!totalSeconds || totalSeconds < 0) return { hours: 0, minutes: 10, seconds: 0 }
+      const hours = Math.floor(totalSeconds / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      return { hours, minutes, seconds }
+    },
+    // 将时分秒对象转换为总秒数
+    hmsToSeconds(hms) {
+      if (!hms) return 600 // 默认10分钟=600秒
+      const hours = parseInt(hms.hours) || 0
+      const minutes = parseInt(hms.minutes) || 0
+      const seconds = parseInt(hms.seconds) || 0
+      return hours * 3600 + minutes * 60 + seconds
+    },
+    // 格式化时长显示（用于详情等场景）
+    formatDuration(seconds) {
+      if (!seconds && seconds !== 0) return '-'
+      const hms = this.secondsToHMS(seconds)
+      const parts = []
+      if (hms.hours > 0) parts.push(`${hms.hours}小时`)
+      if (hms.minutes > 0) parts.push(`${hms.minutes}分`)
+      if (hms.seconds > 0 || parts.length === 0) parts.push(`${hms.seconds}秒`)
+      return parts.join('')
+    },
     formatRobotStatus(robot) {
       if (robot.status === 1 && robot.hardwareStatus === 0) return '在线正常'
       if (robot.status === 1 && robot.hardwareStatus === 1) return '硬件警告'
@@ -597,7 +720,6 @@ export default {
       if (robot.status === 2) return '待激活'
       return '未知'
     },
-    // 获取机器人列表
     async getRobotData() {
       try {
         const res = await listRobots({ pageSize: 1000 })
@@ -606,7 +728,6 @@ export default {
         this.$message.error('获取机器人列表失败')
       }
     },
-    // 获取机器人组
     async getRobotGroups() {
       try {
         const res = await listGroups()
@@ -615,7 +736,6 @@ export default {
         this.$message.error('获取机器人组失败')
       }
     },
-    // 获取模板列表
     async getTemplates() {
       try {
         const res = await listTemplate({ pageSize: 100 })
@@ -624,7 +744,14 @@ export default {
           try {
             if (tpl.formContent) {
               const content = JSON.parse(tpl.formContent)
-              fields = content.fields || []
+              fields = (content.fields || []).map(f => {
+                // 为动态下拉字段初始化 options 和 loading
+                if (f.type === 'dynamicSelect') {
+                  f.options = []
+                  f.loading = false
+                }
+                return f
+              })
             }
             if (tpl.workflow) {
               const wf = JSON.parse(tpl.workflow)
@@ -647,7 +774,6 @@ export default {
         this.$message.error('获取模板列表失败')
       }
     },
-    // 获取任务列表
     async getList() {
       this.loading = true
       try {
@@ -664,7 +790,6 @@ export default {
       this.queryParams.pageNum = 1
       this.getList()
     },
-    // 状态映射
     getStatusText(status) {
       const map = { 3: '未开始', 1: '准备中', 0: '执行中', 2: '已暂停', 6: '已完成', 4: '已禁用', 5: '已终止' }
       return map[status] || status
@@ -681,85 +806,58 @@ export default {
       const map = { 1: 'primary', 2: 'success', 3: 'warning' }
       return map[type] || 'info'
     },
-    // 编辑权限：只有已禁用的任务可编辑
     canEdit(row) {
-      return row.status === 4
+      return   row.status===4 ||row.status===5|| row.status===6
     },
-    // 删除权限：已禁用可删除
     canDelete(row) {
-      return row.status === 4
+      return   row.status===4 ||row.status===5|| row.status===6
     },
-    // 状态操作
     handlePause(row) {
       this.$confirm('确认暂停该任务吗？', '提示', { type: 'info' })
         .then(() => pauseTask(row.id))
-        .then(() => {
-          this.$message.success('已暂停')
-          this.getList()
-        })
+        .then(() => { this.$message.success('已暂停'); this.getList() })
         .catch(() => {})
     },
     handleContinue(row) {
       this.$confirm('确认继续该任务吗？', '提示', { type: 'info' })
         .then(() => continueTask(row.id))
-        .then(() => {
-          this.$message.success('已继续')
-          this.getList()
-        })
+        .then(() => { this.$message.success('已继续'); this.getList() })
         .catch(() => {})
     },
     handleCancel(row) {
       this.$confirm('确认取消该任务吗？', '警告', { type: 'warning' })
         .then(() => cancelTask(row.id))
-        .then(() => {
-          this.$message.success('已取消')
-          this.getList()
-        })
+        .then(() => { this.$message.success('已取消'); this.getList() })
         .catch(() => {})
     },
     async handleTerminate(row) {
       try {
-        const { value: reason } = await this.$prompt('请输入终止原因', '终止任务', {
-          inputPlaceholder: '终止原因'
-        })
+        const { value: reason } = await this.$prompt('请输入终止原因', '终止任务', { inputPlaceholder: '终止原因' })
         await terminateTask(row.id, reason)
         this.$message.success('已终止')
         this.getList()
       } catch (error) {
-        if (error !== 'cancel') {
-          this.$message.error('操作失败')
-        }
+        if (error !== 'cancel') this.$message.error('操作失败')
       }
     },
     handleBan(row) {
       this.$confirm('确认禁用该任务吗？', '警告', { type: 'warning' })
         .then(() => banTask(row.id))
-        .then(() => {
-          this.$message.success('已禁用')
-          this.getList()
-        })
+        .then(() => { this.$message.success('已禁用'); this.getList() })
         .catch(() => {})
     },
     handleResume(row) {
       this.$confirm('确认恢复该任务吗？', '提示', { type: 'info' })
         .then(() => resumeTask(row.id))
-        .then(() => {
-          this.$message.success('已恢复')
-          this.getList()
-        })
+        .then(() => { this.$message.success('已恢复'); this.getList() })
         .catch(() => {})
     },
-    // 删除任务
     handleDelete(row) {
       this.$confirm('确认删除该任务吗？', '警告', { type: 'warning' })
         .then(() => delTask(row.id))
-        .then(() => {
-          this.$message.success('删除成功')
-          this.getList()
-        })
+        .then(() => { this.$message.success('删除成功'); this.getList() })
         .catch(() => {})
     },
-    // 下载文件
     downloadFile(url, fileName) {
       const fullUrl = url.startsWith('http') ? url : process.env.VUE_APP_BASE_API + url
       const link = document.createElement('a')
@@ -770,36 +868,50 @@ export default {
       link.click()
       document.body.removeChild(link)
     },
-    // ==================== 任务对话框方法 ====================
-
-    // 打开新增对话框
+    // 新增/编辑对话框
     handleAdd() {
       this.dialog.mode = 'create'
       this.dialog.title = '创建任务'
       this.taskForm = this.getInitialTaskForm()
       this.generatedSteps = []
+      this.dynamicOptionsCache = {}
       this.dialog.visible = true
     },
     async handleEdit(row) {
       this.dialog.mode = 'edit'
       this.dialog.title = '修改任务'
+
+      // 将后端传的duration秒转为时分秒
+      const durationHMS = this.secondsToHMS(row.duration)
+
+      // 处理定时任务字段：如果是一次性执行的cron（包含具体日期时间），编辑时清空cron让用户重新设置或保持自动填充
+      let cronExpression = row.cronExpression || ''
+      let scheduledTime = row.scheduledTime
+
+      // 如果是一次性cron表达式（格式：s m H d M ?），编辑时建议清空，让用户选择是否重新定时
+      // 但保留周期性cron（如 0 0 9 * * ?）
+      if (cronExpression && /^\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\?/.test(cronExpression)) {
+        // 这是一次性表达式，编辑时清空，提交时会自动填充新的时间
+        cronExpression = ''
+        scheduledTime = null
+      }
+
       this.taskForm = {
         id: row.id,
         name: row.name,
         templateId: row.templateId,
         priority: row.priority,
         isGroupTask: row.isGroupTask === 1,
-        duration: row.duration,
+        durationHMS: durationHMS, // 使用转换后的时分秒对象
         taskType: row.taskType,
-        cronExpression: row.cronExpression || '',
-        scheduledTime: row.scheduledTime,
+        cronExpression: cronExpression,
+        scheduledTime: scheduledTime,
         batteryThreshold: row.batteryThreshold,
         idleTime: row.idleTime,
         robotId: row.robotId ? Number(row.robotId) : undefined,
         robotGroupId: row.robotGroupId ? Number(row.robotGroupId) : undefined,
         formData: {}
       }
-      // 解析formData
       if (row.formContent) {
         try {
           const parsed = JSON.parse(row.formContent) || {}
@@ -819,27 +931,24 @@ export default {
           this.taskForm.formData = {}
         }
       }
-
-      // 生成步骤预览
       this.$nextTick(() => {
         this.updateStepPreview()
-        // 生成预览后立即校验步骤机器人的有效性（依赖于已选的机器人组）
         this.validateStepRobotsBelongToGroup()
+        // 编辑时若已选机器人，预加载动态字段选项
+        if (this.taskForm.robotId && this.currentTemplate) {
+          this.onRobotChange(this.taskForm.robotId)
+        }
       })
-
       this.dialog.visible = true
     },
-    // 取消对话框
     cancelTaskDialog() {
       this.dialog.visible = false
       this.$refs.taskFormRef?.resetFields()
       this.generatedSteps = []
     },
-    // 模板变更时初始化formData
     onTemplateChange(val) {
       const template = this.templateOptions.find(t => t.id === val)
       if (template) {
-        // 初始化 formData
         const formData = {}
         template.fields.forEach(field => {
           if (['image','video','audio','file'].includes(field.type)) {
@@ -851,10 +960,70 @@ export default {
         this.taskForm.formData = formData
         this.taskForm.robotId = undefined
         this.taskForm.robotGroupId = undefined
+        // 预加载动态参数元数据（不加载选项，等待选机器人）
+        this.prepareDynamicFields(template)
         this.updateStepPreview()
       }
     },
-    // 更新步骤预览
+    // 为模板中的动态字段预配置
+    prepareDynamicFields(template) {
+      if (!template || !template.fields) return
+      template.fields.forEach(field => {
+        if (field.type === 'dynamicSelect') {
+          field.options = field.options || []
+          field.loading = false
+          // 从模板配置中可获取关联的 apiId/paramKey
+          if (!field.dynamicConfig) {
+            // 若模板未配置，可从步骤中推断，简化处理：默认从模板第一个步骤的apiId获取
+            if (template.steps && template.steps.length) {
+              const firstStep = template.steps[0]
+              if (firstStep.apiId) {
+                field.apiId = firstStep.apiId
+                field.paramKey = field.id // 假设字段ID与参数key一致
+              }
+            }
+          } else {
+            try {
+              const cfg = JSON.parse(field.dynamicConfig)
+              field.apiId = cfg.apiId
+              field.paramKey = cfg.paramKey
+            } catch (e) {}
+          }
+        }
+      })
+    },
+    // 加载单个动态字段的选项
+    async loadFieldOptions(field) {
+      if (!field.apiId || !this.taskForm.robotId) {
+        if (!this.taskForm.robotId) this.$message.warning('请先选择机器人')
+        return
+      }
+      if (field.options && field.options.length > 0) return // 已加载
+      field.loading = true
+      try {
+        const res = await getDynamicParams(field.apiId, { robotId: this.taskForm.robotId })
+        const params = res.data || []
+        const targetParam = params.find(p => p.paramKey === field.paramKey)
+        if (targetParam && targetParam.options) {
+          field.options = targetParam.options.map(opt => ({ value: opt.value, label: opt.label }))
+          // 存入缓存供详情和预览使用
+          this.dynamicOptionsCache[field.paramKey] = targetParam.options
+        }
+      } catch (e) {
+        this.$message.error('加载选项失败')
+      } finally {
+        field.loading = false
+      }
+    },
+    // 选择机器人时加载所有动态字段选项
+    onRobotChange(robotId) {
+      if (!robotId || !this.currentTemplate) return
+      const dynamicFields = this.currentTemplate.fields.filter(f => f.type === 'dynamicSelect')
+      dynamicFields.forEach(field => this.loadFieldOptions(field))
+    },
+    onRobotGroupChange() {
+      // 组任务暂不支持动态参数加载，可扩展
+    },
     updateStepPreview() {
       if (this.currentTemplate && this.currentTemplate.steps) {
         this.generatedSteps = this.generateStepsFromTemplate(this.currentTemplate, this.taskForm.formData)
@@ -862,7 +1031,6 @@ export default {
         this.generatedSteps = []
       }
     },
-    // 根据模板和表单数据生成步骤列表
     generateStepsFromTemplate(template, formData) {
       if (!template || !template.steps) return []
       return template.steps.map((step, index) => {
@@ -871,6 +1039,11 @@ export default {
           Object.entries(formData).forEach(([key, val]) => {
             const placeholder = new RegExp(`\\{${key}\\}`, 'g')
             let displayValue = val
+            // 尝试将ID转为名称显示（用于预览）
+            if (this.dynamicOptionsCache[key]) {
+              const opt = this.dynamicOptionsCache[key].find(o => o.value === val)
+              displayValue = opt ? opt.label : val
+            }
             if (Array.isArray(val)) {
               displayValue = val.length > 0 ? `[${val.length}个文件]` : ''
             }
@@ -899,7 +1072,6 @@ export default {
     },
     validateStepRobotsBelongToGroup() {
       if (!this.taskForm.isGroupTask || !this.taskForm.robotGroupId) {
-        // 非组任务或未选组时，不应该有步骤分配，清空所有
         if (this.generatedSteps.some(s => s.assignedRobotId)) {
           this.generatedSteps.forEach(step => { step.assignedRobotId = null })
           if (this.taskForm.isGroupTask && !this.taskForm.robotGroupId) {
@@ -908,7 +1080,6 @@ export default {
         }
         return
       }
-
       const validRobotIds = this.availableRobotsForGroup.map(r => r.id)
       let hasInvalid = false
       this.generatedSteps.forEach(step => {
@@ -917,45 +1088,97 @@ export default {
           hasInvalid = true
         }
       })
-      if (hasInvalid) {
-        this.$message.warning('检测到部分步骤分配的机器人不在当前机器人组内，已自动清空')
+      if (hasInvalid) this.$message.warning('检测到部分步骤分配的机器人不在当前机器人组内，已自动清空')
+    },
+    // 上传相关
+    handleUploadSuccess(fieldId, res, file) {
+      const fileList = this.taskForm.formData[fieldId] || []
+      fileList.push({ name: file.name, url: res.data.url })
+      this.taskForm.formData[fieldId] = fileList
+      this.updateStepPreview()
+    },
+    beforeUpload(file, field) {
+      const isLtSize = file.size / 1024 / 1024 < (field.maxSize || 10)
+      if (!isLtSize) {
+        this.$message.error(`文件大小不能超过 ${field.maxSize || 10}MB!`)
+        return false
+      }
+      return true
+    },
+    getAcceptByType(type) {
+      const map = {
+        image: 'image/*',
+        video: 'video/*',
+        audio: 'audio/*',
+        file: '.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar'
+      }
+      return map[type] || '*'
+    },
+    /**
+     * 生成一次性执行的cron表达式（基于给定时间或当前时间+2秒）
+     */
+    generateOneTimeCron(date) {
+      const d = date || new Date(Date.now() + 2000) // 默认当前+2秒
+      const seconds = d.getSeconds()
+      const minutes = d.getMinutes()
+      const hours = d.getHours()
+      const day = d.getDate()
+      const month = d.getMonth() + 1
+      return `${seconds} ${minutes} ${hours} ${day} ${month} ?`
+    },
+    /**
+     * 处理定时任务字段自动填充
+     */
+    prepareScheduledFields() {
+      if (this.taskForm.taskType !== 1) return
+
+      // 如果开始时间和cron都为空，表示立即执行
+      if (!this.taskForm.scheduledTime && !this.taskForm.cronExpression) {
+        // 设置为当前时间+2秒，确保不会过期
+        const now = new Date(Date.now() + 2000)
+        this.taskForm.scheduledTime = now
+        // 生成一次性cron表达式
+        //this.taskForm.cronExpression = this.generateOneTimeCron(now)
+      }
+      // 如果开始时间已过期（早于当前时间）
+      else if (this.taskForm.scheduledTime&& !this.taskForm.cronExpression) {
+        const scheduled = new Date(this.taskForm.scheduledTime)
+        const now = new Date()
+        if (scheduled < now) {
+          const newTime = new Date(Date.now() + 2000)
+          this.taskForm.scheduledTime = newTime
+        }
       }
     },
     async submitTask() {
       this.$refs.taskFormRef.validate(async (valid) => {
         if (!valid) return
 
-        // 校验机器人/组选择
+        // 自动处理定时任务字段
+        this.prepareScheduledFields()
+
         if (this.taskForm.isGroupTask) {
-          if (!this.taskForm.robotGroupId) {
-            this.$message.error('请选择机器人组')
-            return
-          }
-          // 【新增】组任务模式下，确保步骤分配的机器人都在该组内
+          if (!this.taskForm.robotGroupId) return this.$message.error('请选择机器人组')
           const validRobotIds = this.availableRobotsForGroup.map(r => r.id)
           const invalidSteps = this.generatedSteps.filter(
             step => step.assignedRobotId && !validRobotIds.includes(step.assignedRobotId)
           )
-          if (invalidSteps.length) {
-            this.$message.error('存在步骤分配的机器人不在所选机器人组内，请重新分配')
-            return
-          }
+          if (invalidSteps.length) return this.$message.error('存在步骤分配的机器人不在所选机器人组内')
         } else {
-          if (!this.taskForm.robotId) {
-            this.$message.error('请选择机器人')
-            return
-          }
+          if (!this.taskForm.robotId) return this.$message.error('请选择机器人')
         }
+
+        // 将时分秒转换为秒数
+        const durationSeconds = this.hmsToSeconds(this.taskForm.durationHMS)
 
         this.dialog.loading = true
         try {
-          // 构造DTO (保持不变)
           const dto = {
             name: this.taskForm.name,
             templateId: this.taskForm.templateId,
             priority: this.taskForm.priority,
             isGroupTask: this.taskForm.isGroupTask ? 1 : 0,
-            duration: this.taskForm.duration,
+            duration: durationSeconds, // 转换为秒传给后端
             taskType: this.taskForm.taskType,
             cronExpression: this.taskForm.cronExpression,
             scheduledTime: this.taskForm.scheduledTime,
@@ -965,7 +1188,6 @@ export default {
             robotGroupId: this.taskForm.isGroupTask ? this.taskForm.robotGroupId : null,
             formContent: JSON.stringify(this.taskForm.formData)
           }
-
           let taskId
           if (this.dialog.mode === 'create') {
             const res = await addTask(dto)
@@ -976,21 +1198,15 @@ export default {
             taskId = this.taskForm.id
             this.$message.success('修改成功')
           }
-
-          // 组任务且用户分配了步骤机器人，则更新
           if (this.taskForm.isGroupTask && this.generatedSteps.some(s => s.assignedRobotId)) {
             const updates = this.generatedSteps
               .filter(step => step.assignedRobotId)
-              .map(step => ({
-                orderNum: step.orderNum,
-                assignedRobotId: step.assignedRobotId
-              }))
-            if (updates.length > 0) {
+              .map(step => ({ orderNum: step.orderNum, assignedRobotId: step.assignedRobotId }))
+            if (updates.length) {
               await updateTaskSteps(taskId, updates)
               this.$message.success('步骤机器人分配已保存')
             }
           }
-
           this.dialog.visible = false
           this.getList()
         } catch (error) {
@@ -1001,7 +1217,6 @@ export default {
         }
       })
     },
-    // 查看详情
     async handleView(row) {
       this.detailLoading = true
       this.detailDialog.visible = true
@@ -1011,10 +1226,14 @@ export default {
           getTaskSteps(row.id),
           listLogByTask({taskId:row.id})
         ])
-
         this.currentTask = taskRes.data
 
-        // 解析表单数据
+        // 将duration秒转换为时分秒，便于详情组件显示
+        if (this.currentTask.duration !== undefined && this.currentTask.duration !== null) {
+          this.currentTask.durationHMS = this.secondsToHMS(this.currentTask.duration)
+          this.currentTask.durationText = this.formatDuration(this.currentTask.duration)
+        }
+
         if (this.currentTask.formContent) {
           try {
             this.currentTask.formData = JSON.parse(this.currentTask.formContent)
@@ -1024,13 +1243,10 @@ export default {
         } else {
           this.currentTask.formData = {}
         }
-
-        // 解析表单字段定义
         if (this.currentTask.templateId) {
           const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
           if (template) {
             this.formFields = template.fields || []
-            // 确保文件字段格式正确
             this.formFields.forEach(field => {
               if (['image','video','audio','file'].includes(field.type)) {
                 const value = this.currentTask.formData[field.id]
@@ -1047,9 +1263,23 @@ export default {
         } else {
           this.formFields = []
         }
-
-        // 处理步骤数据
+        // 处理步骤数据，将 operationJson 中的ID转为名称
         const stepsData = stepsRes.data || []
+        for (let step of stepsData) {
+          if (step.operationJson) {
+            try {
+              const json = JSON.parse(step.operationJson)
+              // 对每个动态字段尝试转换
+              for (let key in json) {
+                if (this.dynamicOptionsCache[key]) {
+                  const opt = this.dynamicOptionsCache[key].find(o => o.value === String(json[key]))
+                  if (opt) json[key] = opt.label // 替换为名称显示
+                }
+              }
+              step.operationJsonDisplay = JSON.stringify(json, null, 2)
+            } catch (e) {}
+          }
+        }
         this.taskSteps = stepsData.map(step => ({
           ...step,
           orderNum: step.orderNum || 0,
@@ -1058,7 +1288,6 @@ export default {
           status: step.status || 0,
           operationName: this.getOperationName(step.operationId)
         })).sort((a, b) => a.orderNum - b.orderNum)
-
         this.taskLogs = logsRes.rows || []
       } catch (error) {
         console.error('查看详情失败:', error)
@@ -1078,27 +1307,11 @@ export default {
 </script>
 
 <style scoped>
-.app-container {
-  padding: 20px;
-}
-.search-card {
-  margin-bottom: 20px;
-}
-.table-card {
-  margin-bottom: 20px;
-}
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.status-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-}
+.app-container { padding: 20px; }
+.search-card { margin-bottom: 20px; }
+.table-card { margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.status-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; }
 .status-pending { background-color: #fff7e6; color: #fa8c16; }
 .status-ready { background-color: #e6f7ff; color: #1890ff; }
 .status-executing { background-color: #f6ffed; color: #52c41a; }
@@ -1106,21 +1319,21 @@ export default {
 .status-completed { background-color: #f6ffed; color: #52c41a; }
 .status-disabled { background-color: #f5f5f5; color: #999; }
 .status-aborted { background-color: #fff1f0; color: #ff4d4f; }
-.empty-tip {
-  text-align: center;
-  color: #999;
-  padding: 20px;
+.empty-tip { text-align: center; color: #999; padding: 20px; }
+.el-form-item-msg { font-size: 12px; color: #999; line-height: 1; margin-top: 4px; }
+.el-button [class*="fas"] { font-size: 14px; }
+.el-table .cell .el-button + .el-button { margin-left: 4px; }
+.dynamic-form-container { max-height: 400px; overflow-y: auto; padding-right: 10px; }
+
+/* 时长选择器样式 */
+.duration-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.el-form-item-msg {
-  font-size: 12px;
-  color: #999;
-  line-height: 1;
-  margin-top: 4px;
-}
-.el-button [class*="fas"] {
+.duration-label {
   font-size: 14px;
-}
-.el-table .cell .el-button + .el-button {
-  margin-left: 4px;
+  color: #606266;
+  white-space: nowrap;
 }
 </style>

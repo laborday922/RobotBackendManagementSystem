@@ -61,13 +61,20 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/fullscreen-dashboard',
+    name: 'DashboardFullScreen',
+    component: () => import('@/views/data/dataDashboard/robotDataDashboard.vue'),
+    hidden: true,
+    meta: { title: '全屏大盘' }
+  },
+  {
     path: '',
     component: Layout,
     redirect: 'index',
     children: [
       {
         path: 'index',
-        component: () => import('@/views/index'),
+        component: () => import('@/views/data/dataDashboard/robotDataDashboard.vue'),
         name: 'Index',
         meta: { title: '首页', icon: 'dashboard', affix: true }
       }
@@ -321,7 +328,7 @@ export const constantRoutes = [
       },
       {
         path: 'dataDashboard',
-        component: () => import('@/views/data/dataDashboard/index.vue'),
+        component: () => import('@/views/data/dataDashboard/robotDataDashboard.vue'),
         name: 'Dashboard',
         meta: { title: '数据仪表盘', icon: 'dashboard' }
       },

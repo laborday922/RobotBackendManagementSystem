@@ -1,6 +1,7 @@
 package com.ruoyi.mode.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -35,7 +36,11 @@ public class SysModeSchedule extends BaseEntity
     /** 重复类型(once/daily/weekly/monthly/weekdays) */
     private String repeatType;
 
+    /** 重复规则JSON */
+    private String repeatRule;
+
     /** 开始日期 */
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date startDate;
 
     /** 开始时间 */
@@ -48,6 +53,7 @@ public class SysModeSchedule extends BaseEntity
     private String status;
 
     /** 上次执行时间 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date lastExecuteTime;
 
     /** 上次执行状态 */
@@ -112,6 +118,14 @@ public class SysModeSchedule extends BaseEntity
 
     public void setRepeatType(String repeatType) {
         this.repeatType = repeatType;
+    }
+
+    public String getRepeatRule() {
+        return repeatRule;
+    }
+
+    public void setRepeatRule(String repeatRule) {
+        this.repeatRule = repeatRule;
     }
 
     public Date getStartDate() {
@@ -203,6 +217,7 @@ public class SysModeSchedule extends BaseEntity
                 .append("modeName", getModeName())
                 .append("executeTime", getExecuteTime())
                 .append("repeatType", getRepeatType())
+                .append("repeatRule", getRepeatRule())
                 .append("startDate", getStartDate())
                 .append("startTime", getStartTime())
                 .append("duration", getDuration())

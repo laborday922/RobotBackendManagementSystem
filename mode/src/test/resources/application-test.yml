@@ -1,0 +1,43 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  # 数据源配置（保持不变）
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ry-vue-test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+
+  # 排除 WebSocket 相关自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration
+      - org.springframework.boot.autoconfigure.websocket.reactive.WebSocketReactiveAutoConfiguration
+
+# 允许 Bean 覆盖
+spring.main.allow-bean-definition-overriding: true
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/SysMode*.xml,classpath:mapper/SysRobot*.xml
+  type-aliases-package: com.ruoyi.mode.domain
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    root: WARN
+    com.ruoyi.mode: DEBUG

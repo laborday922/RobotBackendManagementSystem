@@ -55,9 +55,9 @@
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item command="edit">编辑配置</el-dropdown-item>
-                      <el-dropdown-item :command="metric.enabled ? 'disable' : 'enable'">
-                        {{ metric.enabled ? '停用指标' : '启用指标' }}
-                      </el-dropdown-item>
+<!--                      <el-dropdown-item :command="metric.enabled ? 'disable' : 'enable'">-->
+<!--                        {{ metric.enabled ? '停用指标' : '启用指标' }}-->
+<!--                      </el-dropdown-item>-->
                       <el-dropdown-item command="delete">删除指标</el-dropdown-item>
                       <el-dropdown-item command="export">导出数据</el-dropdown-item>
                       <el-dropdown-item command="refresh" divided>刷新数据</el-dropdown-item>

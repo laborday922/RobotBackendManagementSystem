@@ -53,6 +53,19 @@ public class ReportServiceImpl implements ReportService {
         return isAdmin ? null : tenantId;
     }
 
+    /**
+     * 生成 AI 分析报告
+     *
+     * @param reportType         报告类型（如：周报、月报、日报）
+     * @param startDate          开始日期（格式 yyyy-MM-dd）
+     * @param endDate            结束日期（格式 yyyy-MM-dd）
+     * @param analysisDimension  分析维度（如：销售额、用户活跃度）
+     * @param customPrompt       用户自定义的额外提示词
+     * @param reportDepth        报告深度（simple / standard / detailed）
+     * @return AI 生成的报告内容（文本格式）
+     * @throws IllegalArgumentException 当起止日期为 null 时抛出
+     * @throws RuntimeException         当无法获取租户信息且非管理员时抛出
+     */
     @Override
     public String generateReport(String reportType,
                                  String startDate,
@@ -61,34 +74,34 @@ public class ReportServiceImpl implements ReportService {
                                  String customPrompt,
                                  String reportDepth) {
 
-        // 参数校验
+        // 1. 参数校验：起止日期不能为空
         if (startDate == null || endDate == null) {
             throw new IllegalArgumentException("开始日期和结束日期不能为空");
         }
         if (reportDepth == null) {
-            reportDepth = "standard"; // 默认标准版
+            reportDepth = "standard"; // 报告深度默认为 standard
         }
 
-        // 获取当前租户 ID（写入操作必须强制获取，不能为 null）
+        // 2. 获取租户和用户信息，用于数据隔离
         Long tenantId = TenantContext.get();
         Long userId = SecurityUtils.getUserId();
         boolean isAdmin = SecurityUtils.isAdmin(userId);
-
+        // 普通用户必须有租户，管理员允许为空
         if (tenantId == null && !isAdmin) {
             throw new RuntimeException("无法获取租户信息，请重新登录");
         }
 
-        // 1️⃣ 获取真实数据（从数据库）
+        // 3. 从数据库查询原始数据
         String rawData = fetchRawData(analysisDimension, startDate, endDate, tenantId);
 
-        // 2️⃣ 构建 AI 生成的完整 prompt（融合自定义要求、深度类型）
+        // 4. 构建 AI Prompt
         String aiPrompt = buildAIPrompt(reportType, startDate, endDate, analysisDimension,
                 rawData, customPrompt, reportDepth);
 
-        // 3️⃣ 调用通义服务生成报告（假设有支持完整 prompt 的方法）
+        // 5. 调用 AI 服务生成报告
         String aiResult = tongYiService.chat(aiPrompt);
 
-        // 4️⃣ 存储报告元数据
+        // 6. 保存报告元数据
         ReportPo reportPO = new ReportPo();
         // 使用时间戳作为版本号
         String reportName = String.format("%s报告_%s_%s_v%d",
@@ -101,12 +114,12 @@ public class ReportServiceImpl implements ReportService {
         reportPO.setCreatedAt(new Date());
         reportMapper.insertReport(reportPO);
 
-        // 5️⃣ 存储报告内容
+        // 7. 保存报告内容
         ReportContentPo contentPO = new ReportContentPo();
         contentPO.setReportId(reportPO.getId());
         contentPO.setContent(aiResult);
         contentMapper.insertContent(contentPO);
-
+        // 8. 返回报告内容
         return aiResult;
     }
 

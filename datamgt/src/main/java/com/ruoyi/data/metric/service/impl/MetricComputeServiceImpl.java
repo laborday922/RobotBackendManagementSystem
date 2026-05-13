@@ -68,8 +68,8 @@ public class MetricComputeServiceImpl implements MetricComputeService {
 
         Long tenantId = TenantContext.get();
 
-        // ✅ 1. 查询指标（带租户）
-        // 如果是管理员，清空租户限制
+        // 1. 查询指标定义（带租户隔离）
+        // 管理员可绕过租户限制，清空 tenantId 以便查询所有租户数据
         if (isAdmin()) {
             tenantId = null;
         }
@@ -79,17 +79,19 @@ public class MetricComputeServiceImpl implements MetricComputeService {
             throw new RuntimeException("指标不存在或无权限访问");
         }
 
-        // ✅ 2. 获取 SQL
+        // 2. 获取指标的 SQL 计算表达式
         String sql = metric.getCalculationExpression();
 
-        // 注入 tenant
+        // 向 SQL 中追加租户过滤条件（如 where tenant_id = ?）
         sql = appendTenantCondition(sql, tenantId);
 
-        // ✅ 3. 执行
+        // 3. 执行 SQL，获取原始查询结果
         List<Map<String, Object>> data = computeMapper.executeQuery(sql);
 
+        // 4. 根据图表类型（柱状图、饼图、折线图等）获取对应的数据构建策略
         ChartDataStrategy strategy = chartStrategyMap.get(metric.getChartType());
 
+        // 5. 将原始数据转换为前端需要的图表数据格式
         return strategy.buildChartData(data);
     }
 

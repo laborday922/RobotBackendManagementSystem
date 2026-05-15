@@ -274,12 +274,12 @@ export const constantRoutes = [
       //   name: 'AppConfig',
       //   meta: { title: '应用配置管理', icon: 'sliders-h' }
       // },
-      {
-        path: 'update',
-        component: () => import('@/views/app/appUpdate/index'),
-        name: 'AppUpdate',
-        meta: { title: '应用更新管理', icon: 'el-icon-refresh' }
-      },
+      // {
+      //   path: 'update',
+      //   component: () => import('@/views/app/appUpdate/index'),
+      //   name: 'AppUpdate',
+      //   meta: { title: '应用更新管理', icon: 'el-icon-refresh' }
+      // },
       {
         path: 'intHistory',
         component: () => import('@/views/app/intHistory/index'),

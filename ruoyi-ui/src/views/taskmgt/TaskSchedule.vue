@@ -1,4 +1,4 @@
-<template>
+<<template>
   <div class="app-container">
     <!-- 统计卡片 -->
     <el-row :gutter="16" class="stats-cards">
@@ -64,9 +64,10 @@
         </el-select>
 
         <!-- 资源选择（仅在资源内排序时显示） -->
+        <!-- 关键改动 1：value 改为字符串，避免对象引用比较问题 -->
         <el-select
           v-if="sortMode === 'local'"
-          v-model="resourceFilter.resourceId"
+          v-model="resourceFilter.selectedResource"
           placeholder="选择机器人/组"
           clearable
           style="width:180px; margin-left:10px;"
@@ -77,7 +78,7 @@
               v-for="r in robotOptions"
               :key="'robot-' + r.id"
               :label="r.name"
-              :value="r.id"
+              :value="'robot-' + r.id"
             />
           </el-option-group>
           <el-option-group label="机器人组">
@@ -85,7 +86,7 @@
               v-for="g in robotGroupOptions"
               :key="'group-' + g.id"
               :label="g.name"
-              :value="g.id"
+              :value="'group-' + g.id"
             />
           </el-option-group>
         </el-select>
@@ -411,8 +412,7 @@ export default {
         status: undefined
       },
       resourceFilter: {
-        resourceId: undefined,
-        isGroupTask: false
+        selectedResource: null   // 现在存储字符串，如 'robot-1' 或 'group-1'
       },
       sortMode: 'none',
       loading: false,
@@ -430,7 +430,6 @@ export default {
       taskSteps: [],
       taskLogs: [],
       formFields: [],
-      // 动态选项缓存，用于详情页展示
       dynamicOptionsCache: {}
     }
   },
@@ -451,7 +450,18 @@ export default {
       return this.sortMode !== 'none'
     },
     isSortableEnabled() {
-      return this.sortMode === 'global' || (this.sortMode === 'local' && this.resourceFilter.resourceId)
+      return this.sortMode === 'global' || (this.sortMode === 'local' && this.resourceFilter.selectedResource)
+    },
+    // 关键改动 2：添加计算属性，将字符串解析为对象
+    selectedResourceObj() {
+      if (!this.resourceFilter.selectedResource) return null
+      const val = this.resourceFilter.selectedResource
+      if (val.startsWith('robot-')) {
+        return { type: 'robot', id: Number(val.substring(6)) }
+      } else if (val.startsWith('group-')) {
+        return { type: 'group', id: Number(val.substring(6)) }
+      }
+      return null
     },
     displayedTasks() {
       if (this.sortMode === 'none') {
@@ -465,16 +475,17 @@ export default {
             return (a.pendingOrder || 0) - (b.pendingOrder || 0)
           })
       } else if (this.sortMode === 'local') {
-        if (!this.resourceFilter.resourceId) {
+        // 关键改动 3：使用 selectedResourceObj 替代 resourceFilter.selectedResource
+        if (!this.selectedResourceObj) {
           return []
         }
         return this.taskList
           .filter(t => {
             if (t.status !== 1) return false
-            if (this.resourceFilter.isGroupTask) {
-              return t.robotGroupId === this.resourceFilter.resourceId
+            if (this.selectedResourceObj.type === 'group') {
+              return t.robotGroupId === this.selectedResourceObj.id && t.isGroupTask === 1
             } else {
-              return t.robotId === this.resourceFilter.resourceId && t.isGroupTask !== 1
+              return t.robotId === this.selectedResourceObj.id && t.isGroupTask !== 1
             }
           })
           .sort((a, b) => (a.pendingOrder || 0) - (b.pendingOrder || 0))
@@ -500,11 +511,11 @@ export default {
         this.getAllPendingTasks()
       } else if (val === 'local') {
         this.destroySortable()
-        this.resourceFilter.resourceId = undefined
+        this.resourceFilter.selectedResource = null
         this.taskList = []
       }
     },
-    'resourceFilter.resourceId'(val) {
+    'resourceFilter.selectedResource'(val) {
       if (this.sortMode === 'local' && val) {
         this.getLocalPendingTasks()
       }
@@ -538,7 +549,6 @@ export default {
         console.error(error)
       }
     },
-    // 获取模板列表（用于详情解析）
     async getTemplates() {
       try {
         const res = await listTemplate({ pageSize: 100 })
@@ -558,7 +568,6 @@ export default {
         console.error('获取模板列表失败', error)
       }
     },
-    // 加载动态选项（用于详情页 ID 转名称）
     async loadDynamicOptions(task) {
       if (!task || !task.robotId || !task.templateId) return
       const template = this.templateOptions.find(t => t.id === task.templateId)
@@ -612,7 +621,8 @@ export default {
       }
     },
     async getLocalPendingTasks() {
-      if (!this.resourceFilter.resourceId) return
+      // 关键改动 4：使用 selectedResourceObj
+      if (!this.selectedResourceObj) return
 
       this.loading = true
       try {
@@ -623,11 +633,11 @@ export default {
           displayOrder: 'pending_order ASC'
         }
 
-        if (this.resourceFilter.isGroupTask) {
-          params.robotGroupId = this.resourceFilter.resourceId
+        if (this.selectedResourceObj.type === 'group') {
+          params.robotGroupId = this.selectedResourceObj.id
           params.isGroupTask = 1
         } else {
-          params.robotId = this.resourceFilter.resourceId
+          params.robotId = this.selectedResourceObj.id
           params.isGroupTask = 0
         }
 
@@ -662,19 +672,12 @@ export default {
     },
     onSortModeChange(val) {
       this.sortMode = val
-      this.resourceFilter.resourceId = undefined
+      this.resourceFilter.selectedResource = null
       this.filter.status = undefined
       this.queryParams.status = undefined
     },
-    onResourceFilterChange(val) {
-      if (!val) {
-        this.resourceFilter.isGroupTask = false
-        this.taskList = []
-        return
-      }
-      const isRobot = this.robotOptions.some(r => r.id === val)
-      this.resourceFilter.isGroupTask = !isRobot
-      this.getLocalPendingTasks()
+    onResourceFilterChange(selected) {
+      // 已通过 watch 触发，此处无需额外逻辑
     },
     onStatusFilterChange(val) {
       this.filter.status = val
@@ -824,9 +827,10 @@ export default {
       const taskIds = newOrderList.map(t => t.id)
 
       try {
+        // 关键改动 5：使用 selectedResourceObj
         const query = {
-          robotId: this.resourceFilter.resourceId,
-          isGroupId: this.resourceFilter.isGroupTask
+          robotId: this.selectedResourceObj.id,
+          isGroupId: this.selectedResourceObj.type === 'group'
         }
         await updatePendingOrder(query, taskIds)
         this.$message.success('资源内排序已保存')
@@ -914,7 +918,6 @@ export default {
 
         this.currentTask = taskRes.data
 
-        // 解析表单数据
         if (this.currentTask.formContent) {
           try {
             this.currentTask.formData = JSON.parse(this.currentTask.formContent)
@@ -925,15 +928,12 @@ export default {
           this.currentTask.formData = {}
         }
 
-        // 加载动态选项（用于转换 ID 为名称）
         await this.loadDynamicOptions(this.currentTask)
 
-        // 解析表单字段定义
         if (this.currentTask.templateId && this.templateOptions) {
           const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
           if (template && template.fields) {
             this.formFields = template.fields || []
-            // 确保文件字段格式正确
             this.formFields.forEach(field => {
               if (['image','video','audio','file'].includes(field.type)) {
                 const value = this.currentTask.formData[field.id]
@@ -951,7 +951,6 @@ export default {
           this.formFields = []
         }
 
-        // 处理步骤数据，将 operationJson 中的ID转为名称显示
         const stepsData = stepsRes.data || []
         for (let step of stepsData) {
           if (step.operationJson) {
@@ -1019,7 +1018,6 @@ export default {
       if (Array.isArray(value)) {
         return value.map(v => v.name || v).join(', ')
       }
-      // dynamicSelect 类型：尝试通过缓存转换为名称
       if (field.type === 'dynamicSelect' && this.dynamicOptionsCache[field.paramKey]) {
         const opt = this.dynamicOptionsCache[field.paramKey].find(o => String(o.value) === String(value))
         if (opt) return opt.label
@@ -1165,7 +1163,6 @@ export default {
   padding: 20px;
 }
 
-/* 拖拽手柄样式 */
 .drag-handle {
   cursor: move;
   color: #909399;
@@ -1199,7 +1196,6 @@ export default {
   text-align: center;
 }
 
-/* 步骤进度样式 */
 .step-progress {
   display: flex;
   align-items: center;
@@ -1231,7 +1227,6 @@ export default {
   }
 }
 
-/* 资源分组背景色（全局排序模式下） */
 .row-resource-1 {
   background-color: rgba(24, 144, 255, 0.05);
 }
@@ -1252,7 +1247,6 @@ export default {
   background-color: rgba(114, 46, 209, 0.05);
 }
 
-/* 操作按钮样式 */
 .el-button [class*="fas"] {
   font-size: 14px;
 }
@@ -1261,7 +1255,6 @@ export default {
   margin-left: 4px;
 }
 
-/* 拖拽时的视觉反馈 */
 .sortable-drag .drag-handle {
   background-color: #1890ff;
   color: white;
@@ -1273,7 +1266,6 @@ export default {
 </style>
 
 <style>
-/* 全局 Sortable 样式 */
 .sortable-ghost {
   opacity: 0.4;
   background-color: #e6f7ff !important;
@@ -1286,7 +1278,6 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 禁止放置时的样式 */
 .sortable-invalid {
   cursor: not-allowed !important;
   opacity: 0.5;

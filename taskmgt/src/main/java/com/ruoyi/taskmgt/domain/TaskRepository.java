@@ -241,6 +241,7 @@ public class TaskRepository {
             if (tenantId != null) {
                 predicates.add(cb.equal(root.get("tenantId"), tenantId));
             }
+            predicates.add(cb.notEqual(root.get("status"), Task.DELETED));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
         List<TaskPo> taskPos = taskPoMapper.findAll(spec,sort);

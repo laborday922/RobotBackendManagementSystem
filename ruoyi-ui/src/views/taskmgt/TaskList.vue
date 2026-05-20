@@ -738,7 +738,7 @@ export default {
     },
     async getTemplates() {
       try {
-        const res = await listTemplate({ pageSize: 100 })
+        const res = await listTemplate({ status: 0,pageSize: 100 })
         this.templateOptions = (res.rows || []).map(tpl => {
           let fields = [], steps = []
           try {

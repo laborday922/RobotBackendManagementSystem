@@ -4,7 +4,6 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 /**
  * 点位创建请求DTO
@@ -12,9 +11,14 @@ import javax.validation.constraints.NotNull;
 @ApiModel(description = "点位创建请求")
 public class PointCreateRequest {
 
-    @ApiModelProperty(value = "所属地图ID", required = true)
-    @NotNull(message = "地图ID不能为空")
+    @ApiModelProperty(value = "点位ID（从机器人获取的位置ID，直接作为point_id存储）")
+    private Long pointId;
+
+    @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
     private Long mapId;
+
+    @ApiModelProperty(value = "所属机器人ID")
+    private Long robotId;
 
     @ApiModelProperty(value = "点位名称", required = true)
     @NotBlank(message = "点位名称不能为空")
@@ -35,16 +39,32 @@ public class PointCreateRequest {
     @ApiModelProperty(value = "备注")
     private String remark;
 
-    @ApiModelProperty(value = "机器人位置ID")
+    @ApiModelProperty(value = "机器人位置ID（从机器人获取的位置ID）")
     private Long robotPositionId;
 
     // Getters and Setters
+    public Long getPointId() {
+        return pointId;
+    }
+
+    public void setPointId(Long pointId) {
+        this.pointId = pointId;
+    }
+
     public Long getMapId() {
         return mapId;
     }
 
     public void setMapId(Long mapId) {
         this.mapId = mapId;
+    }
+
+    public Long getRobotId() {
+        return robotId;
+    }
+
+    public void setRobotId(Long robotId) {
+        this.robotId = robotId;
     }
 
     public String getPointName() {

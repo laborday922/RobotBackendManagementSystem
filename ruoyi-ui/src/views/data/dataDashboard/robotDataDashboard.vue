@@ -1,670 +1,810 @@
 <template>
-  <div class="data-dashboard">
-
-    <!-- ===== 顶部筛选（玻璃条） ===== -->
-    <div class="glass-bar">
-      <el-select v-model="dashboardTimeRange" size="small" @change="onTimeRangeChange">
-        <el-option label="今日" value="today"/>
-        <el-option label="本周" value="week"/>
-        <el-option label="本月" value="month"/>
-        <el-option label="本年" value="year"/>
-      </el-select>
-
-      <el-button size="small" @click="refreshDashboard">
-        刷新
-      </el-button>
-    </div>
-
-    <!-- ===== 关键指标 ===== -->
-    <div class="key-metrics">
-      <div class="glass-card metric-card" v-for="item in metricList" :key="item.label">
-        <div class="metric-value">{{ item.value }}</div>
-        <div class="metric-label">{{ item.label }}</div>
+  <div class="screen-container">
+    <!-- Header -->
+    <header class="screen-header">
+      <div class="header-left">数据来源：系统实时数据</div>
+      <h1>机器人运行监控大屏</h1>
+      <div class="header-right">
+        <span>{{ currentDate }}</span>
+        <el-button
+          type="primary"
+          size="small"
+          icon="el-icon-full-screen"
+          @click="openFullScreen"
+          style="margin-left: 12px"
+        >
+          全屏
+        </el-button>
       </div>
-    </div>
+    </header>
 
-    <!-- ===== 主体 ===== -->
-    <div class="dashboard-main">
-
-      <!-- 左 -->
-      <div class="left-panel">
-
-        <div class="glass-card">
-          <h3>在线机器人情况</h3>
-          <div id="robotStatusChart" class="chart-box"></div>
+    <!-- Body -->
+    <div class="screen-body">
+      <!-- 第一行 -->
+      <div class="row">
+        <!-- 左：机器人状态饼图 -->
+        <div class="cell">
+          <div class="panel">
+            <div class="panel-title">机器人状态</div>
+            <div id="robotStatusChart" class="chart"></div>
+          </div>
         </div>
 
-        <div class="glass-card">
-          <h3>任务执行情况</h3>
-
-          <div class="task-section">
-
-            <div class="task-category">
-              <div class="category-title">
-                ⏳ 执行中 ({{ taskStats.executing }})
-              </div>
-
-              <div class="task-item" v-for="item in executingTasks" :key="item.id">
-                <div class="task-header">
-                  <span>{{ item.name }}</span>
-                  <span>{{ item.progress }}%</span>
-                </div>
-                <el-progress :percentage="item.progress" :show-text="false"/>
-              </div>
-            </div>
-
-            <div class="task-category">
-              <div class="category-title">
-                ⏰ 待执行 ({{ taskStats.pending }})
-              </div>
-
-              <div class="task-item pending" v-for="item in pendingTasks" :key="item.id">
-                <div class="task-header">
-                  <span>{{ item.name }}</span>
-                  <span>{{ item.scheduledTime }}</span>
+        <!-- 中：核心指标 + 分组条形图 -->
+        <div class="cell center">
+          <div class="panel split-panel">
+            <div class="panel-section">
+              <div class="panel-title">核心指标</div>
+              <div class="metric-grid">
+                <div
+                  class="metric"
+                  v-for="m in metricList"
+                  :key="m.label"
+                  :class="{ clickable: m.clickable }"
+                  @click="handleMetricClick(m)"
+                >
+                  <div class="value">{{ m.value }}</div>
+                  <div class="label">{{ m.label }}</div>
                 </div>
               </div>
             </div>
-
-          </div>
-        </div>
-
-      </div>
-
-      <!-- 右 -->
-      <div class="right-panel">
-
-        <div class="glass-card">
-          <h3>机器人分组状态</h3>
-
-          <div class="group-item" v-for="g in groups" :key="g.name">
-            <div class="group-header">
-              <span>{{ g.name }}</span>
-              <span>{{ g.percent }}%</span>
+            <div class="panel-section">
+              <div class="panel-title">机器人分组在线情况</div>
+              <div id="robotGroupBarChart" class="chart"></div>
             </div>
-            <el-progress :percentage="g.percent" :show-text="false"/>
           </div>
         </div>
 
-        <div class="glass-card">
-          <h3>最近上线机器人</h3>
+        <!-- 右：机器人分布地图 -->
+        <div class="cell">
+          <div class="panel">
+            <div class="panel-title">机器人分布</div>
+            <div id="robotMapChart" class="chart"></div>
+          </div>
+        </div>
+      </div>
 
-          <div class="recent-item" v-for="r in recentOnlineRobots" :key="r.id">
-            <span>{{ r.name }}</span>
-            <span>{{ r.time }}</span>
+      <!-- 第二行 -->
+      <div class="row">
+        <div class="cell large">
+          <div class="panel">
+            <div class="panel-title">异常趋势</div>
+            <div id="dailyExceptionChart" class="chart"></div>
           </div>
         </div>
 
-        <div class="glass-card">
-          <h3>机器人位置</h3>
-          <div id="robotMapChart" class="chart-box"></div>
+        <div class="cell task-cell">
+          <div class="panel">
+            <div class="panel-title">任务执行情况</div>
+            <div class="task-section">
+              <div class="task-category">
+                <div class="category-title">⏳ 执行中 ({{ taskStats.executing }})</div>
+                <div class="task-list">
+                  <div class="task-item" v-for="item in executingTasks" :key="item.id">
+                    <div class="task-header">
+                      <span>{{ item.name }}</span>
+                      <span>{{ item.progress }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: item.progress + '%' }"></div>
+                    </div>
+                  </div>
+                  <div v-if="executingTasks.length === 0" class="empty-tip">暂无执行中任务</div>
+                </div>
+              </div>
+              <div class="task-category">
+                <div class="category-title">⏰ 待执行 ({{ taskStats.pending }})</div>
+                <div class="task-list">
+                  <div class="task-item pending" v-for="item in pendingTasks" :key="item.id">
+                    <div class="task-header">
+                      <span>{{ item.name }}</span>
+                      <span>{{ item.scheduledTime }}</span>
+                    </div>
+                  </div>
+                  <div v-if="pendingTasks.length === 0" class="empty-tip">暂无待执行任务</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-      </div>
-
-    </div>
-
-    <!-- ===== 新增图表区域：词云图 + 趋势图 ===== -->
-    <div class="extra-charts">
-      <div class="glass-card chart-card">
-        <h3>用户反馈词云图</h3>
-        <div id="wordCloudChart" class="chart-box"></div>
-      </div>
-      <div class="glass-card chart-card">
-        <h3>每日异常趋势图</h3>
-        <div id="dailyExceptionChart" class="chart-box"></div>
+        <!-- 词云图卡片，带独立 loading -->
+        <div class="cell">
+          <div class="panel" v-loading="wordCloudLoading" element-loading-text="词云图加载中，请稍后...">
+            <div class="panel-title">词云图</div>
+            <div id="wordCloudChart" class="chart"></div>
+          </div>
+        </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script>
 import * as echarts from "echarts"
-import "echarts-wordcloud" // 引入词云图扩展
+import "echarts-wordcloud"
 import chinaJson from "@/assets/map/china.json"
+import {
+  getAnomalyTrend,
+  getFeedbackWordCloud,
+  getRobotGeo,
+  getRobotGroups,
+  getServiceOverview,
+  getTaskExecutions
+} from "@/api/data/dataDashboard/dashboard"
 
 export default {
   data() {
     return {
-      dashboardTimeRange: "today",
+      currentDate: "",
+      wordCloudLoading: false,
+
       robotStatusChart: null,
+      robotGroupBarChart: null,
       robotMapChart: null,
       wordCloudChart: null,
       dailyExceptionChart: null,
 
-      robotStats: {
-        total: 120,
-        online: 80,
-        busy: 25,
-        offline: 15,
-        byGroup: {
-          customerService: 20,
-          operations: 30,
-          quality: 15
-        },
-        totalByGroup: {
-          customerService: 30,
-          operations: 40,
-          quality: 20
-        }
-      },
+      robotStats: { total: 0, online: 0, busy: 0, offline: 0 },
+      metricList: [],
+      robotGeoList: [],
+      clusteredMapPoints: [],  // 聚合后的地图点位数据
+      wordCloudData: [],
+      anomalyTrend: { dates: [], values: [] },
+      groups: [],
 
-      exceptionStats: {today: 5},
-      feedbackStats: {today: 12},
-
-      taskStats: {
-        executing: 2,
-        pending: 3,
-        completed: 50
-      },
-
-      executingTasks: [
-        {id: 1, name: "巡检任务A", description: "设备巡检", progress: 60},
-        {id: 2, name: "清洁任务B", description: "区域清洁", progress: 30}
-      ],
-
-      pendingTasks: [
-        {id: 3, name: "配送任务C", scheduledTime: "10:30"},
-        {id: 4, name: "盘点任务D", scheduledTime: "11:00"}
-      ],
-
-      recentOnlineRobots: [
-        {id: 1, name: "机器人001", time: "09:15"},
-        {id: 2, name: "机器人002", time: "09:20"}
-      ],
-
-      // 词云图数据（用户反馈关键词及权重）
-      wordCloudData: [
-        { name: "定位精准", value: 85 },
-        { name: "响应速度快", value: 72 },
-        { name: "导航异常", value: 34 },
-        { name: "避障灵敏", value: 68 },
-        { name: "续航不足", value: 42 },
-        { name: "操作便捷", value: 79 },
-        { name: "语音识别差", value: 28 },
-        { name: "交互友好", value: 63 },
-        { name: "充电故障", value: 19 },
-        { name: "地图更新慢", value: 37 },
-        { name: "任务执行成功", value: 91 },
-        { name: "噪音较大", value: 23 },
-        { name: "调度高效", value: 74 },
-        { name: "硬件耐用", value: 56 },
-        { name: "软件卡顿", value: 31 }
-      ],
-
-      // 每日异常趋势数据（最近7天）
-      dailyExceptionDates: [],
-      dailyExceptionValues: []
-    }
-  },
-
-  computed: {
-    // 计算分组数据用于展示
-    groups() {
-      const groups = [
-        { name: '客服组', key: 'customerService', icon: 'el-icon-service', color: '#409EFF' },
-        { name: '运维组', key: 'operations', icon: 'el-icon-setting', color: '#67C23A' },
-        { name: '质检组', key: 'quality', icon: 'el-icon-check', color: '#E6A23C' }
-      ]
-      return groups.map(g => ({
-        ...g,
-        online: this.robotStats.byGroup[g.key],
-        total: this.robotStats.totalByGroup[g.key],
-        percent: Math.round((this.robotStats.byGroup[g.key] / this.robotStats.totalByGroup[g.key]) * 100)
-      }))
-    },
-    metricList() {
-      return [
-        { label: '总机器人', value: this.robotStats.total },
-        { label: '在线', value: this.robotStats.online },
-        { label: '今日异常', value: this.exceptionStats.today },
-        { label: '今日反馈', value: this.feedbackStats.today },
-        { label: '完成任务', value: this.taskStats.completed }
-      ]
+      taskStats: { executing: 0, pending: 0, completed: 0 },
+      executingTasks: [],
+      pendingTasks: []
     }
   },
 
   mounted() {
     echarts.registerMap("china", chinaJson)
-    this.initChartData()   // 初始化趋势图日期和基础数据
+    this.updateTime()
+    setInterval(this.updateTime, 1000)
+
     this.initCharts()
+    this.loadAllDataExceptWordCloud()
+    this.loadWordCloudAsync()
+
     window.addEventListener("resize", this.resizeCharts)
   },
 
   beforeDestroy() {
     window.removeEventListener("resize", this.resizeCharts)
-    // 销毁图表实例，避免内存泄漏
-    this.disposeCharts()
   },
 
   methods: {
-    // 初始化图表基础数据（生成最近7天日期和模拟异常数据）
-    initChartData() {
-      const dates = []
-      const today = new Date()
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today)
-        d.setDate(today.getDate() - i)
-        dates.push(`${d.getMonth()+1}/${d.getDate()}`)
-      }
-      this.dailyExceptionDates = dates
-      // 生成模拟的异常趋势数据
-      this.generateRandomExceptionData()
+    updateTime() {
+      this.currentDate = new Date().toLocaleString()
     },
 
-    // 生成随机异常数据（模拟不同日期的异常数量）
-    generateRandomExceptionData() {
-      // 基础数据范围：3~18之间，体现一定波动
-      const baseValues = [8, 12, 5, 9, 15, 7, 10]
-      // 根据当前时间范围略微调整（今日、本周等影响展示风格，但这里保持数据动态）
-      let factor = 1.0
-      if (this.dashboardTimeRange === 'today') factor = 0.8
-      if (this.dashboardTimeRange === 'week') factor = 1.0
-      if (this.dashboardTimeRange === 'month') factor = 1.3
-      if (this.dashboardTimeRange === 'year') factor = 1.6
+    async loadAllDataExceptWordCloud() {
+      await Promise.all([
+        this.loadServiceOverview(),
+        this.loadRobotGroups(),
+        this.loadRobotGeo(),
+        this.loadTrend(),
+        this.loadTaskExecutions()
+      ])
+      this.updateNonWordCloudCharts()
+    },
 
-      this.dailyExceptionValues = baseValues.map(v => Math.round(v * factor + Math.random() * 3))
-      // 确保今日异常数据与卡片显示同步
-      if (this.dashboardTimeRange === 'today') {
-        this.exceptionStats.today = this.dailyExceptionValues[this.dailyExceptionValues.length - 1]
-      } else {
-        // 其他范围保持原有今日异常展示最后一天的数据
-        this.exceptionStats.today = this.dailyExceptionValues[this.dailyExceptionValues.length - 1]
+    async loadWordCloudAsync() {
+      this.wordCloudLoading = true
+      try {
+        await this.loadWordCloud()
+        this.updateWordCloudChart()
+      } catch (error) {
+        console.error('词云图加载失败:', error)
+        this.$message?.error('词云图加载失败')
+      } finally {
+        this.wordCloudLoading = false
       }
     },
 
-    // 刷新词云图数据（可随机变化一些权重，模拟动态反馈）
-    refreshWordCloudData() {
-      // 动态微调词云数据，让刷新时有变化感
-      this.wordCloudData = this.wordCloudData.map(item => ({
-        ...item,
-        value: Math.max(10, Math.min(100, item.value + (Math.random() > 0.6 ? Math.floor(Math.random() * 8) - 4 : 0)))
-      }))
+    async loadServiceOverview() {
+      const res = await getServiceOverview()
+      if (res.code === 200) {
+        const d = res.data
+        this.robotStats.total = d.totalCount
+        this.robotStats.online = d.onlineCount
+        d.statusDistribution.forEach(s => {
+          if (s.name === "离线") this.robotStats.offline = s.value
+          if (s.name === "待激活") this.robotStats.busy = s.value
+        })
+        // 核心指标构建，新增“离线”和“今日异常数”
+        this.metricList = [
+          {label: "总机器人", value: d.totalCount, clickable: false},
+          {label: "在线", value: d.onlineCount, clickable: false},
+          {label: "离线", value: this.robotStats.offline, clickable: false},
+          {label: "今日反馈", value: d.todayFeedbacks || 0, clickable: false},
+          {label: "完成任务", value: d.completedTasks || 0, clickable: false},
+          {
+            label: "今日异常数",
+            value:1,  // 请根据实际接口字段调整
+            clickable: true,
+            route: '/robots/warnings'
+          }
+        ]
+      }
+    },
+
+    async loadRobotGroups() {
+      const res = await getRobotGroups()
+      if (res.code === 200) {
+        this.groups = res.data.map(g => ({
+          name: g.name,
+          onlineCount: g.onlineCount,
+          totalCount: g.totalCount
+        }))
+      }
+    },
+
+    async loadRobotGeo() {
+      const res = await getRobotGeo()
+      if (res.code === 200) {
+        this.robotGeoList = res.data
+        // 聚合地理位置数据
+        this.clusteredMapPoints = this.aggregateGeoPoints(this.robotGeoList)
+      }
+    },
+
+    /**
+     * 聚合地理位置数据，将相同坐标的机器人合并
+     * @param {Array} geoList 原始机器人地理数据 [{robotId, coordinateX, coordinateY}]
+     * @returns {Array} 聚合后的数据 [{lng, lat, count, robotIds, coordinateKey}]
+     */
+    aggregateGeoPoints(geoList) {
+      const locationMap = new Map()
+
+      geoList.forEach(item => {
+        // 保留小数点后6位精度，避免浮点数误差
+        const lng = parseFloat(item.coordinateX)
+        const lat = parseFloat(item.coordinateY)
+        const key = `${lng.toFixed(6)},${lat.toFixed(6)}`
+
+        if (locationMap.has(key)) {
+          const existing = locationMap.get(key)
+          existing.count++
+          existing.robotIds.push(item.robotId)
+        } else {
+          locationMap.set(key, {
+            lng: lng,
+            lat: lat,
+            count: 1,
+            robotIds: [item.robotId],
+            coordinateKey: key
+          })
+        }
+      })
+
+      return Array.from(locationMap.values())
+    },
+
+    async loadWordCloud() {
+      const res = await getFeedbackWordCloud({})
+      if (res.code === 200) {
+        this.wordCloudData = res.data.map(i => ({name: i.name, value: i.value}))
+      }
+    },
+
+    async loadTrend() {
+      const now = new Date()
+      const end = this.formatDate(now)
+      const startDate = new Date(now)
+      startDate.setDate(now.getDate() - 6)
+      const start = this.formatDate(startDate)
+      const res = await getAnomalyTrend({granularity: 'day', time_range: `${start},${end}`})
+      if (res.code === 200) {
+        this.anomalyTrend.dates = res.data.xaxis || []
+        this.anomalyTrend.values = res.data.series || []
+      }
+    },
+
+    async loadTaskExecutions() {
+      try {
+        const res = await getTaskExecutions({start_time: null, end_time: null, limit: 20, offset: 0})
+        if (res.code === 200) {
+          const data = res.data
+          this.executingTasks = data.executingTasks || []
+          this.pendingTasks = (data.pendingTasks || []).map(task => ({
+            ...task,
+            scheduledTime: this.formatDateTime(task.scheduledTime)
+          }))
+          this.taskStats.executing = this.executingTasks.length
+          this.taskStats.pending = this.pendingTasks.length
+          if (data.completedCount !== undefined) this.taskStats.completed = data.completedCount
+        }
+      } catch (error) {
+        console.error('加载任务列表失败:', error)
+      }
+    },
+
+    formatDateTime(isoString) {
+      if (!isoString) return ''
+      const date = new Date(isoString)
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${month}-${day} ${hours}:${minutes}`
     },
 
     initCharts() {
-      this.initStatusChart()
-      this.initMapChart()
-      this.initWordCloudChart()
-      this.initDailyExceptionChart()
-    },
-
-    resizeCharts() {
-      this.robotStatusChart && this.robotStatusChart.resize()
-      this.robotMapChart && this.robotMapChart.resize()
-      this.wordCloudChart && this.wordCloudChart.resize()
-      this.dailyExceptionChart && this.dailyExceptionChart.resize()
-    },
-
-    disposeCharts() {
-      if (this.robotStatusChart) this.robotStatusChart.dispose()
-      if (this.robotMapChart) this.robotMapChart.dispose()
-      if (this.wordCloudChart) this.wordCloudChart.dispose()
-      if (this.dailyExceptionChart) this.dailyExceptionChart.dispose()
-      this.robotStatusChart = null
-      this.robotMapChart = null
-      this.wordCloudChart = null
-      this.dailyExceptionChart = null
-    },
-
-    refreshDashboard() {
-      // 刷新时更新模拟数据，让图表动态变化
-      this.generateRandomExceptionData()
-      this.refreshWordCloudData()
-      // 更新所有图表显示
-      this.updateAllCharts()
-    },
-
-    // 时间范围切换时，更新趋势数据等
-    onTimeRangeChange() {
-      this.generateRandomExceptionData()
-      this.updateAllCharts()
-    },
-
-    updateAllCharts() {
-      // 更新机器人状态饼图
-      if (this.robotStatusChart) {
-        this.robotStatusChart.setOption({
-          series: [{
-            data: [
-              {value: this.robotStats.online, name: "在线"},
-              {value: this.robotStats.busy, name: "忙碌"},
-              {value: this.robotStats.offline, name: "离线"}
-            ]
-          }]
-        })
-      }
-      // 更新词云图
-      if (this.wordCloudChart) {
-        this.wordCloudChart.setOption({
-          series: [{
-            data: this.wordCloudData
-          }]
-        })
-      }
-      // 更新异常趋势图
-      if (this.dailyExceptionChart) {
-        this.dailyExceptionChart.setOption({
-          xAxis: { data: this.dailyExceptionDates },
-          series: [{ data: this.dailyExceptionValues }]
-        })
-      }
-      // 地图无需更新数据，保持原样
-    },
-
-    initStatusChart() {
-      if (this.robotStatusChart) {
-        this.robotStatusChart.dispose()
-      }
       this.robotStatusChart = echarts.init(document.getElementById("robotStatusChart"))
+      this.robotGroupBarChart = echarts.init(document.getElementById("robotGroupBarChart"))
+      this.robotMapChart = echarts.init(document.getElementById("robotMapChart"))
+      this.wordCloudChart = echarts.init(document.getElementById("wordCloudChart"))
+      this.dailyExceptionChart = echarts.init(document.getElementById("dailyExceptionChart"))
+    },
+
+    // 更新除词云图以外的所有图表
+    updateNonWordCloudCharts() {
+      // 1. 饼图
       this.robotStatusChart.setOption({
-        tooltip: {trigger: "item"},
-        legend: {bottom: 0},
+        tooltip: {trigger: 'item', formatter: '{b}: {d}% ({c})'},
+        textStyle: {color: "#b0c2f9"},
         series: [{
           type: "pie",
-          radius: ["45%", "70%"],
+          radius: ["45%", "75%"],
           data: [
             {value: this.robotStats.online, name: "在线"},
-            {value: this.robotStats.busy, name: "忙碌"},
+            {value: this.robotStats.busy, name: "待激活"},
             {value: this.robotStats.offline, name: "离线"}
           ],
-          itemStyle: {
-            borderRadius: 8,
-            borderColor: '#fff',
-            borderWidth: 2
-          },
-          label: { show: true, formatter: '{b}: {d}%' }
+          label: {color: "#b0c2f9"},
+          emphasis: {scale: true}
         }]
       })
-    },
 
-    initMapChart() {
-      if (this.robotMapChart) {
-        this.robotMapChart.dispose()
+      // 2. 分组条形图
+      if (this.robotGroupBarChart && this.groups.length) {
+        const groupNames = this.groups.map(g => g.name)
+        const onlineCounts = this.groups.map(g => g.onlineCount)
+        this.robotGroupBarChart.setOption({
+          tooltip: {trigger: "axis", axisPointer: {type: "shadow"}, formatter: '{b}<br/>在线数量: {c}'},
+          grid: {top: 20, bottom: 20, left: 100, right: 20, containLabel: true},
+          xAxis: {
+            type: "value",
+            name: "在线数量",
+            nameTextStyle: {color: "#b0c2f9"},
+            axisLabel: {color: "#b0c2f9", formatter: (value) => Math.floor(value)},
+            splitLine: {lineStyle: {color: "#2a3e6e"}}
+          },
+          yAxis: {
+            type: "category",
+            data: groupNames,
+            axisLabel: {color: "#b0c2f9", fontSize: 11},
+            axisLine: {show: false},
+            axisTick: {show: false}
+          },
+          series: [{
+            type: "bar",
+            data: onlineCounts,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: {
+                type: 'linear',
+                x: 0, y: 0, x2: 1, y2: 0,
+                colorStops: [
+                  {offset: 0, color: '#5faee3'},
+                  {offset: 1, color: '#a8d8ff'}
+                ]
+              }
+            },
+            label: {
+              show: true,
+              position: "right",
+              color: "#fff",
+              formatter: (params) => Math.floor(params.value)
+            }
+          }]
+        })
       }
-      this.robotMapChart = echarts.init(document.getElementById("robotMapChart"))
+
+      // 3. 地图
+      // 3. 地图（使用聚合数据）
+      const mapPoints = this.clusteredMapPoints.map(point => ({
+        name: `位置(${point.lng.toFixed(2)}, ${point.lat.toFixed(2)})`,
+        value: [point.lng, point.lat],
+        robotCount: point.count,
+        robotIds: point.robotIds
+      }))
+
       this.robotMapChart.setOption({
         geo: {
           map: "china",
           roam: true,
           zoom: 1.2,
+          center: [104.0, 35.0],
+          label: { show: true, color: "#ffffff", fontSize: 10 },
           itemStyle: {
-            borderColor: '#ccc',
-            areaColor: '#f5f5f5'
+            normal: { areaColor: "#a8d8ff", borderColor: "#1f3a8a", borderWidth: 1 },
+            emphasis: { areaColor: "#5faee3" }
+          }
+        },
+        tooltip: {
+          trigger: 'item',
+          formatter: (params) => {
+            if (params.data) {
+              const data = params.data
+              const robotCount = data.robotCount || 0
+              const robotIds = data.robotIds || []
+              const lng = data.value[0]
+              const lat = data.value[1]
+
+              // 构建显示内容
+              let html = `<strong>位置信息</strong><br/>`
+              html += `经度: ${lng.toFixed(4)}<br/>`
+              html += `纬度: ${lat.toFixed(4)}<br/>`
+              html += `机器人数量: ${robotCount}<br/>`
+
+              if (robotCount > 0) {
+                html += `<hr style="margin: 4px 0; border-color: #2a3e6e;">`
+                html += `<strong>机器人ID列表</strong><br/>`
+                // 最多显示前10个ID，避免tooltip过长
+                const displayIds = robotIds.slice(0, 10)
+                displayIds.forEach(id => {
+                  html += `• ${id}<br/>`
+                })
+                if (robotIds.length > 10) {
+                  html += `<span style="color: #aaa;">...还有 ${robotIds.length - 10} 个</span>`
+                }
+              }
+              return html
+            }
+            return params.name
+          },
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderColor: '#1f3a8a',
+          borderWidth: 1,
+          textStyle: {
+            color: '#b0c2f9',
+            fontSize: 12
           }
         },
         series: [{
           type: "effectScatter",
           coordinateSystem: "geo",
-          rippleEffect: {brushType: "stroke", scale: 4},
-          symbolSize: 12,
-          data: [
-            {name: "北京", value: [116.4, 39.9, 5]},
-            {name: "上海", value: [121.47, 31.23, 8]},
-            {name: "广州", value: [113.23, 23.16, 3]},
-            {name: "深圳", value: [114.05, 22.53, 6]},
-            {name: "成都", value: [104.06, 30.67, 4]}
-          ],
-          label: { show: true, formatter: '{b}', position: 'right', offset: [8, 0] }
+          data: mapPoints,
+          // 点的大小根据机器人数量动态调整
+          symbolSize: (val) => {
+            const count = val.data ? val.data.robotCount : 1
+            // 最小8px，最大32px，基数8 + 数量×1.5，限制最大32
+            return Math.min(8 + count * 1.5, 32)
+          },
+          rippleEffect: {
+            brushType: 'stroke',
+            scale: 2.5,
+            period: 4
+          },
+          label: {
+            show: true,
+            formatter: (params) => {
+              const count = params.data.robotCount || 0
+              return count > 1 ? `+${count}` : ''
+            },
+            position: 'top',
+            color: '#ffcc00',
+            fontSize: 10,
+            fontWeight: 'bold',
+            textShadowBlur: 2,
+            textShadowColor: '#000'
+          },
+          itemStyle: {
+            color: '#ff6666',
+            shadowBlur: 8,
+            shadowColor: '#ff6666'
+          },
+          emphasis: {
+            scale: 1.2,
+            label: {
+              show: true,
+              formatter: (params) => {
+                const data = params.data
+                return `${data.robotCount}个机器人`
+              },
+              position: 'top',
+              fontWeight: 'bold'
+            }
+          }
         }]
+      })
+
+      // 4. 异常趋势折线图
+      this.dailyExceptionChart.setOption({
+        tooltip: {trigger: "axis", formatter: '{b}<br/>异常次数: {c}'},
+        xAxis: {type: "category", data: this.anomalyTrend.dates, axisLabel: {color: "#b0c2f9"}},
+        yAxis: {type: "value", axisLabel: {color: "#b0c2f9"}},
+        series: [{type: "line", data: this.anomalyTrend.values, smooth: true, areaStyle: {opacity: 0.3}}]
       })
     },
 
-    // 词云图初始化
-    initWordCloudChart() {
-      if (this.wordCloudChart) {
-        this.wordCloudChart.dispose()
-      }
-      const container = document.getElementById("wordCloudChart")
-      if (!container) return
-      this.wordCloudChart = echarts.init(container)
+    // 词云图完整配置
+    updateWordCloudChart() {
+      if (!this.wordCloudChart) return
       this.wordCloudChart.setOption({
-        tooltip: { show: true, formatter: (params) => `${params.name}: ${params.value}` },
+        tooltip: {show: true, formatter: (params) => `${params.name}: ${params.value}`},
         series: [{
-          type: 'wordCloud',
-          shape: 'pentagon',
-          left: 'center',
-          top: 'center',
-          width: '100%',
-          height: '100%',
-          right: null,
-          bottom: null,
+          type: "wordCloud",
+          shape: "circle",
+          width: "100%",
+          height: "100%",
           sizeRange: [14, 42],
           rotationRange: [-45, 90],
-          rotationStep: 45,
-          gridSize: 8,
-          drawOutOfBound: false,
           textStyle: {
-            fontFamily: 'sans-serif',
-            fontWeight: 'normal',
-            color: function () {
-              // 随机颜色，美观
-              const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#8E44AD', '#2C3E50']
+            fontFamily: "sans-serif",
+            fontWeight: "normal",
+            color: () => {
+              const colors = ["#409EFF", "#67C23A", "#E6A23C", "#F56C6C", "#909399",
+                "#8E44AD", "#2C3E50", "#1abc9c", "#e67e22", "#3498db",
+                "#9b59b6", "#f1c40f", "#e84393", "#00cec9"]
               return colors[Math.floor(Math.random() * colors.length)]
             }
           },
-          emphasis: {
-            textStyle: {
-              fontWeight: 'bold',
-              shadowBlur: 10,
-              shadowColor: '#333'
-            }
-          },
+          emphasis: {textStyle: {fontWeight: "bold", shadowBlur: 10, shadowColor: "#333"}},
           data: this.wordCloudData
         }]
-      })
+      }, true)
     },
 
-    // 每日异常趋势图初始化
-    initDailyExceptionChart() {
-      if (this.dailyExceptionChart) {
-        this.dailyExceptionChart.dispose()
+    formatDate(date) {
+      const y = date.getFullYear()
+      const m = String(date.getMonth() + 1).padStart(2, '0')
+      const d = String(date.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    },
+
+    resizeCharts() {
+      this.robotStatusChart?.resize()
+      this.robotGroupBarChart?.resize()
+      this.robotMapChart?.resize()
+      this.wordCloudChart?.resize()
+      this.dailyExceptionChart?.resize()
+    },
+
+    // 新增：全屏打开新标签页
+    openFullScreen() {
+      // 假设已配置全屏大屏路由 name 为 'RobotMonitorFullScreen'
+      const routeData = this.$router.resolve({name: 'DashboardFullScreen'})
+      window.open(routeData.href, '_blank')
+    },
+
+    // 新增：核心指标点击处理
+    handleMetricClick(metric) {
+      if (!metric.clickable) return
+      if (metric.label === '今日异常数' && metric.route) {
+        this.$router.push(metric.route)
       }
-      const container = document.getElementById("dailyExceptionChart")
-      if (!container) return
-      this.dailyExceptionChart = echarts.init(container)
-      this.dailyExceptionChart.setOption({
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        grid: { top: 30, left: 40, right: 20, bottom: 20, containLabel: true },
-        xAxis: {
-          type: 'category',
-          data: this.dailyExceptionDates,
-          axisLabel: { rotate: 30, fontSize: 11 }
-        },
-        yAxis: {
-          type: 'value',
-          name: '异常次数',
-          nameStyle: { fontSize: 12 }
-        },
-        series: [{
-          type: 'line',
-          data: this.dailyExceptionValues,
-          smooth: true,
-          symbol: 'circle',
-          symbolSize: 8,
-          lineStyle: { width: 3, color: '#F56C6C', shadowBlur: 8 },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(245,108,108,0.4)' },
-              { offset: 1, color: 'rgba(245,108,108,0.05)' }
-            ])
-          },
-          itemStyle: { color: '#F56C6C', borderColor: '#fff', borderWidth: 2 },
-          label: { show: true, position: 'top', fontSize: 11 }
-        }]
-      })
     }
   }
 }
 </script>
 
 <style scoped>
-.data-dashboard {
-  padding: 0 24px;
+.screen-container {
+  height: 100vh;
+  background: url('~@/assets/images/bg.png') no-repeat center/cover;
+  color: #b0c2f9;
+  overflow: hidden;
 }
 
-/* ===== 顶部玻璃条 ===== */
-.glass-bar {
+.row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
 }
 
-/* ===== 关键指标 ===== */
-.key-metrics {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.metric-card {
+.cell {
   flex: 1;
+}
+
+.screen-header {
+  height: 70px;
+  background: url('~@/assets/images/header.png') no-repeat center/cover;
   text-align: center;
-  padding: 20px;
+  position: relative;
 }
 
-.metric-value {
-  font-size: 26px;
-  font-weight: bold;
-  color: #3976E4;
+.screen-header h1 {
+  color: #fff;
+  line-height: 70px;
+  margin: 0;
 }
 
-.metric-label {
-  font-size: 13px;
-  color: #666;
+.header-left {
+  position: absolute;
+  left: 20px;
+  top: 25px;
 }
 
-/* ===== 新增图表行：两列布局 ===== */
-.extra-charts {
+.header-right {
+  position: absolute;
+  right: 20px;
+  top: 25px;
   display: flex;
-  gap: 20px;
-  margin-top: 20px;
+  align-items: center;
 }
 
-.chart-card {
+.screen-body {
+  height: calc(100% - 70px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.row {
   flex: 1;
-}
-
-.chart-card h3 {
-  margin-bottom: 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* ===== 主体布局 ===== */
-.dashboard-main {
+  min-height: 0;
   display: flex;
-  gap: 20px;
 }
 
-.left-panel {
+.cell {
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+}
+
+.cell.center {
+  flex: 1.5;
+}
+
+.cell.large {
   flex: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
-.right-panel {
+.cell.task-cell {
+  flex: 1.5;
+}
+
+.panel {
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #1f3a8a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.split-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  overflow: hidden;
+  min-height: 0;
 }
 
-/* ===== 毛玻璃卡片 ===== */
-.glass-card {
-  border-radius: 16px;
-  padding: 20px;
-  backdrop-filter: blur(14px);
-  background: rgba(255,255,255,0.92);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
-  border: 1px solid rgba(255,255,255,0.4);
-  transition: all 0.2s;
+.panel-section:first-child {
+  border-bottom: 1px solid #1f3a8a;
 }
 
-.glass-card h3 {
-  margin-bottom: 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
+.panel-title {
+  padding-left: 10px;
+  height: 30px;
+  line-height: 30px;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
-/* ===== 图表 ===== */
-.chart-box {
-  height: 260px;
-  width: 100%;
+.chart {
+  flex: 1;
+  min-height: 0;
 }
 
-/* ===== 任务 ===== */
+.metric-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px;
+  gap: 8px;            /* 可保持不变，或调整为 12px 等 */
+}
+
+.metric {
+  width: 30%;          /* 改为三列布局 */
+  text-align: center;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.metric.clickable {
+  cursor: pointer;
+}
+
+.metric.clickable:hover {
+  background: rgba(64, 158, 255, 0.15);
+}
+
+.metric .value {
+  font-size: 26px;
+  color: #fff;
+}
+
+.metric .label {
+  font-size: 12px;
+}
+
 .task-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 8px;
+  min-height: 0;
 }
 
 .task-category {
-  padding: 12px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.5);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 8px;
 }
 
 .category-title {
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: #333;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #9aa8d4;
+}
+
+.task-list {
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 .task-item {
-  padding: 10px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.8);
-  margin-bottom: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 6px;
 }
 
 .task-item.pending {
-  background: rgba(240,240,240,0.6);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .task-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 13px;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
-/* ===== 分组 ===== */
-.group-item {
-  margin-bottom: 14px;
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.group-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  margin-bottom: 6px;
+.progress-fill {
+  height: 100%;
+  background: #67c23a;
+  border-radius: 2px;
 }
 
-/* ===== 最近上线 ===== */
-.recent-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.6);
-  margin-bottom: 8px;
+.empty-tip {
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 12px;
+  padding: 12px;
 }
 
-/* 响应式适配 */
-@media (max-width: 1200px) {
-  .extra-charts {
-    flex-direction: column;
-  }
-  .dashboard-main {
-    flex-direction: column;
-  }
+.task-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.task-list::-webkit-scrollbar-track {
+  background: #2c3e50;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+  background: #1f3a8a;
 }
 </style>

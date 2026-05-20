@@ -66,7 +66,7 @@ public interface SysModeMapper
      * @param modeId 模式ID
      * @return 结果
      */
-    public int incrementUsageCount(@Param("modeId") Long modeId);
+    public int incrementUsageCount(@Param("modeId") Long modeId, @Param("tenantId") Long tenantId);
 
     /**
      * 更新单个模式的机器人数量

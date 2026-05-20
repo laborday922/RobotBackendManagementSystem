@@ -13,11 +13,9 @@ import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.mapper.RobotsMapper;
 import com.ruoyi.robots.service.IRobotsService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -26,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
@@ -55,7 +52,7 @@ public class SysRobotServiceImpl implements ISysRobotService
     private ISysModeService sysModeService;
 
     @Autowired
-    private RobotWebSocketHandler webSocketHandler;
+    private com.ruoyi.robots.websocket.RobotWebSocketHandler webSocketHandler;
 
     @Value("${task.callback.base-url:http://localhost:8080}")
     private String callbackBaseUrl;
@@ -184,7 +181,7 @@ public class SysRobotServiceImpl implements ISysRobotService
 
             String correlationId = UUID.randomUUID().toString();
             var future = webSocketHandler.sendAndWaitRaw(robotId, requestData, correlationId, 30);
-            var response = future.get(30, TimeUnit.SECONDS);
+            var response = future.get(30, java.util.concurrent.TimeUnit.SECONDS);
 
             if (response.getData() != null) {
                 Map<String, Object> respData = (Map<String, Object>) response.getData();

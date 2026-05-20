@@ -12,6 +12,9 @@ public interface SysTourRouteMapper {
 
     List<SysTourRoute> selectList(SysTourRoute route);
 
+    // 根据机器人ID查询路线列表（含点位详情）
+    List<SysTourRoute> selectRouteDetailByRobotId(@Param("robotId") Long robotId);
+
     int insert(SysTourRoute route);
 
     int update(SysTourRoute route);

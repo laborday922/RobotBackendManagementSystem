@@ -5,24 +5,28 @@
 <mapper namespace="com.ruoyi.mode.mapper.SysModeScheduleMapper">
 
     <resultMap type="com.ruoyi.mode.domain.SysModeSchedule" id="SysModeScheduleResult">
-        <id     property="scheduleId"       column="schedule_id"        />
-        <result property="scheduleName"     column="schedule_name"      />
-        <result property="modeId"           column="mode_id"            />
-        <result property="modeName"         column="mode_name"          />
-        <result property="executeTime"      column="execute_time"       />
-        <result property="repeatType"       column="repeat_type"        />
-        <result property="startDate"        column="start_date"         />
-        <result property="startTime"        column="start_time"         />
-        <result property="duration"         column="duration"           />
-        <result property="status"           column="status"             />
-        <result property="lastExecuteTime"  column="last_execute_time"  />
+        <id property="scheduleId" column="schedule_id" />
+        <result property="scheduleName" column="schedule_name" />
+        <result property="modeId" column="mode_id" />
+        <result property="modeName" column="mode_name" />
+        <result property="executeTime" column="execute_time" />
+        <result property="repeatType" column="repeat_type" />
+        <result property="repeatRule" column="repeat_rule" />
+        <result property="startDate" column="start_date" />
+        <result property="startTime" column="start_time" />
+        <result property="duration" column="duration" />
+        <result property="status" column="status" />
+        <result property="lastExecuteTime" column="last_execute_time" />
         <result property="lastExecuteStatus" column="last_execute_status" />
-        <result property="delFlag"          column="del_flag"           />
-        <result property="tenantId"         column="tenant_id"          />
-        <result property="createBy"         column="create_by"          />
-        <result property="createTime"       column="create_time"        />
-        <result property="updateBy"         column="update_by"          />
-        <result property="updateTime"       column="update_time"        />
+        <result property="delFlag" column="del_flag" />
+        <result property="tenantId" column="tenant_id" />
+        <result property="createBy" column="create_by" />
+        <result property="createTime" column="create_time" />
+        <result property="updateBy" column="update_by" />
+        <result property="updateTime" column="update_time" />
+        <!-- 添加机器人集合 -->
+        <collection property="robots" ofType="com.ruoyi.mode.domain.SysRobot"
+                    select="selectRobotsByScheduleId" column="schedule_id" />
     </resultMap>
 
     <!-- 机器人结果映射 -->
@@ -50,6 +54,7 @@
         mode_name,
         execute_time,
         repeat_type,
+        repeat_rule,
         start_date,
         start_time,
         duration,
@@ -113,9 +118,6 @@
         inner join sys_schedule_robot sr on r.id = sr.robot_id
         where sr.schedule_id = #{scheduleId}
         and r.del_flag = '0'
-        <if test="tenantId != null">
-            and r.tenant_id = #{tenantId}
-        </if>
         order by r.id
     </select>
 
@@ -127,6 +129,7 @@
         <if test="modeName != null and modeName != ''">mode_name,</if>
         <if test="executeTime != null and executeTime != ''">execute_time,</if>
         <if test="repeatType != null and repeatType != ''">repeat_type,</if>
+        <if test="repeatRule != null and repeatRule != ''">repeat_rule,</if>
         <if test="startDate != null">start_date,</if>
         <if test="startTime != null and startTime != ''">start_time,</if>
         <if test="duration != null">duration,</if>
@@ -140,6 +143,7 @@
         <if test="modeName != null and modeName != ''">#{modeName},</if>
         <if test="executeTime != null and executeTime != ''">#{executeTime},</if>
         <if test="repeatType != null and repeatType != ''">#{repeatType},</if>
+        <if test="repeatRule != null and repeatRule != ''">#{repeatRule},</if>
         <if test="startDate != null">#{startDate},</if>
         <if test="startTime != null and startTime != ''">#{startTime},</if>
         <if test="duration != null">#{duration},</if>
@@ -159,6 +163,7 @@
             <if test="modeName != null and modeName != ''">mode_name = #{modeName},</if>
             <if test="executeTime != null and executeTime != ''">execute_time = #{executeTime},</if>
             <if test="repeatType != null and repeatType != ''">repeat_type = #{repeatType},</if>
+            <if test="repeatRule != null and repeatRule != ''">repeat_rule = #{repeatRule},</if>
             <if test="startDate != null">start_date = #{startDate},</if>
             <if test="startTime != null and startTime != ''">start_time = #{startTime},</if>
             <if test="duration != null">duration = #{duration},</if>
@@ -197,8 +202,8 @@
 
     <!-- 批量插入排程机器人关联 -->
     <insert id="insertScheduleRobots">
-        INSERT IGNORE INTO sys_schedule_robot (schedule_id, robot_id, robot_name)
-        SELECT #{scheduleId}, id, name
+        INSERT IGNORE INTO sys_schedule_robot (schedule_id, robot_id, robot_name, tenant_id)
+        SELECT #{scheduleId}, id, name, 1
         FROM robots
         WHERE id IN
         <foreach item="robotId" collection="robotIds" open="(" separator="," close=")">

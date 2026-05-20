@@ -40,20 +40,21 @@ public class DashboardServiceImpl implements DashboardService {
                                                     Date endTime,
                                                     String feedbackType) {
 
+        // 将前端传来的反馈类型（如"好评""差评"）转换为对应的评分值
         Integer rating = convertRating(feedbackType);
         Long tenantId = getQueryTenantId();
 
-        // 1️⃣ 查数据库（传入 tenantId）
+        // 1️.根据租户、时间范围、评分类型从数据库中查询原始评价记录
         List<InteractionEvaluationPo> records =
                 dashboardMapper.selectEvaluationTexts(tenantId, startTime, endTime, rating);
 
-        // 2️⃣ 提取文本
+        // 2️.提取非空的评论文本，准备送入词云生成服务
         List<String> texts = records.stream()
                 .map(InteractionEvaluationPo::getEvaluationText)
                 .filter(t -> t != null && !t.isEmpty())
                 .toList();
 
-        // 3️⃣ 调 AI 服务（AI服务内部可能也需要租户隔离，暂不改动）
+        // 3️.调用AI分析服务对文本集合进行分词、统计词频，生成词云数据
         return aiAnalysisService.generateWordCloud(texts);
     }
 

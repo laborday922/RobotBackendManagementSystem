@@ -2,9 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.function.mapper.SysTourRouteMapper">
 
+    <!-- 路线结果映射（基础信息） -->
     <resultMap type="com.ruoyi.function.domain.SysTourRoute" id="SysTourRouteResult">
         <id property="routeId" column="route_id"/>
         <result property="routeName" column="route_name"/>
+        <result property="robotId" column="robot_id"/>
         <result property="mapId" column="map_id"/>
         <result property="pointIds" column="point_ids"/>
         <result property="pointCount" column="point_count"/>
@@ -16,6 +18,39 @@
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
+    <!-- 路线详情结果映射（包含点位和讲解内容） -->
+    <resultMap type="com.ruoyi.function.domain.SysTourRoute" id="SysTourRouteDetailResult" extends="SysTourRouteResult">
+        <collection property="routePoints" ofType="com.ruoyi.function.domain.SysRoutePoint" javaType="java.util.ArrayList">
+            <id property="id" column="rp_id"/>
+            <result property="routeId" column="rp_route_id"/>
+            <result property="pointId" column="rp_point_id"/>
+            <result property="contentId" column="rp_content_id"/>
+            <result property="orderNum" column="rp_order_num"/>
+            <association property="point" javaType="com.ruoyi.function.domain.SysPoint">
+                <id property="pointId" column="point_id"/>
+                <result property="pointName" column="point_name"/>
+                <result property="pointCode" column="point_code"/>
+                <result property="pointType" column="point_type"/>
+                <result property="coordinateX" column="coordinate_x"/>
+                <result property="coordinateY" column="coordinate_y"/>
+                <result property="status" column="point_status"/>
+            </association>
+            <association property="content" javaType="com.ruoyi.function.domain.SysTourContent">
+                <id property="contentId" column="content_id"/>
+                <result property="pointName" column="content_point_name"/>
+                <result property="pointDesc" column="point_desc"/>
+                <result property="broadcastType" column="broadcast_type"/>
+                <result property="broadcastText" column="broadcast_text"/>
+                <result property="audioFile" column="audio_file"/>
+                <result property="voiceType" column="voice_type"/>
+                <result property="speechRate" column="speech_rate"/>
+                <result property="intervalTime" column="interval_time"/>
+                <result property="armAction" column="arm_action"/>
+                <result property="chassisAngle" column="chassis_angle"/>
+            </association>
+        </collection>
+    </resultMap>
+
     <resultMap type="com.ruoyi.function.domain.SysRoutePoint" id="SysRoutePointResult">
         <id property="id" column="id"/>
         <result property="routeId" column="route_id"/>
@@ -25,7 +60,7 @@
     </resultMap>
 
     <sql id="selectRouteVo">
-        select route_id, route_name, map_id, point_ids, point_count, status, tenant_id,
+        select route_id, route_name, robot_id, map_id, point_ids, point_count, status, tenant_id,
         create_by, create_time, update_by, update_time
         from sys_tour_route
     </sql>
@@ -38,18 +73,42 @@
     <select id="selectList" resultMap="SysTourRouteResult" parameterType="com.ruoyi.function.domain.SysTourRoute">
         <include refid="selectRouteVo"/>
         <where>
+            <if test="robotId != null">and robot_id = #{robotId}</if>
+            <if test="mapId != null">and map_id = #{mapId}</if>
             <if test="status != null and status != ''">and status = #{status}</if>
             <if test="tenantId != null and tenantId != ''">and tenant_id = #{tenantId}</if>
         </where>
         order by create_time desc
     </select>
 
+    <!-- 根据机器人ID查询路线详情（包含所有点位顺序和讲解内容） -->
+    <select id="selectRouteDetailByRobotId" resultMap="SysTourRouteDetailResult">
+        SELECT
+        sr.route_id, sr.route_name, sr.robot_id, sr.map_id, sr.status, sr.point_count,
+        sr.point_ids,   <!-- 关键修改：添加这一列 -->
+        sr.create_by, sr.create_time, sr.update_by, sr.update_time,
+        rp.id as rp_id, rp.route_id as rp_route_id, rp.point_id as rp_point_id,
+        rp.content_id as rp_content_id, rp.order_num as rp_order_num,
+        sp.point_id, sp.point_name, sp.point_code, sp.point_type,
+        sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
+        tc.content_id, tc.point_name as content_point_name, tc.point_desc,
+        tc.broadcast_type, tc.broadcast_text, tc.audio_file,
+        tc.voice_type, tc.speech_rate, tc.interval_time,
+        tc.arm_action, tc.chassis_angle
+        FROM sys_tour_route sr
+        LEFT JOIN sys_route_point rp ON sr.route_id = rp.route_id
+        LEFT JOIN sys_point sp ON rp.point_id = sp.point_id
+        LEFT JOIN sys_tour_content tc ON rp.content_id = tc.content_id
+        WHERE sr.robot_id = #{robotId}
+        ORDER BY sr.route_id, rp.order_num ASC
+    </select>
+
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourRoute" useGeneratedKeys="true" keyProperty="routeId">
         insert into sys_tour_route (
-        route_name, map_id, point_ids, point_count, status, tenant_id,
+        route_name, robot_id, map_id, point_ids, point_count, status, tenant_id,
         create_by, create_time
         ) values (
-        #{routeName}, #{mapId}, #{pointIds}, #{pointCount}, #{status}, #{tenantId},
+        #{routeName}, #{robotId}, #{mapId}, #{pointIds}, #{pointCount}, #{status}, #{tenantId},
         #{createBy}, sysdate()
         )
     </insert>
@@ -58,6 +117,7 @@
         update sys_tour_route
         <set>
             <if test="routeName != null">route_name = #{routeName},</if>
+            <if test="robotId != null">robot_id = #{robotId},</if>
             <if test="mapId != null">map_id = #{mapId},</if>
             <if test="pointIds != null">point_ids = #{pointIds},</if>
             <if test="pointCount != null">point_count = #{pointCount},</if>

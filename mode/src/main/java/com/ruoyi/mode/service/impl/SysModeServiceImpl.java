@@ -218,7 +218,13 @@ public class SysModeServiceImpl implements ISysModeService
             return 0;
         }
         try {
-            return sysModeMapper.incrementUsageCount(modeId);
+            // 获取当前租户ID
+            Long tenantId = TenantContext.get();
+            if (isAdmin(tenantId)) {
+                tenantId = null;
+            }
+            // 调用带 tenantId 参数的 Mapper 方法
+            return sysModeMapper.incrementUsageCount(modeId, tenantId);
         } catch (Exception e) {
             logger.error("增加模式使用次数失败: modeId={}", modeId, e);
             return 0;

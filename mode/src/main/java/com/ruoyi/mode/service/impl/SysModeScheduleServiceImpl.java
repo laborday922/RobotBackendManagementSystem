@@ -83,9 +83,11 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         sysModeSchedule.setTenantId(TenantContext.get());
         sysModeSchedule.setCreateTime(DateUtils.getNowDate());
         // 生成执行时间描述
-        String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
-                + " " + sysModeSchedule.getStartTime();
-        sysModeSchedule.setExecuteTime(executeTime);
+        if (sysModeSchedule.getStartDate() != null && sysModeSchedule.getStartTime() != null) {
+            String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
+                    + " " + sysModeSchedule.getStartTime();
+            sysModeSchedule.setExecuteTime(executeTime);
+        }
 
         int rows = sysModeScheduleMapper.insertSysModeSchedule(sysModeSchedule);
         // 插入机器人关联
@@ -98,6 +100,9 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     /**
      * 修改排程
      *
+     * 关键修改：只有当 robotIds 不为 null 时才更新机器人关联
+     * 如果 robotIds 为 null，表示不修改机器人关联（保持原样）
+     *
      * @param sysModeSchedule 排程
      * @return 结果
      */
@@ -106,17 +111,27 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     public int updateSysModeSchedule(SysModeSchedule sysModeSchedule)
     {
         sysModeSchedule.setUpdateTime(DateUtils.getNowDate());
-        // 更新执行时间描述
-        String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
-                + " " + sysModeSchedule.getStartTime();
-        sysModeSchedule.setExecuteTime(executeTime);
 
-        // 先删除旧的机器人关联
-        sysModeScheduleMapper.deleteScheduleRobots(sysModeSchedule.getScheduleId());
-        // 再插入新的机器人关联
-        if (sysModeSchedule.getRobotIds() != null && sysModeSchedule.getRobotIds().length > 0) {
-            sysModeScheduleMapper.insertScheduleRobots(sysModeSchedule.getScheduleId(), sysModeSchedule.getRobotIds());
+        // 更新执行时间描述（只有当 startDate 和 startTime 都存在时才更新）
+        if (sysModeSchedule.getStartDate() != null && sysModeSchedule.getStartTime() != null) {
+            String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
+                    + " " + sysModeSchedule.getStartTime();
+            sysModeSchedule.setExecuteTime(executeTime);
         }
+
+        // 关键修改：只有当 robotIds 不为 null 时才更新机器人关联
+        // 如果 robotIds 为 null，表示不修改机器人关联（保持原样）
+        // 这样可以避免定时任务更新 lastExecuteTime 时误删机器人关联
+        if (sysModeSchedule.getRobotIds() != null) {
+            // 先删除旧的机器人关联
+            sysModeScheduleMapper.deleteScheduleRobots(sysModeSchedule.getScheduleId());
+            // 再插入新的机器人关联（只有长度大于0时才插入）
+            if (sysModeSchedule.getRobotIds().length > 0) {
+                sysModeScheduleMapper.insertScheduleRobots(sysModeSchedule.getScheduleId(), sysModeSchedule.getRobotIds());
+            }
+        }
+        // 如果 robotIds 为 null，不执行任何删除/插入操作，保持原有机器人关联
+
         return sysModeScheduleMapper.updateSysModeSchedule(sysModeSchedule);
     }
 

@@ -65,7 +65,7 @@
           <i class="fas fa-undo"></i> 重置
         </el-button>
 
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" style="margin-left: auto;"></right-toolbar>
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" style="margin-left: auto;" />
       </div>
 
       <!-- 调度统计卡片 -->
@@ -132,7 +132,6 @@
 
         <!-- 日历主体 -->
         <div class="calendar-container">
-          <!-- 月份导航 -->
           <div class="month-nav">
             <el-button type="text" @click="prevMonth" :disabled="currentMonth === 0">
               <i class="fas fa-chevron-left"></i> 上个月
@@ -143,21 +142,17 @@
             </el-button>
           </div>
 
-          <!-- 星期标题 -->
           <div class="weekdays">
             <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
           </div>
 
-          <!-- 日历格子 -->
           <div class="calendar-grid">
-            <!-- 空白格子（上月剩余） -->
             <div
               v-for="n in startDayOfMonth"
               :key="'empty-' + n"
               class="calendar-cell empty"
             ></div>
 
-            <!-- 本月日期 -->
             <div
               v-for="day in daysInMonth"
               :key="day"
@@ -167,23 +162,17 @@
             >
               <div class="day-number">{{ day }}</div>
               <div class="task-info" v-if="getDayTasks(day).length > 0">
-                <el-tooltip
-                  placement="top"
-                  :content="getTaskTooltip(day)"
-                  effect="light"
-                >
+                <el-tooltip placement="top" :content="getTaskTooltip(day)" effect="light">
                   <div class="task-count">
                     <span class="total-count">{{ getDayTasks(day).length }}</span>
                   </div>
                 </el-tooltip>
               </div>
-              <!-- 今日标记 -->
               <div v-if="isToday(day)" class="today-mark">今日</div>
             </div>
           </div>
         </div>
 
-        <!-- 图例 -->
         <div class="legend">
           <span><i class="success-dot"></i> 已完成</span>
           <span><i class="partial-dot"></i> 部分完成</span>
@@ -191,6 +180,7 @@
           <span><i class="pending-dot"></i> 待执行</span>
           <span><i class="running-dot"></i> 进行中</span>
           <span><i class="paused-dot"></i> 已暂停</span>
+          <span><i class="future-dot"></i> 未来日期</span>
           <span><i class="today-dot"></i> 今日</span>
           <span><i class="default-dot"></i> 无任务</span>
         </div>
@@ -201,9 +191,12 @@
         <el-table v-loading="loading" :data="scheduleList" @selection-change="handleSelectionChange" border>
           <el-table-column type="selection" width="55" align="center" />
           <el-table-column label="排程名称" align="center" prop="scheduleName" width="150" />
-          <el-table-column label="模式" align="center" prop="modeName" width="100" />
+          <el-table-column label="模式" align="center" width="100">
+            <template slot-scope="scope">
+              {{ getModeNameById(scope.row.modeId) }}
+            </template>
+          </el-table-column>
 
-          <!-- 目标机器人列 - 显示关联的真实机器人 -->
           <el-table-column label="目标机器人" align="center" width="250">
             <template slot-scope="scope">
               <div v-if="scope.row.robots && scope.row.robots.length > 0">
@@ -211,19 +204,19 @@
                   v-for="robot in scope.row.robots"
                   :key="robot.robotId"
                   size="small"
-                  :type="getRobotTagType(robot.status)"
+                  :type="getRobotStatusType(robot.status)"
                   style="margin-right: 5px; margin-bottom: 5px;"
                 >
                   {{ robot.name || `机器人${robot.robotId}` }}
                 </el-tag>
               </div>
               <div v-else-if="scope.row.robotIds && scope.row.robotIds.length > 0">
-                <!-- 如果只有robotIds，从robotOptions中查找 -->
                 <el-tag
                   v-for="robotId in scope.row.robotIds.slice(0, 3)"
                   :key="robotId"
                   size="small"
                   style="margin-right: 5px; margin-bottom: 5px;"
+                  :type="getRobotStatusById(robotId)"
                 >
                   {{ getRobotNameById(robotId) }}
                 </el-tag>
@@ -240,12 +233,18 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="执行时间" align="center" prop="executeTime" width="180" />
-          <el-table-column label="重复" align="center" prop="repeatType" width="100">
+          <el-table-column label="执行规则" align="center" width="180">
+            <template slot-scope="scope">
+              {{ getRepeatRuleText(scope.row) }}
+            </template>
+          </el-table-column>
+
+          <el-table-column label="重复" align="center" width="100">
             <template slot-scope="scope">
               {{ repeatTypeText(scope.row.repeatType) }}
             </template>
           </el-table-column>
+
           <el-table-column label="状态" align="center" width="100">
             <template slot-scope="scope">
               <span :class="'status-tag status-' + scope.row.status">
@@ -253,10 +252,11 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="上次执行" align="center" width="160">
+
+          <el-table-column label="上次执行" align="center" width="180">
             <template slot-scope="scope">
               <div v-if="scope.row.lastExecuteTime">
-                {{ scope.row.lastExecuteTime }}
+                {{ formatDateTime(scope.row.lastExecuteTime) }}
                 <span :class="'status-tag status-' + (scope.row.lastExecuteStatus === 'success' ? 'success' : 'failed')" style="margin-left: 5px;">
                   {{ scope.row.lastExecuteStatus === 'success' ? '成功' : '失败' }}
                 </span>
@@ -264,6 +264,7 @@
               <span v-else>-</span>
             </template>
           </el-table-column>
+
           <el-table-column label="操作" align="center" fixed="right" width="220">
             <template slot-scope="scope">
               <el-button size="mini" type="text" @click="handleUpdate(scope.row)">
@@ -290,7 +291,6 @@
           </el-table-column>
         </el-table>
 
-        <!-- 分页 -->
         <div class="pagination-wrap">
           <pagination
             v-show="total>0"
@@ -304,7 +304,7 @@
     </div>
 
     <!-- 添加或修改排程对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="700px" append-to-body>
+    <el-dialog :title="title" :visible.sync="open" width="750px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
         <el-row>
           <el-col :span="24">
@@ -313,6 +313,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row>
           <el-col :span="12">
             <el-form-item label="模式" prop="modeId">
@@ -328,7 +329,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="重复类型" prop="repeatType">
-              <el-select v-model="form.repeatType" placeholder="请选择重复类型" style="width:100%">
+              <el-select v-model="form.repeatType" placeholder="请选择重复类型" style="width:100%" @change="onRepeatTypeChange">
                 <el-option label="单次" value="once" />
                 <el-option label="每天" value="daily" />
                 <el-option label="每周" value="weekly" />
@@ -338,6 +339,37 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- 每周选择：周几执行 -->
+        <el-row v-if="form.repeatType === 'weekly'">
+          <el-col :span="24">
+            <el-form-item label="选择星期" prop="weekDays">
+              <el-checkbox-group v-model="form.weekDays">
+                <el-checkbox label="1">周一</el-checkbox>
+                <el-checkbox label="2">周二</el-checkbox>
+                <el-checkbox label="3">周三</el-checkbox>
+                <el-checkbox label="4">周四</el-checkbox>
+                <el-checkbox label="5">周五</el-checkbox>
+                <el-checkbox label="6">周六</el-checkbox>
+                <el-checkbox label="7">周日</el-checkbox>
+              </el-checkbox-group>
+              <span class="tip-text">至少选择一个工作日</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 每月选择：几号执行 -->
+        <el-row v-if="form.repeatType === 'monthly'">
+          <el-col :span="24">
+            <el-form-item label="选择日期" prop="monthDays">
+              <el-select v-model="form.monthDays" multiple placeholder="选择每月的几号执行" style="width:100%">
+                <el-option v-for="day in 31" :key="day" :label="day + '号'" :value="day" />
+              </el-select>
+              <span class="tip-text">可选择多个日期</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row>
           <el-col :span="12">
             <el-form-item label="开始日期" prop="startDate">
@@ -362,6 +394,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row>
           <el-col :span="12">
             <el-form-item label="持续时间(小时)" prop="duration">
@@ -378,6 +411,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row>
           <el-col :span="24">
             <el-form-item label="目标机器人" prop="robotIds">
@@ -391,12 +425,15 @@
                 <el-option
                   v-for="robot in robotOptions"
                   :key="robot.robotId"
-                  :label="`${robot.robotName} (${robot.robotCode})`"
+                  :label="`${robot.robotName} (${robot.robotCode || ''})`"
                   :value="robot.robotId"
                 >
                   <span style="float: left">{{ robot.robotName }}</span>
                   <span style="float: right; color: #8492a6; font-size: 13px">
-                    {{ robot.status === 'online' ? '在线' : robot.status === 'low_battery' ? '低电量' : '离线' }}
+                    <el-tag :type="getRobotStatusType(robot.status)" size="mini" style="margin-right: 5px;">
+                      {{ getRobotStatusText(robot.status) }}
+                    </el-tag>
+                    电量: {{ robot.battery || 0 }}%
                   </span>
                 </el-option>
               </el-select>
@@ -414,8 +451,12 @@
     <el-dialog :title="detailTitle" :visible.sync="detailOpen" width="800px" append-to-body>
       <el-table :data="detailSchedules" border>
         <el-table-column label="排程名称" prop="scheduleName" />
-        <el-table-column label="模式" prop="modeName" />
-        <el-table-column label="执行时间" prop="executeTime" />
+        <el-table-column label="模式" align="center">
+          <template slot-scope="scope">
+            {{ getModeNameById(scope.row.modeId) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="执行规则" prop="executeTime" />
         <el-table-column label="机器人" width="200">
           <template slot-scope="scope">
             <div v-if="scope.row.robots && scope.row.robots.length > 0">
@@ -424,6 +465,7 @@
                 :key="robot.robotId"
                 size="small"
                 style="margin-right: 5px;"
+                :type="getRobotStatusType(robot.status)"
               >
                 {{ robot.robotName }}
               </el-tag>
@@ -451,7 +493,11 @@
     <el-dialog :title="selectedDate + ' 任务详情'" :visible.sync="taskDetailVisible" width="700px">
       <el-table :data="selectedDayTasks" border>
         <el-table-column label="排程名称" prop="scheduleName" />
-        <el-table-column label="模式" prop="modeName" />
+        <el-table-column label="模式" align="center">
+          <template slot-scope="scope">
+            {{ getModeNameById(scope.row.modeId) }}
+          </template>
+        </el-table-column>
         <el-table-column label="机器人" width="200">
           <template slot-scope="scope">
             <div v-if="scope.row.robots && scope.row.robots.length > 0">
@@ -460,6 +506,7 @@
                 :key="robot.robotId"
                 size="small"
                 style="margin-right: 5px;"
+                :type="getRobotStatusType(robot.status)"
               >
                 {{ robot.robotName }}
               </el-tag>
@@ -504,7 +551,7 @@ export default {
       scheduleList: [],
       modeOptions: [],
       robotOptions: [],
-      robotMap: {}, // 添加机器人ID到机器人对象的映射
+      robotMap: {},
       title: "",
       open: false,
       detailOpen: false,
@@ -528,12 +575,16 @@ export default {
         scheduleId: null,
         scheduleName: null,
         modeId: null,
+        modeName: null,
         robotIds: [],
         startDate: null,
         startTime: null,
         repeatType: 'daily',
+        repeatRule: null,
+        weekDays: [],
+        monthDays: [],
         duration: 2,
-        status: 'pending'
+        status: 'running'
       },
       rules: {
         scheduleName: [
@@ -550,24 +601,26 @@ export default {
         ],
         startTime: [
           { required: true, message: "请选择开始时间", trigger: "change" }
+        ],
+        weekDays: [
+          { required: true, message: "请至少选择一个星期", trigger: "change" }
+        ],
+        monthDays: [
+          { required: true, message: "请至少选择一个日期", trigger: "change" }
         ]
       },
 
-      // 视图模式相关
       viewMode: 'table',
       calendarYear: new Date().getFullYear(),
       currentMonth: new Date().getMonth(),
 
-      // 日历数据
       calendarData: [],
       weekdays: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
 
-      // 任务详情相关
       taskDetailVisible: false,
       selectedDate: '',
       selectedDayTasks: [],
 
-      // 日历统计
       calendarStats: {
         success: 0,
         partial: 0,
@@ -578,15 +631,23 @@ export default {
         total: 0
       },
 
-      // 日期选择器选项
       datePickerOptions: {
         disabledDate(time) {
           return time.getTime() < new Date('2024-01-01').getTime();
         }
       },
 
-      // 今日日期
-      todayDate: ''
+      todayDate: '',
+
+      weekMap: {
+        1: '周一',
+        2: '周二',
+        3: '周三',
+        4: '周四',
+        5: '周五',
+        6: '周六',
+        7: '周日'
+      }
     };
   },
   computed: {
@@ -600,7 +661,7 @@ export default {
     },
     currentMonthName() {
       const months = ['一月', '二月', '三月', '四月', '五月', '六月',
-        '七月', '八月', '九月', '十月', '十一月', '十二月'];
+                      '七月', '八月', '九月', '十月', '十一月', '十二月'];
       return months[this.currentMonth];
     }
   },
@@ -611,23 +672,157 @@ export default {
     this.setTodayDate();
   },
   methods: {
-    // 获取机器人标签类型（根据状态）
-    getRobotTagType(status) {
-      const typeMap = {
-        'online': 'success',
-        'low_battery': 'warning',
-        'offline': 'info'
-      };
-      return typeMap[status] || 'info';
+    // 格式化日期时间：将 ISO 格式转换为 YYYY-MM-DD HH:mm
+    formatDateTime(dateTime) {
+      if (!dateTime) return '-';
+
+      // 如果已经是 YYYY-MM-DD HH:mm:ss 格式，截取到分钟
+      if (typeof dateTime === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateTime)) {
+        return dateTime.substring(0, 16);
+      }
+
+      // 如果已经是 YYYY-MM-DD HH:mm 格式，直接返回
+      if (typeof dateTime === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(dateTime)) {
+        return dateTime;
+      }
+
+      try {
+        const date = new Date(dateTime);
+        if (isNaN(date.getTime())) return dateTime;
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      } catch (e) {
+        return dateTime;
+      }
     },
 
-    // 根据机器人ID获取机器人名称
+    // 格式化日期：将 ISO 格式转换为 YYYY-MM-DD
+    formatDate(date) {
+      if (!date) return '-';
+
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+      }
+
+      try {
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return date;
+
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+      } catch (e) {
+        return date;
+      }
+    },
+
+    getModeNameById(modeId) {
+      const mode = this.modeOptions.find(m => m.modeId === modeId);
+      return mode ? mode.modeName : '未知';
+    },
+
+    getRepeatRuleText(row) {
+      const time = row.startTime || '';
+      if (!time) return row.repeatType;
+
+      switch (row.repeatType) {
+        case 'once':
+          return this.formatDate(row.startDate) || '单次';
+        case 'daily':
+          return `每天 ${time}`;
+        case 'weekdays':
+          return `工作日 ${time}`;
+        case 'weekly':
+          if (row.repeatRule) {
+            try {
+              const rule = JSON.parse(row.repeatRule);
+              if (rule.type === 'weekly' && rule.days) {
+                const weekText = rule.days.map(d => this.weekMap[d]).join('、');
+                return `${weekText} ${time}`;
+              }
+            } catch(e) {}
+          }
+          return `每周 ${time}`;
+        case 'monthly':
+          if (row.repeatRule) {
+            try {
+              const rule = JSON.parse(row.repeatRule);
+              if (rule.type === 'monthly' && rule.days) {
+                const dayText = rule.days.map(d => d + '号').join('、');
+                return `每月${dayText} ${time}`;
+              }
+            } catch(e) {}
+          }
+          return `每月 ${time}`;
+        default:
+          return row.repeatType;
+      }
+    },
+
+    onRepeatTypeChange(type) {
+      if (type === 'weekly') {
+        if (this.form.weekDays.length === 0) {
+          this.form.weekDays = ['1', '2', '3', '4', '5'];
+        }
+      } else if (type === 'monthly') {
+        if (this.form.monthDays.length === 0) {
+          this.form.monthDays = [1];
+        }
+      }
+    },
+
+    buildRepeatRule() {
+      if (this.form.repeatType === 'weekly' && this.form.weekDays.length > 0) {
+        return JSON.stringify({
+          type: 'weekly',
+          days: this.form.weekDays.map(Number)
+        });
+      } else if (this.form.repeatType === 'monthly' && this.form.monthDays.length > 0) {
+        return JSON.stringify({
+          type: 'monthly',
+          days: this.form.monthDays
+        });
+      }
+      return null;
+    },
+
+    getRobotStatusType(status) {
+      const statusNum = Number(status);
+      if (statusNum === 1) return 'success';
+      if (statusNum === 0) return 'info';
+      if (statusNum === 2) return 'warning';
+      return 'info';
+    },
+
+    getRobotStatusText(status) {
+      const statusNum = Number(status);
+      if (statusNum === 1) return '在线';
+      if (statusNum === 0) return '离线';
+      if (statusNum === 2) return '待机';
+      return '未知';
+    },
+
+    getRobotStatusById(robotId) {
+      const robot = this.robotMap[robotId];
+      if (robot) {
+        return this.getRobotStatusType(robot.status);
+      }
+      return 'info';
+    },
+
     getRobotNameById(robotId) {
       const robot = this.robotMap[robotId];
       if (robot) {
         return robot.robotName;
       }
-      // 从robotOptions中查找
       const found = this.robotOptions.find(r => r.robotId === robotId);
       if (found) {
         return found.robotName;
@@ -635,7 +830,6 @@ export default {
       return `机器人${robotId}`;
     },
 
-    // 获取重复类型文本
     repeatTypeText(type) {
       const map = {
         'once': '单次',
@@ -654,11 +848,8 @@ export default {
         this.total = response.total || 0;
         this.loading = false;
 
-        // 调试：打印第一条数据的robots字段
         if (this.scheduleList.length > 0) {
           console.log('排程数据示例:', this.scheduleList[0]);
-          console.log('robots字段:', this.scheduleList[0].robots);
-          console.log('robotIds字段:', this.scheduleList[0].robotIds);
         }
 
         this.calculateStats();
@@ -681,14 +872,19 @@ export default {
 
     getRobotOptions() {
       listRobot({ pageNum: 1, pageSize: 100 }).then(response => {
-        this.robotOptions = response.rows || [];
-        // 构建机器人ID到机器人对象的映射
+        const rows = response.rows || [];
+        this.robotOptions = rows.map(robot => ({
+          robotId: robot.id || robot.robotId,
+          robotName: robot.name || robot.robotName,
+          robotCode: robot.code || robot.robotCode,
+          status: robot.status,
+          battery: robot.battery || 0
+        }));
         this.robotMap = {};
         this.robotOptions.forEach(robot => {
           this.robotMap[robot.robotId] = robot;
         });
         console.log('机器人列表加载完成，共', this.robotOptions.length, '个机器人');
-        console.log('机器人映射:', this.robotMap);
       }).catch(error => {
         console.error('获取机器人列表失败:', error);
       });
@@ -736,16 +932,67 @@ export default {
       this.reset();
       const scheduleId = row.scheduleId || this.ids;
       getSchedule(scheduleId).then(response => {
-        this.form = response.data;
-        if (this.form.robots) {
-          this.form.robotIds = this.form.robots.map(r => r.robotId);
-        } else if (this.form.robotIds) {
-          // 保持原有的robotIds
+        const data = response.data;
+
+        let weekDays = [];
+        let monthDays = [];
+        if (data.repeatRule) {
+          try {
+            const rule = JSON.parse(data.repeatRule);
+            if (rule.type === 'weekly') {
+              weekDays = rule.days.map(String);
+            } else if (rule.type === 'monthly') {
+              monthDays = rule.days;
+            }
+          } catch(e) {
+            console.error('解析重复规则失败:', e);
+          }
         }
+
+        let startDate = data.startDate;
+        if (startDate && typeof startDate === 'string' && !startDate.includes('-')) {
+          startDate = this.formatDate(startDate);
+        }
+
+        let startTime = data.startTime;
+        if (startTime && startTime.length === 5) {
+          startTime = startTime;
+        }
+
+        this.form = {
+          scheduleId: data.scheduleId ? Number(data.scheduleId) : null,
+          scheduleName: data.scheduleName,
+          modeId: data.modeId ? Number(data.modeId) : null,
+          modeName: data.modeName,
+          robotIds: [],
+          startDate: startDate,
+          startTime: startTime,
+          repeatType: data.repeatType || 'daily',
+          repeatRule: data.repeatRule,
+          weekDays: weekDays,
+          monthDays: monthDays,
+          duration: data.duration ? Number(data.duration) : 2,
+          status: data.status || 'running'
+        };
+
+        if (!this.form.modeName && this.form.modeId) {
+          const mode = this.modeOptions.find(m => m.modeId === this.form.modeId);
+          if (mode) {
+            this.form.modeName = mode.modeName;
+          }
+        }
+
+        if (data.robots) {
+          this.form.robotIds = data.robots.map(r => Number(r.robotId));
+        } else if (data.robotIds) {
+          this.form.robotIds = data.robotIds.map(id => Number(id));
+        }
+
         this.open = true;
         this.title = "修改排程";
       }).catch(error => {
         console.error('获取排程详情失败:', error);
+        this.$modal.msgError("获取排程详情失败");
       });
     },
 
@@ -810,12 +1057,16 @@ export default {
         scheduleId: null,
         scheduleName: null,
         modeId: null,
+        modeName: null,
         robotIds: [],
         startDate: tomorrowStr,
         startTime: '08:00',
         repeatType: 'daily',
+        repeatRule: null,
+        weekDays: [],
+        monthDays: [],
         duration: 2,
-        status: 'pending'
+        status: 'running'
       };
       if (this.$refs.form) {
         this.$refs.form.clearValidate();
@@ -830,21 +1081,74 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (this.form.repeatType === 'weekly' && this.form.weekDays.length === 0) {
+            this.$modal.msgError("请至少选择一个星期");
+            return;
+          }
+          if (this.form.repeatType === 'monthly' && this.form.monthDays.length === 0) {
+            this.$modal.msgError("请至少选择一个日期");
+            return;
+          }
+
+          let formattedStartDate = this.form.startDate;
+          if (formattedStartDate && formattedStartDate.includes('T')) {
+            formattedStartDate = formattedStartDate.split('T')[0];
+          }
+
+          let formattedStartTime = this.form.startTime;
+          if (formattedStartTime && formattedStartTime.includes(':')) {
+            const parts = formattedStartTime.split(':');
+            formattedStartTime = parts[0] + ':' + parts[1];
+          }
+
+          const repeatRule = this.buildRepeatRule();
+
+          const submitData = {
+            scheduleId: this.form.scheduleId ? Number(this.form.scheduleId) : null,
+            scheduleName: this.form.scheduleName,
+            modeId: this.form.modeId ? Number(this.form.modeId) : null,
+            modeName: null,
+            robotIds: this.form.robotIds ? this.form.robotIds.map(id => Number(id)) : [],
+            startDate: formattedStartDate,
+            startTime: formattedStartTime,
+            repeatType: this.form.repeatType,
+            repeatRule: repeatRule,
+            duration: this.form.duration ? Number(this.form.duration) : 2,
+            status: this.form.status
+          };
+
+          const selectedMode = this.modeOptions.find(m => m.modeId === Number(this.form.modeId));
+          if (selectedMode) {
+            submitData.modeName = selectedMode.modeName;
+          }
+
+          console.log('提交的数据:', submitData);
+
           if (this.form.scheduleId != null) {
-            updateSchedule(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
+            updateSchedule(submitData).then(response => {
+              if (response.code === 200) {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              } else {
+                this.$modal.msgError(response.msg || "修改失败");
+              }
             }).catch(error => {
-              console.error('修改排程失败:', error);
+              console.error('修改失败:', error);
+              this.$modal.msgError("修改失败：" + (error.response?.data?.msg || error.message || '未知错误'));
             });
           } else {
-            addSchedule(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
+            addSchedule(submitData).then(response => {
+              if (response.code === 200) {
+                this.$modal.msgSuccess("新增成功");
+                this.open = false;
+                this.getList();
+              } else {
+                this.$modal.msgError(response.msg || "新增失败");
+              }
             }).catch(error => {
-              console.error('新增排程失败:', error);
+              console.error('新增失败:', error);
+              this.$modal.msgError("新增失败：" + (error.response?.data?.msg || error.message || '未知错误'));
             });
           }
         }
@@ -859,45 +1163,142 @@ export default {
     buildCalendarData() {
       this.calendarData = [];
 
+      const firstDayOfMonth = new Date(this.calendarYear, this.currentMonth, 1);
+      const lastDayOfMonth = new Date(this.calendarYear, this.currentMonth + 1, 0);
+
+      const startDate = new Date(firstDayOfMonth);
+      startDate.setDate(startDate.getDate() - 15);
+      const endDate = new Date(lastDayOfMonth);
+      endDate.setDate(endDate.getDate() + 15);
+
       this.scheduleList.forEach(schedule => {
-        let taskDate = null;
+        const executeDates = this.getScheduleExecuteDates(schedule, startDate, endDate);
 
-        // 从 executeTime 或 startDate 获取日期
-        if (schedule.executeTime) {
-          const dateMatch = schedule.executeTime.match(/(\d{4}-\d{2}-\d{2})/);
-          if (dateMatch) {
-            taskDate = dateMatch[1];
-          }
-        }
-        if (!taskDate && schedule.startDate) {
-          taskDate = schedule.startDate;
-        }
-
-        if (taskDate) {
-          let dayData = this.calendarData.find(d => d.date === taskDate);
+        executeDates.forEach(dateStr => {
+          let dayData = this.calendarData.find(d => d.date === dateStr);
           if (!dayData) {
-            dayData = { date: taskDate, tasks: [] };
+            dayData = { date: dateStr, tasks: [] };
             this.calendarData.push(dayData);
           }
 
+          const taskStatus = this.getTaskStatusForDate(schedule, dateStr);
+
           dayData.tasks.push({
             ...schedule,
-            displayStatus: this.getTaskStatusForDate(schedule, taskDate)
+            displayStatus: taskStatus
           });
-        }
+        });
       });
 
       this.calendarData.sort((a, b) => a.date.localeCompare(b.date));
       this.calculateCalendarStats();
     },
 
+    getScheduleExecuteDates(schedule, startDate, endDate) {
+      const dates = [];
+      const currentDate = new Date(startDate);
+
+      let scheduleStartDate = null;
+      if (schedule.startDate) {
+        scheduleStartDate = new Date(schedule.startDate);
+      }
+
+      let weeklyDays = [];
+      let monthlyDays = [];
+      if (schedule.repeatRule) {
+        try {
+          const rule = JSON.parse(schedule.repeatRule);
+          if (rule.type === 'weekly') {
+            weeklyDays = rule.days;
+          } else if (rule.type === 'monthly') {
+            monthlyDays = rule.days;
+          }
+        } catch(e) {}
+      }
+
+      while (currentDate <= endDate) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const day = currentDate.getDate();
+        const weekDay = currentDate.getDay();
+        const cnWeekDay = weekDay === 0 ? 7 : weekDay;
+
+        let shouldExecute = false;
+
+        switch (schedule.repeatType) {
+          case 'once':
+            if (scheduleStartDate) {
+              const onceDate = new Date(schedule.startDate);
+              if (onceDate.toDateString() === currentDate.toDateString()) {
+                shouldExecute = true;
+              }
+            }
+            break;
+          case 'daily':
+            shouldExecute = true;
+            break;
+          case 'weekdays':
+            if (cnWeekDay >= 1 && cnWeekDay <= 5) {
+              shouldExecute = true;
+            }
+            break;
+          case 'weekly':
+            if (weeklyDays.length > 0) {
+              if (weeklyDays.includes(cnWeekDay)) {
+                shouldExecute = true;
+              }
+            } else if (scheduleStartDate && scheduleStartDate.getDay() === weekDay) {
+              shouldExecute = true;
+            }
+            break;
+          case 'monthly':
+            if (monthlyDays.length > 0) {
+              if (monthlyDays.includes(day)) {
+                shouldExecute = true;
+              }
+            } else if (scheduleStartDate && scheduleStartDate.getDate() === day) {
+              shouldExecute = true;
+            }
+            break;
+          default:
+            shouldExecute = false;
+        }
+
+        if (schedule.repeatType === 'once' && scheduleStartDate && scheduleStartDate < currentDate) {
+          shouldExecute = false;
+        }
+
+        if (shouldExecute) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          dates.push(dateStr);
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      return dates;
+    },
+
     getTaskStatusForDate(schedule, dateStr) {
       const taskDate = new Date(dateStr);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      taskDate.setHours(0, 0, 0, 0);
 
+      // 未来日期统一返回 pending（待执行）
       if (taskDate > today) {
-        return schedule.status || 'pending';
+        return 'pending';
+      }
+
+      if (schedule.status === 'paused') {
+        return 'paused';
+      }
+
+      if (schedule.status === 'running') {
+        if (taskDate < today) {
+          return 'success';
+        }
+        return 'pending';
       }
 
       if (schedule.lastExecuteStatus) {
@@ -922,23 +1323,27 @@ export default {
 
     getCellClass(day) {
       const tasks = this.getDayTasks(day);
-      if (tasks.length === 0) return '';
 
+      // 获取当前日期
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const currentDate = new Date(parseInt(this.calendarYear), this.currentMonth, day);
-      const isPast = currentDate < today;
+      currentDate.setHours(0, 0, 0, 0);
 
-      if (!isPast) {
-        return 'future-cell';
+      // 未来日期：统一使用待执行样式（灰色）
+      if (currentDate > today) {
+        return 'future-pending-cell';
       }
 
+      if (tasks.length === 0) return '';
+
       const statusCounts = {
-        success: tasks.filter(t => t.lastExecuteStatus === 'success' || t.status === 'completed' || t.status === 'success').length,
-        partial: tasks.filter(t => t.lastExecuteStatus === 'partial' || t.status === 'partial').length,
-        failed: tasks.filter(t => t.lastExecuteStatus === 'failed' || t.status === 'failed').length,
-        running: tasks.filter(t => t.status === 'running').length,
-        paused: tasks.filter(t => t.status === 'paused').length,
-        pending: tasks.filter(t => t.status === 'pending').length
+        success: tasks.filter(t => t.displayStatus === 'success' || t.displayStatus === 'completed').length,
+        partial: tasks.filter(t => t.displayStatus === 'partial').length,
+        failed: tasks.filter(t => t.displayStatus === 'failed').length,
+        running: tasks.filter(t => t.displayStatus === 'running').length,
+        paused: tasks.filter(t => t.displayStatus === 'paused').length,
+        pending: tasks.filter(t => t.displayStatus === 'pending').length
       };
 
       if (statusCounts.failed > 0) return 'failed-cell';
@@ -954,12 +1359,12 @@ export default {
     getTaskTooltip(day) {
       const tasks = this.getDayTasks(day);
 
-      const success = tasks.filter(t => t.lastExecuteStatus === 'success' || t.status === 'completed' || t.status === 'success').length;
-      const partial = tasks.filter(t => t.lastExecuteStatus === 'partial' || t.status === 'partial').length;
-      const failed = tasks.filter(t => t.lastExecuteStatus === 'failed' || t.status === 'failed').length;
-      const running = tasks.filter(t => t.status === 'running').length;
-      const paused = tasks.filter(t => t.status === 'paused').length;
-      const pending = tasks.filter(t => t.status === 'pending').length;
+      const success = tasks.filter(t => t.displayStatus === 'success' || t.displayStatus === 'completed').length;
+      const partial = tasks.filter(t => t.displayStatus === 'partial').length;
+      const failed = tasks.filter(t => t.displayStatus === 'failed').length;
+      const running = tasks.filter(t => t.displayStatus === 'running').length;
+      const paused = tasks.filter(t => t.displayStatus === 'paused').length;
+      const pending = tasks.filter(t => t.displayStatus === 'pending').length;
 
       let tooltip = `共 ${tasks.length} 个任务\n`;
       if (success > 0) tooltip += `✅ 成功: ${success}\n`;
@@ -979,6 +1384,7 @@ export default {
         this.currentMonth = 11;
         this.calendarYear = parseInt(this.calendarYear) - 1;
       }
+      this.buildCalendarData();
     },
 
     nextMonth() {
@@ -988,6 +1394,7 @@ export default {
         this.currentMonth = 0;
         this.calendarYear = parseInt(this.calendarYear) + 1;
       }
+      this.buildCalendarData();
     },
 
     showDayDetail(day) {
@@ -1007,7 +1414,7 @@ export default {
 
       this.calendarData.forEach(day => {
         day.tasks.forEach(task => {
-          const status = task.displayStatus || task.lastExecuteStatus || task.status;
+          const status = task.displayStatus;
           if (status === 'success' || status === 'completed') success++;
           else if (status === 'partial') partial++;
           else if (status === 'failed') failed++;
@@ -1034,7 +1441,6 @@ export default {
 </script>
 
 <style scoped>
-/* ========== 卡片样式 ========== */
 .card {
   background: white;
   border-radius: 10px;
@@ -1078,7 +1484,6 @@ export default {
   flex-wrap: wrap;
 }
 
-/* 筛选栏样式 */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -1096,7 +1501,6 @@ export default {
   margin-right: 4px;
 }
 
-/* 统计卡片 */
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1167,7 +1571,6 @@ export default {
   margin-top: 4px;
 }
 
-/* 统计项（用于日历统计） */
 .stat-item {
   background: white;
   border-radius: 8px;
@@ -1205,7 +1608,6 @@ export default {
   font-size: 12px;
 }
 
-/* 日历视图 */
 .calendar-view {
   margin-top: 20px;
 }
@@ -1318,7 +1720,7 @@ export default {
   font-size: 12px;
 }
 
-/* 单元格颜色 */
+/* 样式类 */
 .success-cell {
   background-color: #f0f9eb;
 }
@@ -1343,16 +1745,29 @@ export default {
   background-color: #fdf6ec;
 }
 
-.future-cell {
-  background-color: #e8f4fe;
-  border: 1px dashed #409eff;
+/* 未来日期 - 统一灰色待执行样式 */
+.future-pending-cell {
+  background-color: #f5f5f5;
+  opacity: 0.85;
+}
+
+.future-pending-cell .day-number {
+  color: #999;
+}
+
+.future-pending-cell .task-count .total-count {
+  background-color: #e0e0e0;
+  color: #888;
+}
+
+.future-pending-cell:hover {
+  background-color: #e8e8e8;
 }
 
 .mixed-cell {
   background: linear-gradient(135deg, #f0f9eb 0%, #fdf6ec 50%, #fef0f0 100%);
 }
 
-/* 图例 */
 .legend {
   display: flex;
   gap: 15px;
@@ -1369,7 +1784,8 @@ export default {
   color: #909399;
 }
 
-.success-dot, .partial-dot, .failed-dot, .pending-dot, .running-dot, .paused-dot, .today-dot, .default-dot {
+.success-dot, .partial-dot, .failed-dot, .pending-dot, .running-dot,
+.paused-dot, .future-dot, .today-dot, .default-dot {
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -1406,6 +1822,11 @@ export default {
   border: 2px solid #e6a23c;
 }
 
+.future-dot {
+  background-color: #f5f5f5;
+  border: 2px solid #999;
+}
+
 .today-dot {
   background-color: #fff;
   border: 2px solid #409eff;
@@ -1426,21 +1847,18 @@ export default {
   border: 1px solid #dcdfe6;
 }
 
-/* 分页包装 */
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
 }
 
-/* 按钮激活状态 */
 .el-button.active {
   background-color: #1890ff !important;
   color: white !important;
   border-color: #1890ff !important;
 }
 
-/* 表格按钮样式 */
 .el-button.danger {
   color: #f56c6c;
 }
@@ -1455,7 +1873,6 @@ export default {
   font-style: italic;
 }
 
-/* 状态标签样式 */
 .status-tag {
   padding: 2px 8px;
   border-radius: 4px;
@@ -1487,7 +1904,19 @@ export default {
   color: #f56c6c;
 }
 
-/* 响应式调整 */
+.tip-text {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+  display: block;
+}
+
+.el-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (max-width: 992px) {
   .stats-cards {
     grid-template-columns: repeat(2, 1fr);

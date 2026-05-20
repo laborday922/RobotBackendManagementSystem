@@ -104,6 +104,7 @@
                   <div class="point-info">
                     <div class="point-name">{{ point.pointName }}</div>
                     <div class="point-code" v-if="point.pointCode">{{ point.pointCode }}</div>
+                    <div class="point-id" v-if="point.pointId">ID: {{ point.pointId }}</div>
                   </div>
                   <div class="point-status" v-if="point.status === '0'">
                     <el-tag type="info" size="mini">禁用</el-tag>
@@ -132,7 +133,7 @@
           <el-card class="sub-card" shadow="never">
             <div class="selected-point-info" v-if="selectedPoint">
               <i class="el-icon-location"></i>
-              <span>正在配置：<strong>{{ selectedPoint.pointName }}</strong></span>
+              <span>正在配置：<strong>{{ selectedPoint.pointName }}</strong> (ID: {{ selectedPoint.pointId }})</span>
             </div>
             <div class="selected-point-info empty" v-else>
               <i class="el-icon-info"></i>
@@ -202,7 +203,7 @@
       </el-row>
     </el-card>
 
-    <!-- 添加/编辑点位对话框 - 无坐标字段，包含机器人位置选择（仅记录位置ID，不发送坐标） -->
+    <!-- 添加/编辑点位对话框 -->
     <el-dialog
       :title="dialogTitle"
       :visible.sync="showAddPointDialog"
@@ -210,8 +211,8 @@
       @close="resetPointForm"
     >
       <el-form :model="pointForm" :rules="pointRules" ref="pointForm" label-width="100px">
-        <!-- 从机器人获取点位位置（仅用于记录位置ID，不用于坐标） -->
-        <el-form-item label="点位位置" prop="robotPositionId">
+        <!-- 从机器人获取点位位置（选中的值将直接作为 point_id 存储） -->
+        <el-form-item label="点位位置" prop="robotPositionId" required>
           <el-select
             v-model="pointForm.robotPositionId"
             placeholder="请选择点位位置（从机器人获取）"
@@ -229,12 +230,12 @@
             >
               <span>{{ pos.name }}</span>
               <span style="float: right; color: #8492a6; font-size: 12px;">
-                {{ pos.code || '' }}
+                点位ID: {{ pos.id }}
               </span>
             </el-option>
           </el-select>
-          <div style="font-size: 12px; color: #909399; margin-top: 5px;">
-            <i class="el-icon-info"></i> 点击下拉框自动从机器人获取点位列表，仅用于关联机器人位置ID
+          <div style="font-size: 12px; color: #e6a23c; margin-top: 5px;">
+            <i class="el-icon-warning"></i> 选择的点位位置ID将直接作为点位ID存储
           </div>
         </el-form-item>
 
@@ -300,7 +301,8 @@ import {
   deletePoint,
   getPointVoiceConfig,
   savePointVoiceConfig,
-  getPointOptionsFromRobot          // 新增：统一获取点位接口
+  getPointOptionsFromRobot,
+  getPointsByRobotId
 } from "@/api/function/point";
 import { listRobot } from "@/api/mode/robot";
 
@@ -340,10 +342,13 @@ export default {
         orderNum: 0,
         status: '1',
         remark: '',
-        robotPositionId: null
+        robotPositionId: null  // 这个值将作为 point_id 存储
       },
       pointSubmitting: false,
       pointRules: {
+        robotPositionId: [
+          { required: true, message: '请选择点位位置', trigger: 'change' }
+        ],
         pointName: [
           { required: true, message: '请输入点位名称', trigger: 'blur' },
           { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
@@ -361,7 +366,6 @@ export default {
         afterMsg: ''
       },
       savingVoice: false,
-      // 机器人位置相关（从统一接口获取）
       loadingPositions: false,
       positionList: [],
       positionsCache: null,
@@ -468,6 +472,25 @@ export default {
           return isNotDeleted && isEnabled;
         });
         this.mapList.forEach(map => this.loadPointCount(map));
+
+        const hasDefaultMap = this.mapList.some(m => m.mapId === 0);
+
+        if (!hasDefaultMap) {
+          this.mapList.unshift({
+            mapId: 0,
+            mapName: '默认地图',
+            pointCount: 0,
+            status: '1',
+            delFlag: '0'
+          });
+        }
+
+        if (!this.navConfig.mapId) {
+          this.navConfig.mapId = 0;
+          this.loadPoints();
+          this.loadMapImage();
+        }
+
         if (this.navConfig.mapId && !this.mapList.some(m => m.mapId === this.navConfig.mapId)) {
           this.navConfig.mapId = null;
           this.pointList = [];
@@ -479,6 +502,14 @@ export default {
       }).catch(error => {
         console.error('加载地图列表失败:', error);
         this.mapList = [];
+        this.mapList = [{
+          mapId: 0,
+          mapName: '默认地图',
+          pointCount: 0,
+          status: '1',
+          delFlag: '0'
+        }];
+        this.navConfig.mapId = 0;
       });
     },
 
@@ -490,11 +521,13 @@ export default {
     },
 
     loadMapImage() {
-      if (!this.navConfig.mapId) {
+      const mapId = this.navConfig.mapId || 0;
+      if (!mapId) {
         this.mapImageUrl = '';
         return;
       }
-      const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+
+      const currentMap = this.mapList.find(m => m.mapId === mapId);
       if (currentMap && currentMap.mapBase64) {
         this.mapImageUrl = currentMap.mapBase64;
         return;
@@ -503,7 +536,11 @@ export default {
         this.mapImageUrl = currentMap.mapUrl;
         return;
       }
-      getMap(this.navConfig.mapId).then(response => {
+      if (mapId === 0) {
+        this.mapImageUrl = '';
+        return;
+      }
+      getMap(mapId).then(response => {
         const mapData = response.data;
         if (mapData) {
           this.mapImageUrl = mapData.mapBase64 || (mapData.mapUrl && mapData.mapUrl.startsWith('data:image') ? mapData.mapUrl : '');
@@ -524,13 +561,10 @@ export default {
     },
 
     loadPoints() {
-      if (!this.navConfig.mapId) {
-        this.pointList = [];
-        return;
-      }
-      getPointListByMap(this.navConfig.mapId).then(response => {
+      const mapId = this.navConfig.mapId || 0;
+      getPointListByMap(mapId).then(response => {
         this.pointList = response.data || response.rows || [];
-        const currentMap = this.mapList.find(m => m.mapId === this.navConfig.mapId);
+        const currentMap = this.mapList.find(m => m.mapId === mapId);
         if (currentMap) currentMap.pointCount = this.pointList.length;
       }).catch(error => {
         console.error('加载点位列表失败:', error);
@@ -686,7 +720,7 @@ export default {
     async selectPoint(point) {
       if (point.status === '0') { this.$message.warning('该点位已禁用，无法配置播报'); return; }
       this.selectedPoint = point;
-      this.$message.info(`已选中点位：${point.pointName}`);
+      this.$message.info(`已选中点位：${point.pointName} (ID: ${point.pointId})`);
       await this.loadPointVoiceConfig(point.pointId);
     },
 
@@ -751,7 +785,8 @@ export default {
     },
 
     /**
-     * 从机器人获取点位位置列表（与任务模块完全一致）
+     * 从机器人获取点位位置列表
+     * 返回的 value 将直接作为 point_id 存储
      */
     async loadPositionsFromRobot() {
       if (!this.selectedRobotId) {
@@ -759,7 +794,6 @@ export default {
         return;
       }
 
-      // 缓存检查
       if (this.positionsCache && this.lastRobotId === this.selectedRobotId) {
         this.positionList = this.positionsCache;
         return;
@@ -767,14 +801,12 @@ export default {
 
       this.loadingPositions = true;
       try {
-        // 调用任务模块的动态参数接口
         const res = await getPointOptionsFromRobot(this.selectedRobotId);
         if (res.code === 200 && res.data) {
-          // 查找 paramKey = 'position' 的动态参数
           const positionParam = res.data.find(p => p.paramKey === 'position');
           if (positionParam && positionParam.options && positionParam.options.length > 0) {
             this.positionList = positionParam.options.map(opt => ({
-              id: opt.value,
+              id: parseInt(opt.value),  // 确保是数字类型，将作为 point_id
               name: opt.label
             }));
             this.positionsCache = this.positionList;
@@ -806,7 +838,7 @@ export default {
         orderNum: point.orderNum || 0,
         status: point.status || '1',
         remark: point.remark || '',
-        robotPositionId: point.robotPositionId || null
+        robotPositionId: point.pointId  // 编辑时，robotPositionId 就是当前的 pointId
       };
       this.positionList = [];
       this.showAddPointDialog = true;
@@ -847,9 +879,22 @@ export default {
     submitPointForm() {
       this.$refs.pointForm.validate((valid) => {
         if (!valid) return;
+
+        // 检查是否选择了点位位置
+        if (!this.pointForm.robotPositionId) {
+          this.$message.warning('请选择点位位置');
+          return;
+        }
+
         this.pointSubmitting = true;
+
+        const mapId = this.navConfig.mapId || 0;
+
+        // 关键：将 robotPositionId 作为 pointId 传递给后端
         const formData = {
-          mapId: this.navConfig.mapId,
+          pointId: this.pointForm.robotPositionId,  // 选择的点位位置ID直接作为 point_id
+          mapId: mapId,
+          robotId: this.selectedRobotId,
           pointName: this.pointForm.pointName,
           pointCode: this.pointForm.pointCode,
           pointType: this.pointForm.pointType,
@@ -858,18 +903,31 @@ export default {
           remark: this.pointForm.remark,
           robotPositionId: this.pointForm.robotPositionId
         };
+
+        // 编辑模式：如果有点位ID且与选择的机器人位置ID不同，需要特殊处理
         if (this.pointForm.pointId) {
           formData.pointId = this.pointForm.pointId;
         }
-        const apiCall = formData.pointId ? updatePoint(formData) : addPoint(formData);
+
+        const apiCall = formData.pointId && formData.pointId === this.pointForm.pointId ?
+          updatePoint(formData) : addPoint(formData);
+
         apiCall.then(() => {
           this.$message.success(this.pointForm.pointId ? '更新成功' : '添加成功');
           this.showAddPointDialog = false;
           this.loadPoints();
         }).catch(error => {
           console.error('保存点位失败:', error);
-          this.$message.error('保存失败');
-        }).finally(() => { this.pointSubmitting = false; });
+          let errorMsg = '保存失败';
+          if (error.response && error.response.data && error.response.data.msg) {
+            errorMsg = error.response.data.msg;
+          } else if (error.message) {
+            errorMsg = error.message;
+          }
+          this.$message.error(errorMsg);
+        }).finally(() => {
+          this.pointSubmitting = false;
+        });
       });
     }
   }
@@ -1284,6 +1342,13 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.point-id {
+  font-size: 10px;
+  color: #c0c4cc;
+  margin-top: 2px;
+  font-family: monospace;
 }
 
 .point-status {

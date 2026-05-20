@@ -22,6 +22,13 @@ public interface ISysTourService {
 
     // 讲解路线
     List<SysTourRoute> getRouteList();
+
+    // 新增：根据机器人ID获取路线列表
+    List<SysTourRoute> getRouteListByRobotId(Long robotId);
+
+    // 根据机器人ID获取路线详情列表（包含所有点位顺序和讲解内容）
+    List<SysTourRoute> getRouteDetailListByRobotId(Long robotId);
+
     SysTourRoute getRoute(Long routeId);
     int saveRoute(SysTourRoute route);
     int deleteRoute(Long routeId);

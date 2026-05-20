@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 获取讲解通用配置
+// 获取通用配置
 export function getTourGeneral(robotId) {
   return request({
     url: '/func/tour/general/' + robotId,
@@ -8,7 +8,7 @@ export function getTourGeneral(robotId) {
   })
 }
 
-// 保存讲解通用配置
+// 保存通用配置
 export function saveTourGeneral(data) {
   return request({
     url: '/func/tour/general',
@@ -17,20 +17,12 @@ export function saveTourGeneral(data) {
   })
 }
 
-// 获取讲解内容列表 - 修复：robotId 作为路径参数
+// 获取讲解内容列表
 export function getTourContentList(robotId, params) {
   return request({
     url: '/func/tour/content/list/' + robotId,
     method: 'get',
     params: params
-  })
-}
-
-// 获取讲解内容详情
-export function getTourContent(contentId) {
-  return request({
-    url: '/func/tour/content/' + contentId,
-    method: 'get'
   })
 }
 
@@ -56,27 +48,33 @@ export function batchDeleteTourContents(contentIds) {
   return request({
     url: '/func/tour/content/batch',
     method: 'delete',
-    data: contentIds,
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    data: contentIds
   })
 }
 
-// 获取路线列表
-export function getRouteList(params) {
+// 获取所有路线列表
+export function getRouteList() {
   return request({
     url: '/func/tour/route/list',
-    method: 'get',
-    params: params
+    method: 'get'
   })
 }
 
-// 获取路线详情
-export function getRoute(routeId) {
+// 新增：根据机器人ID获取路线列表
+export function getRouteListByRobotId(robotId) {
   return request({
-    url: '/func/tour/route/' + routeId,
-    method: 'get'
+    url: '/func/tour/route/list/byRobot',
+    method: 'get',
+    params: { robotId: robotId }
+  })
+}
+
+// 根据机器人ID获取路线详情列表
+export function getRouteDetailList(robotId) {
+  return request({
+    url: '/func/tour/route/detail/list',
+    method: 'get',
+    params: { robotId: robotId }
   })
 }
 
@@ -106,13 +104,11 @@ export function exportRoutes() {
 }
 
 // 导入路线
-export function importRoutes(data) {
+export function importRoutes(jsonData) {
   return request({
     url: '/func/tour/route/import',
     method: 'post',
-    data: data,
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    data: jsonData,
+    headers: { 'Content-Type': 'application/json' }
   })
 }

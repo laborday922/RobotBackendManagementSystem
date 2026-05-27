@@ -3,7 +3,7 @@ package com.ruoyi.mode.config;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.robots.mapper.RobotsMapper;
 import com.ruoyi.robots.service.IRobotsService;
-import com.ruoyi.taskmgt.websocket.RobotWebSocketHandler;
+import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;

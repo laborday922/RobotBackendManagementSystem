@@ -79,6 +79,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         where id = #{id}
     </update>
 
+    <update id="dealRobotWarningsByIds">
+        update robot_warnings
+        <trim prefix="SET" suffixOverrides=",">
+            status = '1',
+            resolve_time = #{resolveTime},
+            <if test="resolveUser != null">resolve_user = #{resolveUser},</if>
+            <if test="resolveNote != null">resolve_note = #{resolveNote},</if>
+        </trim>
+        where id in
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <delete id="deleteRobotWarningsById" parameterType="Long">
         delete from robot_warnings where id = #{id}
     </delete>

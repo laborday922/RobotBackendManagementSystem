@@ -1,7 +1,9 @@
 package com.ruoyi.robots.mapper;
 
 import java.util.List;
+import java.util.Date;
 import com.ruoyi.robots.domain.RobotWarnings;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 机器人状态预警Mapper接口
@@ -42,6 +44,11 @@ public interface RobotWarningsMapper
      * @return 结果
      */
     public int updateRobotWarnings(RobotWarnings robotWarnings);
+
+    int dealRobotWarningsByIds(@Param("ids") Long[] ids,
+                              @Param("resolveTime") Date resolveTime,
+                              @Param("resolveUser") String resolveUser,
+                              @Param("resolveNote") String resolveNote);
 
     /**
      * 删除机器人状态预警

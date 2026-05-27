@@ -157,6 +157,7 @@ export default {
       // 表单参数（移除新增相关的默认值）
       form: {
         id: null,        // 预警ID
+        ids: [],
         resolveTime: null, // 处理时间（后端自动赋值，前端无需传）
         resolveUser: null, // 处理人
         resolveNote: null  // 处理备注
@@ -203,6 +204,7 @@ export default {
     reset() {
       this.form = {
         id: null,
+        ids: [],
         resolveTime: null,
         resolveUser: null,
         resolveNote: null
@@ -219,14 +221,13 @@ export default {
     /** 处理预警按钮操作（修复容错问题） */
     handleDeal(row) {
       this.reset()
-      // 修复：用可选链避免row为undefined时报错
-      const id = row?.id || this.ids[0]
-      if (!id) {
+      const ids = row?.id ? [row.id] : this.ids
+      if (!ids || !ids.length) {
         this.$modal.msgWarning("请选择需要处理的预警")
         return
       }
-      // 回显预警ID（处理接口需要）
-      this.form.id = id
+      this.form.ids = ids
+      this.form.id = ids[0]
       this.open = true
       this.title = "处理机器人状态预警"
     },

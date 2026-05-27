@@ -2,12 +2,14 @@ package com.ruoyi.robots.service.impl;
 
 import java.util.Date;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.robots.common.RobotsConstants;
 import com.ruoyi.robots.controller.dto.RobotWarningsDto;
 import com.ruoyi.robots.event.RobotWarningEvent;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -121,24 +123,49 @@ public class RobotWarningsServiceImpl implements IRobotWarningsService
 
     @Override
     public int  dealRobotWarnings(RobotWarningsDto robotWarningsDto) {
-        RobotWarnings robotWarnings = new RobotWarnings();
-        BeanUtils.copyProperties(robotWarningsDto, robotWarnings);
-        robotWarnings.setResolveTime(new Date());
-        robotWarnings.setStatus("1");
+        Long[] ids = robotWarningsDto.getIds();
+        if ((ids == null || ids.length == 0) && robotWarningsDto.getId() != null) {
+            ids = new Long[] { robotWarningsDto.getId() };
+        }
+        if (ids == null || ids.length == 0) {
+            return 0;
+        }
 
-        // 发布预警解决事件
-        RobotWarnings robotWarning = selectRobotWarningsById(robotWarningsDto.getId());
-        int unresolved = countUnresolvedByRobotId(robotWarning.getRobotId());
-        boolean hasRemaining = !(unresolved ==0);
-        eventPublisher.publishEvent(new RobotWarningEvent(
-                this,
-                robotWarning.getRobotId(),
-                robotWarning.getWarningType(),
-                robotWarning.getWarningLevel(),
-                RobotsConstants.RESOLVED,
-                hasRemaining
-        ));
-        return robotWarningsMapper.updateRobotWarnings(robotWarnings);
+        List<RobotWarnings> warningsToDeal = new ArrayList<>();
+        for (Long id : ids) {
+            if (id == null) {
+                continue;
+            }
+            RobotWarnings warning = selectRobotWarningsById(id);
+            if (warning != null) {
+                warningsToDeal.add(warning);
+            }
+        }
+        if (warningsToDeal.isEmpty()) {
+            return 0;
+        }
+
+        Date resolveTime = new Date();
+        Long[] updateIds = warningsToDeal.stream().map(RobotWarnings::getId).toArray(Long[]::new);
+        int rows = robotWarningsMapper.dealRobotWarningsByIds(updateIds, resolveTime, robotWarningsDto.getResolveUser(), robotWarningsDto.getResolveNote());
+
+        Map<Long, Boolean> hasRemainingByRobotId = new HashMap<>();
+        for (RobotWarnings warning : warningsToDeal) {
+            hasRemainingByRobotId.computeIfAbsent(warning.getRobotId(), robotId -> countUnresolvedByRobotId(robotId) != 0);
+        }
+        for (RobotWarnings warning : warningsToDeal) {
+            boolean hasRemaining = hasRemainingByRobotId.getOrDefault(warning.getRobotId(), false);
+            eventPublisher.publishEvent(new RobotWarningEvent(
+                    this,
+                    warning.getRobotId(),
+                    warning.getWarningType(),
+                    warning.getWarningLevel(),
+                    RobotsConstants.RESOLVED,
+                    hasRemaining
+            ));
+        }
+
+        return rows;
     }
 
     @Override

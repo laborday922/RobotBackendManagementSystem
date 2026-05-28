@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.38, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 9.0.0, for Win64 (x86_64)
 --
 -- Host: localhost    Database: ry-vue
 -- ------------------------------------------------------
--- Server version	8.0.38
+-- Server version	9.0.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -15,10 +15,13 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- ----------------------------
--- 1、地图表
--- ----------------------------
+--
+-- Table structure for table `sys_map`
+--
+
 DROP TABLE IF EXISTS `sys_map`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_map` (
                            `map_id` int NOT NULL AUTO_INCREMENT COMMENT '地图ID',
                            `map_name` varchar(100) NOT NULL COMMENT '地图名称',
@@ -38,29 +41,35 @@ CREATE TABLE `sys_map` (
                            `update_time` datetime DEFAULT NULL COMMENT '更新时间',
                            `remark` varchar(255) DEFAULT NULL COMMENT '备注信息',
                            `map_base64` longtext COMMENT '地图Base64数据',
-                           `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                           `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                            `robot_id` varchar(64) DEFAULT NULL COMMENT '机器人ID',
                            PRIMARY KEY (`map_id`),
                            KEY `idx_sys_map_tenant` (`tenant_id`),
                            KEY `idx_robot_id` (`robot_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='地图表';
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='地图表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_map
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_map` VALUES (1, '一楼大厅', NULL, NULL, NULL, NULL, '212dc83030ac4901a944826757df670a.jpg', 30, '1.0', '1', 1, '2', '', NULL, '', '2026-04-07 19:20:18', NULL, NULL, 0, NULL);
-INSERT INTO `sys_map` VALUES (2, '二楼社保专区', NULL, NULL, NULL, NULL, '7bc8089a746d416cbd54f256a3d6b570.jpg', 25, '1.0', '1', 1, '2', '', NULL, '', '2026-04-07 19:50:33', NULL, NULL, 0, NULL);
-INSERT INTO `sys_map` VALUES (3, '二楼大厅', NULL, NULL, NULL, NULL, '9.jpg', 0, '1.0', '1', 1, '0', NULL, '2026-04-07 19:50:57', '', '2026-04-10 22:56:59', NULL, NULL, 0, NULL);
-COMMIT;
+--
+-- Dumping data for table `sys_map`
+--
 
--- ----------------------------
--- 2、点位表
--- ----------------------------
+LOCK TABLES `sys_map` WRITE;
+/*!40000 ALTER TABLE `sys_map` DISABLE KEYS */;
+INSERT INTO `sys_map` VALUES (1,'一楼大厅',NULL,NULL,NULL,NULL,'212dc83030ac4901a944826757df670a.jpg',30,'1.0','1',1,'2','',NULL,'','2026-04-07 19:20:18',NULL,NULL,NULL,NULL),(2,'二楼社保专区',NULL,NULL,NULL,NULL,'7bc8089a746d416cbd54f256a3d6b570.jpg',25,'1.0','1',1,'2','',NULL,'','2026-04-07 19:50:33',NULL,NULL,NULL,NULL),(10,'默认地图','default',NULL,NULL,NULL,NULL,0,'1.0','1',1,'0','','2026-05-06 16:21:32','','2026-05-06 16:21:32',NULL,NULL,0,'default'),(11,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-06 16:23:31','',NULL,NULL,NULL,1,'default'),(12,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-06 16:24:01','',NULL,NULL,NULL,1,'default'),(13,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-06 17:19:51','',NULL,NULL,NULL,1,'default'),(14,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-07 12:28:57','',NULL,NULL,NULL,1,'default'),(15,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-08 00:48:30','',NULL,NULL,NULL,1,'default'),(16,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 18:26:34','',NULL,NULL,NULL,1,'default'),(17,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 19:25:29','',NULL,NULL,NULL,1,'default'),(18,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 19:25:45','',NULL,NULL,NULL,1,'default'),(19,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 19:25:52','',NULL,NULL,NULL,1,'default'),(20,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 19:29:18','',NULL,NULL,NULL,1,'default'),(21,'默认地图',NULL,NULL,NULL,NULL,NULL,0,'1.0','1',1,'0',NULL,'2026-05-09 19:30:37','',NULL,NULL,NULL,1,'default');
+/*!40000 ALTER TABLE `sys_map` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_point`
+--
+
 DROP TABLE IF EXISTS `sys_point`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_point` (
-                             `point_id` int NOT NULL AUTO_INCREMENT COMMENT '点位ID',
+                             `point_id` bigint NOT NULL,
                              `map_id` int NOT NULL COMMENT '所属地图ID',
+                             `robot_id` bigint DEFAULT NULL COMMENT '所属机器人ID',
                              `point_name` varchar(50) NOT NULL COMMENT '点位名称',
                              `point_code` varchar(50) DEFAULT NULL COMMENT '点位编码',
                              `point_type` varchar(20) DEFAULT 'normal' COMMENT '点位类型(normal/vip/service/exit)',
@@ -74,24 +83,54 @@ CREATE TABLE `sys_point` (
                              `update_time` datetime DEFAULT NULL COMMENT '更新时间',
                              `remark` varchar(255) DEFAULT NULL COMMENT '备注信息',
                              `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0存在 2删除）',
-                             `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                             `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
+                             `voice_type` varchar(20) DEFAULT 'default' COMMENT '播报类型(default-全局配置/custom-自定义/none-无播报)',
+                             `before_msg` varchar(200) DEFAULT NULL COMMENT '出发前播报',
+                             `during_msg` varchar(200) DEFAULT NULL COMMENT '导航中播报',
+                             `after_msg` varchar(200) DEFAULT NULL COMMENT '到达后播报',
                              PRIMARY KEY (`point_id`),
                              KEY `idx_map_id` (`map_id`),
-                             KEY `idx_sys_point_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='点位表';
+                             KEY `idx_sys_point_tenant` (`tenant_id`),
+                             KEY `idx_robot_id` (`robot_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='点位表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_point
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_point` VALUES (7, 2, '1', '', 'normal', 0.00, 0.00, '1', 1, NULL, '2026-03-26 09:18:13', '', NULL, '', '0', 0);
-INSERT INTO `sys_point` VALUES (8, 3, '社保服务区', '', 'normal', 0.00, 0.00, '1', 0, NULL, '2026-04-09 16:04:27', '', NULL, '', '0', 0);
-COMMIT;
+--
+-- Dumping data for table `sys_point`
+--
 
--- ----------------------------
--- 3、业务接待配置表
--- ----------------------------
+LOCK TABLES `sys_point` WRITE;
+/*!40000 ALTER TABLE `sys_point` DISABLE KEYS */;
+INSERT INTO `sys_point` VALUES (7,2,NULL,'1','','normal',0.00,0.00,'1',1,NULL,'2026-03-26 09:18:13','',NULL,'','0',NULL,'default',NULL,NULL,NULL),(15,9,9,'1','','normal',NULL,NULL,'1',0,NULL,'2026-05-06 16:24:01','',NULL,'','0',1,'default',NULL,NULL,NULL),(16,0,9,'2','','normal',NULL,NULL,'1',0,NULL,'2026-05-09 19:25:45','',NULL,'','0',1,'default',NULL,NULL,NULL),(17,0,9,'3','','normal',NULL,NULL,'1',0,NULL,'2026-05-09 19:29:18','',NULL,'','0',1,'default',NULL,NULL,NULL);
+/*!40000 ALTER TABLE `sys_point` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = gbk */ ;
+/*!50003 SET character_set_results = gbk */ ;
+/*!50003 SET collation_connection  = gbk_chinese_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `tr_set_default_robot` BEFORE INSERT ON `sys_point` FOR EACH ROW BEGIN
+    IF (NEW.map_id = 0 OR NEW.map_id IS NULL) AND (NEW.robot_id IS NULL OR NEW.robot_id = 0) THEN
+        SET NEW.robot_id = 9;
+    END IF;
+END */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `sys_reception_config`
+--
+
 DROP TABLE IF EXISTS `sys_reception_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_reception_config` (
                                         `config_id` int NOT NULL AUTO_INCREMENT COMMENT '配置ID',
                                         `robot_id` int NOT NULL COMMENT '机器人ID',
@@ -108,24 +147,30 @@ CREATE TABLE `sys_reception_config` (
                                         `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                         `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                         `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                        `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                        `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                                         PRIMARY KEY (`config_id`),
                                         KEY `idx_robot_id` (`robot_id`),
                                         KEY `idx_sys_reception_config_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务接待配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='业务接待配置表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_reception_config
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_reception_config` VALUES (1, 1, '请问关于公司：有哪些需要了解的？', '您好', '真正的智能服务机器人 #机器人名称# 即将为您服务', '1', '尊敬的#全名# #职位# 您好', '尊敬的贵宾们你们好', '1', '#性别# 您好', '先生女士们好', NULL, '2026-03-14 19:12:52', '', '2026-03-25 23:58:06', 0);
-INSERT INTO `sys_reception_config` VALUES (5, 9, '请问关于公司：有哪些需要了解的？', '您好', '真正的智能服务机器人 #机器人名称# 即将为您服务', '1', '尊敬的#全名# #职位# 您好', '尊敬的贵宾们你们好', '1', '#性别# 您好', '先生女士们好', NULL, '2026-03-31 00:38:48', '', '2026-03-31 09:22:05', 0);
-COMMIT;
+--
+-- Dumping data for table `sys_reception_config`
+--
 
--- ----------------------------
--- 4、导航配置表
--- ----------------------------
+LOCK TABLES `sys_reception_config` WRITE;
+/*!40000 ALTER TABLE `sys_reception_config` DISABLE KEYS */;
+INSERT INTO `sys_reception_config` VALUES (1,1,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-03-14 19:12:52','','2026-03-25 23:58:06',1),(2,2,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-03-29 23:37:02','',NULL,1),(3,3,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-03-29 23:37:04','',NULL,1),(4,8,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人#机器人名称# 即将为您服务','0','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-03-31 00:38:24','','2026-04-11 21:59:02',1),(5,9,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-03-31 00:38:48','','2026-03-31 09:22:05',1),(6,5,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-04-07 17:39:16','',NULL,1),(7,6,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-04-07 17:39:16','',NULL,1),(8,7,'请问关于公司：有哪些需要了解的？','您好','真正的智能服务机器人 #机器人名称# 即将为您服务','1','尊敬的#全名# #职位# 您好','尊敬的贵宾们你们好','1','#性别# 您好','先生女士们好',NULL,'2026-05-13 13:28:52','',NULL,1);
+/*!40000 ALTER TABLE `sys_reception_config` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_nav_config`
+--
+
 DROP TABLE IF EXISTS `sys_nav_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_nav_config` (
                                   `nav_id` int NOT NULL AUTO_INCREMENT COMMENT '导航ID',
                                   `nav_name` varchar(100) DEFAULT NULL COMMENT '导航名称',
@@ -146,24 +191,31 @@ CREATE TABLE `sys_nav_config` (
                                   `status` char(1) DEFAULT '0' COMMENT '状态（0正常 1停用）',
                                   `del_flag` char(1) DEFAULT '0' COMMENT '删除标志',
                                   `sort_order` int DEFAULT '0' COMMENT '排序号',
-                                  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                  `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                                   `robot_id` varchar(64) DEFAULT NULL COMMENT '机器人ID',
                                   PRIMARY KEY (`nav_id`),
                                   UNIQUE KEY `idx_robot_id` (`robot_id`),
                                   KEY `idx_sys_nav_config_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='导航配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='导航配置表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_nav_config
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_nav_config` VALUES (1, NULL, NULL, 'default', NULL, '现在带您去社保窗口', '请跟随我', '已到达', 0, 3, 30, '', NULL, '', NULL, NULL, '0', '0', 0, 0, NULL);
-COMMIT;
+--
+-- Dumping data for table `sys_nav_config`
+--
 
--- ----------------------------
--- 5、讲解内容表
--- ----------------------------
+LOCK TABLES `sys_nav_config` WRITE;
+/*!40000 ALTER TABLE `sys_nav_config` DISABLE KEYS */;
+INSERT INTO `sys_nav_config` VALUES (1,NULL,4,'default',NULL,'现在带您去社保窗口','请跟随我','已到达',0,3,30,'',NULL,'','2026-04-11 21:06:50',NULL,'0','0',0,1,NULL),(2,NULL,6,'custom',NULL,'现在带您去挂号区','请跟随我','已到达',0,3,30,'',NULL,'','2026-04-29 16:39:26',NULL,'0','0',0,1,'8');
+/*!40000 ALTER TABLE `sys_nav_config` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_tour_content`
+--
+
 DROP TABLE IF EXISTS `sys_tour_content`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_tour_content` (
                                     `content_id` int NOT NULL AUTO_INCREMENT COMMENT '内容ID',
                                     `robot_id` int NOT NULL COMMENT '机器人ID',
@@ -178,38 +230,45 @@ CREATE TABLE `sys_tour_content` (
                                     `interval_time` int DEFAULT '0' COMMENT '间隔时间(毫秒)',
                                     `content_type` varchar(20) DEFAULT 'text' COMMENT '内容类型(text/audio/image/video)',
                                     `media_file` varchar(255) DEFAULT NULL COMMENT '媒体文件路径',
-                                    `arm_action` varchar(50) DEFAULT '0°' COMMENT '手臂动作',
+                                    `arm_action` varchar(50) DEFAULT '0掳' COMMENT '手臂动作',
                                     `chassis_angle` int DEFAULT '0' COMMENT '底盘转角',
                                     `order_num` int DEFAULT '0' COMMENT '显示顺序',
                                     `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
                                     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                     `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                    `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                    `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                                     PRIMARY KEY (`content_id`),
                                     KEY `idx_robot_id` (`robot_id`),
                                     KEY `idx_point_id` (`point_id`),
                                     KEY `idx_sys_tour_content_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解内容表';
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解内容表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_tour_content
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_tour_content` VALUES (3, 8, NULL, '社保区', '', 'text', '1', '', '温柔女声', 50, 0, 'text', '', '0°', 0, NULL, 'admin', '2026-03-31 09:22:57', '', NULL, 0);
-COMMIT;
+--
+-- Dumping data for table `sys_tour_content`
+--
 
--- ----------------------------
--- 6、讲解通用配置表
--- ----------------------------
+LOCK TABLES `sys_tour_content` WRITE;
+/*!40000 ALTER TABLE `sys_tour_content` DISABLE KEYS */;
+INSERT INTO `sys_tour_content` VALUES (1,1,NULL,'1','','text','1#点位名称#','','温柔女声',50,0,'text','','0掳',0,NULL,'admin','2026-03-25 20:20:26','',NULL,1),(5,8,NULL,'一楼挂号区引导','引导患者完成挂号、缴费，向患者介绍人工、自助渠道','text','您好，欢迎来到门诊楼！这里是一楼挂号收费区，您可以通过两种方式办理挂号业务：\n一、人工窗口：请携带身份证或医保卡，到前方的人工挂号窗口办理，也可同步办理医保结算；\n二、自助服务机：旁边的自助机支持扫码、刷卡挂号，也能自助缴费、打印报告，操作简单快捷。\n如果您有任何疑问，可以随时咨询导诊台的工作人员，祝您就诊顺利！','','温柔女声',50,0,'text','','0掳',0,NULL,'admin','2026-04-28 00:04:44','',NULL,1),(6,9,NULL,'1','','text','1','','温柔女声',50,0,'text',NULL,'0掳',0,NULL,'admin','2026-05-07 12:08:29','',NULL,1),(7,9,NULL,'5','','text','5','','温柔女声',50,0,'text',NULL,'0掳',0,NULL,'admin','2026-05-07 12:08:36','',NULL,1),(8,8,NULL,'药房','','text','1','','温柔女声',50,0,'text',NULL,'0掳',0,NULL,'admin','2026-05-07 12:29:53','',NULL,1),(9,8,NULL,'影像','','text','1','','温柔女声',50,0,'text',NULL,'0掳',0,NULL,'admin','2026-05-07 12:30:03','',NULL,1);
+/*!40000 ALTER TABLE `sys_tour_content` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_tour_general`
+--
+
 DROP TABLE IF EXISTS `sys_tour_general`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_tour_general` (
                                     `config_id` int NOT NULL AUTO_INCREMENT COMMENT '配置ID',
                                     `robot_id` int NOT NULL COMMENT '机器人ID',
                                     `map_id` int DEFAULT NULL COMMENT '当前地图ID',
                                     `route_id` int DEFAULT NULL COMMENT '当前路线ID',
                                     `voice` varchar(50) DEFAULT '温柔女声' COMMENT '讲解音色',
-                                    `voice_interaction` char(1) DEFAULT '1' COMMENT '语音交互（0关闭 1开启）',
+                                    `voice_interaction` char(1) DEFAULT '1' COMMENT '语音交互(0关闭 1开启)',
                                     `start_command` varchar(50) DEFAULT '开始讲解' COMMENT '开始讲解口令',
                                     `before_tip` varchar(200) DEFAULT NULL COMMENT '运动前提示播报',
                                     `end_tip` varchar(200) DEFAULT NULL COMMENT '讲解结束播报',
@@ -218,26 +277,34 @@ CREATE TABLE `sys_tour_general` (
                                     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                     `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                    `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                    `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                                     PRIMARY KEY (`config_id`),
                                     KEY `idx_robot_id` (`robot_id`),
                                     KEY `idx_sys_tour_general_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解通用配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解通用配置表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_tour_general
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_tour_general` VALUES (3, 8, 1, 1, '温柔女声', '1', '开始讲解', '即将开始讲解，请跟随我', '本次讲解结束，谢谢', 'stay', NULL, '2026-03-31 00:38:41', '', '2026-03-31 09:22:34', 0);
-COMMIT;
+--
+-- Dumping data for table `sys_tour_general`
+--
 
--- ----------------------------
--- 7、讲解路线表
--- ----------------------------
+LOCK TABLES `sys_tour_general` WRITE;
+/*!40000 ALTER TABLE `sys_tour_general` DISABLE KEYS */;
+INSERT INTO `sys_tour_general` VALUES (1,1,NULL,NULL,'温柔女声','1','开始讲解','即将开始讲解，请跟随我','本次讲解结束，谢谢','stay',NULL,'2026-03-14 19:12:58','',NULL,1),(2,9,4,NULL,'温柔女声','1','开始讲解','即将开始讲解，请跟随我','本次讲解结束，谢谢','stay',NULL,'2026-03-31 00:38:36','','2026-04-11 21:59:27',1),(3,8,1,1,'温柔女声','1','开始讲解','即将开始讲解，请跟随我','本次讲解结束，谢谢','stay',NULL,'2026-03-31 00:38:41','','2026-05-08 00:19:40',1),(4,7,NULL,NULL,'温柔女声','1','开始讲解','即将开始讲解，请跟随我','本次讲解结束，谢谢','stay',NULL,'2026-05-09 19:30:26','',NULL,1);
+/*!40000 ALTER TABLE `sys_tour_general` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_tour_route`
+--
+
 DROP TABLE IF EXISTS `sys_tour_route`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_tour_route` (
                                   `route_id` int NOT NULL AUTO_INCREMENT COMMENT '路线ID',
                                   `route_name` varchar(50) NOT NULL COMMENT '路线名称',
+                                  `robot_id` bigint DEFAULT NULL COMMENT '所属机器人ID',
                                   `map_id` int DEFAULT NULL COMMENT '地图ID',
                                   `point_ids` text COMMENT '点位ID列表(JSON格式)',
                                   `point_count` int DEFAULT '0' COMMENT '点位数量',
@@ -246,38 +313,53 @@ CREATE TABLE `sys_tour_route` (
                                   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                  `tenant_id` bigint DEFAULT NULL COMMENT '租户ID',
                                   PRIMARY KEY (`route_id`),
-                                  KEY `idx_sys_tour_route_tenant` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解路线表';
+                                  KEY `idx_sys_tour_route_tenant` (`tenant_id`),
+                                  KEY `idx_robot_id` (`robot_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='讲解路线表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ----------------------------
--- Records of sys_tour_route
--- ----------------------------
-BEGIN;
-INSERT INTO `sys_tour_route` VALUES (1, '企业展厅路线', 1, NULL, 3, '1', '', NULL, '', NULL, 0);
-INSERT INTO `sys_tour_route` VALUES (2, '政务参观路线', 2, NULL, 2, '1', '', NULL, '', NULL, 0);
-INSERT INTO `sys_tour_route` VALUES (3, '新路线', 1, NULL, 0, '1', 'admin', '2026-03-25 19:35:44', '', NULL, 0);
-COMMIT;
+--
+-- Dumping data for table `sys_tour_route`
+--
 
--- ----------------------------
--- 8、路线点位关联表
--- ----------------------------
+LOCK TABLES `sys_tour_route` WRITE;
+/*!40000 ALTER TABLE `sys_tour_route` DISABLE KEYS */;
+INSERT INTO `sys_tour_route` VALUES (1,'企业展厅路线',NULL,1,NULL,3,'1','',NULL,'',NULL,1),(2,'政务参观路线',NULL,2,NULL,2,'1','',NULL,'',NULL,1),(3,'新路线',NULL,1,NULL,0,'1','admin','2026-03-25 19:35:44','',NULL,1),(11,'一楼挂号区路线',8,6,'[11]',1,NULL,'admin','2026-04-28 00:00:23','','2026-05-08 00:55:41',1),(20,'一楼',8,6,'[11,12,13]',3,NULL,'admin','2026-05-08 00:55:52','',NULL,1),(21,'1',9,0,'[15]',1,NULL,'admin','2026-05-09 18:26:43','',NULL,1),(22,'2',9,0,'[16]',1,NULL,'admin','2026-05-09 19:25:56','',NULL,1),(23,'4',7,0,'[16]',1,NULL,'admin','2026-05-09 19:30:46','',NULL,1);
+/*!40000 ALTER TABLE `sys_tour_route` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `sys_route_point`
+--
+
 DROP TABLE IF EXISTS `sys_route_point`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_route_point` (
                                    `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
                                    `route_id` int NOT NULL COMMENT '路线ID',
                                    `point_id` int NOT NULL COMMENT '点位ID',
                                    `content_id` int DEFAULT NULL COMMENT '关联讲解内容ID',
                                    `order_num` int DEFAULT '0' COMMENT '显示顺序',
-                                   `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
                                    PRIMARY KEY (`id`),
                                    KEY `idx_route_id` (`route_id`),
-                                   KEY `idx_point_id` (`point_id`),
-                                   KEY `idx_sys_route_point_tenant` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='路线点位关联表';
+                                   KEY `idx_point_id` (`point_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='路线点位关联表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Dumping data for table `sys_route_point`
+--
+
+LOCK TABLES `sys_route_point` WRITE;
+/*!40000 ALTER TABLE `sys_route_point` DISABLE KEYS */;
+INSERT INTO `sys_route_point` VALUES (20,11,11,5,1),(21,20,11,5,1),(22,20,12,8,2),(23,20,13,9,3),(24,21,15,6,1),(25,22,16,6,1),(26,23,16,NULL,1);
+/*!40000 ALTER TABLE `sys_route_point` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -285,3 +367,5 @@ CREATE TABLE `sys_route_point` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-05-28 21:26:18

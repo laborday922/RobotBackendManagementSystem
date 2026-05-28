@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.38, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 9.0.0, for Win64 (x86_64)
 --
 -- Host: localhost    Database: ry-vue
 -- ------------------------------------------------------
--- Server version	8.0.38
+-- Server version	9.0.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -15,10 +15,13 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- ----------------------------
--- 1、模式主表
--- ----------------------------
+--
+-- Table structure for table `sys_mode`
+--
+
 DROP TABLE IF EXISTS `sys_mode`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_mode` (
                             `mode_id` int NOT NULL AUTO_INCREMENT COMMENT '模式ID',
                             `mode_name` varchar(100) NOT NULL COMMENT '模式名称',
@@ -41,20 +44,26 @@ CREATE TABLE `sys_mode` (
                             KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式主表';
 
--- ----------------------------
--- Records of sys_mode
--- ----------------------------
-BEGIN;
+--
+-- Dumping data for table `sys_mode`
+--
+
+LOCK TABLES `sys_mode` WRITE;
+/*!40000 ALTER TABLE `sys_mode` DISABLE KEYS */;
 INSERT INTO `sys_mode` VALUES (1, '待机模式', 'system', 1, '#95a5a6', 'fas fa-pause-circle', '机器人进入低功耗状态，等待唤醒指令', '1', 128, 15, 1, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 09:21:42', 0);
 INSERT INTO `sys_mode` VALUES (2, '维护模式', 'system', 1, '#f1c40f', 'fas fa-tools', '进行系统维护和调试，暂停所有任务', '1', 89, 20, 2, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:47:07', 0);
 INSERT INTO `sys_mode` VALUES (3, '充电模式', 'system', 1, '#2ecc71', 'fas fa-bolt', '低电量时自动返回充电桩充电', '1', 156, 20, 3, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:49:10', 0);
 INSERT INTO `sys_mode` VALUES (7, '1', 'custom', 2, '#1890ff', 'fa fa-cog', NULL, '1', 0, 0, 0, '0', '', '2026-03-31 09:21:48', '', NULL, 0);
-COMMIT;
+/*!40000 ALTER TABLE `sys_mode` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- ----------------------------
--- 2、模式参数表
--- ----------------------------
+--
+-- Table structure for table `sys_mode_param`
+--
+
 DROP TABLE IF EXISTS `sys_mode_param`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_mode_param` (
                                   `param_id` int NOT NULL AUTO_INCREMENT COMMENT '参数ID',
                                   `mode_id` int NOT NULL COMMENT '所属模式ID',
@@ -78,10 +87,12 @@ CREATE TABLE `sys_mode_param` (
                                   KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式参数表';
 
--- ----------------------------
--- Records of sys_mode_param
--- ----------------------------
-BEGIN;
+--
+-- Dumping data for table `sys_mode_param`
+--
+
+LOCK TABLES `sys_mode_param` WRITE;
+/*!40000 ALTER TABLE `sys_mode_param` DISABLE KEYS */;
 INSERT INTO `sys_mode_param` VALUES (26, 2, '维护人员权限', 'select', NULL, 'option1', '[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
 INSERT INTO `sys_mode_param` VALUES (27, 2, '维护时间', 'number', NULL, '0', NULL, 0, 100, '分钟', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
 INSERT INTO `sys_mode_param` VALUES (28, 2, '警告提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
@@ -93,12 +104,16 @@ INSERT INTO `sys_mode_param` VALUES (34, 1, '唤醒电量阈值', 'range', NULL,
 INSERT INTO `sys_mode_param` VALUES (35, 1, '低温保护', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
 INSERT INTO `sys_mode_param` VALUES (36, 1, '网络保持', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
 INSERT INTO `sys_mode_param` VALUES (37, 1, '1', 'string', NULL, '', NULL, 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
-COMMIT;
+/*!40000 ALTER TABLE `sys_mode_param` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- ----------------------------
--- 3、模式切换历史记录表
--- ----------------------------
+--
+-- Table structure for table `sys_mode_history`
+--
+
 DROP TABLE IF EXISTS `sys_mode_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_mode_history` (
                                     `history_id` int NOT NULL AUTO_INCREMENT COMMENT '历史ID',
                                     `operation_time` datetime DEFAULT NULL COMMENT '操作时间',
@@ -120,19 +135,25 @@ CREATE TABLE `sys_mode_history` (
                                     KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式切换历史记录表';
 
--- ----------------------------
--- Records of sys_mode_history
--- ----------------------------
-BEGIN;
+--
+-- Dumping data for table `sys_mode_history`
+--
+
+LOCK TABLES `sys_mode_history` WRITE;
+/*!40000 ALTER TABLE `sys_mode_history` DISABLE KEYS */;
 INSERT INTO `sys_mode_history` VALUES (1, '2026-03-02 20:37:53', 'mode-switch', 1, '机器人A', 1, '待机模式', '切换到待机模式', 'admin', 'success', '', '2026-03-02 20:37:53', 0);
 INSERT INTO `sys_mode_history` VALUES (77, '2026-03-31 09:20:57', 'mode-switch', 2, '小旋2号', 2, '维护模式', '切换到维护模式', 'admin', 'success', '', '2026-03-31 09:20:56', 0);
 INSERT INTO `sys_mode_history` VALUES (78, '2026-04-02 00:50:45', 'emergency_stop', 1, '小旋1号', NULL, NULL, '已对 1 个机器人执行紧急停止操作', 'admin', 'success', '', '2026-04-02 00:50:45', 0);
-COMMIT;
+/*!40000 ALTER TABLE `sys_mode_history` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- ----------------------------
--- 4、模式排程表
--- ----------------------------
+--
+-- Table structure for table `sys_mode_schedule`
+--
+
 DROP TABLE IF EXISTS `sys_mode_schedule`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_mode_schedule` (
                                      `schedule_id` int NOT NULL AUTO_INCREMENT COMMENT '排程ID',
                                      `schedule_name` varchar(100) NOT NULL COMMENT '排程名称',
@@ -158,20 +179,26 @@ CREATE TABLE `sys_mode_schedule` (
                                      KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式排程表';
 
--- ----------------------------
--- Records of sys_mode_schedule
--- ----------------------------
-BEGIN;
+--
+-- Dumping data for table `sys_mode_schedule`
+--
+
+LOCK TABLES `sys_mode_schedule` WRITE;
+/*!40000 ALTER TABLE `sys_mode_schedule` DISABLE KEYS */;
 INSERT INTO `sys_mode_schedule` VALUES (1, '夜间充电计划', 3, '充电模式', '每天 22:00', 'daily', '2024-01-01', '22:00:00', 2.00, 'paused', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
 INSERT INTO `sys_mode_schedule` VALUES (2, '午间待机计划', 1, '待机模式', '工作日 12:00-14:00', 'weekdays', '2024-01-01', '12:00:00', 2.00, 'running', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
 INSERT INTO `sys_mode_schedule` VALUES (3, '每周维护计划', 2, '维护模式', '每周一 08:00', 'weekly', '2024-01-01', '08:00:00', 1.00, 'pending', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
 INSERT INTO `sys_mode_schedule` VALUES (6, '1', 1, NULL, '2026-04-01 08:00', 'daily', '2026-04-01', '08:00:00', 2.00, 'pending', NULL, NULL, '0', '', '2026-03-31 09:21:16', '', NULL, 0);
-COMMIT;
+/*!40000 ALTER TABLE `sys_mode_schedule` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- ----------------------------
--- 5、排程机器人关联表
--- ----------------------------
+--
+-- Table structure for table `sys_schedule_robot`
+--
+
 DROP TABLE IF EXISTS `sys_schedule_robot`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_schedule_robot` (
                                       `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
                                       `schedule_id` int NOT NULL COMMENT '排程ID',
@@ -184,10 +211,12 @@ CREATE TABLE `sys_schedule_robot` (
                                       KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='排程机器人关联表';
 
--- ----------------------------
--- Records of sys_schedule_robot
--- ----------------------------
-BEGIN;
+--
+-- Dumping data for table `sys_schedule_robot`
+--
+
+LOCK TABLES `sys_schedule_robot` WRITE;
+/*!40000 ALTER TABLE `sys_schedule_robot` DISABLE KEYS */;
 INSERT INTO `sys_schedule_robot` VALUES (1, 1, 1, '机器人A', 0);
 INSERT INTO `sys_schedule_robot` VALUES (2, 1, 2, '机器人B', 0);
 INSERT INTO `sys_schedule_robot` VALUES (3, 1, 4, '机器人D', 0);
@@ -197,12 +226,16 @@ INSERT INTO `sys_schedule_robot` VALUES (6, 3, 2, '机器人B', 0);
 INSERT INTO `sys_schedule_robot` VALUES (7, 3, 5, '机器人E', 0);
 INSERT INTO `sys_schedule_robot` VALUES (12, 6, 1, '小旋1号', 0);
 INSERT INTO `sys_schedule_robot` VALUES (13, 6, 2, '小旋2号', 0);
-COMMIT;
+/*!40000 ALTER TABLE `sys_schedule_robot` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- ----------------------------
--- 6、机器人模式扩展表
--- ----------------------------
+--
+-- Table structure for table `sys_robot_ext`
+--
+
 DROP TABLE IF EXISTS `sys_robot_ext`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_robot_ext` (
                                  `robot_id` bigint NOT NULL COMMENT '机器人ID',
                                  `current_mode` bigint DEFAULT NULL COMMENT '当前模式ID',
@@ -222,10 +255,15 @@ CREATE TABLE `sys_robot_ext` (
                                  KEY `idx_sys_robot_ext_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式扩展表';
 
--- ----------------------------
--- 7、机器人模式配置表
--- ----------------------------
+
+
+--
+-- Table structure for table `sys_robot_mode_config`
+--
+
 DROP TABLE IF EXISTS `sys_robot_mode_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_robot_mode_config` (
                                          `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
                                          `robot_id` bigint NOT NULL COMMENT '机器人ID',
@@ -237,12 +275,17 @@ CREATE TABLE `sys_robot_mode_config` (
                                          PRIMARY KEY (`id`),
                                          UNIQUE KEY `uk_robot_mode` (`robot_id`,`mode_id`),
                                          KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式配置表';
 
--- ----------------------------
--- 8、机器人操作记录表
--- ----------------------------
+
+
+--
+-- Table structure for table `sys_robot_operation`
+--
+
 DROP TABLE IF EXISTS `sys_robot_operation`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sys_robot_operation` (
                                        `operation_id` bigint NOT NULL AUTO_INCREMENT COMMENT '操作ID',
                                        `robot_id` bigint NOT NULL COMMENT '机器人ID',
@@ -257,7 +300,18 @@ CREATE TABLE `sys_robot_operation` (
                                        PRIMARY KEY (`operation_id`),
                                        KEY `idx_robot_id` (`robot_id`),
                                        KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人操作记录表';
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人操作记录表';
+
+--
+-- Dumping data for table `sys_robot_operation`
+--
+
+LOCK TABLES `sys_robot_operation` WRITE;
+/*!40000 ALTER TABLE `sys_robot_operation` DISABLE KEYS */;
+INSERT INTO `sys_robot_operation` VALUES (1, 1, '小旋1号', 'mode_switch', 'success', '2026-04-08 10:36:02', 'admin', '模式切换: null -> 1', 1, '2026-04-08 10:36:02');
+INSERT INTO `sys_robot_operation` VALUES (2, 3, '大白1号', 'emergency_stop', 'success', '2026-04-08 10:36:09', 'admin', '紧急停止', 1, '2026-04-08 10:36:09');
+/*!40000 ALTER TABLE `sys_robot_operation` ENABLE KEYS */;
+UNLOCK TABLES;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -267,3 +321,5 @@ CREATE TABLE `sys_robot_operation` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-05-28 21:14:42

@@ -44,7 +44,8 @@ public class StepReuseService {
                         "system",
                         null);
                 redisKeys.addAll(this.stepRepository.update(step));
-                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"pause",step,task);
+                if(task.getIsGroupTask()==1)stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"pause",step,task);
+                else stepWebSocketService.sendStepChangeToRobot(task.getRobotId(),"pause",step,task);
             }
         }
         return redisKeys;
@@ -69,7 +70,8 @@ public class StepReuseService {
                         "system",
                         null);
                 redisKeys.addAll(this.stepRepository.update(step));
-                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"continue",step,task);
+                if(task.getIsGroupTask()==1)stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"continue",step,task);
+                else stepWebSocketService.sendStepChangeToRobot(task.getRobotId(),"continue",step,task);
             }
         }
         return redisKeys;
@@ -89,7 +91,8 @@ public class StepReuseService {
                         "system",
                         null);
                 redisKeys.addAll(this.stepRepository.update(step));
-                stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"terminate",step,task);
+                if(task.getIsGroupTask()==1)stepWebSocketService.sendStepChangeToRobot(step.getAssignedRobotId(),"terminate",step,task);
+                else stepWebSocketService.sendStepChangeToRobot(task.getRobotId(),"terminate",step,task);
             }
 
         }

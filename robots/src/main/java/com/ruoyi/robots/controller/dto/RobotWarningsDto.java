@@ -7,6 +7,7 @@ public class RobotWarningsDto {
     /** 预警ID */
     private Long id;
 
+    private Long[] ids;
 
     /** 处理人 */
     private String resolveUser;

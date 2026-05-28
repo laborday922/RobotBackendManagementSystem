@@ -62,6 +62,7 @@ public class StepServiceImpl implements IStepService {
                     step.setTenantId(finalTenantId);
                     step.setTaskId(taskId);
                     step.setStatus(TaskStep.NOTSTART);
+                    if(task.getIsGroupTask()==0)step.setAssignedRobotId(task.getRobotId());
                     return this.stepRepository.insert(step);
                 })
                 .toList();

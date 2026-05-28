@@ -43,9 +43,9 @@ public class TaskTrigger {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 每分钟执行一次触发检查
+     * 每5秒执行一次触发检查
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(fixedDelay = 5000)
     public void checkTriggers() {
         log.debug("开始检查任务触发条件");
         checkScheduledTasks();
@@ -91,7 +91,7 @@ public class TaskTrigger {
             Robot robot = robotService.selectRobotsById(task.getRobotId());
             if(StringUtils.isNotNull(robot)){
                 Integer taskStatus = robot.getTaskStatus();
-                Date idleSince = robotService.selectRobotsById(task.getRobotId()).getIdleStartTime();
+                Date idleSince = robot.getIdleStartTime();
                 if (taskStatus == 2 && idleSince != null) {
                     long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
                     if (idleMinutes >= task.getIdleTime()) {
@@ -165,21 +165,23 @@ public class TaskTrigger {
     }
 
     /**
-     * 检查准备中的任务是否可以开始执行（每10秒执行一次）
+     * 检查准备中的任务是否可以开始执行（每4秒执行一次）
      */
-    @Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = 4000)
     public void checkPendingTasksToStart() {
         log.debug("检查准备中的任务是否可以开始执行");
 
         // 获取所有准备中任务，已按 globalPendingOrder 排序
         List<Task> pendingTasks = taskRepository.getTasks(Task.PENDING, null, null, null, null, null, null, null, null);
-
+        log.debug("准备队列：{}", pendingTasks);
         for (Task task : pendingTasks) {
             if (task.getIsGroupTask() == 0) {
                 // 单任务：检查机器人空闲
                 List<Task> executing = taskRepository.getTasks(Task.EXECUTING, 0, null,
                         task.getRobotId(), null, null, null, null, null);
+                log.debug("任务队列：{}", executing);
                 List<TaskStep> executingStep = stepRepository.getSteps(TaskStep.EXECUTING,null,task.getRobotId());
+                log.debug("步骤队列：{}", executingStep);
                 if (executing.isEmpty()&&executingStep.isEmpty()) {
                     startTask(task);
                 }
@@ -275,7 +277,7 @@ public class TaskTrigger {
             return;
         }
         if (!event.isSuccess()) {
-            log.warn("步骤 {} 执行失败，任务 {} 停止", event.getStepId(), event.getTaskId());
+            log.error("步骤 {} 执行失败，任务 {} 停止", event.getStepId(), event.getTaskId());
             task.setStatus(Task.PAUSED);
             task.setRiskLevel(2);
             List<String> redisKeys = taskRepository.update(task);

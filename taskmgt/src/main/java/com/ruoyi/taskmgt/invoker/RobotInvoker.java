@@ -79,6 +79,7 @@ public class RobotInvoker {
      * 获取机器人是否在线
      */
     public boolean isRobotOnline(Long robotId) {
+        log.debug("执行了isRobotOnline，结果是{}",webSocketHandler.isOnline(robotId));
         return webSocketHandler.isOnline(robotId);
     }
 

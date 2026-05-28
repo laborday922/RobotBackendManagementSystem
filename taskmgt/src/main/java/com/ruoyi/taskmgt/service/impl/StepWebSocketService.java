@@ -19,8 +19,6 @@ public class StepWebSocketService {
     public void sendStepChangeToRobot(Long robotId, String command, TaskStep step, Task task){
         switch (command){
             case "pause":{
-
-
                 try {
                     Map<String, Object> cmd = Map.of("action", command, "traceId", step.getTraceId());
                     robotInvoker.sendCommand(robotId, cmd, 5);

@@ -51,7 +51,7 @@ public class StepExecutionService {
     @Transactional
     public void executeStep(TaskStep step, Task task) {
         Long stepId = step.getId();
-        log.info("开始执行步骤: {}", stepId);
+        log.info("开始执行步骤: stepId={}, taskId={}, taskStatus={}", stepId, step.getTaskId(), task != null ? task.getStatus() : null);
         try {
             step.setStatus(TaskStep.EXECUTING);
             step.setStartTime(new Date());
@@ -70,6 +70,7 @@ public class StepExecutionService {
             }
             sendAndWait(robotId,step);
         } catch (Exception e) {
+            log.error("执行步骤失败: stepId={}, taskId={}", stepId, step.getTaskId(), e);
             failStep(step.getId(), e.getMessage());
             eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
         }
@@ -78,6 +79,7 @@ public class StepExecutionService {
     public void sendAndWait(Long robotId,TaskStep step){
         Long stepId=step.getId();
         if (!robotInvoker.isRobotOnline(robotId)) {
+            System.out.print("机器人不在线");
             throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
                     new String[]{robotId.toString()},
                     "机器人不在线");

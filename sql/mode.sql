@@ -30,7 +30,7 @@ CREATE TABLE `sys_mode` (
                             `mode_color` varchar(20) DEFAULT '#1890ff' COMMENT '模式颜色',
                             `mode_icon` varchar(100) DEFAULT 'fa fa-robot' COMMENT '模式图标',
                             `description` varchar(500) DEFAULT NULL COMMENT '模式描述',
-                            `enabled` char(1) DEFAULT '1' COMMENT '是否启用（0禁用 1启用）',
+                            `enabled` char(1) DEFAULT '1' COMMENT '是否启用(0禁用 1启用)',
                             `usage_count` int DEFAULT '0' COMMENT '使用次数',
                             `robot_count` int DEFAULT '0' COMMENT '关联机器人数量',
                             `order_num` int DEFAULT '0' COMMENT '显示顺序',
@@ -39,10 +39,11 @@ CREATE TABLE `sys_mode` (
                             `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                             `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                             `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                            `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                            `tenant_id` bigint DEFAULT '0' COMMENT '租户ID',
                             PRIMARY KEY (`mode_id`),
-                            KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式主表';
+                            KEY `idx_sys_mode_tenant_id` (`tenant_id`),
+                            KEY `idx_sys_mode_tenant` (`tenant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=209 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式主表';
 
 --
 -- Dumping data for table `sys_mode`
@@ -50,10 +51,7 @@ CREATE TABLE `sys_mode` (
 
 LOCK TABLES `sys_mode` WRITE;
 /*!40000 ALTER TABLE `sys_mode` DISABLE KEYS */;
-INSERT INTO `sys_mode` VALUES (1, '待机模式', 'system', 1, '#95a5a6', 'fas fa-pause-circle', '机器人进入低功耗状态，等待唤醒指令', '1', 128, 15, 1, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 09:21:42', 0);
-INSERT INTO `sys_mode` VALUES (2, '维护模式', 'system', 1, '#f1c40f', 'fas fa-tools', '进行系统维护和调试，暂停所有任务', '1', 89, 20, 2, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:47:07', 0);
-INSERT INTO `sys_mode` VALUES (3, '充电模式', 'system', 1, '#2ecc71', 'fas fa-bolt', '低电量时自动返回充电桩充电', '1', 156, 20, 3, '0', '', '2026-03-02 20:37:52', '', '2026-03-31 08:49:10', 0);
-INSERT INTO `sys_mode` VALUES (7, '1', 'custom', 2, '#1890ff', 'fa fa-cog', NULL, '1', 0, 0, 0, '0', '', '2026-03-31 09:21:48', '', NULL, 0);
+INSERT INTO `sys_mode` VALUES (0,'无','system',NULL,'#999999','fa fa-ban','无模式（默认占位）','1',0,0,0,'0','system','2026-05-06 23:43:16','',NULL,0),(1,'待机模式','system',1,'#95a5a6','fas fa-pause-circle','机器人进入低功耗状态，等待唤醒指令','1',0,4,1,'0','','2026-03-02 20:37:52','','2026-04-20 22:22:47',1),(2,'维护模式','system',1,'#f1c40f','fas fa-tools','进行系统维护和调试，暂停所有任务','1',0,4,2,'0','','2026-03-02 20:37:52','','2026-04-11 21:58:54',1),(3,'充电模式','system',1,'#2ecc71','fas fa-bolt','低电量时自动返回充电桩充电','1',0,8,3,'0','','2026-03-02 20:37:52','','2026-04-10 17:12:36',1),(207,'1','custom',2,'#1890ff','fa fa-cog','1','1',0,0,0,'2','','2026-04-09 23:44:19','',NULL,1),(208,'2','custom',2,'#1890ff','fa fa-cog',NULL,'1',1,0,4,'2','','2026-04-09 23:47:52','',NULL,1);
 /*!40000 ALTER TABLE `sys_mode` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -81,11 +79,12 @@ CREATE TABLE `sys_mode_param` (
                                   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                  `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                  `tenant_id` bigint DEFAULT '0' COMMENT '租户ID',
                                   PRIMARY KEY (`param_id`),
                                   KEY `idx_mode_id` (`mode_id`),
-                                  KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式参数表';
+                                  KEY `idx_sys_mode_param_tenant_id` (`tenant_id`),
+                                  KEY `idx_sys_mode_param_tenant` (`tenant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式参数表';
 
 --
 -- Dumping data for table `sys_mode_param`
@@ -93,17 +92,7 @@ CREATE TABLE `sys_mode_param` (
 
 LOCK TABLES `sys_mode_param` WRITE;
 /*!40000 ALTER TABLE `sys_mode_param` DISABLE KEYS */;
-INSERT INTO `sys_mode_param` VALUES (26, 2, '维护人员权限', 'select', NULL, 'option1', '[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (27, 2, '维护时间', 'number', NULL, '0', NULL, 0, 100, '分钟', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (28, 2, '警告提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:47:07', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (30, 3, '低电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (31, 3, '充电优先级', 'select', NULL, 'option1', '[{\"label\":\"完成任务后充电\",\"value\":\"option1\"},{\"label\":\"立即充电\",\"value\":\"option2\"},{\"label\":\"定时充电\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (32, 3, '充电完成提醒', 'boolean', NULL, 'true', NULL, 0, 100, '', 0, '0', '', '2026-03-31 08:49:10', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (33, 1, '唤醒触发条件', 'select', NULL, 'option1', '[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (34, 1, '唤醒电量阈值', 'range', NULL, '20', '[]', 0, 100, '%', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (35, 1, '低温保护', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (36, 1, '网络保持', 'boolean', NULL, 'false', '[]', 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
-INSERT INTO `sys_mode_param` VALUES (37, 1, '1', 'string', NULL, '', NULL, 0, 100, '', 0, '0', '', '2026-03-31 09:21:43', '', NULL, 0);
+INSERT INTO `sys_mode_param` VALUES (1,4,'1','string','1','1',NULL,0,100,'',0,'2','','2026-03-24 17:33:21','',NULL,1),(2,2,'维护人员权限','select',NULL,'option1','[{\"label\":\"选项1\",\"value\":\"option1\"},{\"label\":\"选项2\",\"value\":\"option2\"}]',0,100,'',0,'2','','2026-03-24 19:56:03','',NULL,1),(3,2,'维护人员权限','select',NULL,'option1','[{\"label\":\"选项1\",\"value\":\"option1\"},{\"label\":\"选项2\",\"value\":\"option2\"}]',0,100,'',0,'2','','2026-03-24 19:56:42','',NULL,1),(4,2,'维护时间','number',NULL,'0',NULL,0,100,'分钟',0,'2','','2026-03-24 19:56:42','',NULL,1),(5,3,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"选项1\",\"value\":\"手动唤醒\"},{\"label\":\"选项2\",\"value\":\"自动唤醒\"}]',0,100,'',0,'2','','2026-03-26 09:29:57','',NULL,1),(6,3,'待机损耗','range',NULL,'10',NULL,0,100,'',0,'2','','2026-03-26 09:29:57','',NULL,1),(7,3,'网络保持','boolean',NULL,'false',NULL,0,100,'',0,'2','','2026-03-26 09:29:57','',NULL,1),(8,3,'低温保护','boolean',NULL,'false',NULL,0,100,'',0,'2','','2026-03-26 09:29:57','',NULL,1),(9,3,'唤醒电量阈值','number',NULL,'30',NULL,0,100,'',0,'2','','2026-03-26 09:29:57','',NULL,1),(10,1,'1','string',NULL,'',NULL,0,100,'',0,'2','','2026-03-26 09:30:12','',NULL,1),(11,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"选项1\",\"value\":\"自动唤醒\"},{\"label\":\"选项2\",\"value\":\"手动唤醒\"}]',0,100,'',0,'2','','2026-03-26 09:30:51','',NULL,1),(12,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"自动唤醒\",\"value\":\"自动唤醒\"},{\"label\":\"手动唤醒\",\"value\":\"手动唤醒\"}]',0,100,'',0,'2','','2026-03-26 09:31:41','',NULL,1),(13,1,'唤醒触发条件','select',NULL,'自动唤醒','[{\"label\":\"自动唤醒\",\"value\":\"自动唤醒\"},{\"label\":\"手动唤醒\",\"value\":\"手动唤醒\"}]',0,100,'',0,'2','','2026-03-26 09:32:00','',NULL,1),(14,1,'唤醒触发条件','select',NULL,'自动唤醒','[{\"label\":\"自动唤醒\",\"value\":\"自动唤醒\"},{\"label\":\"手动唤醒\",\"value\":\"手动唤醒\"}]',0,100,'',0,'2','','2026-03-31 08:43:54','',NULL,1),(15,1,'唤醒电量阈值','range',NULL,'20',NULL,0,100,'%',0,'2','','2026-03-31 08:43:54','',NULL,1),(16,1,'低温保护','boolean',NULL,'false',NULL,0,100,'',0,'2','','2026-03-31 08:43:54','',NULL,1),(17,1,'网络保持','boolean',NULL,'false',NULL,0,100,'',0,'2','','2026-03-31 08:43:54','',NULL,1),(18,1,'唤醒触发条件','select',NULL,'','[{\"label\":\"定时唤醒\",\"value\":\"\"},{\"label\":\"手动唤醒\",\"value\":\"\"}]',0,100,'',0,'2','','2026-03-31 08:44:46','',NULL,1),(19,1,'唤醒电量阈值','range',NULL,'20','[]',0,100,'%',0,'2','','2026-03-31 08:44:46','',NULL,1),(20,1,'低温保护','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 08:44:46','',NULL,1),(21,1,'网络保持','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 08:44:46','',NULL,1),(22,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]',0,100,'',0,'2','','2026-03-31 08:46:10','',NULL,1),(23,1,'唤醒电量阈值','range',NULL,'20','[]',0,100,'%',0,'2','','2026-03-31 08:46:10','',NULL,1),(24,1,'低温保护','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 08:46:10','',NULL,1),(25,1,'网络保持','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 08:46:10','',NULL,1),(26,2,'维护人员权限','select',NULL,'option1','[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]',0,100,'',0,'2','','2026-03-31 08:47:07','',NULL,1),(27,2,'维护时间','number',NULL,'0',NULL,0,100,'分钟',0,'2','','2026-03-31 08:47:07','',NULL,1),(28,2,'警告提醒','boolean',NULL,'true',NULL,0,100,'',0,'2','','2026-03-31 08:47:07','',NULL,1),(29,3,'低电量阈值','range',NULL,'20',NULL,0,100,'%',0,'2','','2026-03-31 08:47:40','',NULL,1),(30,3,'低电量阈值','range',NULL,'20','[]',0,100,'%',0,'2','','2026-03-31 08:49:10','',NULL,1),(31,3,'充电优先级','select',NULL,'option1','[{\"label\":\"完成任务后充电\",\"value\":\"option1\"},{\"label\":\"立即充电\",\"value\":\"option2\"},{\"label\":\"定时充电\",\"value\":\"option3\"}]',0,100,'',0,'2','','2026-03-31 08:49:10','',NULL,1),(32,3,'充电完成提醒','boolean',NULL,'true',NULL,0,100,'',0,'2','','2026-03-31 08:49:10','',NULL,1),(33,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]',0,100,'',0,'2','','2026-03-31 09:21:43','',NULL,1),(34,1,'唤醒电量阈值','range',NULL,'20','[]',0,100,'%',0,'2','','2026-03-31 09:21:43','',NULL,1),(35,1,'低温保护','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 09:21:43','',NULL,1),(36,1,'网络保持','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-03-31 09:21:43','',NULL,1),(37,1,'1','string',NULL,'',NULL,0,100,'',0,'2','','2026-03-31 09:21:43','',NULL,1),(38,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]',0,100,'',0,'2','','2026-04-08 10:36:21','',NULL,1),(39,1,'唤醒电量阈值','range',NULL,'20','[]',0,100,'%',0,'2','','2026-04-08 10:36:21','',NULL,1),(40,1,'低温保护','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-04-08 10:36:21','',NULL,1),(41,1,'网络保持','boolean',NULL,'false','[]',0,100,'',0,'2','','2026-04-08 10:36:21','',NULL,1),(42,84,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 17:28:35','',NULL,0),(43,95,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 22:13:01','',NULL,0),(44,106,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:43:55','',NULL,0),(45,117,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:46:20','',NULL,0),(46,128,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:47:59','',NULL,0),(47,139,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:49:06','',NULL,0),(48,151,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:49:39','',NULL,0),(49,161,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:49:43','',NULL,0),(50,172,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:51:01','',NULL,0),(51,183,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:52:27','',NULL,0),(52,194,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:54:06','',NULL,0),(53,200,'测试参数','string',NULL,'默认值',NULL,NULL,NULL,NULL,0,'0','','2026-04-08 23:56:39','',NULL,0),(54,207,'1','string','1','1',NULL,0,100,'',0,'2','','2026-04-09 23:44:19','',NULL,0),(55,3,'低电量阈值','range',NULL,'20','[]',0,100,'%',0,'0','','2026-04-10 17:12:36','',NULL,0),(56,3,'充电完成提醒','boolean',NULL,'true','[]',0,100,'',0,'0','','2026-04-10 17:12:36','',NULL,0),(57,3,'充电策略','select','选择机器人充电方式：立即充电或完成任务后充电','after_task','[{\"label\":\"立即充电\",\"value\":\"immediate\"},{\"label\":\"完成任务后充电\",\"value\":\"after_task\"}]',NULL,NULL,NULL,0,'0','','2026-04-10 17:12:36','',NULL,0),(58,2,'维护人员权限','select',NULL,'option1','[{\"label\":\"基础权限\",\"value\":\"option1\"},{\"label\":\"高级权限\",\"value\":\"option2\"},{\"label\":\"管理员权限\",\"value\":\"option3\"}]',0,100,'',0,'0','','2026-04-11 21:58:54','',NULL,1),(59,2,'维护时间','number',NULL,'0','[]',0,100,'分钟',0,'0','','2026-04-11 21:58:54','',NULL,1),(60,2,'警告提醒','boolean',NULL,'true','[]',0,100,'',0,'0','','2026-04-11 21:58:54','',NULL,1),(61,1,'唤醒触发条件','select',NULL,'option1','[{\"label\":\"手动唤醒\",\"value\":\"option1\"},{\"label\":\"定时唤醒\",\"value\":\"option2\"},{\"label\":\"远程唤醒\",\"value\":\"option3\"}]',0,100,'',0,'0','','2026-04-20 22:22:47','',NULL,1),(62,1,'唤醒电量阈值','range',NULL,'20','[]',0,100,'%',0,'0','','2026-04-20 22:22:47','',NULL,1),(63,1,'低温保护','boolean',NULL,'false','[]',0,100,'',0,'0','','2026-04-20 22:22:47','',NULL,1),(64,1,'网络保持','boolean',NULL,'false',NULL,0,100,'',0,'0','','2026-04-20 22:22:47','',NULL,1);
 /*!40000 ALTER TABLE `sys_mode_param` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -127,13 +116,15 @@ CREATE TABLE `sys_mode_history` (
                                     `status` varchar(20) DEFAULT 'success' COMMENT '状态(success/warning/danger)',
                                     `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
                                     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
-                                    `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                    `tenant_id` bigint DEFAULT '0' COMMENT '租户ID',
+                                    `del_flag` char(1) DEFAULT '0' COMMENT '删除标志（0存在 2删除）',
                                     PRIMARY KEY (`history_id`),
                                     KEY `idx_operation_time` (`operation_time`),
                                     KEY `idx_robot_id` (`robot_id`),
                                     KEY `idx_operation_type` (`operation_type`),
-                                    KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式切换历史记录表';
+                                    KEY `idx_sys_mode_history_tenant_id` (`tenant_id`),
+                                    KEY `idx_sys_mode_history_tenant` (`tenant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2882 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式切换历史记录表';
 
 --
 -- Dumping data for table `sys_mode_history`
@@ -141,9 +132,7 @@ CREATE TABLE `sys_mode_history` (
 
 LOCK TABLES `sys_mode_history` WRITE;
 /*!40000 ALTER TABLE `sys_mode_history` DISABLE KEYS */;
-INSERT INTO `sys_mode_history` VALUES (1, '2026-03-02 20:37:53', 'mode-switch', 1, '机器人A', 1, '待机模式', '切换到待机模式', 'admin', 'success', '', '2026-03-02 20:37:53', 0);
-INSERT INTO `sys_mode_history` VALUES (77, '2026-03-31 09:20:57', 'mode-switch', 2, '小旋2号', 2, '维护模式', '切换到维护模式', 'admin', 'success', '', '2026-03-31 09:20:56', 0);
-INSERT INTO `sys_mode_history` VALUES (78, '2026-04-02 00:50:45', 'emergency_stop', 1, '小旋1号', NULL, NULL, '已对 1 个机器人执行紧急停止操作', 'admin', 'success', '', '2026-04-02 00:50:45', 0);
+INSERT INTO `sys_mode_history` VALUES (2879,'2026-05-06 23:46:28','mode-switch',5,'闪电侠',NULL,NULL,'切换为待机模式','admin','success','','2026-05-06 23:46:28',1,'0'),(2880,'2026-05-07 00:38:20','maintenance_mode',5,'闪电侠',NULL,NULL,'已将 1 个机器人切换为维护模式','admin','success','','2026-05-07 00:38:20',1,'0'),(2881,'2026-05-07 00:38:33','mode-switch',8,'引路人',NULL,NULL,'已将 1 个机器人切换为充电模式','admin','success','','2026-05-07 00:38:33',1,'0');
 /*!40000 ALTER TABLE `sys_mode_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -172,12 +161,14 @@ CREATE TABLE `sys_mode_schedule` (
                                      `create_time` datetime DEFAULT NULL COMMENT '创建时间',
                                      `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                      `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-                                     `tenant_id` bigint NOT NULL DEFAULT '0' COMMENT '租户ID',
+                                     `tenant_id` bigint DEFAULT '0' COMMENT '租户ID',
+                                     `repeat_rule` varchar(255) DEFAULT NULL COMMENT '重复规则JSON',
                                      PRIMARY KEY (`schedule_id`),
                                      KEY `idx_mode_id` (`mode_id`),
                                      KEY `idx_status` (`status`),
-                                     KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式排程表';
+                                     KEY `idx_sys_mode_schedule_tenant_id` (`tenant_id`),
+                                     KEY `idx_sys_mode_schedule_tenant` (`tenant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=220 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='模式排程表';
 
 --
 -- Dumping data for table `sys_mode_schedule`
@@ -185,10 +176,7 @@ CREATE TABLE `sys_mode_schedule` (
 
 LOCK TABLES `sys_mode_schedule` WRITE;
 /*!40000 ALTER TABLE `sys_mode_schedule` DISABLE KEYS */;
-INSERT INTO `sys_mode_schedule` VALUES (1, '夜间充电计划', 3, '充电模式', '每天 22:00', 'daily', '2024-01-01', '22:00:00', 2.00, 'paused', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
-INSERT INTO `sys_mode_schedule` VALUES (2, '午间待机计划', 1, '待机模式', '工作日 12:00-14:00', 'weekdays', '2024-01-01', '12:00:00', 2.00, 'running', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
-INSERT INTO `sys_mode_schedule` VALUES (3, '每周维护计划', 2, '维护模式', '每周一 08:00', 'weekly', '2024-01-01', '08:00:00', 1.00, 'pending', NULL, NULL, '0', '', '2026-03-02 20:37:53', '', NULL, 0);
-INSERT INTO `sys_mode_schedule` VALUES (6, '1', 1, NULL, '2026-04-01 08:00', 'daily', '2026-04-01', '08:00:00', 2.00, 'pending', NULL, NULL, '0', '', '2026-03-31 09:21:16', '', NULL, 0);
+INSERT INTO `sys_mode_schedule` VALUES (1,'夜间充电计划',3,'充电模式','2026-03-01 22:00:00','daily','2026-03-01','22:00:00',2.00,'running','2026-04-13 12:35:00','success','2','','2026-03-02 20:37:53','','2026-04-13 12:35:00',1,NULL),(2,'午间待机计划',1,'待机模式','2024-01-01 12:00:00','weekdays','2024-01-01','12:00:00',2.00,'running','2026-04-07 22:53:00','success','2','','2026-03-02 20:37:53','','2026-04-07 22:53:00',1,NULL),(3,'每周维护计划',2,'维护模式','2024-01-01 08:00:00','weekly','2024-01-01','08:00:00',1.00,'running','2026-04-13 16:58:00','success','2','','2026-03-02 20:37:53','','2026-04-13 16:58:00',1,NULL),(211,'工作日晚间计划',1,'待机模式','2026-03-01 09:00:00','weekdays','2026-03-01','09:00:00',3.00,'running','2026-04-13 17:07:00','success','2','','2026-04-13 11:50:22','','2026-04-13 17:07:00',1,NULL),(212,'夜间充电模式',3,'充电模式','2026-03-01 21:00:00','daily','2026-03-01','21:00:00',2.00,'running','2026-04-13 17:07:00','success','2','','2026-04-13 12:35:07','','2026-04-13 17:07:00',1,NULL),(213,'夜间充电',3,'充电模式','2026-03-01 08:00:00','daily','2026-03-01','08:00:00',2.00,'running','2026-04-13 16:58:00','success','2','','2026-04-13 13:35:53','','2026-04-13 16:58:00',1,NULL),(214,'定期维护',2,'维护模式','2026-03-01 15:00','monthly','2026-03-01','15:00:00',2.00,'running',NULL,NULL,'0','','2026-04-13 13:36:30','','2026-05-11 21:25:45',1,'{\"type\":\"monthly\",\"days\":[1]}'),(215,'1',1,'待机模式','2026-04-14 08:00','daily','2026-04-14','08:00:00',2.00,'running',NULL,NULL,'2','','2026-04-13 16:53:09','',NULL,1,NULL),(216,'夜间充电',3,'充电模式','2026-03-02 21:00:00','weekdays','2026-03-02','21:00:00',2.00,'running','2026-05-05 21:33:01','success','0','','2026-04-13 17:06:36','','2026-05-05 21:33:00',1,NULL),(217,'工作日晚间',1,'待机模式','2026-03-01 09:00:00','daily','2026-03-01','09:00:00',2.00,'running','2026-04-13 17:09:00','success','2','','2026-04-13 17:06:56','','2026-04-13 17:09:00',1,NULL),(218,'工作日晚间',1,'待机模式','2026-03-02 09:00:00','weekdays','2026-03-02','09:00:00',2.00,'running','2026-05-05 21:33:00','success','0','','2026-04-13 17:08:55','','2026-05-05 21:33:00',1,NULL),(219,'检修',2,'维护模式','2026-05-28 15:00','once','2026-05-28','15:00:00',2.00,'pending',NULL,NULL,'0','','2026-04-13 17:29:11','','2026-04-27 22:43:45',1,NULL);
 /*!40000 ALTER TABLE `sys_mode_schedule` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -208,8 +196,8 @@ CREATE TABLE `sys_schedule_robot` (
                                       PRIMARY KEY (`id`),
                                       KEY `idx_schedule_id` (`schedule_id`),
                                       KEY `idx_robot_id` (`robot_id`),
-                                      KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='排程机器人关联表';
+                                      KEY `idx_sys_schedule_robot_tenant` (`tenant_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=343 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='排程机器人关联表';
 
 --
 -- Dumping data for table `sys_schedule_robot`
@@ -217,15 +205,7 @@ CREATE TABLE `sys_schedule_robot` (
 
 LOCK TABLES `sys_schedule_robot` WRITE;
 /*!40000 ALTER TABLE `sys_schedule_robot` DISABLE KEYS */;
-INSERT INTO `sys_schedule_robot` VALUES (1, 1, 1, '机器人A', 0);
-INSERT INTO `sys_schedule_robot` VALUES (2, 1, 2, '机器人B', 0);
-INSERT INTO `sys_schedule_robot` VALUES (3, 1, 4, '机器人D', 0);
-INSERT INTO `sys_schedule_robot` VALUES (4, 2, 1, '机器人A', 0);
-INSERT INTO `sys_schedule_robot` VALUES (5, 2, 3, '机器人C', 0);
-INSERT INTO `sys_schedule_robot` VALUES (6, 3, 2, '机器人B', 0);
-INSERT INTO `sys_schedule_robot` VALUES (7, 3, 5, '机器人E', 0);
-INSERT INTO `sys_schedule_robot` VALUES (12, 6, 1, '小旋1号', 0);
-INSERT INTO `sys_schedule_robot` VALUES (13, 6, 2, '小旋2号', 0);
+INSERT INTO `sys_schedule_robot` VALUES (333,216,1,'小旋1号',1),(334,216,2,'小旋2号',1),(335,218,7,'巡警1号',1),(341,219,5,'闪电侠',1),(342,214,9,'讲解员',0);
 /*!40000 ALTER TABLE `sys_schedule_robot` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -248,14 +228,22 @@ CREATE TABLE `sys_robot_ext` (
                                  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
                                  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志',
-                                 `need_auto_charge` tinyint DEFAULT '0' COMMENT '是否需要自动充电 0-否 1-是',
+                                 `need_auto_charge` tinyint DEFAULT '0' COMMENT '是否需要自动充电(0-否 1-是)',
                                  PRIMARY KEY (`robot_id`),
                                  KEY `idx_tenant_id` (`tenant_id`),
                                  KEY `idx_current_mode` (`current_mode`),
                                  KEY `idx_sys_robot_ext_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式扩展表';
 
+--
+-- Dumping data for table `sys_robot_ext`
+--
 
+LOCK TABLES `sys_robot_ext` WRITE;
+/*!40000 ALTER TABLE `sys_robot_ext` DISABLE KEYS */;
+INSERT INTO `sys_robot_ext` VALUES (1,3,NULL,'2026-05-05 21:33:00',869,1,'','2026-04-08 10:36:02','','2026-05-05 21:33:00','0',0),(2,3,NULL,'2026-05-05 21:33:00',872,1,'','2026-04-09 16:00:58','','2026-05-05 21:33:00','0',1),(3,3,NULL,'2026-04-20 20:44:03',19,1,'','2026-04-09 20:26:50','','2026-04-20 20:44:03','0',0),(4,2,NULL,'2026-04-13 13:38:02',17,1,'','2026-04-09 20:26:54','','2026-04-13 13:38:02','0',0),(5,2,NULL,'2026-05-07 00:38:19',22,1,'','2026-04-09 20:26:57','','2026-05-07 00:38:19','0',0),(6,3,NULL,'2026-04-20 20:44:03',20,1,'','2026-04-09 20:27:00','','2026-04-20 20:44:03','0',0),(7,1,NULL,'2026-05-05 21:34:00',1119,1,'','2026-04-09 20:27:04','','2026-05-05 21:34:00','0',1),(8,3,NULL,'2026-05-07 00:38:33',19,1,'','2026-04-09 20:27:07','','2026-05-07 00:38:33','0',0),(9,3,NULL,'2026-04-20 20:44:03',18,1,'','2026-04-09 20:27:10','','2026-04-20 20:44:03','0',1),(100,1,NULL,NULL,0,1,'','2026-04-08 17:28:35','','2026-04-12 11:32:22','0',0),(989,3,NULL,'2026-04-09 00:08:46',1,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(990,3,NULL,'2026-04-09 00:08:46',1,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(991,2,NULL,'2026-04-09 00:08:46',1,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(992,1,NULL,'2026-04-09 00:08:45',1,1,'','2026-04-09 00:08:45','','2026-04-12 11:32:22','0',0),(993,NULL,NULL,NULL,0,1,'','2026-04-09 00:08:45','','2026-04-12 11:32:22','0',0),(994,NULL,NULL,NULL,0,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(995,NULL,NULL,NULL,0,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(996,NULL,NULL,NULL,0,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(997,2,NULL,'2026-04-09 00:08:46',1,1,'','2026-04-09 00:08:46','','2026-04-12 11:32:22','0',0),(998,NULL,NULL,NULL,0,1,'','2026-04-09 00:08:45','','2026-04-12 11:32:22','0',0),(999,1,NULL,NULL,0,1,'','2026-04-09 00:08:45','','2026-04-12 11:32:22','0',0);
+/*!40000 ALTER TABLE `sys_robot_ext` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `sys_robot_mode_config`
@@ -275,9 +263,17 @@ CREATE TABLE `sys_robot_mode_config` (
                                          PRIMARY KEY (`id`),
                                          UNIQUE KEY `uk_robot_mode` (`robot_id`,`mode_id`),
                                          KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式配置表';
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人模式配置表';
 
+--
+-- Dumping data for table `sys_robot_mode_config`
+--
 
+LOCK TABLES `sys_robot_mode_config` WRITE;
+/*!40000 ALTER TABLE `sys_robot_mode_config` DISABLE KEYS */;
+INSERT INTO `sys_robot_mode_config` VALUES (1,2,3,'{\"低电量阈值\": \"20\", \"充电优先级\": \"option1\", \"充电完成提醒\": \"true\"}',0,'2026-04-10 17:12:04','2026-04-10 17:12:04'),(2,1,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:51','2026-04-10 17:33:51'),(3,2,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:51','2026-04-10 17:33:51'),(4,3,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:51','2026-04-10 17:33:51'),(5,4,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:51','2026-04-10 17:33:51'),(6,5,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:52','2026-04-10 17:33:52'),(7,6,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:52','2026-04-10 17:33:52'),(8,7,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:52','2026-04-10 17:33:52'),(9,8,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:52','2026-04-10 17:33:52'),(10,9,2,'{\"维护时间\": \"0\", \"警告提醒\": \"true\", \"维护人员权限\": \"option1\"}',0,'2026-04-10 17:33:52','2026-04-10 17:33:52'),(11,9,3,'{\"充电策略\": \"after_task\", \"低电量阈值\": \"20\", \"充电完成提醒\": \"true\"}',0,'2026-04-10 20:07:36','2026-04-10 20:07:36'),(12,7,3,'{\"充电策略\": \"immediate\", \"低电量阈值\": \"20\", \"充电完成提醒\": \"true\"}',0,'2026-04-10 21:14:19','2026-04-10 21:19:11');
+/*!40000 ALTER TABLE `sys_robot_mode_config` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `sys_robot_operation`
@@ -300,7 +296,7 @@ CREATE TABLE `sys_robot_operation` (
                                        PRIMARY KEY (`operation_id`),
                                        KEY `idx_robot_id` (`robot_id`),
                                        KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人操作记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='机器人操作记录表';
 
 --
 -- Dumping data for table `sys_robot_operation`
@@ -308,12 +304,10 @@ CREATE TABLE `sys_robot_operation` (
 
 LOCK TABLES `sys_robot_operation` WRITE;
 /*!40000 ALTER TABLE `sys_robot_operation` DISABLE KEYS */;
-INSERT INTO `sys_robot_operation` VALUES (1, 1, '小旋1号', 'mode_switch', 'success', '2026-04-08 10:36:02', 'admin', '模式切换: null -> 1', 1, '2026-04-08 10:36:02');
-INSERT INTO `sys_robot_operation` VALUES (2, 3, '大白1号', 'emergency_stop', 'success', '2026-04-08 10:36:09', 'admin', '紧急停止', 1, '2026-04-08 10:36:09');
 /*!40000 ALTER TABLE `sys_robot_operation` ENABLE KEYS */;
 UNLOCK TABLES;
-
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;

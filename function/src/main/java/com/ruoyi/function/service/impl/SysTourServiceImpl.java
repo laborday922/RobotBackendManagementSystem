@@ -3,6 +3,8 @@ package com.ruoyi.function.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruoyi.common.constant.HttpStatus;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.SecurityUtils;
@@ -246,10 +248,43 @@ public class SysTourServiceImpl implements ISysTourService {
 
     @Override
     public SysTourRoute getRoute(Long routeId) {
-        SysTourRoute route = tourRouteMapper.selectById(routeId);
-        if (route != null) {
-            route.setRoutePoints(tourRouteMapper.selectRoutePoints(routeId));
+        SysTourRoute route = tourRouteMapper.selectRouteDetailById(routeId);
+        if (route == null) {
+            throw new ServiceException("路线不存在或已被删除", HttpStatus.WARN);
         }
+
+        if (route.getRoutePoints() != null) {
+            List<SysRoutePoint> validPoints = route.getRoutePoints().stream()
+                    .filter(p -> p != null && (p.getId() != null || p.getPointId() != null || p.getContentId() != null))
+                    .collect(Collectors.toList());
+            route.setRoutePoints(validPoints);
+        }
+
+        List<Long> missingPointIds = route.getRoutePoints() == null ? java.util.Collections.emptyList() : route.getRoutePoints().stream()
+                .filter(p -> p != null && p.getPointId() != null)
+                .filter(p -> p.getPoint() == null || p.getPoint().getPointId() == null)
+                .map(SysRoutePoint::getPointId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Long> missingContentIds = route.getRoutePoints() == null ? java.util.Collections.emptyList() : route.getRoutePoints().stream()
+                .filter(p -> p != null && p.getContentId() != null)
+                .filter(p -> p.getContent() == null || p.getContent().getContentId() == null)
+                .map(SysRoutePoint::getContentId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (!missingPointIds.isEmpty() || !missingContentIds.isEmpty()) {
+            StringBuilder msg = new StringBuilder("编辑失败：该路线关联数据缺失，可能已在其他地方被删除。");
+            if (!missingPointIds.isEmpty()) {
+                msg.append(" 缺失点位ID：").append(missingPointIds);
+            }
+            if (!missingContentIds.isEmpty()) {
+                msg.append(" 缺失讲解点ID：").append(missingContentIds);
+            }
+            throw new ServiceException(msg.toString(), HttpStatus.WARN);
+        }
+
         return route;
     }
 
@@ -294,33 +329,35 @@ public class SysTourServiceImpl implements ISysTourService {
                 route.getRouteName(), route.getRobotId(),
                 route.getRoutePoints() == null ? 0 : route.getRoutePoints().size());
 
-        // 根据 routePoints 生成 pointIds JSON 字符串
-        String pointIds = generatePointIds(route.getRoutePoints());
-        log.info("saveRoute - 生成的 pointIds: {}", pointIds);
-        route.setPointIds(pointIds);
-
-        // 更新路线中的 pointCount
         if (route.getRoutePoints() != null) {
+            String pointIds = generatePointIds(route.getRoutePoints());
+            log.info("saveRoute - 生成的 pointIds: {}", pointIds);
+            route.setPointIds(pointIds);
             route.setPointCount(route.getRoutePoints().size());
         } else {
-            route.setPointCount(0);
+            route.setPointIds(null);
+            route.setPointCount(null);
         }
 
         int result;
         if (route.getRouteId() != null) {
-            // 更新：先删除旧关联，再插入新关联
-            tourRouteMapper.deleteRoutePoints(route.getRouteId());
             result = tourRouteMapper.update(route);
-            if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
-                for (SysRoutePoint point : route.getRoutePoints()) {
-                    point.setRouteId(route.getRouteId());
-                    tourRouteMapper.insertRoutePoint(point);
+            if (route.getRoutePoints() != null) {
+                tourRouteMapper.deleteRoutePoints(route.getRouteId());
+                if (!route.getRoutePoints().isEmpty()) {
+                    for (SysRoutePoint point : route.getRoutePoints()) {
+                        point.setRouteId(route.getRouteId());
+                        tourRouteMapper.insertRoutePoint(point);
+                    }
                 }
             }
         } else {
             // 新增
             route.setCreateTime(DateUtils.getNowDate());
             route.setCreateBy(SecurityUtils.getUsername());
+            if (route.getPointCount() == null) {
+                route.setPointCount(0);
+            }
             result = tourRouteMapper.insert(route);
             log.info("saveRoute - insert 成功, 生成的 routeId: {}", route.getRouteId());
             if (route.getRoutePoints() != null && !route.getRoutePoints().isEmpty()) {
@@ -333,6 +370,13 @@ public class SysTourServiceImpl implements ISysTourService {
         }
 
         if (result > 0) {
+            if (route.getRouteId() != null && route.getRoutePoints() == null) {
+                SysTourRoute latest = tourRouteMapper.selectById(route.getRouteId());
+                if (latest != null) {
+                    route.setPointIds(latest.getPointIds());
+                }
+                route.setRoutePoints(tourRouteMapper.selectRoutePoints(route.getRouteId()));
+            }
             syncRouteToRobot(route);
         }
 

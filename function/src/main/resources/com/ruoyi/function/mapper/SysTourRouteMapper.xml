@@ -103,6 +103,28 @@
         ORDER BY sr.route_id, rp.order_num ASC
     </select>
 
+    <!-- 根据路线ID查询路线详情（包含所有点位顺序和讲解内容） -->
+    <select id="selectRouteDetailById" resultMap="SysTourRouteDetailResult">
+        SELECT
+        sr.route_id, sr.route_name, sr.robot_id, sr.map_id, sr.status, sr.point_count,
+        sr.point_ids,
+        sr.create_by, sr.create_time, sr.update_by, sr.update_time,
+        rp.id as rp_id, rp.route_id as rp_route_id, rp.point_id as rp_point_id,
+        rp.content_id as rp_content_id, rp.order_num as rp_order_num,
+        sp.point_id, sp.point_name, sp.point_code, sp.point_type,
+        sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
+        tc.content_id, tc.point_name as content_point_name, tc.point_desc,
+        tc.broadcast_type, tc.broadcast_text, tc.audio_file,
+        tc.voice_type, tc.speech_rate, tc.interval_time,
+        tc.arm_action, tc.chassis_angle
+        FROM sys_tour_route sr
+        LEFT JOIN sys_route_point rp ON sr.route_id = rp.route_id
+        LEFT JOIN sys_point sp ON rp.point_id = sp.point_id
+        LEFT JOIN sys_tour_content tc ON rp.content_id = tc.content_id
+        WHERE sr.route_id = #{routeId}
+        ORDER BY rp.order_num ASC
+    </select>
+
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourRoute" useGeneratedKeys="true" keyProperty="routeId">
         insert into sys_tour_route (
         route_name, robot_id, map_id, point_ids, point_count, status, tenant_id,

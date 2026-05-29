@@ -404,7 +404,7 @@
 <script>
 import { getTourGeneral, saveTourGeneral } from "@/api/function/tour";
 import { getTourContentList, saveTourContent, deleteTourContent, batchDeleteTourContents } from "@/api/function/tour";
-import { getRouteListByRobotId, saveRoute, deleteRoute } from "@/api/function/tour";
+import { getRouteListByRobotId, getRouteDetail, saveRoute, deleteRoute } from "@/api/function/tour";
 import { listRobot } from "@/api/mode/robot";
 import { getMapList, getPointListByMap, getDefaultPoints } from "@/api/function/map";
 import Pagination from "@/components/Pagination";
@@ -942,26 +942,33 @@ export default {
       }).catch(() => {});
     },
 
-    toggleRouteStatus(row) {
-      const data = {
-        routeId: row.routeId,
-        routeName: row.routeName,
-        mapId: row.mapId,
-        robotId: this.selectedRobotId,
-        status: row.status,
-        pointCount: row.pointCount,
-        routePoints: row.routePoints
-      };
-      saveRoute(data).then(() => {
+    async toggleRouteStatus(row) {
+      const oldStatus = row.status === '1' ? '0' : '1';
+      try {
+        const res = await getRouteDetail(row.routeId);
+        const route = res.data || {};
+        const routePoints = (route.routePoints || [])
+          .filter(p => p && p.pointId)
+          .map(p => ({ pointId: p.pointId, contentId: p.contentId, orderNum: p.orderNum }));
+
+        await saveRoute({
+          routeId: row.routeId,
+          routeName: route.routeName,
+          mapId: route.mapId,
+          robotId: route.robotId || this.selectedRobotId,
+          status: row.status,
+          routePoints: routePoints
+        });
+
         this.$message.success('状态更新成功');
         this.loadAllRoutes();
-      }).catch(error => {
+      } catch (error) {
+        row.status = oldStatus;
         console.error('状态更新失败:', error);
-        this.$message.error('状态更新失败');
-      });
+      }
     },
 
-    openRouteConfigDrawer(row) {
+    async openRouteConfigDrawer(row) {
       this.currentRouteId = row.routeId;
       this.routeConfigForm = {
         routeName: row.routeName || '',
@@ -972,20 +979,48 @@ export default {
         warningMessage: '',
         loadingPoints: false
       };
-
-      if (this.routeConfigForm.mapId !== null && this.routeConfigForm.mapId !== undefined) {
-        this.loadMapPoints(this.routeConfigForm.mapId);
-      }
-
-      if (row.routePoints && row.routePoints.length > 0) {
-        this.routeConfigForm.selectedPoints = row.routePoints.map(p => p.pointId);
-        this.routeConfigForm.associationList = row.routePoints.map(p => ({
-          pointId: p.pointId,
-          pointName: p.pointName || '',
-          contentId: p.contentId
-        }));
-      }
+      this.mapPoints = [];
       this.routeConfigDrawerVisible = true;
+
+      try {
+        const res = await getRouteDetail(row.routeId);
+        const route = res.data || {};
+
+        this.routeConfigForm.routeName = route.routeName || this.routeConfigForm.routeName;
+        this.routeConfigForm.mapId = route.mapId !== undefined && route.mapId !== null ? route.mapId : this.routeConfigForm.mapId;
+
+        if (this.routeConfigForm.mapId !== null && this.routeConfigForm.mapId !== undefined) {
+          this.loadMapPoints(this.routeConfigForm.mapId);
+        }
+
+        const routePoints = (route.routePoints || []).filter(p => p && p.pointId);
+        if (routePoints.length > 0) {
+          this.routeConfigForm.selectedPoints = routePoints.map(p => p.pointId);
+          this.routeConfigForm.associationList = routePoints.map(p => ({
+            pointId: p.pointId,
+            pointName: (p.point && p.point.pointName) || '',
+            contentId: p.contentId || null
+          }));
+          this.updateSelectedPoints();
+        }
+      } catch (error) {
+        console.error('获取路线详情失败:', error);
+        const keptRouteName = this.routeConfigForm.routeName;
+        const keptMapId = this.routeConfigForm.mapId;
+        this.routeConfigForm = {
+          routeName: keptRouteName,
+          mapId: keptMapId,
+          selectAll: false,
+          selectedPoints: [],
+          associationList: [],
+          warningMessage: '',
+          loadingPoints: false
+        };
+        this.mapPoints = [];
+        if (keptMapId !== null && keptMapId !== undefined && keptMapId !== '') {
+          this.loadMapPoints(keptMapId);
+        }
+      }
     },
 
     closeRouteConfigDrawer() {
@@ -1009,7 +1044,7 @@ export default {
         const existing = this.routeConfigForm.associationList.find(a => a.pointId === pointId);
         newAssociationList.push({
           pointId: pointId,
-          pointName: point?.pointName || '',
+          pointName: point?.pointName || existing?.pointName || '',
           contentId: existing?.contentId || null
         });
       });

@@ -160,16 +160,16 @@
                   :rows="2"
                 />
               </div>
-              <div class="form-group">
-                <label>导航中播报</label>
-                <el-input
-                  v-model="pointVoiceConfig.duringMsg"
-                  placeholder="例如：请跟随我，前方到达点位名称"
-                  :disabled="!selectedPoint"
-                  type="textarea"
-                  :rows="2"
-                />
-              </div>
+<!--              <div class="form-group">-->
+<!--                <label>导航中播报</label>-->
+<!--                <el-input-->
+<!--                  v-model="pointVoiceConfig.duringMsg"-->
+<!--                  placeholder="例如：请跟随我，前方到达点位名称"-->
+<!--                  :disabled="!selectedPoint"-->
+<!--                  type="textarea"-->
+<!--                  :rows="2"-->
+<!--                />-->
+<!--              </div>-->
               <div class="form-group">
                 <label>到达后播报</label>
                 <el-input

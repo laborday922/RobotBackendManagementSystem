@@ -78,6 +78,13 @@ export function getRouteDetailList(robotId) {
   })
 }
 
+export function getRouteDetail(routeId) {
+  return request({
+    url: '/func/tour/route/' + routeId,
+    method: 'get'
+  })
+}
+
 // 保存路线
 export function saveRoute(data) {
   return request({

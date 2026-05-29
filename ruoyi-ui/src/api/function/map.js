@@ -57,10 +57,11 @@ export function uploadMap(data) {
 }
 
 // 获取地图点位列表
-export function getPointListByMap(mapId) {
+export function getPointListByMap(mapId, robotId) {
   return request({
-    url: '/func/map/points/' + mapId,
-    method: 'get'
+    url: '/func/map/points',
+    method: 'get',
+    params: { mapId, robotId }
   })
 }
 

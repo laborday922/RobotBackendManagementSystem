@@ -623,7 +623,14 @@ export default {
         return;
       }
 
-      getPointListByMap(numericMapId).then(response => {
+      if (!this.selectedRobotId) {
+        this.mapPoints = [];
+        this.routeConfigForm.loadingPoints = false;
+        this.$message.warning('请先选择机器人');
+        return;
+      }
+
+      getPointListByMap(numericMapId, this.selectedRobotId).then(response => {
         this.mapPoints = response.rows || response.data || [];
         this.routeConfigForm.loadingPoints = false;
       }).catch(error => {

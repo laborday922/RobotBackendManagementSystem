@@ -294,7 +294,7 @@
 
 <script>
 import { getNavConfig, saveNavConfig } from "@/api/function/nav";
-import { getMapList, getPointListByMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
+import { getMapList, getPointListByMap, addMap, uploadMap, delMap, updateMap, getMap } from "@/api/function/map";
 import {
   addPoint,
   updatePoint,
@@ -456,65 +456,73 @@ export default {
       if (!this.selectedRobotId) return;
       getNavConfig(this.selectedRobotId).then(response => {
         if (response.data) {
-          this.navConfig = response.data;
-          if (this.navConfig.mapId) this.loadMapImage();
+          const data = response.data;
+          this.navConfig.voiceType = data.voiceType || 'default';
+          this.navConfig.beforeMsg = data.beforeMsg || '';
+          this.navConfig.duringMsg = data.duringMsg || '';
+          this.navConfig.afterMsg = data.afterMsg || '';
         }
       }).catch(error => console.error('加载导航配置失败:', error));
     },
 
-    loadMaps() {
+    async loadMaps() {
       if (!this.selectedRobotId) return;
-      getMapList({ robotId: this.selectedRobotId }).then(response => {
+      try {
+        let response = await getMapList({ robotId: this.selectedRobotId });
         let maps = response.rows || response.data || [];
-        this.mapList = maps.filter(map => {
+        let robotMaps = maps.filter(map => {
           const isNotDeleted = map.delFlag === '0' || map.delFlag === 0 || !map.delFlag;
           const isEnabled = map.status === '1';
           return isNotDeleted && isEnabled;
         });
-        this.mapList.forEach(map => this.loadPointCount(map));
 
-        const hasDefaultMap = this.mapList.some(m => m.mapId === 0);
-
-        if (!hasDefaultMap) {
-          this.mapList.unshift({
-            mapId: 0,
+        if (robotMaps.length === 0) {
+          const createRes = await addMap({
             mapName: '默认地图',
-            pointCount: 0,
+            robotId: String(this.selectedRobotId),
             status: '1',
-            delFlag: '0'
+            isEnable: 1,
+            version: '1.0'
+          });
+          if (createRes && createRes.code !== 200) {
+            throw new Error(createRes.msg || '自动创建地图失败');
+          }
+
+          response = await getMapList({ robotId: this.selectedRobotId });
+          maps = response.rows || response.data || [];
+          robotMaps = maps.filter(map => {
+            const isNotDeleted = map.delFlag === '0' || map.delFlag === 0 || !map.delFlag;
+            const isEnabled = map.status === '1';
+            return isNotDeleted && isEnabled;
           });
         }
 
-        if (!this.navConfig.mapId) {
-          this.navConfig.mapId = 0;
-          this.loadPoints();
-          this.loadMapImage();
+        this.mapList = [...robotMaps];
+
+        this.mapList.forEach(map => this.loadPointCount(map));
+
+        const firstRobotMapId = robotMaps.length > 0 ? robotMaps[0].mapId : null;
+        const currentMapId = this.navConfig.mapId;
+        const currentValid = currentMapId != null && this.mapList.some(m => Number(m.mapId) === Number(currentMapId));
+
+        if (!currentValid) {
+          this.navConfig.mapId = firstRobotMapId;
         }
 
-        if (this.navConfig.mapId && !this.mapList.some(m => m.mapId === this.navConfig.mapId)) {
-          this.navConfig.mapId = null;
-          this.pointList = [];
-          this.mapImageUrl = '';
-          this.selectedPoint = null;
-          this.resetPointVoiceConfig();
-        }
-        if (this.navConfig.mapId) this.loadMapImage();
-      }).catch(error => {
+        this.loadPoints();
+        this.loadMapImage();
+      } catch (error) {
         console.error('加载地图列表失败:', error);
         this.mapList = [];
-        this.mapList = [{
-          mapId: 0,
-          mapName: '默认地图',
-          pointCount: 0,
-          status: '1',
-          delFlag: '0'
-        }];
-        this.navConfig.mapId = 0;
-      });
+        this.navConfig.mapId = null;
+        this.pointList = [];
+        this.mapImageUrl = '';
+      }
     },
 
     loadPointCount(map) {
-      getPointListByMap(map.mapId).then(response => {
+      if (!this.selectedRobotId) { map.pointCount = 0; return; }
+      getPointListByMap(map.mapId, this.selectedRobotId).then(response => {
         const points = response.data || response.rows || [];
         map.pointCount = points.length;
       }).catch(() => { map.pointCount = 0; });
@@ -562,7 +570,9 @@ export default {
 
     loadPoints() {
       const mapId = this.navConfig.mapId || 0;
-      getPointListByMap(mapId).then(response => {
+      if (!this.selectedRobotId) { this.pointList = []; return; }
+      if (!mapId) { this.pointList = []; return; }
+      getPointListByMap(mapId, this.selectedRobotId).then(response => {
         this.pointList = response.data || response.rows || [];
         const currentMap = this.mapList.find(m => m.mapId === mapId);
         if (currentMap) currentMap.pointCount = this.pointList.length;

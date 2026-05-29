@@ -10,6 +10,7 @@ import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.enums.MapStatusEnum;
 import com.ruoyi.function.exception.FunctionException;
 import com.ruoyi.function.service.ISysMapService;
+import com.ruoyi.function.service.ISysPointService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -38,6 +39,9 @@ public class SysMapController extends BaseController {
 
     @Autowired
     private ISysMapService sysMapService;
+
+    @Autowired
+    private ISysPointService sysPointService;
 
     @Autowired
     private HttpServletRequest request;
@@ -224,9 +228,21 @@ public class SysMapController extends BaseController {
     }
 
     @ApiOperation("获取地图点位列表")
-    @GetMapping("/points/{mapId}")
-    public AjaxResult getPointsByMapId(@PathVariable Long mapId) {
-        List<SysPoint> points = sysMapService.selectPointsByMapId(mapId);
+    @GetMapping("/points")
+    public AjaxResult getPoints(@RequestParam(required = false) Long mapId, @RequestParam(required = false) Long robotId) {
+        if (mapId == null) {
+            return error("地图ID不能为空");
+        }
+        if (robotId == null) {
+            return error("机器人ID不能为空");
+        }
+
+        SysPoint query = new SysPoint();
+        query.setMapId(mapId);
+        query.setRobotId(robotId);
+        query.setDelFlag("0");
+
+        List<SysPoint> points = sysPointService.selectList(query);
         return success(points);
     }
 

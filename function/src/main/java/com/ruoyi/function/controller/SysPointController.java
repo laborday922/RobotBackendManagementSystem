@@ -7,12 +7,10 @@ import com.ruoyi.function.constants.MapConstants;
 import com.ruoyi.function.controller.dto.request.PointCreateRequest;
 import com.ruoyi.function.controller.dto.request.PointUpdateRequest;
 import com.ruoyi.function.controller.dto.response.PointResponse;
-import com.ruoyi.function.domain.SysMap;
 import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.enums.MapStatusEnum;
 import com.ruoyi.function.enums.PointTypeEnum;
 import com.ruoyi.function.exception.FunctionException;
-import com.ruoyi.function.service.ISysMapService;
 import com.ruoyi.function.service.ISysPointService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,9 +40,6 @@ public class SysPointController extends BaseController {
 
     @Autowired
     private ISysPointService sysPointService;
-
-    @Autowired
-    private ISysMapService sysMapService;
 
     @Autowired(required = false)
     private com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler taskRobotWebSocketHandler;
@@ -252,9 +247,10 @@ public class SysPointController extends BaseController {
     @GetMapping("/defaultPoints")
     public AjaxResult getDefaultPoints() {
         try {
-            ensureDefaultMapExists();
-
-            List<SysPoint> points = sysPointService.selectByMapId(MapConstants.DEFAULT_MAP_ID);
+            SysPoint query = new SysPoint();
+            query.setMapId(MapConstants.DEFAULT_MAP_ID);
+            query.setDelFlag("0");
+            List<SysPoint> points = sysPointService.selectList(query);
             if (points == null) {
                 points = new ArrayList<>();
             }
@@ -305,37 +301,11 @@ public class SysPointController extends BaseController {
         return mapId;
     }
 
-    /**
-     * 确保默认地图存在
-     */
-    private void ensureDefaultMapExists() {
-        try {
-            SysMap defaultMap = sysMapService.selectById(MapConstants.DEFAULT_MAP_ID);
-            if (defaultMap == null) {
-                defaultMap = new SysMap();
-                defaultMap.setMapId(MapConstants.DEFAULT_MAP_ID);
-                defaultMap.setMapName(MapConstants.DEFAULT_MAP_NAME);
-                defaultMap.setRobotId(MapConstants.DEFAULT_ROBOT_ID);
-                defaultMap.setStatus(MapStatusEnum.ENABLED.getCode());
-                defaultMap.setIsEnable(1);
-                defaultMap.setDelFlag("0");
-                defaultMap.setPointCount(0);
-                defaultMap.setVersion("1.0");
-                sysMapService.insert(defaultMap);
-                log.info("自动创建默认地图成功，ID: {}", MapConstants.DEFAULT_MAP_ID);
-            }
-        } catch (Exception e) {
-            log.error("创建/检查默认地图失败", e);
-        }
-    }
-
     // ========== CRUD 操作接口 ==========
 
     @ApiOperation("新增点位")
     @PostMapping
     public AjaxResult add(@Valid @RequestBody PointCreateRequest request) {
-        ensureDefaultMapExists();
-
         Long mapId = getEffectiveMapId(request.getMapId());
 
         SysPoint point = new SysPoint();

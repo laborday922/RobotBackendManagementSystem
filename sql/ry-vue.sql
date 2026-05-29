@@ -781,7 +781,7 @@ CREATE TABLE `sys_map`  (
   `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注信息',
   `map_base64` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '地图Base64数据',
   `tenant_id` bigint NULL DEFAULT NULL COMMENT '租户ID',
-  `robot_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '机器人ID',
+  `robot_id` bigint NULL DEFAULT NULL COMMENT '机器人ID',
   PRIMARY KEY (`map_id`) USING BTREE,
   INDEX `idx_sys_map_tenant`(`tenant_id` ASC) USING BTREE,
   INDEX `idx_robot_id`(`robot_id` ASC) USING BTREE

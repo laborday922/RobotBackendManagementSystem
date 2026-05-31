@@ -2,6 +2,9 @@ package com.ruoyi.function.service.vo;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -9,6 +12,8 @@ import java.math.BigDecimal;
  * 点位视图对象（前端展示用）
  */
 @ApiModel(description = "点位视图对象")
+@Getter
+@Setter
 public class PointVO {
 
     @ApiModelProperty("系统点位ID")
@@ -24,6 +29,7 @@ public class PointVO {
     private String pointTypeLabel;
 
     @ApiModelProperty("坐标字符串（x, y）")
+    @Getter(AccessLevel.NONE)
     private String coordinateStr;
 
     @ApiModelProperty("X坐标")
@@ -35,70 +41,10 @@ public class PointVO {
     @ApiModelProperty("显示顺序")
     private Integer orderNum;
 
-    public Long getSysPointId() {
-        return sysPointId;
-    }
-
-    public void setSysPointId(Long sysPointId) {
-        this.sysPointId = sysPointId;
-    }
-
-    public String getPointName() {
-        return pointName;
-    }
-
-    public void setPointName(String pointName) {
-        this.pointName = pointName;
-    }
-
-    public String getPointCode() {
-        return pointCode;
-    }
-
-    public void setPointCode(String pointCode) {
-        this.pointCode = pointCode;
-    }
-
-    public String getPointTypeLabel() {
-        return pointTypeLabel;
-    }
-
-    public void setPointTypeLabel(String pointTypeLabel) {
-        this.pointTypeLabel = pointTypeLabel;
-    }
-
     public String getCoordinateStr() {
         if (coordinateX != null && coordinateY != null) {
             return coordinateX + ", " + coordinateY;
         }
         return coordinateStr;
-    }
-
-    public void setCoordinateStr(String coordinateStr) {
-        this.coordinateStr = coordinateStr;
-    }
-
-    public BigDecimal getCoordinateX() {
-        return coordinateX;
-    }
-
-    public void setCoordinateX(BigDecimal coordinateX) {
-        this.coordinateX = coordinateX;
-    }
-
-    public BigDecimal getCoordinateY() {
-        return coordinateY;
-    }
-
-    public void setCoordinateY(BigDecimal coordinateY) {
-        this.coordinateY = coordinateY;
-    }
-
-    public Integer getOrderNum() {
-        return orderNum;
-    }
-
-    public void setOrderNum(Integer orderNum) {
-        this.orderNum = orderNum;
     }
 }

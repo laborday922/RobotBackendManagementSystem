@@ -3,8 +3,12 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 @ApiModel(description = "地图实体")
+@Getter
+@Setter
 public class SysMap extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
@@ -59,58 +63,6 @@ public class SysMap extends BaseEntity {
 
     @ApiModelProperty("是否有图片（非数据库字段）")
     private Boolean hasImage;
-
-    // ========== getter/setter ==========
-    public Long getMapId() { return mapId; }
-    public void setMapId(Long mapId) { this.mapId = mapId; }
-
-    public String getRobotId() { return robotId; }
-    public void setRobotId(String robotId) { this.robotId = robotId; }
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-
-    public String getMapName() { return mapName; }
-    public void setMapName(String mapName) { this.mapName = mapName; }
-
-    public String getMapType() { return mapType; }
-    public void setMapType(String mapType) { this.mapType = mapType; }
-
-    public String getMapPath() { return mapPath; }
-    public void setMapPath(String mapPath) { this.mapPath = mapPath; }
-
-    public String getThumbnail() { return thumbnail; }
-    public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public String getMapFile() { return mapFile; }
-    public void setMapFile(String mapFile) { this.mapFile = mapFile; }
-
-    public Integer getPointCount() { return pointCount; }
-    public void setPointCount(Integer pointCount) { this.pointCount = pointCount; }
-
-    public String getVersion() { return version; }
-    public void setVersion(String version) { this.version = version; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public Integer getIsEnable() { return isEnable; }
-    public void setIsEnable(Integer isEnable) { this.isEnable = isEnable; }
-
-    public String getDelFlag() { return delFlag; }
-    public void setDelFlag(String delFlag) { this.delFlag = delFlag; }
-
-    public String getMapBase64() { return mapBase64; }
-    public void setMapBase64(String mapBase64) { this.mapBase64 = mapBase64; }
-
-    public String getRemark() { return remark; }
-    public void setRemark(String remark) { this.remark = remark; }
-
-    public Boolean getHasImage() { return hasImage; }
-    public void setHasImage(Boolean hasImage) { this.hasImage = hasImage; }
 
     @Override
     public String toString() {

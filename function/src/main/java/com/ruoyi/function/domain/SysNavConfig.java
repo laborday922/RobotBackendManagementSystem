@@ -3,11 +3,15 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 导航配置对象 sys_nav_config
  */
 @ApiModel(description = "导航配置实体")
+@Getter
+@Setter
 public class SysNavConfig extends BaseEntity {
 
     @ApiModelProperty("导航ID")
@@ -33,28 +37,4 @@ public class SysNavConfig extends BaseEntity {
 
     /** 租户ID */
     private Long tenantId;
-
-    public Long getNavId() { return navId; }
-    public void setNavId(Long navId) { this.navId = navId; }
-
-    public String getRobotId() { return robotId; }
-    public void setRobotId(String robotId) { this.robotId = robotId; }
-
-    public Long getMapId() { return mapId; }
-    public void setMapId(Long mapId) { this.mapId = mapId; }
-
-    public String getVoiceType() { return voiceType; }
-    public void setVoiceType(String voiceType) { this.voiceType = voiceType; }
-
-    public String getBeforeMsg() { return beforeMsg; }
-    public void setBeforeMsg(String beforeMsg) { this.beforeMsg = beforeMsg; }
-
-    public String getDuringMsg() { return duringMsg; }
-    public void setDuringMsg(String duringMsg) { this.duringMsg = duringMsg; }
-
-    public String getAfterMsg() { return afterMsg; }
-    public void setAfterMsg(String afterMsg) { this.afterMsg = afterMsg; }
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

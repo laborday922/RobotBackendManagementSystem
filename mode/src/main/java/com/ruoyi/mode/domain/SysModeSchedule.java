@@ -2,6 +2,8 @@ package com.ruoyi.mode.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -14,6 +16,8 @@ import java.util.List;
  *
  * @author ruoyi
  */
+@Getter
+@Setter
 public class SysModeSchedule extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -70,143 +74,6 @@ public class SysModeSchedule extends BaseEntity
 
     /** 机器人ID列表（用于接收前端数据） */
     private Long[] robotIds;
-
-    // Getters and Setters
-    public Long getScheduleId() {
-        return scheduleId;
-    }
-
-    public void setScheduleId(Long scheduleId) {
-        this.scheduleId = scheduleId;
-    }
-
-    public String getScheduleName() {
-        return scheduleName;
-    }
-
-    public void setScheduleName(String scheduleName) {
-        this.scheduleName = scheduleName;
-    }
-
-    public Long getModeId() {
-        return modeId;
-    }
-
-    public void setModeId(Long modeId) {
-        this.modeId = modeId;
-    }
-
-    public String getModeName() {
-        return modeName;
-    }
-
-    public void setModeName(String modeName) {
-        this.modeName = modeName;
-    }
-
-    public String getExecuteTime() {
-        return executeTime;
-    }
-
-    public void setExecuteTime(String executeTime) {
-        this.executeTime = executeTime;
-    }
-
-    public String getRepeatType() {
-        return repeatType;
-    }
-
-    public void setRepeatType(String repeatType) {
-        this.repeatType = repeatType;
-    }
-
-    public String getRepeatRule() {
-        return repeatRule;
-    }
-
-    public void setRepeatRule(String repeatRule) {
-        this.repeatRule = repeatRule;
-    }
-
-    public Date getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
-    }
-
-    public String getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(String startTime) {
-        this.startTime = startTime;
-    }
-
-    public BigDecimal getDuration() {
-        return duration;
-    }
-
-    public void setDuration(BigDecimal duration) {
-        this.duration = duration;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Date getLastExecuteTime() {
-        return lastExecuteTime;
-    }
-
-    public void setLastExecuteTime(Date lastExecuteTime) {
-        this.lastExecuteTime = lastExecuteTime;
-    }
-
-    public String getLastExecuteStatus() {
-        return lastExecuteStatus;
-    }
-
-    public void setLastExecuteStatus(String lastExecuteStatus) {
-        this.lastExecuteStatus = lastExecuteStatus;
-    }
-
-    public String getDelFlag() {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag) {
-        this.delFlag = delFlag;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public List<SysRobot> getRobots() {
-        return robots;
-    }
-
-    public void setRobots(List<SysRobot> robots) {
-        this.robots = robots;
-    }
-
-    public Long[] getRobotIds() {
-        return robotIds;
-    }
-
-    public void setRobotIds(Long[] robotIds) {
-        this.robotIds = robotIds;
-    }
 
     @Override
     public String toString() {

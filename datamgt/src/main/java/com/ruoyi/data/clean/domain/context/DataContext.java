@@ -2,12 +2,16 @@ package com.ruoyi.data.clean.domain.context;
 
 import com.ruoyi.data.clean.domain.bo.CleanResult;
 import com.ruoyi.data.clean.domain.enums.DataSourceType;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Setter
 public class DataContext {
 
     // 数据源（可以保留）
@@ -30,24 +34,8 @@ public class DataContext {
         this.dataSources = dataSources;
     }
 
-    // ================== 原始数据 ==================
-
-    public List<Map<String, Object>> getRawData() {
-        return rawData;
-    }
-
-    public void setRawData(List<Map<String, Object>> rawData) {
-        this.rawData = rawData;
-    }
-
-    // ================== 结果数据 ==================
-
     public void addResult(CleanResult result) {
         resultList.add(result);
-    }
-
-    public List<CleanResult> getResultList() {
-        return resultList;
     }
 
     // ================== 表字段 ==================
@@ -58,29 +46,5 @@ public class DataContext {
 
     public List<String> getTableColumns(String tableName) {
         return this.tableColumns.get(tableName);
-    }
-
-    // ================== 任务信息 ==================
-
-    public Long getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(Long taskId) {
-        this.taskId = taskId;
-    }
-
-    public Long getConfigId() {
-        return configId;
-    }
-
-    public void setConfigId(Long configId) {
-        this.configId = configId;
-    }
-
-    // ================== 数据源 ==================
-
-    public List<DataSourceType> getDataSources() {
-        return dataSources;
     }
 }

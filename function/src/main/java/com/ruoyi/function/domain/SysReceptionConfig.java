@@ -3,11 +3,15 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 业务接待配置对象 sys_reception_config
  */
 @ApiModel(description = "业务接待配置实体")
+@Getter
+@Setter
 public class SysReceptionConfig extends BaseEntity {
 
     @ApiModelProperty("配置ID")
@@ -45,41 +49,4 @@ public class SysReceptionConfig extends BaseEntity {
 
     /** 租户ID */
     private Long tenantId;
-
-    // getters and setters
-    public Long getConfigId() { return configId; }
-    public void setConfigId(Long configId) { this.configId = configId; }
-
-    public Long getRobotId() { return robotId; }
-    public void setRobotId(Long robotId) { this.robotId = robotId; }
-
-    public String getWelcome() { return welcome; }
-    public void setWelcome(String welcome) { this.welcome = welcome; }
-
-    public String getRepeat() { return repeat; }
-    public void setRepeat(String repeat) { this.repeat = repeat; }
-
-    public String getIdle() { return idle; }
-    public void setIdle(String idle) { this.idle = idle; }
-
-    public String getVipEnabled() { return vipEnabled; }
-    public void setVipEnabled(String vipEnabled) { this.vipEnabled = vipEnabled; }
-
-    public String getVipGreeting() { return vipGreeting; }
-    public void setVipGreeting(String vipGreeting) { this.vipGreeting = vipGreeting; }
-
-    public String getVipMulti() { return vipMulti; }
-    public void setVipMulti(String vipMulti) { this.vipMulti = vipMulti; }
-
-    public String getStrangerEnabled() { return strangerEnabled; }
-    public void setStrangerEnabled(String strangerEnabled) { this.strangerEnabled = strangerEnabled; }
-
-    public String getStrangerGreeting() { return strangerGreeting; }
-    public void setStrangerGreeting(String strangerGreeting) { this.strangerGreeting = strangerGreeting; }
-
-    public String getStrangerMulti() { return strangerMulti; }
-    public void setStrangerMulti(String strangerMulti) { this.strangerMulti = strangerMulti; }
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

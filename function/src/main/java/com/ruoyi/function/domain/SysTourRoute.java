@@ -3,6 +3,8 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -10,6 +12,8 @@ import java.util.List;
  * 讲解路线对象 sys_tour_route
  */
 @ApiModel(description = "讲解路线实体")
+@Getter
+@Setter
 public class SysTourRoute extends BaseEntity {
 
     @ApiModelProperty("路线ID")
@@ -38,32 +42,4 @@ public class SysTourRoute extends BaseEntity {
 
     @ApiModelProperty("关联的点位列表（包含顺序和讲解内容）")
     private List<SysRoutePoint> routePoints;
-
-    // Getters and Setters
-    public Long getRouteId() { return routeId; }
-    public void setRouteId(Long routeId) { this.routeId = routeId; }
-
-    public String getRouteName() { return routeName; }
-    public void setRouteName(String routeName) { this.routeName = routeName; }
-
-    public Long getRobotId() { return robotId; }
-    public void setRobotId(Long robotId) { this.robotId = robotId; }
-
-    public Long getMapId() { return mapId; }
-    public void setMapId(Long mapId) { this.mapId = mapId; }
-
-    public String getPointIds() { return pointIds; }
-    public void setPointIds(String pointIds) { this.pointIds = pointIds; }
-
-    public Integer getPointCount() { return pointCount; }
-    public void setPointCount(Integer pointCount) { this.pointCount = pointCount; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
-
-    public List<SysRoutePoint> getRoutePoints() { return routePoints; }
-    public void setRoutePoints(List<SysRoutePoint> routePoints) { this.routePoints = routePoints; }
 }

@@ -3,6 +3,8 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -10,6 +12,8 @@ import java.math.BigDecimal;
  * 点位对象 sys_point
  */
 @ApiModel(description = "点位实体")
+@Getter
+@Setter
 public class SysPoint extends BaseEntity {
 
     @ApiModelProperty("系统点位ID")
@@ -66,144 +70,6 @@ public class SysPoint extends BaseEntity {
     /** 到达后播报 */
     @ApiModelProperty("到达后播报")
     private String afterMsg;
-
-    // ========== Getters and Setters ==========
-
-    public Long getSysPointId() {
-        return sysPointId;
-    }
-
-    public void setSysPointId(Long sysPointId) {
-        this.sysPointId = sysPointId;
-    }
-
-    public Long getRobotPointId() {
-        return robotPointId;
-    }
-
-    public void setRobotPointId(Long robotPointId) {
-        this.robotPointId = robotPointId;
-    }
-
-    public Long getMapId() {
-        return mapId;
-    }
-
-    public void setMapId(Long mapId) {
-        this.mapId = mapId;
-    }
-
-    public Long getRobotId() {
-        return robotId;
-    }
-
-    public void setRobotId(Long robotId) {
-        this.robotId = robotId;
-    }
-
-    public String getPointName() {
-        return pointName;
-    }
-
-    public void setPointName(String pointName) {
-        this.pointName = pointName;
-    }
-
-    public String getPointCode() {
-        return pointCode;
-    }
-
-    public void setPointCode(String pointCode) {
-        this.pointCode = pointCode;
-    }
-
-    public String getPointType() {
-        return pointType;
-    }
-
-    public void setPointType(String pointType) {
-        this.pointType = pointType;
-    }
-
-    public BigDecimal getCoordinateX() {
-        return coordinateX;
-    }
-
-    public void setCoordinateX(BigDecimal coordinateX) {
-        this.coordinateX = coordinateX;
-    }
-
-    public BigDecimal getCoordinateY() {
-        return coordinateY;
-    }
-
-    public void setCoordinateY(BigDecimal coordinateY) {
-        this.coordinateY = coordinateY;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Integer getOrderNum() {
-        return orderNum;
-    }
-
-    public void setOrderNum(Integer orderNum) {
-        this.orderNum = orderNum;
-    }
-
-    public String getDelFlag() {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag) {
-        this.delFlag = delFlag;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String getVoiceType() {
-        return voiceType;
-    }
-
-    public void setVoiceType(String voiceType) {
-        this.voiceType = voiceType;
-    }
-
-    public String getBeforeMsg() {
-        return beforeMsg;
-    }
-
-    public void setBeforeMsg(String beforeMsg) {
-        this.beforeMsg = beforeMsg;
-    }
-
-    public String getDuringMsg() {
-        return duringMsg;
-    }
-
-    public void setDuringMsg(String duringMsg) {
-        this.duringMsg = duringMsg;
-    }
-
-    public String getAfterMsg() {
-        return afterMsg;
-    }
-
-    public void setAfterMsg(String afterMsg) {
-        this.afterMsg = afterMsg;
-    }
 
     @Override
     public String toString() {

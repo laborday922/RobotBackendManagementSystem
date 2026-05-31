@@ -1,6 +1,8 @@
 package com.ruoyi.mode.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -11,6 +13,8 @@ import java.util.Date;
  *
  * @author ruoyi
  */
+@Getter
+@Setter
 public class SysModeHistory extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -48,100 +52,6 @@ public class SysModeHistory extends BaseEntity
 
     private String beginTime;  // 开始时间
     private String endTime;    // 结束时间
-
-    public Long getHistoryId() {
-        return historyId;
-    }
-
-    public void setHistoryId(Long historyId) {
-        this.historyId = historyId;
-    }
-
-    public Date getOperationTime() {
-        return operationTime;
-    }
-
-    public void setOperationTime(Date operationTime) {
-        this.operationTime = operationTime;
-    }
-
-    public String getOperationType() {
-        return operationType;
-    }
-
-    public void setOperationType(String operationType) {
-        this.operationType = operationType;
-    }
-
-    public Long getRobotId() {
-        return robotId;
-    }
-
-    public void setRobotId(Long robotId) {
-        this.robotId = robotId;
-    }
-
-    public Long getModeId() {
-        return modeId;
-    }
-
-    public void setModeId(Long modeId) {
-        this.modeId = modeId;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public String getOperator() {
-        return operator;
-    }
-
-    public void setOperator(String operator) {
-        this.operator = operator;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String getRobotName() {
-        return robotName;
-    }
-
-    public void setRobotName(String robotName) {
-        this.robotName = robotName;
-    }
-
-    public String getModeName() {
-        return modeName;
-    }
-
-    public void setModeName(String modeName) {
-        this.modeName = modeName;
-    }
-
-    public String getBeginTime() { return beginTime; }
-    public void setBeginTime(String beginTime) { this.beginTime = beginTime; }
-
-    public String getEndTime() { return endTime; }
-    public void setEndTime(String endTime) { this.endTime = endTime; }
 
     @Override
     public String toString() {

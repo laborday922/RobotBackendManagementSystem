@@ -3,6 +3,8 @@ package com.ruoyi.mode.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -10,6 +12,8 @@ import javax.validation.constraints.*;
 import java.util.List;
 
 @ApiModel(value = "SysMode", description = "模式实体类")
+@Getter
+@Setter
 public class SysMode extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -89,128 +93,6 @@ public class SysMode extends BaseEntity
     // 分组校验接口
     public interface AddGroup {}
     public interface UpdateGroup {}
-
-    // ==================== Getters and Setters ====================
-
-    public Long getModeId() {
-        return modeId;
-    }
-
-    public void setModeId(Long modeId) {
-        this.modeId = modeId;
-    }
-
-    public String getModeName() {
-        return modeName;
-    }
-
-    public void setModeName(String modeName) {
-        this.modeName = modeName;
-    }
-
-    public String getModeType() {
-        return modeType;
-    }
-
-    public void setModeType(String modeType) {
-        this.modeType = modeType;
-    }
-
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
-    }
-
-    public String getModeColor() {
-        return modeColor;
-    }
-
-    public void setModeColor(String modeColor) {
-        this.modeColor = modeColor;
-    }
-
-    public String getModeIcon() {
-        return modeIcon;
-    }
-
-    public void setModeIcon(String modeIcon) {
-        this.modeIcon = modeIcon;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(String enabled) {
-        this.enabled = enabled;
-    }
-
-    public Long getUsageCount() {
-        return usageCount;
-    }
-
-    public void setUsageCount(Long usageCount) {
-        this.usageCount = usageCount;
-    }
-
-    public Long getRobotCount() {
-        return robotCount;
-    }
-
-    public void setRobotCount(Long robotCount) {
-        this.robotCount = robotCount;
-    }
-
-    public Integer getOrderNum() {
-        return orderNum;
-    }
-
-    public void setOrderNum(Integer orderNum) {
-        this.orderNum = orderNum;
-    }
-
-    public String getDelFlag() {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag) {
-        this.delFlag = delFlag;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String getCategoryName() {
-        return categoryName;
-    }
-
-    public void setCategoryName(String categoryName) {
-        this.categoryName = categoryName;
-    }
-
-    public List<SysModeParam> getModeParams() {
-        return modeParams;
-    }
-
-    public void setModeParams(List<SysModeParam> modeParams) {
-        this.modeParams = modeParams;
-    }
 
     @Override
     public String toString() {

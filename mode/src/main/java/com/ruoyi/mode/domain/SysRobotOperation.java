@@ -1,6 +1,8 @@
 package com.ruoyi.mode.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -11,6 +13,8 @@ import java.util.Date;
  *
  * @author ruoyi
  */
+@Getter
+@Setter
 public class SysRobotOperation extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
@@ -41,80 +45,6 @@ public class SysRobotOperation extends BaseEntity
 
     /** 租户ID */
     private Long tenantId;
-
-    // ==================== Getters and Setters ====================
-
-    public Long getOperationId() {
-        return operationId;
-    }
-
-    public void setOperationId(Long operationId) {
-        this.operationId = operationId;
-    }
-
-    public Long getRobotId() {
-        return robotId;
-    }
-
-    public void setRobotId(Long robotId) {
-        this.robotId = robotId;
-    }
-
-    public String getRobotName() {
-        return robotName;
-    }
-
-    public void setRobotName(String robotName) {
-        this.robotName = robotName;
-    }
-
-    public String getOperationType() {
-        return operationType;
-    }
-
-    public void setOperationType(String operationType) {
-        this.operationType = operationType;
-    }
-
-    public String getOperationResult() {
-        return operationResult;
-    }
-
-    public void setOperationResult(String operationResult) {
-        this.operationResult = operationResult;
-    }
-
-    public Date getOperationTime() {
-        return operationTime;
-    }
-
-    public void setOperationTime(Date operationTime) {
-        this.operationTime = operationTime;
-    }
-
-    public String getOperator() {
-        return operator;
-    }
-
-    public void setOperator(String operator) {
-        this.operator = operator;
-    }
-
-    public String getRemark() {
-        return remark;
-    }
-
-    public void setRemark(String remark) {
-        this.remark = remark;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
 
     @Override
     public String toString() {

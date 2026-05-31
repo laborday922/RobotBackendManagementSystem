@@ -2,6 +2,8 @@ package com.ruoyi.function.service.vo;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -9,6 +11,8 @@ import java.util.List;
  * 讲解路线视图对象
  */
 @ApiModel(description = "讲解路线视图对象")
+@Getter
+@Setter
 public class TourRouteVO {
 
     @ApiModelProperty("路线ID")
@@ -25,44 +29,4 @@ public class TourRouteVO {
 
     @ApiModelProperty("点位列表（简要信息）")
     private List<PointVO> pointList;
-
-    public Long getRouteId() {
-        return routeId;
-    }
-
-    public void setRouteId(Long routeId) {
-        this.routeId = routeId;
-    }
-
-    public String getRouteName() {
-        return routeName;
-    }
-
-    public void setRouteName(String routeName) {
-        this.routeName = routeName;
-    }
-
-    public Integer getPointCount() {
-        return pointCount;
-    }
-
-    public void setPointCount(Integer pointCount) {
-        this.pointCount = pointCount;
-    }
-
-    public String getStatusLabel() {
-        return statusLabel;
-    }
-
-    public void setStatusLabel(String statusLabel) {
-        this.statusLabel = statusLabel;
-    }
-
-    public List<PointVO> getPointList() {
-        return pointList;
-    }
-
-    public void setPointList(List<PointVO> pointList) {
-        this.pointList = pointList;
-    }
 }

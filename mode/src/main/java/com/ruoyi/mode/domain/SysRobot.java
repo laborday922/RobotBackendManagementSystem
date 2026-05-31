@@ -1,6 +1,8 @@
 package com.ruoyi.mode.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -10,6 +12,8 @@ import java.util.Date;
 /**
  * 机器人模式扩展对象
  */
+@Getter
+@Setter
 public class SysRobot implements Serializable
 {
     private static final long serialVersionUID = 1L;
@@ -68,152 +72,6 @@ public class SysRobot implements Serializable
 
     /** 删除标志（0代表存在 2代表删除） */
     private String delFlag;
-
-    // ==================== Getters and Setters ====================
-
-    public Long getRobotId() {
-        return robotId;
-    }
-
-    public void setRobotId(Long robotId) {
-        this.robotId = robotId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public Long getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public void setStatus(Integer status) {
-        this.status = status;
-    }
-
-    public Integer getBattery() {
-        return battery;
-    }
-
-    public void setBattery(Integer battery) {
-        this.battery = battery;
-    }
-
-    public String getArea() {
-        return area;
-    }
-
-    public void setArea(String area) {
-        this.area = area;
-    }
-
-    public Long getCurrentMode() {
-        return currentMode;
-    }
-
-    public void setCurrentMode(Long currentMode) {
-        this.currentMode = currentMode;
-    }
-
-    public String getCurrentModeName() {
-        return currentModeName;
-    }
-
-    public void setCurrentModeName(String currentModeName) {
-        this.currentModeName = currentModeName;
-    }
-
-    public Date getLastModeSwitchTime() {
-        return lastModeSwitchTime;
-    }
-
-    public void setLastModeSwitchTime(Date lastModeSwitchTime) {
-        this.lastModeSwitchTime = lastModeSwitchTime;
-    }
-
-    public Integer getModeSwitchCount() {
-        return modeSwitchCount;
-    }
-
-    public void setModeSwitchCount(Integer modeSwitchCount) {
-        this.modeSwitchCount = modeSwitchCount;
-    }
-
-    public Integer getNeedAutoCharge() {
-        return needAutoCharge;
-    }
-
-    public void setNeedAutoCharge(Integer needAutoCharge) {
-        this.needAutoCharge = needAutoCharge;
-    }
-
-    public Long getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(Long tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String getCreateBy() {
-        return createBy;
-    }
-
-    public void setCreateBy(String createBy) {
-        this.createBy = createBy;
-    }
-
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getUpdateBy() {
-        return updateBy;
-    }
-
-    public void setUpdateBy(String updateBy) {
-        this.updateBy = updateBy;
-    }
-
-    public Date getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(Date updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public String getDelFlag() {
-        return delFlag;
-    }
-
-    public void setDelFlag(String delFlag) {
-        this.delFlag = delFlag;
-    }
 
     public String getRobotName() {
         return this.name;

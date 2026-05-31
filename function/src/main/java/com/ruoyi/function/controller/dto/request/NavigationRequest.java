@@ -2,6 +2,8 @@ package com.ruoyi.function.controller.dto.request;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
 
@@ -9,6 +11,8 @@ import javax.validation.constraints.NotBlank;
  * 导航请求DTO
  */
 @ApiModel(description = "导航请求")
+@Getter
+@Setter
 public class NavigationRequest {
 
     @ApiModelProperty(value = "目标点位名称", required = true)
@@ -20,28 +24,4 @@ public class NavigationRequest {
 
     @ApiModelProperty(value = "是否开启语音播报")
     private Boolean voiceEnabled = true;
-
-    public String getPointName() {
-        return pointName;
-    }
-
-    public void setPointName(String pointName) {
-        this.pointName = pointName;
-    }
-
-    public String getStartPointName() {
-        return startPointName;
-    }
-
-    public void setStartPointName(String startPointName) {
-        this.startPointName = startPointName;
-    }
-
-    public Boolean getVoiceEnabled() {
-        return voiceEnabled;
-    }
-
-    public void setVoiceEnabled(Boolean voiceEnabled) {
-        this.voiceEnabled = voiceEnabled;
-    }
 }

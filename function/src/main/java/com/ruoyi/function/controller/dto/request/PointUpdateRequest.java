@@ -2,6 +2,8 @@ package com.ruoyi.function.controller.dto.request;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
 
@@ -9,6 +11,8 @@ import javax.validation.constraints.NotNull;
  * 点位更新请求DTO
  */
 @ApiModel(description = "点位更新请求")
+@Getter
+@Setter
 public class PointUpdateRequest {
 
     @ApiModelProperty(value = "系统点位ID", required = true)
@@ -41,85 +45,4 @@ public class PointUpdateRequest {
 
     @ApiModelProperty(value = "机器人点位ID")
     private Long robotPointId;
-
-    // Getters and Setters
-    public Long getSysPointId() {
-        return sysPointId;
-    }
-
-    public void setSysPointId(Long sysPointId) {
-        this.sysPointId = sysPointId;
-    }
-
-    public Long getMapId() {
-        return mapId;
-    }
-
-    public void setMapId(Long mapId) {
-        this.mapId = mapId;
-    }
-
-    public Long getRobotId() {
-        return robotId;
-    }
-
-    public void setRobotId(Long robotId) {
-        this.robotId = robotId;
-    }
-
-    public String getPointName() {
-        return pointName;
-    }
-
-    public void setPointName(String pointName) {
-        this.pointName = pointName;
-    }
-
-    public String getPointCode() {
-        return pointCode;
-    }
-
-    public void setPointCode(String pointCode) {
-        this.pointCode = pointCode;
-    }
-
-    public String getPointType() {
-        return pointType;
-    }
-
-    public void setPointType(String pointType) {
-        this.pointType = pointType;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Integer getOrderNum() {
-        return orderNum;
-    }
-
-    public void setOrderNum(Integer orderNum) {
-        this.orderNum = orderNum;
-    }
-
-    public String getRemark() {
-        return remark;
-    }
-
-    public void setRemark(String remark) {
-        this.remark = remark;
-    }
-
-    public Long getRobotPointId() {
-        return robotPointId;
-    }
-
-    public void setRobotPointId(Long robotPointId) {
-        this.robotPointId = robotPointId;
-    }
 }

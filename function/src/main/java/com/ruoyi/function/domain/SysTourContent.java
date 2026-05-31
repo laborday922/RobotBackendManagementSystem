@@ -3,11 +3,15 @@ package com.ruoyi.function.domain;
 import com.ruoyi.common.core.domain.BaseEntity;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 讲解内容对象 sys_tour_content
  */
 @ApiModel(description = "讲解内容实体")
+@Getter
+@Setter
 public class SysTourContent extends BaseEntity {
 
     @ApiModelProperty("内容ID")
@@ -57,55 +61,4 @@ public class SysTourContent extends BaseEntity {
 
     /** 租户ID */
     private Long tenantId;
-
-    // getters and setters
-    public Long getContentId() { return contentId; }
-    public void setContentId(Long contentId) { this.contentId = contentId; }
-
-    public Long getRobotId() { return robotId; }
-    public void setRobotId(Long robotId) { this.robotId = robotId; }
-
-    public Long getSysPointId() { return sysPointId; }
-    public void setSysPointId(Long sysPointId) { this.sysPointId = sysPointId; }
-
-    public String getPointName() { return pointName; }
-    public void setPointName(String pointName) { this.pointName = pointName; }
-
-    public String getPointDesc() { return pointDesc; }
-    public void setPointDesc(String pointDesc) { this.pointDesc = pointDesc; }
-
-    public String getBroadcastType() { return broadcastType; }
-    public void setBroadcastType(String broadcastType) { this.broadcastType = broadcastType; }
-
-    public String getBroadcastText() { return broadcastText; }
-    public void setBroadcastText(String broadcastText) { this.broadcastText = broadcastText; }
-
-    public String getAudioFile() { return audioFile; }
-    public void setAudioFile(String audioFile) { this.audioFile = audioFile; }
-
-    public String getVoiceType() { return voiceType; }
-    public void setVoiceType(String voiceType) { this.voiceType = voiceType; }
-
-    public Integer getSpeechRate() { return speechRate; }
-    public void setSpeechRate(Integer speechRate) { this.speechRate = speechRate; }
-
-    public Integer getIntervalTime() { return intervalTime; }
-    public void setIntervalTime(Integer intervalTime) { this.intervalTime = intervalTime; }
-
-
-
-    public String getMediaFile() { return mediaFile; }
-    public void setMediaFile(String mediaFile) { this.mediaFile = mediaFile; }
-
-    public String getArmAction() { return armAction; }
-    public void setArmAction(String armAction) { this.armAction = armAction; }
-
-    public Integer getChassisAngle() { return chassisAngle; }
-    public void setChassisAngle(Integer chassisAngle) { this.chassisAngle = chassisAngle; }
-
-    public Integer getOrderNum() { return orderNum; }
-    public void setOrderNum(Integer orderNum) { this.orderNum = orderNum; }
-
-    public Long getTenantId() { return tenantId; }
-    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
 }

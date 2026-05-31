@@ -4,7 +4,8 @@
 
     <!-- 通用结果映射 -->
     <resultMap id="BaseResultMap" type="com.ruoyi.function.domain.SysPoint">
-        <id property="pointId" column="point_id"/>
+        <id property="sysPointId" column="sys_point_id"/>
+        <result property="robotPointId" column="robot_point_id"/>
         <result property="mapId" column="map_id"/>
         <result property="robotId" column="robot_id"/>
         <result property="pointName" column="point_name"/>
@@ -29,7 +30,7 @@
 
     <!-- 通用查询字段列表 -->
     <sql id="BaseColumnList">
-        point_id, map_id, robot_id, point_name, point_code, point_type,
+        sys_point_id, robot_point_id, map_id, robot_id, point_name, point_code, point_type,
         coordinate_x, coordinate_y, status, order_num, tenant_id,
         voice_type, before_msg, during_msg, after_msg,
         create_by, create_time, update_by, update_time, remark, del_flag
@@ -42,7 +43,7 @@
         FROM sys_point
         WHERE map_id = #{mapId}
         AND del_flag = '0'
-        ORDER BY order_num ASC, point_id ASC
+        ORDER BY order_num ASC, sys_point_id ASC
     </select>
 
     <!-- 根据点位ID查询详情 -->
@@ -50,7 +51,7 @@
         SELECT
         <include refid="BaseColumnList"/>
         FROM sys_point
-        WHERE point_id = #{pointId}
+        WHERE sys_point_id = #{sysPointId}
         AND del_flag = '0'
     </select>
 
@@ -61,7 +62,7 @@
         FROM sys_point
         WHERE robot_id = #{robotId}
         AND del_flag = '0'
-        ORDER BY order_num ASC, point_id ASC
+        ORDER BY order_num ASC, sys_point_id ASC
     </select>
 
     <!-- 查询所有点位列表（带条件） -->
@@ -75,6 +76,12 @@
             </if>
             <if test="robotId != null">
                 AND robot_id = #{robotId}
+            </if>
+            <if test="robotPointId != null">
+                AND robot_point_id = #{robotPointId}
+            </if>
+            <if test="sysPointId != null">
+                AND sys_point_id = #{sysPointId}
             </if>
             <if test="pointName != null and pointName != ''">
                 AND point_name LIKE CONCAT('%', #{pointName}, '%')
@@ -95,7 +102,7 @@
                 AND del_flag = #{delFlag}
             </if>
         </where>
-        ORDER BY order_num ASC, point_id ASC
+        ORDER BY order_num ASC, sys_point_id ASC
     </select>
 
     <!-- 根据多个地图ID查询点位列表 -->
@@ -108,18 +115,17 @@
             #{mapId}
         </foreach>
         AND del_flag = '0'
-        ORDER BY order_num ASC, point_id ASC
+        ORDER BY order_num ASC, sys_point_id ASC
     </select>
 
-    <!-- 新增点位 - 允许手动指定 point_id -->
-    <insert id="insert" parameterType="com.ruoyi.function.domain.SysPoint" useGeneratedKeys="false">
+    <insert id="insert" parameterType="com.ruoyi.function.domain.SysPoint" useGeneratedKeys="true" keyProperty="sysPointId">
         INSERT INTO sys_point (
-        point_id, map_id, robot_id, point_name, point_code, point_type,
+        robot_point_id, map_id, robot_id, point_name, point_code, point_type,
         coordinate_x, coordinate_y, status, order_num, tenant_id,
         voice_type, before_msg, during_msg, after_msg,
         create_by, create_time, remark, del_flag
         ) VALUES (
-        #{pointId}, #{mapId}, #{robotId}, #{pointName}, #{pointCode}, #{pointType},
+        #{robotPointId}, #{mapId}, #{robotId}, #{pointName}, #{pointCode}, #{pointType},
         #{coordinateX}, #{coordinateY}, IFNULL(#{status}, '1'), IFNULL(#{orderNum}, 0), #{tenantId},
         IFNULL(#{voiceType}, 'default'), #{beforeMsg}, #{duringMsg}, #{afterMsg},
         #{createBy}, #{createTime}, #{remark}, IFNULL(#{delFlag}, '0')
@@ -132,6 +138,7 @@
         <set>
             <if test="mapId != null">map_id = #{mapId},</if>
             <if test="robotId != null">robot_id = #{robotId},</if>
+            <if test="robotPointId != null">robot_point_id = #{robotPointId},</if>
             <if test="pointName != null and pointName != ''">point_name = #{pointName},</if>
             <if test="pointCode != null and pointCode != ''">point_code = #{pointCode},</if>
             <if test="pointType != null and pointType != ''">point_type = #{pointType},</if>
@@ -147,12 +154,12 @@
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null and remark != ''">remark = #{remark},</if>
         </set>
-        WHERE point_id = #{pointId}
+        WHERE sys_point_id = #{sysPointId}
     </update>
 
     <!-- 删除点位（物理删除） -->
     <delete id="deleteById" parameterType="java.lang.Long">
-        DELETE FROM sys_point WHERE point_id = #{pointId}
+        DELETE FROM sys_point WHERE sys_point_id = #{sysPointId}
     </delete>
 
     <!-- 根据地图ID删除所有点位 -->
@@ -162,9 +169,9 @@
 
     <!-- 批量删除（物理删除） -->
     <delete id="deleteByIds">
-        DELETE FROM sys_point WHERE point_id IN
-        <foreach collection="pointIds" item="pointId" open="(" separator="," close=")">
-            #{pointId}
+        DELETE FROM sys_point WHERE sys_point_id IN
+        <foreach collection="sysPointIds" item="sysPointId" open="(" separator="," close=")">
+            #{sysPointId}
         </foreach>
     </delete>
 
@@ -174,7 +181,7 @@
         SET status = #{status},
         update_by = #{updateBy},
         update_time = #{updateTime}
-        WHERE point_id = #{pointId}
+        WHERE sys_point_id = #{sysPointId}
     </update>
 
     <!-- 根据地图ID查询点位数量 -->
@@ -189,8 +196,8 @@
         SELECT COUNT(*) FROM sys_point
         WHERE point_code = #{pointCode}
         AND del_flag = '0'
-        <if test="pointId != null and pointId != 0">
-            AND point_id != #{pointId}
+        <if test="sysPointId != null and sysPointId != 0">
+            AND sys_point_id != #{sysPointId}
         </if>
     </select>
 

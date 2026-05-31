@@ -2353,7 +2353,8 @@ INSERT INTO `sys_oper_log` VALUES (1293, '查看任务列表', 0, 'com.ruoyi.tas
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_point`;
 CREATE TABLE `sys_point` (
-                             `point_id` bigint NOT NULL,
+                             `sys_point_id` bigint NOT NULL AUTO_INCREMENT COMMENT '系统点位ID',
+                             `robot_point_id` bigint NOT NULL COMMENT '机器人点位ID',
                              `map_id` int NOT NULL COMMENT '所属地图ID',
                              `robot_id` bigint DEFAULT NULL COMMENT '所属机器人ID',
                              `point_name` varchar(50) NOT NULL COMMENT '点位名称',
@@ -2374,17 +2375,18 @@ CREATE TABLE `sys_point` (
                              `before_msg` varchar(200) DEFAULT NULL COMMENT '出发前播报',
                              `during_msg` varchar(200) DEFAULT NULL COMMENT '导航中播报',
                              `after_msg` varchar(200) DEFAULT NULL COMMENT '到达后播报',
-                             PRIMARY KEY (`point_id`),
+                             PRIMARY KEY (`sys_point_id`),
                              KEY `idx_map_id` (`map_id`),
                              KEY `idx_sys_point_tenant` (`tenant_id`),
-                             KEY `idx_robot_id` (`robot_id`)
+                             KEY `idx_robot_id` (`robot_id`),
+                             UNIQUE KEY `uk_robot_robot_point` (`robot_id`,`robot_point_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='点位表';
 
 -- ----------------------------
 -- Records of sys_point
 -- ----------------------------
-INSERT INTO `sys_point` (`point_id`, `map_id`, `point_name`, `point_code`, `point_type`, `coordinate_x`, `coordinate_y`, `status`, `order_num`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `del_flag`, `tenant_id`) VALUES (7, 2, '1', '', 'normal', 0.00, 0.00, '1', 1, NULL, '2026-03-26 09:18:13', '', NULL, '', '0', NULL);
-INSERT INTO `sys_point` (`point_id`, `map_id`, `point_name`, `point_code`, `point_type`, `coordinate_x`, `coordinate_y`, `status`, `order_num`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `del_flag`, `tenant_id`) VALUES (8, 3, '社保服务区', '', 'normal', 0.00, 0.00, '1', 0, NULL, '2026-04-09 16:04:27', '', NULL, '', '0', NULL);
+INSERT INTO `sys_point` (`sys_point_id`, `robot_point_id`, `map_id`, `robot_id`, `point_name`, `point_code`, `point_type`, `coordinate_x`, `coordinate_y`, `status`, `order_num`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `del_flag`, `tenant_id`) VALUES (7, 7, 2, NULL, '1', '', 'normal', 0.00, 0.00, '1', 1, NULL, '2026-03-26 09:18:13', '', NULL, '', '0', NULL);
+INSERT INTO `sys_point` (`sys_point_id`, `robot_point_id`, `map_id`, `robot_id`, `point_name`, `point_code`, `point_type`, `coordinate_x`, `coordinate_y`, `status`, `order_num`, `create_by`, `create_time`, `update_by`, `update_time`, `remark`, `del_flag`, `tenant_id`) VALUES (8, 8, 3, NULL, '社保服务区', '', 'normal', 0.00, 0.00, '1', 0, NULL, '2026-04-09 16:04:27', '', NULL, '', '0', NULL);
 
 -- ----------------------------
 -- Table structure for sys_post
@@ -2671,12 +2673,12 @@ DROP TABLE IF EXISTS `sys_route_point`;
 CREATE TABLE `sys_route_point` (
                                    `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
                                    `route_id` int NOT NULL COMMENT '路线ID',
-                                   `point_id` int NOT NULL COMMENT '点位ID',
+                                   `sys_point_id` int NOT NULL COMMENT '系统点位ID',
                                    `content_id` int DEFAULT NULL COMMENT '关联讲解内容ID',
                                    `order_num` int DEFAULT '0' COMMENT '显示顺序',
                                    PRIMARY KEY (`id`),
                                    KEY `idx_route_id` (`route_id`),
-                                   KEY `idx_point_id` (`point_id`)
+                                   KEY `idx_sys_point_id` (`sys_point_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='路线点位关联表';
 
 -- ----------------------------
@@ -2717,7 +2719,7 @@ DROP TABLE IF EXISTS `sys_tour_content`;
 CREATE TABLE `sys_tour_content`  (
   `content_id` int NOT NULL AUTO_INCREMENT COMMENT '内容ID',
   `robot_id` int NOT NULL COMMENT '机器人ID',
-  `point_id` int NULL DEFAULT NULL COMMENT '关联点位ID',
+  `sys_point_id` int NULL DEFAULT NULL COMMENT '关联系统点位ID',
   `point_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '讲解点名称',
   `point_desc` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '讲解点描述',
   `broadcast_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'text' COMMENT '播报类型(text文本/audio音频)',
@@ -2738,7 +2740,7 @@ CREATE TABLE `sys_tour_content`  (
   `tenant_id` bigint NULL DEFAULT NULL COMMENT '租户ID',
   PRIMARY KEY (`content_id`) USING BTREE,
   INDEX `idx_robot_id`(`robot_id` ASC) USING BTREE,
-  INDEX `idx_point_id`(`point_id` ASC) USING BTREE,
+  INDEX `idx_sys_point_id`(`sys_point_id` ASC) USING BTREE,
   INDEX `idx_sys_tour_content_tenant`(`tenant_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '讲解内容表' ROW_FORMAT = Dynamic;
 

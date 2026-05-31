@@ -10,9 +10,9 @@ export function getPointList(params) {
   })
 }
 
-export function getPoint(pointId) {
+export function getPoint(sysPointId) {
   return request({
-    url: '/func/point/' + pointId,
+    url: '/func/point/' + sysPointId,
     method: 'get'
   })
 }
@@ -33,25 +33,25 @@ export function updatePoint(data) {
   })
 }
 
-export function deletePoint(pointId) {
+export function deletePoint(sysPointId) {
   return request({
-    url: '/func/point/' + pointId,
+    url: '/func/point/' + sysPointId,
     method: 'delete'
   })
 }
 
-export function deletePoints(pointIds) {
+export function deletePoints(sysPointIds) {
   return request({
     url: '/func/point/batch',
     method: 'delete',
-    data: pointIds
+    data: sysPointIds
   })
 }
 
 // ========== 点位播报配置 ==========
-export function getPointVoiceConfig(pointId) {
+export function getPointVoiceConfig(sysPointId) {
   return request({
-    url: '/func/point/voice/' + pointId,
+    url: '/func/point/voice/' + sysPointId,
     method: 'get'
   })
 }

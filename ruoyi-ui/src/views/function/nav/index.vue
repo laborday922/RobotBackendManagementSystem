@@ -93,9 +93,9 @@
               <div class="point-list-container">
                 <div
                   v-for="point in pointList"
-                  :key="point.pointId"
+                  :key="point.sysPointId"
                   class="point-item"
-                  :class="{ active: selectedPoint && selectedPoint.pointId === point.pointId }"
+                  :class="{ active: selectedPoint && selectedPoint.sysPointId === point.sysPointId }"
                   @click="selectPoint(point)"
                 >
                   <div class="point-icon">
@@ -104,7 +104,7 @@
                   <div class="point-info">
                     <div class="point-name">{{ point.pointName }}</div>
                     <div class="point-code" v-if="point.pointCode">{{ point.pointCode }}</div>
-                    <div class="point-id" v-if="point.pointId">ID: {{ point.pointId }}</div>
+                    <div class="point-id" v-if="point.sysPointId">ID: {{ point.sysPointId }}</div>
                   </div>
                   <div class="point-status" v-if="point.status === '0'">
                     <el-tag type="info" size="mini">禁用</el-tag>
@@ -133,7 +133,7 @@
           <el-card class="sub-card" shadow="never">
             <div class="selected-point-info" v-if="selectedPoint">
               <i class="el-icon-location"></i>
-              <span>正在配置：<strong>{{ selectedPoint.pointName }}</strong> (ID: {{ selectedPoint.pointId }})</span>
+              <span>正在配置：<strong>{{ selectedPoint.pointName }}</strong> (ID: {{ selectedPoint.sysPointId }})</span>
             </div>
             <div class="selected-point-info empty" v-else>
               <i class="el-icon-info"></i>
@@ -212,9 +212,9 @@
     >
       <el-form :model="pointForm" :rules="pointRules" ref="pointForm" label-width="100px">
         <!-- 从机器人获取点位位置（选中的值将直接作为 point_id 存储） -->
-        <el-form-item label="点位位置" prop="robotPositionId" required>
+        <el-form-item label="点位位置" prop="robotPointId" required>
           <el-select
-            v-model="pointForm.robotPositionId"
+            v-model="pointForm.robotPointId"
             placeholder="请选择点位位置（从机器人获取）"
             clearable
             filterable
@@ -335,18 +335,18 @@ export default {
         mapName: ''
       },
       pointForm: {
-        pointId: null,
+        sysPointId: null,
         pointName: '',
         pointCode: '',
         pointType: 'normal',
         orderNum: 0,
         status: '1',
         remark: '',
-        robotPositionId: null  // 这个值将作为 point_id 存储
+        robotPointId: null
       },
       pointSubmitting: false,
       pointRules: {
-        robotPositionId: [
+        robotPointId: [
           { required: true, message: '请选择点位位置', trigger: 'change' }
         ],
         pointName: [
@@ -374,7 +374,7 @@ export default {
   },
   computed: {
     dialogTitle() {
-      return this.pointForm.pointId ? '编辑点位' : '添加点位';
+      return this.pointForm.sysPointId ? '编辑点位' : '添加点位';
     }
   },
   beforeDestroy() {
@@ -730,13 +730,13 @@ export default {
     async selectPoint(point) {
       if (point.status === '0') { this.$message.warning('该点位已禁用，无法配置播报'); return; }
       this.selectedPoint = point;
-      this.$message.info(`已选中点位：${point.pointName} (ID: ${point.pointId})`);
-      await this.loadPointVoiceConfig(point.pointId);
+      this.$message.info(`已选中点位：${point.pointName} (ID: ${point.sysPointId})`);
+      await this.loadPointVoiceConfig(point.sysPointId);
     },
 
-    async loadPointVoiceConfig(pointId) {
+    async loadPointVoiceConfig(sysPointId) {
       try {
-        const res = await getPointVoiceConfig(pointId);
+        const res = await getPointVoiceConfig(sysPointId);
         if (res.code === 200 && res.data) {
           this.pointVoiceConfig = {
             voiceType: res.data.voiceType || 'default',
@@ -760,7 +760,7 @@ export default {
       this.savingVoice = true;
       try {
         const requestData = {
-          pointId: this.selectedPoint.pointId,
+          sysPointId: this.selectedPoint.sysPointId,
           voiceType: this.pointVoiceConfig.voiceType,
           beforeMsg: this.pointVoiceConfig.beforeMsg,
           duringMsg: this.pointVoiceConfig.duringMsg,
@@ -769,7 +769,7 @@ export default {
         const res = await savePointVoiceConfig(requestData);
         if (res.code === 200) {
           this.$message.success(`点位「${this.selectedPoint.pointName}」播报配置保存成功`);
-          await this.loadPointVoiceConfig(this.selectedPoint.pointId);
+          await this.loadPointVoiceConfig(this.selectedPoint.sysPointId);
         } else this.$message.error(res.msg || '保存失败');
       } catch (error) {
         console.error('保存失败:', error);
@@ -841,14 +841,14 @@ export default {
 
     editPoint(point) {
       this.pointForm = {
-        pointId: point.pointId,
+        sysPointId: point.sysPointId,
         pointName: point.pointName,
         pointCode: point.pointCode || '',
         pointType: point.pointType || 'normal',
         orderNum: point.orderNum || 0,
         status: point.status || '1',
         remark: point.remark || '',
-        robotPositionId: point.pointId  // 编辑时，robotPositionId 就是当前的 pointId
+        robotPointId: point.robotPointId
       };
       this.positionList = [];
       this.showAddPointDialog = true;
@@ -858,10 +858,10 @@ export default {
       this.$confirm(`确定要删除点位"${point.pointName}"吗？`, '提示', {
         confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
       }).then(() => {
-        deletePoint(point.pointId).then(() => {
+        deletePoint(point.sysPointId).then(() => {
           this.$message.success('删除成功');
           this.loadPoints();
-          if (this.selectedPoint && this.selectedPoint.pointId === point.pointId) {
+          if (this.selectedPoint && this.selectedPoint.sysPointId === point.sysPointId) {
             this.selectedPoint = null;
             this.resetPointVoiceConfig();
           }
@@ -874,14 +874,14 @@ export default {
 
     resetPointForm() {
       this.pointForm = {
-        pointId: null,
+        sysPointId: null,
         pointName: '',
         pointCode: '',
         pointType: 'normal',
         orderNum: 0,
         status: '1',
         remark: '',
-        robotPositionId: null
+        robotPointId: null
       };
       if (this.$refs.pointForm) this.$refs.pointForm.resetFields();
     },
@@ -891,18 +891,22 @@ export default {
         if (!valid) return;
 
         // 检查是否选择了点位位置
-        if (!this.pointForm.robotPositionId) {
+        if (!this.pointForm.robotPointId) {
           this.$message.warning('请选择点位位置');
           return;
         }
 
         this.pointSubmitting = true;
 
-        const mapId = this.navConfig.mapId || 0;
+        const mapId = this.navConfig.mapId;
+        if (!mapId) {
+          this.$message.warning('请先选择地图');
+          this.pointSubmitting = false;
+          return;
+        }
 
-        // 关键：将 robotPositionId 作为 pointId 传递给后端
         const formData = {
-          pointId: this.pointForm.robotPositionId,  // 选择的点位位置ID直接作为 point_id
+          robotPointId: this.pointForm.robotPointId,
           mapId: mapId,
           robotId: this.selectedRobotId,
           pointName: this.pointForm.pointName,
@@ -911,19 +915,17 @@ export default {
           orderNum: this.pointForm.orderNum,
           status: this.pointForm.status,
           remark: this.pointForm.remark,
-          robotPositionId: this.pointForm.robotPositionId
+          robotPositionId: this.pointForm.robotPointId
         };
 
-        // 编辑模式：如果有点位ID且与选择的机器人位置ID不同，需要特殊处理
-        if (this.pointForm.pointId) {
-          formData.pointId = this.pointForm.pointId;
+        if (this.pointForm.sysPointId) {
+          formData.sysPointId = this.pointForm.sysPointId;
         }
 
-        const apiCall = formData.pointId && formData.pointId === this.pointForm.pointId ?
-          updatePoint(formData) : addPoint(formData);
+        const apiCall = this.pointForm.sysPointId ? updatePoint(formData) : addPoint(formData);
 
         apiCall.then(() => {
-          this.$message.success(this.pointForm.pointId ? '更新成功' : '添加成功');
+          this.$message.success(this.pointForm.sysPointId ? '更新成功' : '添加成功');
           this.showAddPointDialog = false;
           this.loadPoints();
         }).catch(error => {

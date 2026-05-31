@@ -353,9 +353,9 @@
             <div class="point-checkbox-grid" v-if="mapPoints && mapPoints.length > 0">
               <el-checkbox
                 v-for="point in mapPoints"
-                :key="point.pointId"
+                :key="point.sysPointId"
                 v-model="routeConfigForm.selectedPoints"
-                :label="point.pointId"
+                :label="point.sysPointId"
                 @change="updateSelectedPoints"
               >
                 {{ point.pointName }}
@@ -974,8 +974,8 @@ export default {
         const res = await getRouteDetail(row.routeId);
         const route = res.data || {};
         const routePoints = (route.routePoints || [])
-          .filter(p => p && p.pointId)
-          .map(p => ({ pointId: p.pointId, contentId: p.contentId, orderNum: p.orderNum }));
+          .filter(p => p && p.sysPointId)
+          .map(p => ({ sysPointId: p.sysPointId, contentId: p.contentId, orderNum: p.orderNum }));
 
         await saveRoute({
           routeId: row.routeId,
@@ -1022,11 +1022,11 @@ export default {
           await this.loadMapPoints(this.routeConfigForm.mapId);
         }
 
-        const routePoints = (route.routePoints || []).filter(p => p && p.pointId);
+        const routePoints = (route.routePoints || []).filter(p => p && p.sysPointId);
         if (routePoints.length > 0) {
-          this.routeConfigForm.selectedPoints = routePoints.map(p => p.pointId);
+          this.routeConfigForm.selectedPoints = routePoints.map(p => p.sysPointId);
           this.routeConfigForm.associationList = routePoints.map(p => ({
-            pointId: p.pointId,
+            sysPointId: p.sysPointId,
             pointName: (p.point && p.point.pointName) || '',
             contentId: p.contentId || null
           }));
@@ -1077,7 +1077,7 @@ export default {
 
     toggleAllPoints(val) {
       if (val) {
-        this.routeConfigForm.selectedPoints = this.mapPoints.map(p => p.pointId);
+        this.routeConfigForm.selectedPoints = this.mapPoints.map(p => p.sysPointId);
       } else {
         this.routeConfigForm.selectedPoints = [];
       }
@@ -1086,11 +1086,11 @@ export default {
 
     updateSelectedPoints() {
       const newAssociationList = [];
-      this.routeConfigForm.selectedPoints.forEach(pointId => {
-        const point = this.mapPoints.find(p => p.pointId === pointId);
-        const existing = this.routeConfigForm.associationList.find(a => a.pointId === pointId);
+      this.routeConfigForm.selectedPoints.forEach(sysPointId => {
+        const point = this.mapPoints.find(p => p.sysPointId === sysPointId);
+        const existing = this.routeConfigForm.associationList.find(a => a.sysPointId === sysPointId);
         newAssociationList.push({
-          pointId: pointId,
+          sysPointId: sysPointId,
           pointName: point?.pointName || existing?.pointName || '',
           contentId: existing?.contentId || null
         });
@@ -1105,8 +1105,8 @@ export default {
       if (!this.routeConfigForm.mapId && this.routeConfigForm.mapId !== 0) { this.$message.warning('请选择地图'); return; }
 
       const routePoints = this.routeConfigForm.associationList
-        .filter(item => item.pointId)
-        .map((item, index) => ({ pointId: item.pointId, contentId: item.contentId, orderNum: index + 1 }));
+        .filter(item => item.sysPointId)
+        .map((item, index) => ({ sysPointId: item.sysPointId, contentId: item.contentId, orderNum: index + 1 }));
 
       const data = {
         routeId: this.currentRouteId,

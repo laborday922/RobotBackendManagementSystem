@@ -604,26 +604,12 @@ public class SysRobotServiceImpl implements ISysRobotService
             try {
                 Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null) {
-                    RobotStatusDto statusDto = convertToRobotStatusDto(robot);
-
-                    int change = (int)(Math.random() * 10) - 3;
-                    int newBattery = Math.max(0, Math.min(100, robot.getBattery() + change));
-                    statusDto.setBattery(newBattery);
-
-                    if (newBattery <= 15) {
-                        statusDto.setTaskStatus(1);
-                    } else if (statusDto.getTaskStatus() == 1 && newBattery > 20) {
-                        statusDto.setTaskStatus(2);
-                    }
-
-                    robotsService.updateRobotStatus(statusDto);
-
                     checkAndExecuteAutoCharge(robotId);
 
                     recordOperation(robotId, robot.getName(), "refresh_status",
-                            "success", operator, "刷新状态, 当前电量:" + newBattery);
+                            "success", operator, "刷新状态（不模拟覆盖状态，等待机器人上报）");
                     successCount++;
-                    logger.info("刷新状态成功: robotId={}, battery={}", robotId, newBattery);
+                    logger.info("刷新状态成功: robotId={}", robotId);
                 }
             } catch (Exception e) {
                 logger.error("刷新状态失败: robotId={}", robotId, e);

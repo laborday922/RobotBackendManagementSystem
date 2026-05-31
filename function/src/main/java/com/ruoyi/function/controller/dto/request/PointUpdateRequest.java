@@ -11,9 +11,9 @@ import javax.validation.constraints.NotNull;
 @ApiModel(description = "点位更新请求")
 public class PointUpdateRequest {
 
-    @ApiModelProperty(value = "点位ID", required = true)
-    @NotNull(message = "点位ID不能为空")
-    private Long pointId;
+    @ApiModelProperty(value = "系统点位ID", required = true)
+    @NotNull(message = "系统点位ID不能为空")
+    private Long sysPointId;
 
     @ApiModelProperty(value = "所属地图ID（可为空，为空时使用默认地图）")
     private Long mapId;
@@ -39,16 +39,16 @@ public class PointUpdateRequest {
     @ApiModelProperty(value = "备注")
     private String remark;
 
-    @ApiModelProperty(value = "机器人位置ID")
-    private Long robotPositionId;
+    @ApiModelProperty(value = "机器人点位ID")
+    private Long robotPointId;
 
     // Getters and Setters
-    public Long getPointId() {
-        return pointId;
+    public Long getSysPointId() {
+        return sysPointId;
     }
 
-    public void setPointId(Long pointId) {
-        this.pointId = pointId;
+    public void setSysPointId(Long sysPointId) {
+        this.sysPointId = sysPointId;
     }
 
     public Long getMapId() {
@@ -115,11 +115,11 @@ public class PointUpdateRequest {
         this.remark = remark;
     }
 
-    public Long getRobotPositionId() {
-        return robotPositionId;
+    public Long getRobotPointId() {
+        return robotPointId;
     }
 
-    public void setRobotPositionId(Long robotPositionId) {
-        this.robotPositionId = robotPositionId;
+    public void setRobotPointId(Long robotPointId) {
+        this.robotPointId = robotPointId;
     }
 }

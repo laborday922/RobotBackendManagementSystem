@@ -11,8 +11,11 @@ import java.util.Date;
 @ApiModel(description = "点位响应")
 public class PointResponse {
 
-    @ApiModelProperty("点位ID")
-    private Long pointId;
+    @ApiModelProperty("系统点位ID")
+    private Long sysPointId;
+
+    @ApiModelProperty("机器人点位ID")
+    private Long robotPointId;
 
     @ApiModelProperty("所属地图ID")
     private Long mapId;
@@ -48,8 +51,11 @@ public class PointResponse {
     private String remark;
 
     // Getters and Setters
-    public Long getPointId() { return pointId; }
-    public void setPointId(Long pointId) { this.pointId = pointId; }
+    public Long getSysPointId() { return sysPointId; }
+    public void setSysPointId(Long sysPointId) { this.sysPointId = sysPointId; }
+
+    public Long getRobotPointId() { return robotPointId; }
+    public void setRobotPointId(Long robotPointId) { this.robotPointId = robotPointId; }
 
     public Long getMapId() { return mapId; }
     public void setMapId(Long mapId) { this.mapId = mapId; }

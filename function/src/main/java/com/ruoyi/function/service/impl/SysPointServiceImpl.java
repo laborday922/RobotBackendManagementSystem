@@ -19,8 +19,8 @@ public class SysPointServiceImpl implements ISysPointService {
     private SysPointMapper sysPointMapper;
 
     @Override
-    public SysPoint selectById(Long pointId) {
-        return sysPointMapper.selectById(pointId);
+    public SysPoint selectById(Long sysPointId) {
+        return sysPointMapper.selectById(sysPointId);
     }
 
     @Override
@@ -71,12 +71,12 @@ public class SysPointServiceImpl implements ISysPointService {
     }
 
     @Override
-    public int deleteById(Long pointId) {
-        return sysPointMapper.deleteById(pointId);
+    public int deleteById(Long sysPointId) {
+        return sysPointMapper.deleteById(sysPointId);
     }
 
     @Override
-    public int deleteByIds(Long[] pointIds) {
-        return sysPointMapper.deleteByIds(pointIds);
+    public int deleteByIds(Long[] sysPointIds) {
+        return sysPointMapper.deleteByIds(sysPointIds);
     }
 }

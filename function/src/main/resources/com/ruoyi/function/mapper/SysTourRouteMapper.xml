@@ -23,11 +23,12 @@
         <collection property="routePoints" ofType="com.ruoyi.function.domain.SysRoutePoint" javaType="java.util.ArrayList">
             <id property="id" column="rp_id"/>
             <result property="routeId" column="rp_route_id"/>
-            <result property="pointId" column="rp_point_id"/>
+            <result property="sysPointId" column="rp_sys_point_id"/>
             <result property="contentId" column="rp_content_id"/>
             <result property="orderNum" column="rp_order_num"/>
             <association property="point" javaType="com.ruoyi.function.domain.SysPoint">
-                <id property="pointId" column="point_id"/>
+                <id property="sysPointId" column="sys_point_id"/>
+                <result property="robotPointId" column="robot_point_id"/>
                 <result property="pointName" column="point_name"/>
                 <result property="pointCode" column="point_code"/>
                 <result property="pointType" column="point_type"/>
@@ -54,7 +55,7 @@
     <resultMap type="com.ruoyi.function.domain.SysRoutePoint" id="SysRoutePointResult">
         <id property="id" column="id"/>
         <result property="routeId" column="route_id"/>
-        <result property="pointId" column="point_id"/>
+        <result property="sysPointId" column="sys_point_id"/>
         <result property="contentId" column="content_id"/>
         <result property="orderNum" column="order_num"/>
     </resultMap>
@@ -87,9 +88,9 @@
         sr.route_id, sr.route_name, sr.robot_id, sr.map_id, sr.status, sr.point_count,
         sr.point_ids,   <!-- 关键修改：添加这一列 -->
         sr.create_by, sr.create_time, sr.update_by, sr.update_time,
-        rp.id as rp_id, rp.route_id as rp_route_id, rp.point_id as rp_point_id,
+        rp.id as rp_id, rp.route_id as rp_route_id, rp.sys_point_id as rp_sys_point_id,
         rp.content_id as rp_content_id, rp.order_num as rp_order_num,
-        sp.point_id, sp.point_name, sp.point_code, sp.point_type,
+        sp.sys_point_id, sp.robot_point_id, sp.point_name, sp.point_code, sp.point_type,
         sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
         tc.content_id, tc.point_name as content_point_name, tc.point_desc,
         tc.broadcast_type, tc.broadcast_text, tc.audio_file,
@@ -97,7 +98,7 @@
         tc.arm_action, tc.chassis_angle
         FROM sys_tour_route sr
         LEFT JOIN sys_route_point rp ON sr.route_id = rp.route_id
-        LEFT JOIN sys_point sp ON rp.point_id = sp.point_id
+        LEFT JOIN sys_point sp ON rp.sys_point_id = sp.sys_point_id
         LEFT JOIN sys_tour_content tc ON rp.content_id = tc.content_id
         WHERE sr.robot_id = #{robotId}
         ORDER BY sr.route_id, rp.order_num ASC
@@ -109,9 +110,9 @@
         sr.route_id, sr.route_name, sr.robot_id, sr.map_id, sr.status, sr.point_count,
         sr.point_ids,
         sr.create_by, sr.create_time, sr.update_by, sr.update_time,
-        rp.id as rp_id, rp.route_id as rp_route_id, rp.point_id as rp_point_id,
+        rp.id as rp_id, rp.route_id as rp_route_id, rp.sys_point_id as rp_sys_point_id,
         rp.content_id as rp_content_id, rp.order_num as rp_order_num,
-        sp.point_id, sp.point_name, sp.point_code, sp.point_type,
+        sp.sys_point_id, sp.robot_point_id, sp.point_name, sp.point_code, sp.point_type,
         sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
         tc.content_id, tc.point_name as content_point_name, tc.point_desc,
         tc.broadcast_type, tc.broadcast_text, tc.audio_file,
@@ -119,7 +120,7 @@
         tc.arm_action, tc.chassis_angle
         FROM sys_tour_route sr
         LEFT JOIN sys_route_point rp ON sr.route_id = rp.route_id
-        LEFT JOIN sys_point sp ON rp.point_id = sp.point_id
+        LEFT JOIN sys_point sp ON rp.sys_point_id = sp.sys_point_id
         LEFT JOIN sys_tour_content tc ON rp.content_id = tc.content_id
         WHERE sr.route_id = #{routeId}
         ORDER BY rp.order_num ASC
@@ -156,15 +157,15 @@
 
     <!-- 路线点位关联操作 -->
     <select id="selectRoutePoints" resultMap="SysRoutePointResult">
-        select id, route_id, point_id, content_id, order_num
+        select id, route_id, sys_point_id, content_id, order_num
         from sys_route_point
         where route_id = #{routeId}
         order by order_num
     </select>
 
     <insert id="insertRoutePoint" parameterType="com.ruoyi.function.domain.SysRoutePoint" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_route_point (route_id, point_id, content_id, order_num)
-        values (#{routeId}, #{pointId}, #{contentId}, #{orderNum})
+        insert into sys_route_point (route_id, sys_point_id, content_id, order_num)
+        values (#{routeId}, #{sysPointId}, #{contentId}, #{orderNum})
     </insert>
 
     <delete id="deleteRoutePoints">
@@ -172,10 +173,10 @@
     </delete>
 
     <insert id="batchInsertRoutePoints">
-        insert into sys_route_point (route_id, point_id, content_id, order_num)
+        insert into sys_route_point (route_id, sys_point_id, content_id, order_num)
         values
         <foreach collection="points" item="point" separator=",">
-            (#{routeId}, #{point.pointId}, #{point.contentId}, #{point.orderNum})
+            (#{routeId}, #{point.sysPointId}, #{point.contentId}, #{point.orderNum})
         </foreach>
     </insert>
 </mapper>

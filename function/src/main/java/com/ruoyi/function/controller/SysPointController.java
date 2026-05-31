@@ -148,9 +148,9 @@ public class SysPointController extends BaseController {
     }
 
     @ApiOperation("获取点位播报配置")
-    @GetMapping("/voice/{pointId}")
-    public AjaxResult getPointVoiceConfig(@PathVariable Long pointId) {
-        SysPoint point = sysPointService.selectById(pointId);
+    @GetMapping("/voice/{sysPointId}")
+    public AjaxResult getPointVoiceConfig(@PathVariable Long sysPointId) {
+        SysPoint point = sysPointService.selectById(sysPointId);
         if (point == null) {
             return error("点位不存在");
         }
@@ -167,13 +167,13 @@ public class SysPointController extends BaseController {
     @ApiOperation("保存点位播报配置")
     @PostMapping("/voice/save")
     public AjaxResult savePointVoiceConfig(@RequestBody Map<String, Object> params) {
-        Long pointId = Long.valueOf(params.get("pointId").toString());
+        Long sysPointId = Long.valueOf(params.get("sysPointId").toString());
         String voiceType = (String) params.get("voiceType");
         String beforeMsg = (String) params.get("beforeMsg");
         String duringMsg = (String) params.get("duringMsg");
         String afterMsg = (String) params.get("afterMsg");
 
-        SysPoint point = sysPointService.selectById(pointId);
+        SysPoint point = sysPointService.selectById(sysPointId);
         if (point == null) {
             return error("点位不存在");
         }
@@ -198,7 +198,8 @@ public class SysPointController extends BaseController {
 
             List<Map<String, Object>> result = points.stream().map(point -> {
                 Map<String, Object> config = new HashMap<>();
-                config.put("pointId", point.getPointId());
+                config.put("sysPointId", point.getSysPointId());
+                config.put("robotPointId", point.getRobotPointId());
                 config.put("pointName", point.getPointName());
                 config.put("mapId", point.getMapId());
                 config.put("voiceType", point.getVoiceType() != null ? point.getVoiceType() : "default");
@@ -227,7 +228,8 @@ public class SysPointController extends BaseController {
 
             List<Map<String, Object>> result = points.stream().map(point -> {
                 Map<String, Object> config = new HashMap<>();
-                config.put("pointId", point.getPointId());
+                config.put("sysPointId", point.getSysPointId());
+                config.put("robotPointId", point.getRobotPointId());
                 config.put("pointName", point.getPointName());
                 config.put("voiceType", point.getVoiceType() != null ? point.getVoiceType() : "default");
                 config.put("beforeMsg", point.getBeforeMsg());
@@ -265,11 +267,11 @@ public class SysPointController extends BaseController {
     // ========== 路径变量接口放在最后 ==========
 
     @ApiOperation("根据ID获取点位详情")
-    @GetMapping("/{pointId}")
-    public AjaxResult getById(@PathVariable Long pointId) {
-        SysPoint point = sysPointService.selectById(pointId);
+    @GetMapping("/{sysPointId}")
+    public AjaxResult getById(@PathVariable Long sysPointId) {
+        SysPoint point = sysPointService.selectById(sysPointId);
         if (point == null) {
-            throw FunctionException.pointNotFound(pointId);
+            throw FunctionException.pointNotFound(sysPointId);
         }
 
         PointResponse response = new PointResponse();
@@ -293,12 +295,7 @@ public class SysPointController extends BaseController {
      * 获取有效的地图ID（如果为空或<=0则使用默认地图）
      */
     private Long getEffectiveMapId(Long requestMapId) {
-        Long mapId = requestMapId;
-        if (mapId == null || mapId <= 0) {
-            mapId = MapConstants.DEFAULT_MAP_ID;
-            log.debug("地图ID为空或无效，使用默认地图ID: {}", mapId);
-        }
-        return mapId;
+        return requestMapId;
     }
 
     // ========== CRUD 操作接口 ==========
@@ -307,27 +304,28 @@ public class SysPointController extends BaseController {
     @PostMapping
     public AjaxResult add(@Valid @RequestBody PointCreateRequest request) {
         Long mapId = getEffectiveMapId(request.getMapId());
+        if (mapId == null) {
+            return error("地图ID不能为空");
+        }
+        if (request.getRobotId() == null) {
+            return error("机器人ID不能为空");
+        }
 
         SysPoint point = new SysPoint();
 
-        // 关键修改：如果前端传了 pointId，直接使用；否则自动生成或者报错
-        if (request.getPointId() != null) {
-            // 检查该 pointId 是否已存在
-            SysPoint existing = sysPointService.selectById(request.getPointId());
-            if (existing != null) {
-                return error("点位ID " + request.getPointId() + " 已存在，无法创建");
-            }
-            point.setPointId(request.getPointId());
-        } else if (request.getRobotPositionId() != null) {
-            // 兼容使用 robotPositionId 作为 pointId
-            SysPoint existing = sysPointService.selectById(request.getRobotPositionId());
-            if (existing != null) {
-                return error("点位ID " + request.getRobotPositionId() + " 已存在，无法创建");
-            }
-            point.setPointId(request.getRobotPositionId());
-        } else {
+        Long robotPointId = request.getRobotPointId() != null ? request.getRobotPointId() : request.getRobotPositionId();
+        if (robotPointId == null) {
             return error("请选择机器人点位位置");
         }
+        SysPoint dupQuery = new SysPoint();
+        dupQuery.setRobotId(request.getRobotId());
+        dupQuery.setRobotPointId(robotPointId);
+        dupQuery.setDelFlag("0");
+        List<SysPoint> existing = sysPointService.selectList(dupQuery);
+        if (existing != null && !existing.isEmpty()) {
+            return error("该机器人点位ID已存在，无法创建");
+        }
+        point.setRobotPointId(robotPointId);
 
         point.setMapId(mapId);
         point.setRobotId(request.getRobotId());
@@ -342,8 +340,8 @@ public class SysPointController extends BaseController {
             point.setVoiceType("default");
         }
 
-        log.info("新增点位: pointId={}, pointName={}, mapId={}, robotId={}",
-                point.getPointId(), point.getPointName(), mapId, request.getRobotId());
+        log.info("新增点位: robotPointId={}, pointName={}, mapId={}, robotId={}",
+                point.getRobotPointId(), point.getPointName(), mapId, request.getRobotId());
 
         return toAjax(sysPointService.insert(point));
     }
@@ -351,15 +349,18 @@ public class SysPointController extends BaseController {
     @ApiOperation("修改点位")
     @PutMapping
     public AjaxResult edit(@Valid @RequestBody PointUpdateRequest request) {
-        SysPoint existing = sysPointService.selectById(request.getPointId());
+        SysPoint existing = sysPointService.selectById(request.getSysPointId());
         if (existing == null) {
-            throw FunctionException.pointNotFound(request.getPointId());
+            throw FunctionException.pointNotFound(request.getSysPointId());
         }
 
         Long mapId = getEffectiveMapId(request.getMapId());
+        if (mapId == null) {
+            return error("地图ID不能为空");
+        }
 
         SysPoint point = new SysPoint();
-        point.setPointId(request.getPointId());
+        point.setSysPointId(request.getSysPointId());
         point.setMapId(mapId);
 
         if (request.getRobotId() != null) {
@@ -383,31 +384,34 @@ public class SysPointController extends BaseController {
         if (request.getRemark() != null) {
             point.setRemark(request.getRemark());
         }
+        if (request.getRobotPointId() != null) {
+            point.setRobotPointId(request.getRobotPointId());
+        }
 
-        log.info("更新点位: pointId={}, pointName={}, mapId={}, robotId={}",
-                point.getPointId(), point.getPointName(), mapId, request.getRobotId());
+        log.info("更新点位: sysPointId={}, pointName={}, mapId={}, robotId={}",
+                point.getSysPointId(), point.getPointName(), mapId, request.getRobotId());
 
         return toAjax(sysPointService.update(point));
     }
 
     @ApiOperation("删除点位")
-    @DeleteMapping("/{pointId}")
-    public AjaxResult remove(@PathVariable Long pointId) {
-        SysPoint point = sysPointService.selectById(pointId);
+    @DeleteMapping("/{sysPointId}")
+    public AjaxResult remove(@PathVariable Long sysPointId) {
+        SysPoint point = sysPointService.selectById(sysPointId);
         if (point == null) {
-            throw FunctionException.pointNotFound(pointId);
+            throw FunctionException.pointNotFound(sysPointId);
         }
-        log.info("删除点位: pointId={}, pointName={}", pointId, point.getPointName());
-        return toAjax(sysPointService.deleteById(pointId));
+        log.info("删除点位: sysPointId={}, pointName={}", sysPointId, point.getPointName());
+        return toAjax(sysPointService.deleteById(sysPointId));
     }
 
     @ApiOperation("批量删除点位")
     @DeleteMapping("/batch")
-    public AjaxResult batchRemove(@RequestBody Long[] pointIds) {
-        if (pointIds == null || pointIds.length == 0) {
+    public AjaxResult batchRemove(@RequestBody Long[] sysPointIds) {
+        if (sysPointIds == null || sysPointIds.length == 0) {
             return error("请选择要删除的点位");
         }
-        log.info("批量删除点位: count={}", pointIds.length);
-        return toAjax(sysPointService.deleteByIds(pointIds));
+        log.info("批量删除点位: count={}", sysPointIds.length);
+        return toAjax(sysPointService.deleteByIds(sysPointIds));
     }
 }

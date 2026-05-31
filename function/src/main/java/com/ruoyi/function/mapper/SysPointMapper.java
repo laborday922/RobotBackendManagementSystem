@@ -23,10 +23,10 @@ public interface SysPointMapper {
     /**
      * 根据点位ID查询详情
      *
-     * @param pointId 点位ID
+     * @param sysPointId 系统点位ID
      * @return 点位信息
      */
-    SysPoint selectById(@Param("pointId") Long pointId);
+    SysPoint selectById(@Param("sysPointId") Long sysPointId);
 
     /**
      * 查询点位列表（带条件）
@@ -71,10 +71,10 @@ public interface SysPointMapper {
     /**
      * 删除点位（物理删除）
      *
-     * @param pointId 点位ID
+     * @param sysPointId 系统点位ID
      * @return 结果
      */
-    int deleteById(@Param("pointId") Long pointId);
+    int deleteById(@Param("sysPointId") Long sysPointId);
 
     /**
      * 根据地图ID删除所有点位
@@ -87,21 +87,21 @@ public interface SysPointMapper {
     /**
      * 批量删除
      *
-     * @param pointIds 点位ID数组
+     * @param sysPointIds 系统点位ID数组
      * @return 结果
      */
-    int deleteByIds(@Param("pointIds") Long[] pointIds);
+    int deleteByIds(@Param("sysPointIds") Long[] sysPointIds);
 
     /**
      * 更新点位状态
      *
-     * @param pointId 点位ID
+     * @param sysPointId 系统点位ID
      * @param status 状态
      * @param updateBy 更新者
      * @param updateTime 更新时间
      * @return 结果
      */
-    int updateStatus(@Param("pointId") Long pointId,
+    int updateStatus(@Param("sysPointId") Long sysPointId,
                      @Param("status") String status,
                      @Param("updateBy") String updateBy,
                      @Param("updateTime") java.util.Date updateTime);
@@ -122,5 +122,5 @@ public interface SysPointMapper {
      * @return 结果
      */
     int checkPointCodeUnique(@Param("pointCode") String pointCode,
-                             @Param("pointId") Long pointId);
+                             @Param("sysPointId") Long sysPointId);
 }

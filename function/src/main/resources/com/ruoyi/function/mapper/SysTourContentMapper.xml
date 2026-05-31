@@ -5,7 +5,7 @@
     <resultMap type="com.ruoyi.function.domain.SysTourContent" id="SysTourContentResult">
         <id property="contentId" column="content_id"/>
         <result property="robotId" column="robot_id"/>
-        <result property="pointId" column="point_id"/>
+        <result property="sysPointId" column="sys_point_id"/>
         <result property="pointName" column="point_name"/>
         <result property="pointDesc" column="point_desc"/>
         <result property="broadcastType" column="broadcast_type"/>
@@ -27,7 +27,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        select content_id, robot_id, point_id, point_name, point_desc,
+        select content_id, robot_id, sys_point_id, point_name, point_desc,
         broadcast_type, broadcast_text, audio_file, voice_type,
         speech_rate, interval_time, media_file,  <!-- 删除 content_type -->
         arm_action, chassis_angle, order_num, tenant_id,
@@ -57,12 +57,12 @@
 
     <insert id="insert" parameterType="com.ruoyi.function.domain.SysTourContent" useGeneratedKeys="true" keyProperty="contentId">
         insert into sys_tour_content (
-        robot_id, point_id, point_name, point_desc, broadcast_type,
+        robot_id, sys_point_id, point_name, point_desc, broadcast_type,
         broadcast_text, audio_file, voice_type, speech_rate, interval_time,
         media_file, arm_action, chassis_angle, order_num, tenant_id,  <!-- 删除 content_type -->
         create_by, create_time
         ) values (
-        #{robotId}, #{pointId}, #{pointName}, #{pointDesc}, #{broadcastType},
+        #{robotId}, #{sysPointId}, #{pointName}, #{pointDesc}, #{broadcastType},
         #{broadcastText}, #{audioFile}, #{voiceType}, #{speechRate}, #{intervalTime},
         #{mediaFile}, #{armAction}, #{chassisAngle}, #{orderNum}, #{tenantId},
         #{createBy}, sysdate()
@@ -72,7 +72,7 @@
     <update id="update" parameterType="com.ruoyi.function.domain.SysTourContent">
         update sys_tour_content
         <set>
-            <if test="pointId != null">point_id = #{pointId},</if>
+            <if test="sysPointId != null">sys_point_id = #{sysPointId},</if>
             <if test="pointName != null">point_name = #{pointName},</if>
             <if test="pointDesc != null">point_desc = #{pointDesc},</if>
             <if test="broadcastType != null">broadcast_type = #{broadcastType},</if>

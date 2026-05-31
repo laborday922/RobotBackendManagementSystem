@@ -255,15 +255,15 @@ public class SysTourServiceImpl implements ISysTourService {
 
         if (route.getRoutePoints() != null) {
             List<SysRoutePoint> validPoints = route.getRoutePoints().stream()
-                    .filter(p -> p != null && (p.getId() != null || p.getPointId() != null || p.getContentId() != null))
+                    .filter(p -> p != null && (p.getId() != null || p.getSysPointId() != null || p.getContentId() != null))
                     .collect(Collectors.toList());
             route.setRoutePoints(validPoints);
         }
 
         List<Long> missingPointIds = route.getRoutePoints() == null ? java.util.Collections.emptyList() : route.getRoutePoints().stream()
-                .filter(p -> p != null && p.getPointId() != null)
-                .filter(p -> p.getPoint() == null || p.getPoint().getPointId() == null)
-                .map(SysRoutePoint::getPointId)
+                .filter(p -> p != null && p.getSysPointId() != null)
+                .filter(p -> p.getPoint() == null || p.getPoint().getSysPointId() == null)
+                .map(SysRoutePoint::getSysPointId)
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -297,7 +297,7 @@ public class SysTourServiceImpl implements ISysTourService {
         }
 
         List<Long> pointIdList = routePoints.stream()
-                .map(SysRoutePoint::getPointId)
+                .map(SysRoutePoint::getSysPointId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
@@ -390,14 +390,52 @@ public class SysTourServiceImpl implements ISysTourService {
             Long robotId = route.getRobotId();
             if (robotId == null || !webSocketHandler.isOnline(robotId)) return;
 
+            List<SysRoutePoint> sourcePoints = route.getRoutePoints();
+            boolean needDetail = sourcePoints == null || sourcePoints.stream().anyMatch(p -> p != null && (p.getPoint() == null || p.getPoint().getRobotPointId() == null));
+            if (needDetail && route.getRouteId() != null) {
+                SysTourRoute detail = tourRouteMapper.selectRouteDetailById(route.getRouteId());
+                if (detail != null && detail.getRoutePoints() != null) {
+                    sourcePoints = detail.getRoutePoints();
+                }
+            }
+
+            List<Long> robotPointIds = sourcePoints == null ? java.util.Collections.emptyList() : sourcePoints.stream()
+                    .map(p -> p == null ? null : p.getPoint())
+                    .filter(Objects::nonNull)
+                    .map(p -> p.getRobotPointId())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            String robotPointIdsJson = null;
+            if (!robotPointIds.isEmpty()) {
+                robotPointIdsJson = objectMapper.writeValueAsString(robotPointIds);
+            }
+
+            List<Map<String, Object>> robotRoutePoints = sourcePoints == null ? java.util.Collections.emptyList() : sourcePoints.stream()
+                    .filter(Objects::nonNull)
+                    .map(p -> {
+                        Map<String, Object> m = new HashMap<>();
+                        Long rp = null;
+                        if (p.getPoint() != null) {
+                            rp = p.getPoint().getRobotPointId();
+                        }
+                        m.put("pointId", rp);
+                        m.put("sysPointId", p.getSysPointId());
+                        m.put("contentId", p.getContentId());
+                        m.put("orderNum", p.getOrderNum());
+                        return m;
+                    })
+                    .collect(Collectors.toList());
+
             Map<String, Object> requestData = new HashMap<>();
             requestData.put("action", "sync_tour_config");
             requestData.put("configType", "route");
             requestData.put("routeId", route.getRouteId());
             requestData.put("routeName", route.getRouteName());
             requestData.put("mapId", route.getMapId());
-            requestData.put("pointIds", route.getPointIds());
-            requestData.put("routePoints", route.getRoutePoints());
+            requestData.put("pointIds", robotPointIdsJson);
+            requestData.put("sysPointIds", route.getPointIds());
+            requestData.put("routePoints", robotRoutePoints);
 
             String correlationId = UUID.randomUUID().toString();
             webSocketHandler.sendRequest(robotId, requestData, correlationId);

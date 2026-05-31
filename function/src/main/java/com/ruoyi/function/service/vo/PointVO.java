@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @ApiModel(description = "点位视图对象")
 public class PointVO {
 
-    @ApiModelProperty("点位ID")
-    private Long pointId;
+    @ApiModelProperty("系统点位ID")
+    private Long sysPointId;
 
     @ApiModelProperty("点位名称")
     private String pointName;
@@ -35,12 +35,12 @@ public class PointVO {
     @ApiModelProperty("显示顺序")
     private Integer orderNum;
 
-    public Long getPointId() {
-        return pointId;
+    public Long getSysPointId() {
+        return sysPointId;
     }
 
-    public void setPointId(Long pointId) {
-        this.pointId = pointId;
+    public void setSysPointId(Long sysPointId) {
+        this.sysPointId = sysPointId;
     }
 
     public String getPointName() {

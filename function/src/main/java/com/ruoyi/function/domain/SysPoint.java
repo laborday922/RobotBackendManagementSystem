@@ -12,8 +12,11 @@ import java.math.BigDecimal;
 @ApiModel(description = "点位实体")
 public class SysPoint extends BaseEntity {
 
-    @ApiModelProperty("点位ID")
-    private Long pointId;
+    @ApiModelProperty("系统点位ID")
+    private Long sysPointId;
+
+    @ApiModelProperty("机器人点位ID")
+    private Long robotPointId;
 
     @ApiModelProperty("所属地图ID")
     private Long mapId;
@@ -66,12 +69,20 @@ public class SysPoint extends BaseEntity {
 
     // ========== Getters and Setters ==========
 
-    public Long getPointId() {
-        return pointId;
+    public Long getSysPointId() {
+        return sysPointId;
     }
 
-    public void setPointId(Long pointId) {
-        this.pointId = pointId;
+    public void setSysPointId(Long sysPointId) {
+        this.sysPointId = sysPointId;
+    }
+
+    public Long getRobotPointId() {
+        return robotPointId;
+    }
+
+    public void setRobotPointId(Long robotPointId) {
+        this.robotPointId = robotPointId;
     }
 
     public Long getMapId() {
@@ -197,7 +208,8 @@ public class SysPoint extends BaseEntity {
     @Override
     public String toString() {
         return "SysPoint{" +
-                "pointId=" + pointId +
+                "sysPointId=" + sysPointId +
+                ", robotPointId=" + robotPointId +
                 ", mapId=" + mapId +
                 ", robotId=" + robotId +
                 ", pointName='" + pointName + '\'' +

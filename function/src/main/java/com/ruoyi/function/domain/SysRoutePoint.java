@@ -15,8 +15,8 @@ public class SysRoutePoint {
     @ApiModelProperty("路线ID")
     private Long routeId;
 
-    @ApiModelProperty("点位ID")
-    private Long pointId;
+    @ApiModelProperty("系统点位ID")
+    private Long sysPointId;
 
     @ApiModelProperty("关联讲解内容ID")
     private Long contentId;
@@ -36,8 +36,8 @@ public class SysRoutePoint {
     public Long getRouteId() { return routeId; }
     public void setRouteId(Long routeId) { this.routeId = routeId; }
 
-    public Long getPointId() { return pointId; }
-    public void setPointId(Long pointId) { this.pointId = pointId; }
+    public Long getSysPointId() { return sysPointId; }
+    public void setSysPointId(Long sysPointId) { this.sysPointId = sysPointId; }
 
     public Long getContentId() { return contentId; }
     public void setContentId(Long contentId) { this.contentId = contentId; }

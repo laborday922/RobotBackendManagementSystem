@@ -160,8 +160,10 @@
     <!-- 获取地图点位列表 -->
     <select id="selectPointsByMapId" parameterType="Long" resultType="com.ruoyi.function.domain.SysPoint">
         SELECT
-        point_id AS pointId,
+        sys_point_id AS sysPointId,
+        robot_point_id AS robotPointId,
         map_id AS mapId,
+        robot_id AS robotId,
         point_name AS pointName,
         point_code AS pointCode,
         point_type AS pointType,

@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ISysPointService {
 
-    SysPoint selectById(Long pointId);
+    SysPoint selectById(Long sysPointId);
 
     List<SysPoint> selectList(SysPoint point);
 
@@ -22,7 +22,7 @@ public interface ISysPointService {
 
     int update(SysPoint point);
 
-    int deleteById(Long pointId);
+    int deleteById(Long sysPointId);
 
-    int deleteByIds(Long[] pointIds);
+    int deleteByIds(Long[] sysPointIds);
 }

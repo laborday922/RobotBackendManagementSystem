@@ -16,8 +16,8 @@ public class SysTourContent extends BaseEntity {
     @ApiModelProperty("机器人ID")
     private Long robotId;
 
-    @ApiModelProperty("关联点位ID")
-    private Long pointId;
+    @ApiModelProperty("关联系统点位ID")
+    private Long sysPointId;
 
     @ApiModelProperty("讲解点名称")
     private String pointName;
@@ -65,8 +65,8 @@ public class SysTourContent extends BaseEntity {
     public Long getRobotId() { return robotId; }
     public void setRobotId(Long robotId) { this.robotId = robotId; }
 
-    public Long getPointId() { return pointId; }
-    public void setPointId(Long pointId) { this.pointId = pointId; }
+    public Long getSysPointId() { return sysPointId; }
+    public void setSysPointId(Long sysPointId) { this.sysPointId = sysPointId; }
 
     public String getPointName() { return pointName; }
     public void setPointName(String pointName) { this.pointName = pointName; }

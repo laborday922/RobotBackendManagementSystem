@@ -363,7 +363,7 @@
             </div>
             <div v-else class="empty-points-tip">
               <i class="el-icon-info"></i>
-              {{ routeConfigForm.loadingPoints ? '正在加载点位...' : (routeConfigForm.mapId ? '该地图暂无点位数据，请先在导航页面添加点位' : '请先选择地图') }}
+              {{ routeConfigForm.loadingPoints ? '正在加载点位...' : (routeConfigForm.mapId ? '该地图暂无点位数据，请先前往【导航指引】页面为该地图新建点位' : '请先选择地图') }}
             </div>
           </el-form-item>
 
@@ -534,26 +534,13 @@ export default {
       return getMapList({ robotId: this.selectedRobotId }).then(response => {
         let maps = response.rows || response.data || [];
         this.currentRobotMaps = maps.filter(m => m.delFlag === '0' && m.status === '1');
-
-        const hasDefaultMap = this.currentRobotMaps.some(m => m.mapId === 0);
-        if (!hasDefaultMap) {
-          this.currentRobotMaps.unshift({
-            mapId: 0,
-            mapName: '默认地图',
-            status: '1',
-            delFlag: '0',
-            pointCount: 0
-          });
+        if (this.currentRobotMaps.length === 0) {
+          this.$message.warning('当前机器人暂无地图，请先前往【导航指引】页面新建地图和点位');
         }
       }).catch(error => {
         console.error('获取地图列表失败:', error);
-        this.currentRobotMaps = [{
-          mapId: 0,
-          mapName: '默认地图',
-          status: '1',
-          delFlag: '0',
-          pointCount: 0
-        }];
+        this.currentRobotMaps = [];
+        this.$message.warning('当前机器人暂无地图，请先前往【导航指引】页面新建地图和点位');
       });
     },
 
@@ -609,7 +596,7 @@ export default {
           if (response.code === 200) {
             this.mapPoints = response.data || [];
             if (this.mapPoints.length === 0) {
-              this.$message.warning('默认地图下暂无点位数据，请先在导航页面添加点位');
+              this.$message.warning('该地图暂无点位数据，请先前往【导航指引】页面为该地图新建点位');
             }
           } else {
             this.mapPoints = [];
@@ -633,6 +620,9 @@ export default {
 
       return getPointListByMap(numericMapId, this.selectedRobotId).then(response => {
         this.mapPoints = response.rows || response.data || [];
+        if (this.mapPoints.length === 0) {
+          this.$message.warning('该地图暂无点位数据，请先前往【导航指引】页面为该地图新建点位');
+        }
         this.routeConfigForm.loadingPoints = false;
       }).catch(error => {
         console.error('获取地图点位失败:', error);
@@ -948,6 +938,9 @@ export default {
       };
       this.mapPoints = [];
       this.routeConfigDrawerVisible = true;
+      if (!this.currentRobotMaps || this.currentRobotMaps.length === 0) {
+        this.$message.warning('当前机器人暂无地图，请先前往【导航指引】页面新建地图和点位');
+      }
     },
 
     editRoute(row) {

@@ -467,6 +467,8 @@ export default {
       routeConfigDrawerVisible: false,
       currentRouteId: null,
       mapPoints: [],
+      routeConfigPrevMapId: null,
+      routeConfigMapCache: {},
       routeConfigForm: {
         routeName: '',
         mapId: null,
@@ -596,14 +598,14 @@ export default {
 
       if (mapId === null || mapId === undefined || mapId === '') {
         this.mapPoints = [];
-        return;
+        return Promise.resolve();
       }
 
       const numericMapId = Number(mapId);
       this.routeConfigForm.loadingPoints = true;
 
       if (numericMapId === 0) {
-        getDefaultPoints().then(response => {
+        return getDefaultPoints().then(response => {
           if (response.code === 200) {
             this.mapPoints = response.data || [];
             if (this.mapPoints.length === 0) {
@@ -620,17 +622,16 @@ export default {
           this.$message.error('获取默认地图点位失败：' + (error.message || '未知错误'));
           this.routeConfigForm.loadingPoints = false;
         });
-        return;
       }
 
       if (!this.selectedRobotId) {
         this.mapPoints = [];
         this.routeConfigForm.loadingPoints = false;
         this.$message.warning('请先选择机器人');
-        return;
+        return Promise.resolve();
       }
 
-      getPointListByMap(numericMapId, this.selectedRobotId).then(response => {
+      return getPointListByMap(numericMapId, this.selectedRobotId).then(response => {
         this.mapPoints = response.rows || response.data || [];
         this.routeConfigForm.loadingPoints = false;
       }).catch(error => {
@@ -641,14 +642,37 @@ export default {
       });
     },
 
-    onMapChange(mapId) {
-      this.routeConfigForm.selectedPoints = [];
-      this.routeConfigForm.associationList = [];
-      this.routeConfigForm.selectAll = false;
-      this.routeConfigForm.warningMessage = '';
+    async onMapChange(mapId) {
+      const prevMapId = this.routeConfigPrevMapId;
+      if (prevMapId !== null && prevMapId !== undefined && prevMapId !== '') {
+        const prevKey = String(prevMapId);
+        this.routeConfigMapCache[prevKey] = {
+          selectedPoints: [...(this.routeConfigForm.selectedPoints || [])],
+          associationList: [...(this.routeConfigForm.associationList || [])],
+          selectAll: !!this.routeConfigForm.selectAll
+        };
+      }
+
+      this.routeConfigPrevMapId = mapId;
+
+      const key = mapId !== null && mapId !== undefined && mapId !== '' ? String(mapId) : null;
+      const cached = key ? this.routeConfigMapCache[key] : null;
+
+      if (cached) {
+        this.routeConfigForm.selectedPoints = [...(cached.selectedPoints || [])];
+        this.routeConfigForm.associationList = [...(cached.associationList || [])];
+        this.routeConfigForm.selectAll = !!cached.selectAll;
+        this.updateSelectedPoints();
+      } else {
+        this.routeConfigForm.selectedPoints = [];
+        this.routeConfigForm.associationList = [];
+        this.routeConfigForm.selectAll = false;
+        this.routeConfigForm.warningMessage = '';
+      }
 
       if (mapId !== null && mapId !== undefined && mapId !== '') {
-        this.loadMapPoints(mapId);
+        await this.loadMapPoints(mapId);
+        this.updateSelectedPoints();
       } else {
         this.mapPoints = [];
       }
@@ -911,6 +935,8 @@ export default {
 
     addRoute() {
       this.currentRouteId = null;
+      this.routeConfigPrevMapId = null;
+      this.routeConfigMapCache = {};
       this.routeConfigForm = {
         routeName: '',
         mapId: null,
@@ -970,6 +996,8 @@ export default {
 
     async openRouteConfigDrawer(row) {
       this.currentRouteId = row.routeId;
+      this.routeConfigPrevMapId = row.mapId !== undefined && row.mapId !== null ? row.mapId : null;
+      this.routeConfigMapCache = {};
       this.routeConfigForm = {
         routeName: row.routeName || '',
         mapId: row.mapId !== undefined && row.mapId !== null ? row.mapId : null,
@@ -988,9 +1016,10 @@ export default {
 
         this.routeConfigForm.routeName = route.routeName || this.routeConfigForm.routeName;
         this.routeConfigForm.mapId = route.mapId !== undefined && route.mapId !== null ? route.mapId : this.routeConfigForm.mapId;
+        this.routeConfigPrevMapId = this.routeConfigForm.mapId;
 
         if (this.routeConfigForm.mapId !== null && this.routeConfigForm.mapId !== undefined) {
-          this.loadMapPoints(this.routeConfigForm.mapId);
+          await this.loadMapPoints(this.routeConfigForm.mapId);
         }
 
         const routePoints = (route.routePoints || []).filter(p => p && p.pointId);
@@ -1003,10 +1032,20 @@ export default {
           }));
           this.updateSelectedPoints();
         }
+        if (this.routeConfigForm.mapId !== null && this.routeConfigForm.mapId !== undefined && this.routeConfigForm.mapId !== '') {
+          const key = String(this.routeConfigForm.mapId);
+          this.routeConfigMapCache[key] = {
+            selectedPoints: [...(this.routeConfigForm.selectedPoints || [])],
+            associationList: [...(this.routeConfigForm.associationList || [])],
+            selectAll: !!this.routeConfigForm.selectAll
+          };
+        }
       } catch (error) {
         console.error('获取路线详情失败:', error);
         const keptRouteName = this.routeConfigForm.routeName;
         const keptMapId = this.routeConfigForm.mapId;
+        this.routeConfigPrevMapId = keptMapId;
+        this.routeConfigMapCache = {};
         this.routeConfigForm = {
           routeName: keptRouteName,
           mapId: keptMapId,
@@ -1018,7 +1057,13 @@ export default {
         };
         this.mapPoints = [];
         if (keptMapId !== null && keptMapId !== undefined && keptMapId !== '') {
-          this.loadMapPoints(keptMapId);
+          await this.loadMapPoints(keptMapId);
+          const key = String(keptMapId);
+          this.routeConfigMapCache[key] = {
+            selectedPoints: [],
+            associationList: [],
+            selectAll: false
+          };
         }
       }
     },
@@ -1026,6 +1071,8 @@ export default {
     closeRouteConfigDrawer() {
       this.routeConfigDrawerVisible = false;
       this.currentRouteId = null;
+      this.routeConfigPrevMapId = null;
+      this.routeConfigMapCache = {};
     },
 
     toggleAllPoints(val) {

@@ -378,7 +378,7 @@
               <el-table-column label="点位名称" prop="pointName" min-width="150" show-overflow-tooltip />
               <el-table-column label="关联讲解内容" width="200">
                 <template slot-scope="scope">
-                  <el-select v-model="scope.row.contentId" placeholder="请选择" size="small" clearable style="width: 100%;">
+                  <el-select v-model="scope.row.contentId" placeholder="请选择" size="small" clearable style="width: 100%;" @change="updateAssociationWarning">
                     <el-option
                       v-for="content in contentList"
                       :key="content.contentId"
@@ -1089,7 +1089,11 @@ export default {
         });
       });
       this.routeConfigForm.associationList = newAssociationList;
-      const unassociated = this.routeConfigForm.associationList.filter(a => !a.contentId);
+      this.updateAssociationWarning();
+    },
+
+    updateAssociationWarning() {
+      const unassociated = (this.routeConfigForm.associationList || []).filter(a => !a.contentId);
       this.routeConfigForm.warningMessage = unassociated.length > 0 ? `有 ${unassociated.length} 个点位未关联讲解内容` : '';
     },
 

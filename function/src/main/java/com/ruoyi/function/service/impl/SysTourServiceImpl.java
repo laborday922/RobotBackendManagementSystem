@@ -420,7 +420,6 @@ public class SysTourServiceImpl implements ISysTourService {
                             rp = p.getPoint().getRobotPointId();
                         }
                         m.put("pointId", rp);
-                        m.put("sysPointId", p.getSysPointId());
                         m.put("contentId", p.getContentId());
                         m.put("orderNum", p.getOrderNum());
                         return m;
@@ -434,7 +433,6 @@ public class SysTourServiceImpl implements ISysTourService {
             requestData.put("routeName", route.getRouteName());
             requestData.put("mapId", route.getMapId());
             requestData.put("pointIds", robotPointIdsJson);
-            requestData.put("sysPointIds", route.getPointIds());
             requestData.put("routePoints", robotRoutePoints);
 
             String correlationId = UUID.randomUUID().toString();

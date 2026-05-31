@@ -453,7 +453,7 @@ CREATE TABLE `robots`  (
 -- ----------------------------
 -- Records of robots
 -- ----------------------------
-INSERT INTO `robots` VALUES (1, 'ROB001', '小旋1号', 1, '极智科技', '2024-01-10', '药房', 1, 0, 2, 85, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-05-06 16:51:21', NULL, '2026-05-06 16:51:22');
+INSERT INTO `robots` VALUES (1, 'ROB001', '小旋1号', 4, '极智科技', '2024-01-10', '药房', 1, 0, 2, 85, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-05-06 16:51:21', NULL, '2026-05-06 16:51:22');
 INSERT INTO `robots` VALUES (2, 'ROB002', '小旋2号', 1, '极智科技', '2024-01-15', '病房区', 0, 0, 2, 12, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-05-06 16:00:36', '2026-03-31 09:20:56', NULL);
 INSERT INTO `robots` VALUES (3, 'ROB003', '大白1号', 2, '清洁科技', '2023-12-01', '门诊大厅', 2, 0, 2, 76, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-04-07 02:05:00', '2026-03-30 16:34:33', NULL);
 INSERT INTO `robots` VALUES (4, 'ROB004', '安巡1号', 3, '安防科技', '2024-02-20', '走廊', 0, 0, 3, 30, 2, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-03-02 20:37:52', NULL, NULL);
@@ -2748,6 +2748,9 @@ CREATE TABLE `sys_tour_content`  (
 -- Records of sys_tour_content
 -- ----------------------------
 INSERT INTO `sys_tour_content` VALUES (3, 8, NULL, '社保区', '', 'text', '1', '', '温柔女声', 50, 0, 'text', '', '0°', 0, NULL, 'admin', '2026-03-31 09:22:57', '', NULL, 1);
+INSERT INTO `sys_tour_content` VALUES (4, 1, NULL, '讲解点1', '', 'text', '这是讲解内容1', '', '温柔女声', 60, 0, 'text', NULL, '45°', 0, NULL, 'admin', '2026-05-31 14:52:52', '', NULL, 1);
+INSERT INTO `sys_tour_content` VALUES (5, 1, NULL, '讲解点2', '', 'text', '这是讲解点2222', '', '稳重男声', 58, 100, 'text', NULL, '0°', 14, NULL, 'admin', '2026-05-31 14:53:59', '', NULL, 1);
+INSERT INTO `sys_tour_content` VALUES (6, 1, NULL, '讲解点3', '', 'text', '讲解点333333', '', '童声', 62, 0, 'text', NULL, '0°', 0, NULL, 'admin', '2026-05-31 14:54:17', '', NULL, 1);
 
 -- ----------------------------
 -- Table structure for sys_tour_general

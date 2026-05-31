@@ -3,6 +3,7 @@ package com.ruoyi.function.controller;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
+import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.function.constants.MapConstants;
 import com.ruoyi.function.controller.dto.request.PointCreateRequest;
 import com.ruoyi.function.controller.dto.request.PointUpdateRequest;
@@ -12,6 +13,7 @@ import com.ruoyi.function.enums.MapStatusEnum;
 import com.ruoyi.function.enums.PointTypeEnum;
 import com.ruoyi.function.exception.FunctionException;
 import com.ruoyi.function.service.ISysPointService;
+import com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiImplicitParam;
@@ -42,7 +44,7 @@ public class SysPointController extends BaseController {
     private ISysPointService sysPointService;
 
     @Autowired(required = false)
-    private com.ruoyi.taskmgt.websocket.TaskRobotWebSocketHandler taskRobotWebSocketHandler;
+    private TaskRobotWebSocketHandler taskRobotWebSocketHandler;
 
     // ========== 具体路径接口放在前面，避免与路径变量冲突 ==========
 
@@ -50,6 +52,16 @@ public class SysPointController extends BaseController {
     @GetMapping("/list")
     public TableDataInfo list(SysPoint point) {
         startPage();
+        List<SysPoint> list = sysPointService.selectList(point);
+        return getDataTable(list);
+    }
+
+    @ApiOperation("获取点位列表（机器人用）")
+    @GetMapping("/list/{robotId}")
+    public TableDataInfo list(@PathVariable Long robotId) {
+        startPage();
+        SysPoint point = new SysPoint();
+        point.setRobotId(robotId);
         List<SysPoint> list = sysPointService.selectList(point);
         return getDataTable(list);
     }
@@ -98,10 +110,10 @@ public class SysPointController extends BaseController {
 
             String correlationId = UUID.randomUUID().toString();
 
-            CompletableFuture<com.ruoyi.common.core.websocket.RobotWebSocketMessage> future =
+            CompletableFuture<RobotWebSocketMessage> future =
                     taskRobotWebSocketHandler.sendAndWaitRaw(robotId, request, correlationId, 10);
 
-            com.ruoyi.common.core.websocket.RobotWebSocketMessage response = future.get(10, TimeUnit.SECONDS);
+            RobotWebSocketMessage response = future.get(10, TimeUnit.SECONDS);
 
             if (response.getData() != null) {
                 Map<String, Object> respData = (Map<String, Object>) response.getData();

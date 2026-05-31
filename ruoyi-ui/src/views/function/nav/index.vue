@@ -104,7 +104,7 @@
                   <div class="point-info">
                     <div class="point-name">{{ point.pointName }}</div>
                     <div class="point-code" v-if="point.pointCode">{{ point.pointCode }}</div>
-                    <div class="point-id" v-if="point.sysPointId">ID: {{ point.sysPointId }}</div>
+                    <div class="point-id" v-if="point.robotPointId">ID: {{ point.robotPointId }}</div>
                   </div>
                   <div class="point-status" v-if="point.status === '0'">
                     <el-tag type="info" size="mini">禁用</el-tag>

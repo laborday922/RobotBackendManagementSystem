@@ -41,11 +41,6 @@ public class AsyncStepListener {
             OperationResult result = event.getResult();
             if (result.isSuccess()) {
                 stepExecutionService.completeStep(stepId, result.getData());
-                // 触发下一步
-                TaskStep step = stepRepository.findById(stepId).orElse(null);
-                if (step != null) {
-                    eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), stepId, true));
-                }
             } else {
                 stepExecutionService.failStep(stepId, result.getMessage());
             }
@@ -93,8 +88,6 @@ public class AsyncStepListener {
 
             if (callbackData.isSuccess()) {
                 stepExecutionService.completeStep(step.getId(), callbackData.getData());
-                // 触发下一步
-                eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), true));
             } else {
                 stepExecutionService.failStep(step.getId(), callbackData.getErrorMsg());
             }

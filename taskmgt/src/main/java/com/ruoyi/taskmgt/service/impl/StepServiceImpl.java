@@ -94,6 +94,7 @@ public class StepServiceImpl implements IStepService {
         List<String> redisKeys = new ArrayList<>();
         for (TaskStep step : steps) {
             step.setTenantId(tenantId);
+            step.setTaskId(taskId);
             if(step.getAssignedRobotId()!=null){
                 if (Integer.valueOf(1).equals(task.getIsGroupTask()) && task.getRobotGroupId() != null){
                     Robot robot1 = new Robot();
@@ -118,7 +119,16 @@ public class StepServiceImpl implements IStepService {
                 step.setId(orginStep.getId());
                 redisKeys.addAll(this.stepRepository.update(step));
             }
-            else this.stepRepository.insert(step);
+            else {
+                step.setId(null);
+                if (step.getStatus() == null) {
+                    step.setStatus(TaskStep.NOTSTART);
+                }
+                if (task.getIsGroupTask() == 0 && step.getAssignedRobotId() == null) {
+                    step.setAssignedRobotId(task.getRobotId());
+                }
+                this.stepRepository.insert(step);
+            }
         }
         this.redisUtil.deleteObject(redisKeys);
 

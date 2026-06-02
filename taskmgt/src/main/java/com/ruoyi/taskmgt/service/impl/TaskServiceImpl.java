@@ -203,7 +203,12 @@ public class TaskServiceImpl implements ITaskService {
                     }
                 }
             }
-            if(Objects.equals(originTask.getStatus(),Task.FINISHED)||Objects.equals(originTask.getStatus(),Task.TERMINATED)||Objects.equals(originTask.getStatus(),Task.DISABLED)){
+            boolean shouldResetForRepublish =
+                    Objects.equals(originTask.getStatus(), Task.FINISHED) ||
+                    Objects.equals(originTask.getStatus(), Task.TERMINATED) ||
+                    Objects.equals(originTask.getStatus(), Task.DISABLED);
+
+            if (shouldResetForRepublish) {
                 task.setStatus(Task.NOTSTART);
                 List<TaskStep> steps;
                 if(StringUtils.hasText(task.getFormContent()) && StringUtils.isNotNull(task.getTemplateId())){
@@ -213,12 +218,21 @@ public class TaskServiceImpl implements ITaskService {
                     steps = stepRepository.findStepsByTaskId(task.getId());
                 }
                 for(TaskStep step:steps){
-                    if(!Objects.equals(step.getStatus(), TaskStep.NOTSTART)){
-                        step.setStatus(TaskStep.NOTSTART);
-                        step.setTraceId("null");
-                    }
+                    step.setStatus(TaskStep.NOTSTART);
+                    step.setTraceId("null");
                 }
                 stepService.updateSteps(task.getId(), steps);
+            }
+            else {
+                List<TaskStep> steps = stepRepository.findStepsByTaskId(task.getId());
+                boolean allNotStart = !steps.isEmpty() && steps.stream().allMatch(s -> Objects.equals(s.getStatus(), TaskStep.NOTSTART));
+                boolean hasTraceId = allNotStart && steps.stream().anyMatch(s -> StringUtils.isNotNull(s.getTraceId()));
+                if (hasTraceId) {
+                    for (TaskStep step : steps) {
+                        step.setTraceId("null");
+                    }
+                    stepService.updateSteps(task.getId(), steps);
+                }
             }
             Long tenantId = TenantContext.get();
             if(!isAdmin(tenantId))task.setTenantId(tenantId);

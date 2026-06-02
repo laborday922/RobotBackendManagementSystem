@@ -72,7 +72,6 @@ public class StepExecutionService {
         } catch (Exception e) {
             log.error("执行步骤失败: stepId={}, taskId={}", stepId, step.getTaskId(), e);
             failStep(step.getId(), e.getMessage());
-            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
         }
     }
 
@@ -104,11 +103,9 @@ public class StepExecutionService {
                     if (response.isSuccess()) {
                         log.info("步骤{}同步执行成功", stepId);
                         completeStep(step.getId(), response.getData());
-                        eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), true));
                     } else {
                         log.warn("步骤{}同步执行失败: {}", stepId, response.getErrorMsg());
                         failStep(step.getId(), response.getErrorMsg());
-                        eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
                     }
                     break;
                 case "ASYNC":
@@ -143,7 +140,6 @@ public class StepExecutionService {
         }catch(Exception e){
             log.error("步骤执行异常: {}", stepId, e);
             failStep(step.getId(), e.getMessage());
-            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), step.getId(), false));
         }
     }
 
@@ -236,6 +232,7 @@ public class StepExecutionService {
             taskLogService.record(step.getTaskId(), stepId,
                     TaskLogEventType.STEP_FAILED, "执行失败: " + errorMsg, "system", null);
             log.warn("步骤{}已失败: {}", stepId, errorMsg);
+            eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), stepId, false));
         } catch (OptimisticLockingFailureException e) {
             log.error("步骤 {} 乐观锁冲突", stepId, e);
             throw new TaskmgtException(ReturnNo.RESOURCE_FALSIFY,

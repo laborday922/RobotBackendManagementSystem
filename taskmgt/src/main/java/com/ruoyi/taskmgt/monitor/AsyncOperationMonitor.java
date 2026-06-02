@@ -52,6 +52,10 @@ public class AsyncOperationMonitor {
     }
 
     public void registerPolling(Long stepId, String traceId, Long operationId, Long robotId, Date estimatedFinishTime) {
+        if (pollingTasks.containsKey(traceId)) {
+            log.warn("轮询已存在，忽略重复注册: stepId={}, traceId={}", stepId, traceId);
+            return;
+        }
         long initialDelay = 1000;
         long period = calculatePeriod(estimatedFinishTime);
 
@@ -218,6 +222,7 @@ public class AsyncOperationMonitor {
         ScheduledFuture<?> timeoutFuture = timeoutTasks.remove(traceId);
         if (timeoutFuture != null) timeoutFuture.cancel(false);
         pollingContexts.remove(traceId);
+        completedTraceIds.remove(traceId);
     }
     private boolean isTimeout(PollingContext context) {
         Date estimated = context.getEstimatedFinishTime();

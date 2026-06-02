@@ -895,6 +895,7 @@ export default {
         cronExpression = ''
         scheduledTime = null
       }
+      scheduledTime = this.coerceToDate(scheduledTime)
 
       this.taskForm = {
         id: row.id,
@@ -1173,6 +1174,8 @@ export default {
 
         this.dialog.loading = true
         try {
+          const scheduledTime = this.taskForm.taskType === 1 ? this.coerceToDate(this.taskForm.scheduledTime) : null
+          const cronExpression = this.taskForm.taskType === 1 ? this.taskForm.cronExpression : null
           const dto = {
             name: this.taskForm.name,
             templateId: this.taskForm.templateId,
@@ -1180,8 +1183,8 @@ export default {
             isGroupTask: this.taskForm.isGroupTask ? 1 : 0,
             duration: durationSeconds, // 转换为秒传给后端
             taskType: this.taskForm.taskType,
-            cronExpression: this.taskForm.cronExpression,
-            scheduledTime: this.taskForm.scheduledTime,
+            cronExpression: cronExpression,
+            scheduledTime: scheduledTime,
             batteryThreshold: this.taskForm.batteryThreshold,
             idleTime: this.taskForm.idleTime,
             robotId: this.taskForm.isGroupTask ? null : this.taskForm.robotId,
@@ -1216,6 +1219,21 @@ export default {
           this.dialog.loading = false
         }
       })
+    },
+    coerceToDate(value) {
+      if (!value) return value
+      if (value instanceof Date) return value
+      if (typeof value === 'number') return new Date(value)
+      if (typeof value === 'string') {
+        const str = value.trim()
+        if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(str)) {
+          const d = new Date(str.replace(' ', 'T'))
+          return Number.isNaN(d.getTime()) ? value : d
+        }
+        const d = new Date(str)
+        return Number.isNaN(d.getTime()) ? value : d
+      }
+      return value
     },
     async handleView(row) {
       this.detailLoading = true

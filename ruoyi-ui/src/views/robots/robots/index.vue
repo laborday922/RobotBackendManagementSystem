@@ -104,15 +104,22 @@
         </el-table-column>
         <el-table-column label="硬件" align="center" prop="hardwareStatus" width="70">
           <template slot-scope="scope">
-            <el-tag :type="getHardwareTagType(scope.row.hardwareStatus)" effect="light">{{ getHardwareStatusText(scope.row.hardwareStatus) }}</el-tag>
+            <span v-if="String(scope.row.status) === '0'">-</span>
+            <el-tag v-else :type="getHardwareTagType(scope.row.hardwareStatus)" effect="light">{{ getHardwareStatusText(scope.row.hardwareStatus) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="任务" align="center" prop="taskStatus" width="70">
           <template slot-scope="scope">
-            <el-tag :type="getTaskTagType(scope.row.taskStatus)" effect="light">{{ getTaskStatusText(scope.row.taskStatus) }}</el-tag>
+            <span v-if="String(scope.row.status) === '0'">-</span>
+            <el-tag v-else :type="getTaskTagType(scope.row.taskStatus)" effect="light">{{ getTaskStatusText(scope.row.taskStatus) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="电量" align="center" prop="battery" width="60" />
+        <el-table-column label="电量" align="center" prop="battery" width="60">
+          <template slot-scope="scope">
+            <span v-if="String(scope.row.status) === '0'">-</span>
+            <span v-else>{{ scope.row.battery }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" align="center" prop="createdAt" width="110" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>

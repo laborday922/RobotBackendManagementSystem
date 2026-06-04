@@ -92,9 +92,10 @@ public class TaskTrigger {
             if(StringUtils.isNotNull(robot)){
                 Integer taskStatus = robot.getTaskStatus();
                 Date idleSince = robot.getIdleStartTime();
-                if (taskStatus == 2 && idleSince != null) {
+                if (Objects.equals(taskStatus, RobotsConstants.IDLE) && idleSince != null) {
                     long idleMinutes = (System.currentTimeMillis() - idleSince.getTime()) / (60 * 1000);
                     if (idleMinutes >= task.getIdleTime()) {
+                        log.debug("闲时任务触发：taskId={}",task.getId());
                         triggerTask(task);
                     }
                 }
@@ -198,7 +199,7 @@ public class TaskTrigger {
                 robot.setGroupId(groupId);
                 robot.setStatus(1);
                 robot.setHardwareStatus(0);
-                robot.setTaskStatus(2);
+                robot.setTaskStatus(RobotsConstants.IDLE);
                 List<Long> robotIds = robotService.selectRobotsList(robot).stream().map(Robot::getId).toList();
                 boolean hasIdleRobot = robotIds.stream().anyMatch(rid ->
                         taskRepository.getTasks(Task.EXECUTING, null, null, rid, null, null, null, null, null).isEmpty()

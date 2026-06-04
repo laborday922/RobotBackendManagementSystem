@@ -2,6 +2,7 @@ package com.ruoyi.robots.service.impl;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.DateUtils;
@@ -95,16 +96,35 @@ public class RobotsServiceImpl implements IRobotsService {
     @Override
     public int updateRobotStatus(RobotStatusDto robotStatusDto) {
     // 检查机器人是否存在，不存在则抛出异常
-        if(robotsMapper.selectRobotsById(robotStatusDto.getId())==null)
+        Robot currentRobot = robotsMapper.selectRobotsById(robotStatusDto.getId());
+        if(currentRobot==null)
             throw new InsertNoAllowedException(RobotsConstants.ROBOT_ID_NO_EXIST);
 
     // 创建Robot对象并将DTO属性复制到Robot对象
         Robot robot = new Robot();
         BeanUtils.copyProperties(robotStatusDto, robot);
-    // 如果机器人正在执行任务且状态变为更高，设置空闲开始时间
-        if(robot.getStatus()!=null){
-            if (robotsMapper.selectTaskStatusById(robot.getId()) == RobotsConstants.EXECUTING && robot.getStatus() > RobotsConstants.EXECUTING)
+        Integer currentTaskStatus = currentRobot.getTaskStatus();
+        Date currentIdleStartTime = currentRobot.getIdleStartTime();
+        Integer incomingTaskStatus = robot.getTaskStatus();
+        if (incomingTaskStatus != null) {
+            boolean willBeIdle = Objects.equals(incomingTaskStatus, RobotsConstants.IDLE);
+            boolean wasIdle = Objects.equals(currentTaskStatus, RobotsConstants.IDLE);
+            if (willBeIdle) {
+                if (!wasIdle || currentIdleStartTime == null) {
+                    robot.setIdleStartTime(DateUtils.getNowDate());
+                }
+            } else {
+                robot.setIdleStartTime(new Date(0));
+            }
+        } else {
+            boolean isIdleNow = Objects.equals(currentTaskStatus, RobotsConstants.IDLE);
+            if (isIdleNow && currentIdleStartTime == null) {
                 robot.setIdleStartTime(DateUtils.getNowDate());
+            }
+        }
+
+        if (robot.getStatus() != null && robot.getStatus() == 0) {
+            robot.setIdleStartTime(new Date(0));
         }
 
     // 如果硬件状态正常且机器人状态变为更高，记录警告信息

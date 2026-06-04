@@ -91,7 +91,17 @@
             <if test="taskStatus != null">task_status = #{taskStatus},</if>
             <if test="battery != null and battery != ''">battery = #{battery},</if>
             <if test="currentMode != null and currentMode != ''">current_mode = #{currentMode},</if>
-            <if test="idleStartTime != null">idle_start_time = #{idleStartTime},</if>
+            <if test="idleStartTime != null">
+                idle_start_time =
+                <choose>
+                    <when test="idleStartTime.getTime() == 0">
+                        null
+                    </when>
+                    <otherwise>
+                        #{idleStartTime}
+                    </otherwise>
+                </choose>,
+            </if>
             <if test="lastHeartbeatTime != null">
                 last_heartbeat_time =
                 <choose>

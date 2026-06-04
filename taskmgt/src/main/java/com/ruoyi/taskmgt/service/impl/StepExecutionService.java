@@ -78,7 +78,7 @@ public class StepExecutionService {
     public void sendAndWait(Long robotId,TaskStep step){
         Long stepId=step.getId();
         if (!robotInvoker.isRobotOnline(robotId)) {
-            System.out.print("机器人不在线");
+            log.error("机器人不在线");
             throw new TaskmgtException(ReturnNo.ROBOT_OFFLINE,
                     new String[]{robotId.toString()},
                     "机器人不在线");
@@ -229,9 +229,6 @@ public class StepExecutionService {
             step.setStatus(TaskStep.PAUSED);
             step.setErrorMsg(errorMsg);
             stepRepository.update(step);
-            taskLogService.record(step.getTaskId(), stepId,
-                    TaskLogEventType.STEP_FAILED, "执行失败: " + errorMsg, "system", null);
-            log.warn("步骤{}已失败: {}", stepId, errorMsg);
             eventPublisher.publishEvent(new StepCompletedEvent(this, step.getTaskId(), stepId, false));
         } catch (OptimisticLockingFailureException e) {
             log.error("步骤 {} 乐观锁冲突", stepId, e);

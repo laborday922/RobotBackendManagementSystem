@@ -59,4 +59,6 @@ public interface IQaFileService
      * @return 结果
      */
     public int deleteQaFileById(Long id);
+
+    public boolean retryKgBuild(Long id);
 }

@@ -249,4 +249,15 @@ public class QaFileController extends BaseController
     {
         return toAjax(qaFileService.deleteQaFileByIds(ids));
     }
+
+    @PostMapping("/{id}/kg/retry")
+    public AjaxResult retryKg(@PathVariable("id") Long id)
+    {
+        boolean ok = qaFileService.retryKgBuild(id);
+        if (!ok)
+        {
+            return AjaxResult.error("图谱构建失败");
+        }
+        return AjaxResult.success(qaFileService.selectQaFileById(id));
+    }
 }

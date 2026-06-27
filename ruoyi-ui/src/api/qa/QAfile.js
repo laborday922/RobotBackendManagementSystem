@@ -42,3 +42,10 @@ export function delQAfile(id) {
     method: 'delete'
   })
 }
+
+export function retryKgBuild(id) {
+  return request({
+    url: '/qa/QAfile/' + id + '/kg/retry',
+    method: 'post'
+  })
+}

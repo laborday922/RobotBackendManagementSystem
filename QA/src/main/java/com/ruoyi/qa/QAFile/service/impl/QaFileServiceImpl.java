@@ -133,11 +133,22 @@ public class QaFileServiceImpl implements IQaFileService
         return qaFileMapper.deleteQaFileById(id);
     }
 
-    private void syncUpsertToKg(QaFile qaFile)
+    @Override
+    public boolean retryKgBuild(Long id)
+    {
+        if (id == null)
+        {
+            return false;
+        }
+        QaFile qaFile = qaFileMapper.selectQaFileById(id);
+        return syncUpsertToKg(qaFile);
+    }
+
+    private boolean syncUpsertToKg(QaFile qaFile)
     {
         if (qaFile == null || qaFile.getId() == null)
         {
-            return;
+            return false;
         }
         try
         {
@@ -162,16 +173,19 @@ public class QaFileServiceImpl implements IQaFileService
             if (resp != null && Boolean.TRUE.equals(resp.getOk()))
             {
                 updateStatus(qaFile.getId(), (short) QaFileStatus.NORMAL.getCode());
+                return true;
             }
             else
             {
                 updateStatus(qaFile.getId(), (short) QaFileStatus.KG_BUILD_FAILED.getCode());
+                return false;
             }
         }
         catch (Exception e)
         {
             log.warn("KG upsert exception (id={}): {}", qaFile.getId(), e.getMessage());
             updateStatus(qaFile.getId(), (short) QaFileStatus.KG_BUILD_FAILED.getCode());
+            return false;
         }
     }
 

@@ -95,6 +95,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['qa:QAfile:edit']">修改</el-button>
+          <el-button size="mini" type="text" icon="el-icon-refresh" :disabled="scope.row.status !== 2" @click="handleRetryKg(scope.row)" v-hasPermi="['qa:QAfile:edit']">重建图谱</el-button>
           <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['qa:QAfile:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -137,7 +138,7 @@
 </template>
 
 <script>
-import { listQAfile, delQAfile } from "@/api/qa/QAfile"
+import { listQAfile, delQAfile, retryKgBuild } from "@/api/qa/QAfile"
 import { getToken } from "@/utils/auth"
 
 export default {
@@ -218,6 +219,16 @@ export default {
         .then(() => {
           this.getList()
           this.$modal.msgSuccess("删除成功")
+        })
+    },
+    handleRetryKg(row) {
+      const id = row && row.id ? row.id : null
+      if (!id) return
+      this.$modal.confirm(`是否确认重新构建知识图谱？`)
+        .then(() => retryKgBuild(id))
+        .then(() => {
+          this.getList()
+          this.$modal.msgSuccess("已触发重建")
         })
     },
     handleExport() {

@@ -1,4 +1,4 @@
-package com.ruoyi.qa.Chat.dify;
+package com.ruoyi.qa.Dify;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

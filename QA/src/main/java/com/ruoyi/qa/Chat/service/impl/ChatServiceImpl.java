@@ -1,7 +1,7 @@
 package com.ruoyi.qa.Chat.service.impl;
 
 import com.alibaba.fastjson2.JSON;
-import com.ruoyi.qa.Chat.dify.DifyClient;
+import com.ruoyi.qa.Dify.DifyClient;
 import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.service.ChatService;

@@ -1,4 +1,4 @@
-package com.ruoyi.qa.Chat.dify;
+package com.ruoyi.qa.Dify;
 
 import com.alibaba.fastjson2.JSON;
 import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;

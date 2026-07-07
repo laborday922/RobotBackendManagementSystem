@@ -34,6 +34,14 @@ public class QaFile extends BaseEntity
     @Excel(name = "文件类型(doc/docx/pdf)")
     private String fileType;
 
+    /** 原始文件本地路径 */
+    @Excel(name = "原始文件本地路径")
+    private String path;
+
+    /** dify 知识库文档ID */
+    @Excel(name = "dify 知识库文档ID")
+    private String difyDocumentId;
+
     /** 处理状态 */
     @Excel(name = "处理状态")
     private Short status;
@@ -92,6 +100,26 @@ public class QaFile extends BaseEntity
         return fileType;
     }
 
+    public void setPath(String path)
+    {
+        this.path = path;
+    }
+
+    public String getPath()
+    {
+        return path;
+    }
+
+    public void setDifyDocumentId(String difyDocumentId)
+    {
+        this.difyDocumentId = difyDocumentId;
+    }
+
+    public String getDifyDocumentId()
+    {
+        return difyDocumentId;
+    }
+
     public void setStatus(Short status)
     {
         this.status = status;
@@ -120,6 +148,8 @@ public class QaFile extends BaseEntity
             .append("fileContent", getFileContent())
             .append("fileSize", getFileSize())
             .append("fileType", getFileType())
+            .append("path", getPath())
+            .append("difyDocumentId", getDifyDocumentId())
             .append("status", getStatus())
             .append("isDeleted", getIsDeleted())
             .toString();

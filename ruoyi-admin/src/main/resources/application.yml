@@ -65,7 +65,7 @@ spring:
   devtools:
     restart:
       # 热部署开关
-      enabled: true
+      enabled: false
   # redis 配置
   redis:
     # 地址
@@ -166,3 +166,16 @@ tongyi:
   api-key: sk-5ac684bcfa7043a48dfa23e1a6c71971
   model: qwen-plus   # 可根据需要选择 qwen-turbo, qwen-plus, qwen-max 等
   enable-search: true
+
+kg:
+  python:
+    base-url: "http://127.0.0.1:8000"
+    token: ""
+
+dify:
+  base-url: "http://119.91.158.102:8048/v1"
+  api-key: "app-EdNaeoq8ej55IDR7LGo6Clz1"
+  dataset-id: "709bfc53-936e-49e2-9c22-ea540675dd0f"
+  dataset-api-key: "dataset-8KxfPzicN2K0epRTSNkVZ1Ww"
+  connect-timeout-seconds: 10
+  request-timeout-seconds: 300

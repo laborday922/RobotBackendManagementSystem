@@ -3,6 +3,7 @@ package com.ruoyi.qa.QAFile.service;
 import java.util.List;
 
 import com.ruoyi.qa.QAFile.domain.QaFile;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * QA文件管理Service接口
@@ -61,4 +62,8 @@ public interface IQaFileService
     public int deleteQaFileById(Long id);
 
     public boolean retryKgBuild(Long id);
+
+    public QaFile uploadAndProcess(MultipartFile file, Long id);
+
+    public QaFile retryProcess(Long id);
 }

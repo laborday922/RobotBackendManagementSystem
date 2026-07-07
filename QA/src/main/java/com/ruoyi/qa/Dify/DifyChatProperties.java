@@ -5,10 +5,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConfigurationProperties(prefix = "dify")
-public class DifyProperties
+public class DifyChatProperties
 {
     private String baseUrl = "http://119.91.158.102:8048/v1";
-    private String apiKey = "app-EdNaeoq8ej55IDR7LGo6Clz1";
+    private String apiKey;
+    private String datasetId = "709bfc53-936e-49e2-9c22-ea540675dd0f";
+    private String datasetApiKey;
     private int connectTimeoutSeconds = 10;
     private int requestTimeoutSeconds = 300;
 
@@ -30,6 +32,26 @@ public class DifyProperties
     public void setApiKey(String apiKey)
     {
         this.apiKey = apiKey;
+    }
+
+    public String getDatasetId()
+    {
+        return datasetId;
+    }
+
+    public void setDatasetId(String datasetId)
+    {
+        this.datasetId = datasetId;
+    }
+
+    public String getDatasetApiKey()
+    {
+        return datasetApiKey;
+    }
+
+    public void setDatasetApiKey(String datasetApiKey)
+    {
+        this.datasetApiKey = datasetApiKey;
     }
 
     public int getConnectTimeoutSeconds()

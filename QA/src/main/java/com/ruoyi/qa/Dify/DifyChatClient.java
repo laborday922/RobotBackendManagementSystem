@@ -20,14 +20,14 @@ import java.time.Duration;
 import java.util.Optional;
 
 @Component
-public class DifyClient
+public class DifyChatClient
 {
-    private static final Logger log = LoggerFactory.getLogger(DifyClient.class);
+    private static final Logger log = LoggerFactory.getLogger(DifyChatClient.class);
 
-    private final DifyProperties props;
+    private final DifyChatProperties props;
     private final HttpClient httpClient;
 
-    public DifyClient(DifyProperties props)
+    public DifyChatClient(DifyChatProperties props)
     {
         this.props = props;
         int connectTimeoutSeconds = props.getConnectTimeoutSeconds() > 0 ? props.getConnectTimeoutSeconds() : 10;

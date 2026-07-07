@@ -49,3 +49,10 @@ export function retryKgBuild(id) {
     method: 'post'
   })
 }
+
+export function retryProcess(id) {
+  return request({
+    url: '/qa/QAfile/' + id + '/retry',
+    method: 'post'
+  })
+}

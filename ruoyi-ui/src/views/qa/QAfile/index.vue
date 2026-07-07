@@ -13,7 +13,8 @@
         <el-select v-model="queryParams.status" placeholder="请选择" clearable>
           <el-option label="正常" :value="0"></el-option>
           <el-option label="上传失败" :value="1"></el-option>
-          <el-option label="图谱构建失败" :value="2"></el-option>
+          <el-option label="知识库上传失败" :value="2"></el-option>
+          <el-option label="图谱构建失败" :value="3"></el-option>
         </el-select>
       </el-form-item>
       <el-form-item label="逻辑删除" prop="isDeleted">
@@ -95,7 +96,7 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template slot-scope="scope">
           <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['qa:QAfile:edit']">修改</el-button>
-          <el-button size="mini" type="text" icon="el-icon-refresh" :disabled="scope.row.status !== 2" @click="handleRetryKg(scope.row)" v-hasPermi="['qa:QAfile:edit']">重建图谱</el-button>
+          <el-button size="mini" type="text" icon="el-icon-refresh" :disabled="scope.row.status === 0 || scope.row.status === null || scope.row.status === undefined" @click="handleRetryProcess(scope.row)" v-hasPermi="['qa:QAfile:edit']">重试处理</el-button>
           <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['qa:QAfile:remove']">删除</el-button>
         </template>
       </el-table-column>
@@ -138,7 +139,7 @@
 </template>
 
 <script>
-import { listQAfile, delQAfile, retryKgBuild } from "@/api/qa/QAfile"
+import { listQAfile, delQAfile, retryProcess } from "@/api/qa/QAfile"
 import { getToken } from "@/utils/auth"
 
 export default {
@@ -221,14 +222,14 @@ export default {
           this.$modal.msgSuccess("删除成功")
         })
     },
-    handleRetryKg(row) {
+    handleRetryProcess(row) {
       const id = row && row.id ? row.id : null
       if (!id) return
-      this.$modal.confirm(`是否确认重新构建知识图谱？`)
-        .then(() => retryKgBuild(id))
+      this.$modal.confirm(`是否确认重新处理该文件？`)
+        .then(() => retryProcess(id))
         .then(() => {
           this.getList()
-          this.$modal.msgSuccess("已触发重建")
+          this.$modal.msgSuccess("已触发重试")
         })
     },
     handleExport() {
@@ -270,7 +271,8 @@ export default {
     statusLabel(status) {
       if (status === 0) return "正常"
       if (status === 1) return "上传失败"
-      if (status === 2) return "图谱构建失败"
+      if (status === 2) return "知识库上传失败"
+      if (status === 3) return "图谱构建失败"
       return "-"
     }
   }

@@ -1,7 +1,7 @@
 package com.ruoyi.qa.Chat.service.impl;
 
 import com.alibaba.fastjson2.JSON;
-import com.ruoyi.qa.Dify.DifyClient;
+import com.ruoyi.qa.Dify.DifyChatClient;
 import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.service.ChatService;
@@ -22,11 +22,11 @@ public class ChatServiceImpl implements ChatService
 {
     private static final Logger log = LoggerFactory.getLogger(ChatServiceImpl.class);
 
-    private final DifyClient difyClient;
+    private final DifyChatClient difyChatClient;
 
-    public ChatServiceImpl(DifyClient difyClient)
+    public ChatServiceImpl(DifyChatClient difyChatClient)
     {
-        this.difyClient = difyClient;
+        this.difyChatClient = difyChatClient;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class ChatServiceImpl implements ChatService
 
         try
         {
-            difyClient.postChatMessagesStreaming(difyReq, outputStream);
+            difyChatClient.postChatMessagesStreaming(difyReq, outputStream);
         }
         catch (InterruptedException e)
         {

@@ -1,7 +1,10 @@
 package com.ruoyi.qa.Chat.controller;
 
 import com.ruoyi.common.annotation.Anonymous;
+import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
+import com.ruoyi.qa.Chat.dto.RobotNavigateResponse;
+import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
 import com.ruoyi.qa.Chat.service.ChatService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,5 +37,16 @@ public class ChatRobotController
         response.setHeader("Connection", "keep-alive");
         response.setHeader("X-Accel-Buffering", "no");
         return outputStream -> chatService.streamRobotChat(body, outputStream);
+    }
+
+    @PostMapping("/robot/navigate")
+    public AjaxResult navigate(@RequestBody RobotNavigateRequest body)
+    {
+        RobotNavigateResponse response = chatService.navigateToPoint(body);
+        if (!response.isSuccess())
+        {
+            return AjaxResult.error(response.getMessage()).put("data", response);
+        }
+        return AjaxResult.success(response);
     }
 }

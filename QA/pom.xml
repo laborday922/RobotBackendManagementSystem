@@ -38,6 +38,16 @@
             <artifactId>ruoyi-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>function</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>taskmgt</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
             <version>${poi.version}</version>

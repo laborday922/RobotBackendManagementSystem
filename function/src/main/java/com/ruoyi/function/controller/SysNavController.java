@@ -60,25 +60,4 @@ public class SysNavController extends BaseController {
         }
         return toAjax(navConfigService.saveConfig(config));
     }
-
-    @ApiOperation("开始导航")
-    @PostMapping("/start")
-    public AjaxResult startNavigation(@Valid @RequestBody NavigationRequest request) {
-        int result = navConfigService.startNavigation(request.getPointName());
-        if (result > 0) {
-            NavigationResponse response = NavigationResponse.success(request.getPointName());
-            return success(response);
-        }
-        return error("导航启动失败");
-    }
-
-    @ApiOperation("紧急停止")
-    @PostMapping("/stop")
-    public AjaxResult emergencyStop() {
-        int result = navConfigService.emergencyStop();
-        if (result > 0) {
-            return success("导航已停止");
-        }
-        return error("停止失败");
-    }
 }

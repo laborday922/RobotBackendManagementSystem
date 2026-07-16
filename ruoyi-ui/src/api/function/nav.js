@@ -18,19 +18,3 @@ export function saveNavConfig(data) {
   })
 }
 
-// 开始导航
-export function startNavigation(pointName) {
-  return request({
-    url: '/func/nav/start',
-    method: 'post',
-    data: { pointName: pointName }
-  })
-}
-
-// 紧急停止
-export function emergencyStop() {
-  return request({
-    url: '/func/nav/stop',
-    method: 'post'
-  })
-}

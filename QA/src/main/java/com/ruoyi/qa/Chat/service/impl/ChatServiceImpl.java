@@ -56,8 +56,11 @@ public class ChatServiceImpl implements ChatService
             return;
         }
 
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("robot_id", request.getRobotId());
+
         DifyChatMessagesRequest difyReq = new DifyChatMessagesRequest();
-        difyReq.setInputs(Collections.emptyMap());
+        difyReq.setInputs(inputs);
         difyReq.setFiles(Collections.emptyList());
         difyReq.setQuery(request.getQuery());
         difyReq.setResponseMode("streaming");

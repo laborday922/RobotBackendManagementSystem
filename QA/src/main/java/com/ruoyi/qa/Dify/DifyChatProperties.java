@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "dify")
 public class DifyChatProperties
 {
-    private String baseUrl = "http://119.91.158.102:8048/v1";
+    private String baseUrl;
     private String apiKey;
-    private String datasetId = "709bfc53-936e-49e2-9c22-ea540675dd0f";
+    private String datasetId;
     private String datasetApiKey;
     private int connectTimeoutSeconds = 10;
     private int requestTimeoutSeconds = 300;

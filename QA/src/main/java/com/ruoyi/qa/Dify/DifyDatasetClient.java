@@ -107,36 +107,38 @@ public class DifyDatasetClient
         req.setName(name);
         req.setText(text);
         req.setIndexingTechnique("high_quality");
-        req.setDocForm("hierarchical_model");
-        req.setDocLanguage("Chinese");
+        req.setDocForm("qa_model");
+        req.setDocLanguage("Chinese Simplified");
+//        req.setDocForm("hierarchical_model");
+//        req.setDocLanguage("Chinese Simplified");
 
-        DifyDocumentByTextRequest.PreProcessingRuleItem r1 = new DifyDocumentByTextRequest.PreProcessingRuleItem();
-        r1.setId("remove_extra_spaces");
-        r1.setEnabled(true);
-        DifyDocumentByTextRequest.PreProcessingRuleItem r2 = new DifyDocumentByTextRequest.PreProcessingRuleItem();
-        r2.setId("remove_urls_emails");
-        r2.setEnabled(false);
-
-        DifyDocumentByTextRequest.Segmentation parentSeg = new DifyDocumentByTextRequest.Segmentation();
-        parentSeg.setSeparator("\n\n");
-        parentSeg.setMaxTokens(10000);
-        parentSeg.setChunkOverlap(0);
-
-        DifyDocumentByTextRequest.Segmentation childSeg = new DifyDocumentByTextRequest.Segmentation();
-        childSeg.setSeparator("\n\n");
-        childSeg.setMaxTokens(512);
-        childSeg.setChunkOverlap(0);
-
-        DifyDocumentByTextRequest.Rules rules = new DifyDocumentByTextRequest.Rules();
-        rules.setPreProcessingRules(new DifyDocumentByTextRequest.PreProcessingRuleItem[] { r1, r2 });
-        rules.setSegmentation(parentSeg);
-        rules.setParentMode("full-doc");
-        rules.setSubchunkSegmentation(childSeg);
-
-        DifyDocumentByTextRequest.ProcessRule rule = new DifyDocumentByTextRequest.ProcessRule();
-        rule.setMode("custom");
-        rule.setRules(rules);
-        req.setProcessRule(rule);
+//        DifyDocumentByTextRequest.PreProcessingRuleItem r1 = new DifyDocumentByTextRequest.PreProcessingRuleItem();
+//        r1.setId("remove_extra_spaces");
+//        r1.setEnabled(true);
+//        DifyDocumentByTextRequest.PreProcessingRuleItem r2 = new DifyDocumentByTextRequest.PreProcessingRuleItem();
+//        r2.setId("remove_urls_emails");
+//        r2.setEnabled(false);
+//
+//        DifyDocumentByTextRequest.Segmentation parentSeg = new DifyDocumentByTextRequest.Segmentation();
+//        parentSeg.setSeparator("\n\n");
+//        parentSeg.setMaxTokens(10000);
+//        parentSeg.setChunkOverlap(0);
+//
+//        DifyDocumentByTextRequest.Segmentation childSeg = new DifyDocumentByTextRequest.Segmentation();
+//        childSeg.setSeparator("\n\n");
+//        childSeg.setMaxTokens(1024);
+//        childSeg.setChunkOverlap(0);
+//
+//        DifyDocumentByTextRequest.Rules rules = new DifyDocumentByTextRequest.Rules();
+//        rules.setPreProcessingRules(new DifyDocumentByTextRequest.PreProcessingRuleItem[] { r1, r2 });
+//        rules.setSegmentation(parentSeg);
+//        rules.setParentMode("full-doc");
+//        rules.setSubchunkSegmentation(childSeg);
+//
+//        DifyDocumentByTextRequest.ProcessRule rule = new DifyDocumentByTextRequest.ProcessRule();
+//        rule.setMode("custom");
+//        rule.setRules(rules);
+//        req.setProcessRule(rule);
         return req;
     }
 

@@ -52,7 +52,12 @@ public class QaChatServiceImpl implements IQaChatService
         {
             throw new ServiceException("问答ID不能为空");
         }
-        validateQaChat(qaChat);
+        QaChat db = qaChatMapper.selectQaChatById(qaChat.getId());
+        if (db == null)
+        {
+            throw new ServiceException("问答配置不存在");
+        }
+        validateQaChatForUpdate(qaChat, db);
         return qaChatMapper.updateQaChat(qaChat);
     }
 
@@ -90,5 +95,28 @@ public class QaChatServiceImpl implements IQaChatService
         {
             qaChat.setChatDesc(qaChat.getChatDesc().trim());
         }
+    }
+
+    private void validateQaChatForUpdate(QaChat qaChat, QaChat db)
+    {
+        if (qaChat == null)
+        {
+            throw new ServiceException("问答配置不能为空");
+        }
+        if (!StringUtils.hasText(qaChat.getChatName()))
+        {
+            throw new ServiceException("问答名称不能为空");
+        }
+        qaChat.setChatName(qaChat.getChatName().trim());
+        if (qaChat.getChatDesc() != null)
+        {
+            qaChat.setChatDesc(qaChat.getChatDesc().trim());
+        }
+        if (StringUtils.hasText(qaChat.getDifyApiKey()))
+        {
+            qaChat.setDifyApiKey(qaChat.getDifyApiKey().trim());
+            return;
+        }
+        qaChat.setDifyApiKey(db.getDifyApiKey());
     }
 }

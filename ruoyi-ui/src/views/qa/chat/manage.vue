@@ -47,7 +47,7 @@
                 <el-table-column label="问答描述" align="center" prop="chatDesc" min-width="220" show-overflow-tooltip />
                 <el-table-column label="Dify App Key" align="center" min-width="220" show-overflow-tooltip>
                   <template slot-scope="scope">
-                    <span>{{ maskApiKey(scope.row.difyApiKey) }}</span>
+                    <span>{{ scope.row.apiKeyMasked || keyStatusText(scope.row.hasDifyApiKey) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="更新时间" align="center" prop="updateTime" width="180">
@@ -167,9 +167,19 @@
           <el-input v-model="chatForm.chatDesc" type="textarea" :rows="4" placeholder="请输入问答描述" maxlength="500" show-word-limit />
         </el-form-item>
         <el-form-item label="Dify App Key" prop="difyApiKey">
-          <el-input v-model="chatForm.difyApiKey" type="textarea" :rows="4" placeholder="请输入该问答对应的 Dify App Key" maxlength="500" show-word-limit />
+          <el-input
+            v-model="chatForm.difyApiKey"
+            type="textarea"
+            :rows="4"
+            :placeholder="chatForm.id ? '留空则保持原 App Key 不变；如需替换请直接输入新 Key' : '请输入该问答对应的 Dify App Key'"
+            maxlength="500"
+            show-word-limit
+          />
         </el-form-item>
-        <div class="form-tip">说明：`base_url` 固定走系统公共配置，这里只维护不同 chatflow 对应的 App Key。</div>
+        <div class="form-tip">
+          说明：`base_url` 固定走系统公共配置，这里只维护不同 chatflow 对应的 App Key。
+          <span v-if="chatForm.id && chatForm.hasDifyApiKey">当前后端已保存 App Key，本次留空则保持不变。</span>
+        </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button type="primary" @click="submitChatForm">确 定</el-button>
@@ -246,7 +256,8 @@ export default {
         id: null,
         chatName: '',
         chatDesc: '',
-        difyApiKey: ''
+        difyApiKey: '',
+        hasDifyApiKey: false
       },
       relForm: {
         robotId: null,
@@ -264,8 +275,7 @@ export default {
         chatId: undefined
       },
       chatRules: {
-        chatName: [{ required: true, message: '问答名称不能为空', trigger: 'blur' }],
-        difyApiKey: [{ required: true, message: 'Dify App Key 不能为空', trigger: 'blur' }]
+        chatName: [{ required: true, message: '问答名称不能为空', trigger: 'blur' }]
       },
       relRules: {
         robotId: [{ required: true, message: '机器人不能为空', trigger: 'change' }],
@@ -331,7 +341,8 @@ export default {
         id: null,
         chatName: '',
         chatDesc: '',
-        difyApiKey: ''
+        difyApiKey: '',
+        hasDifyApiKey: false
       }
       this.$nextTick(() => this.resetForm('chatForm'))
     },
@@ -341,7 +352,8 @@ export default {
           id: null,
           chatName: '',
           chatDesc: '',
-          difyApiKey: ''
+          difyApiKey: '',
+          hasDifyApiKey: false
         }, response.data || {})
         this.chatDialogTitle = '修改问答配置'
         this.chatDialogOpen = true
@@ -351,6 +363,10 @@ export default {
     submitChatForm() {
       this.$refs.chatForm.validate(valid => {
         if (!valid) {
+          return
+        }
+        if (!this.chatForm.id && !this.chatForm.difyApiKey) {
+          this.$message.error('新增时 Dify App Key 不能为空')
           return
         }
         const request = this.chatForm.id ? updateQaChat(this.chatForm) : addQaChat(this.chatForm)
@@ -417,14 +433,8 @@ export default {
       const name = item.name || ('机器人' + item.id)
       return item.code ? `${name}（${item.code}）` : name
     },
-    maskApiKey(value) {
-      if (!value) {
-        return '-'
-      }
-      if (value.length <= 10) {
-        return value
-      }
-      return value.slice(0, 6) + '******' + value.slice(-4)
+    keyStatusText(hasKey) {
+      return hasKey ? '已配置' : '未配置'
     }
   }
 }

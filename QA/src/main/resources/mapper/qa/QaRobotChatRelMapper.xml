@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qa.ChatManage.mapper.QaRobotChatRelMapper">
+
+    <resultMap type="QaRobotChatRel" id="QaRobotChatRelResult">
+        <result property="robotId" column="robot_id"/>
+        <result property="chatId" column="chat_id"/>
+        <result property="robotCode" column="robot_code"/>
+        <result property="robotName" column="robot_name"/>
+        <result property="chatName" column="chat_name"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap type="QaChat" id="QaChatRoutingResult">
+        <result property="id" column="id"/>
+        <result property="chatName" column="chat_name"/>
+        <result property="chatDesc" column="chat_desc"/>
+        <result property="difyApiKey" column="dify_api_key"/>
+    </resultMap>
+
+    <sql id="selectQaRobotChatRelVo">
+        select r.robot_id,
+               r.chat_id,
+               r.update_by,
+               r.update_time,
+               rb.code as robot_code,
+               rb.name as robot_name,
+               c.chat_name
+        from qa_robot_chat_rel r
+        left join robots rb on rb.id = r.robot_id
+        left join qa_chat c on c.id = r.chat_id
+    </sql>
+
+    <select id="selectQaRobotChatRelByRobotId" parameterType="Long" resultMap="QaRobotChatRelResult">
+        <include refid="selectQaRobotChatRelVo"/>
+        where r.robot_id = #{robotId}
+    </select>
+
+    <select id="selectQaRobotChatRelList" parameterType="QaRobotChatRel" resultMap="QaRobotChatRelResult">
+        <include refid="selectQaRobotChatRelVo"/>
+        <where>
+            <if test="robotId != null">and r.robot_id = #{robotId}</if>
+            <if test="chatId != null">and r.chat_id = #{chatId}</if>
+            <if test="robotName != null and robotName != ''">and rb.name like concat('%', #{robotName}, '%')</if>
+            <if test="chatName != null and chatName != ''">and c.chat_name like concat('%', #{chatName}, '%')</if>
+        </where>
+        order by r.robot_id asc
+    </select>
+
+    <insert id="insertQaRobotChatRel" parameterType="QaRobotChatRel">
+        insert into qa_robot_chat_rel
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="robotId != null">robot_id,</if>
+            <if test="chatId != null">chat_id,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="robotId != null">#{robotId},</if>
+            <if test="chatId != null">#{chatId},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateQaRobotChatRel" parameterType="QaRobotChatRel">
+        update qa_robot_chat_rel
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chatId != null">chat_id = #{chatId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where robot_id = #{robotId}
+    </update>
+
+    <delete id="deleteQaRobotChatRelByRobotId" parameterType="Long">
+        delete from qa_robot_chat_rel where robot_id = #{robotId}
+    </delete>
+
+    <delete id="deleteQaRobotChatRelByRobotIds" parameterType="Long">
+        delete from qa_robot_chat_rel where robot_id in
+        <foreach item="robotId" collection="array" open="(" separator="," close=")">
+            #{robotId}
+        </foreach>
+    </delete>
+
+    <select id="selectQaChatByRobotId" parameterType="Long" resultMap="QaChatRoutingResult">
+        select c.id, c.chat_name, c.chat_desc, c.dify_api_key
+        from qa_robot_chat_rel r
+        inner join qa_chat c on c.id = r.chat_id
+        where r.robot_id = #{robotId}
+    </select>
+
+    <select id="countByChatIds" parameterType="Long" resultType="int">
+        select count(1)
+        from qa_robot_chat_rel
+        where chat_id in
+        <foreach item="chatId" collection="array" open="(" separator="," close=")">
+            #{chatId}
+        </foreach>
+    </select>
+</mapper>

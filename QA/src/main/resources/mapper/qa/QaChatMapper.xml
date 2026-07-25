@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qa.ChatManage.mapper.QaChatMapper">
+
+    <resultMap type="QaChat" id="QaChatResult">
+        <result property="id" column="id"/>
+        <result property="chatName" column="chat_name"/>
+        <result property="chatDesc" column="chat_desc"/>
+        <result property="difyApiKey" column="dify_api_key"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectQaChatVo">
+        select id, chat_name, chat_desc, dify_api_key, create_by, create_time, update_by, update_time
+        from qa_chat
+    </sql>
+
+    <select id="selectQaChatById" parameterType="Long" resultMap="QaChatResult">
+        <include refid="selectQaChatVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectQaChatList" parameterType="QaChat" resultMap="QaChatResult">
+        <include refid="selectQaChatVo"/>
+        <where>
+            <if test="chatName != null and chatName != ''">and chat_name like concat('%', #{chatName}, '%')</if>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="selectQaChatOptions" resultMap="QaChatResult">
+        select id, chat_name, chat_desc
+        from qa_chat
+        order by id desc
+    </select>
+
+    <insert id="insertQaChat" parameterType="QaChat" useGeneratedKeys="true" keyProperty="id">
+        insert into qa_chat
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="chatName != null and chatName != ''">chat_name,</if>
+            <if test="chatDesc != null">chat_desc,</if>
+            <if test="difyApiKey != null and difyApiKey != ''">dify_api_key,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="chatName != null and chatName != ''">#{chatName},</if>
+            <if test="chatDesc != null">#{chatDesc},</if>
+            <if test="difyApiKey != null and difyApiKey != ''">#{difyApiKey},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateQaChat" parameterType="QaChat">
+        update qa_chat
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chatName != null and chatName != ''">chat_name = #{chatName},</if>
+            <if test="chatDesc != null">chat_desc = #{chatDesc},</if>
+            <if test="difyApiKey != null and difyApiKey != ''">dify_api_key = #{difyApiKey},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteQaChatById" parameterType="Long">
+        delete from qa_chat where id = #{id}
+    </delete>
+
+    <delete id="deleteQaChatByIds" parameterType="Long">
+        delete from qa_chat where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

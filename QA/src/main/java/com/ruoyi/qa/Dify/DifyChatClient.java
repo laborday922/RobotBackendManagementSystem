@@ -39,7 +39,7 @@ public class DifyChatClient
     public String postChatMessagesBlocking(DifyChatMessagesRequest body) throws IOException, InterruptedException
     {
         URI uri = chatMessagesUri();
-        HttpRequest request = buildRequest(uri, body);
+        HttpRequest request = buildRequest(uri, body, null);
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (resp.statusCode() < 200 || resp.statusCode() >= 300)
         {
@@ -50,6 +50,11 @@ public class DifyChatClient
 
     public void postChatMessagesStreaming(DifyChatMessagesRequest body, OutputStream downstream) throws IOException, InterruptedException
     {
+        postChatMessagesStreaming(body, null, downstream);
+    }
+
+    public void postChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey, OutputStream downstream) throws IOException, InterruptedException
+    {
         URI uri = chatMessagesUri();
         log.info("Dify streaming request: uri={}, user={}, conversationId={}, queryLen={}",
             uri,
@@ -57,7 +62,7 @@ public class DifyChatClient
             body == null ? null : body.getConversationId(),
             body == null || body.getQuery() == null ? 0 : body.getQuery().length());
 
-        HttpRequest request = buildRequestBuilder(uri, body)
+        HttpRequest request = buildRequestBuilder(uri, body, apiKey)
             .header("Accept", "text/event-stream")
             .build();
 
@@ -90,12 +95,12 @@ public class DifyChatClient
         }
     }
 
-    private HttpRequest buildRequest(URI uri, DifyChatMessagesRequest body)
+    private HttpRequest buildRequest(URI uri, DifyChatMessagesRequest body, String apiKey)
     {
-        return buildRequestBuilder(uri, body).build();
+        return buildRequestBuilder(uri, body, apiKey).build();
     }
 
-    private HttpRequest.Builder buildRequestBuilder(URI uri, DifyChatMessagesRequest body)
+    private HttpRequest.Builder buildRequestBuilder(URI uri, DifyChatMessagesRequest body, String apiKey)
     {
         String json = JSON.toJSONString(body);
         HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
@@ -107,10 +112,10 @@ public class DifyChatClient
             builder.timeout(Duration.ofSeconds(requestTimeoutSeconds));
         }
 
-        String apiKey = props.getApiKey();
-        if (StringUtils.hasText(apiKey))
+        String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : props.getApiKey();
+        if (StringUtils.hasText(resolvedApiKey))
         {
-            builder.header("Authorization", "Bearer " + apiKey.trim());
+            builder.header("Authorization", "Bearer " + resolvedApiKey.trim());
         }
         return builder;
     }

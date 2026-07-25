@@ -8,6 +8,8 @@ import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateResponse;
+import com.ruoyi.qa.ChatManage.domain.QaChat;
+import com.ruoyi.qa.ChatManage.service.IQaRobotChatRelService;
 import com.ruoyi.qa.Chat.service.ChatService;
 import com.ruoyi.taskmgt.invoker.RobotInvoker;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskRequest;
@@ -34,12 +36,15 @@ public class ChatServiceImpl implements ChatService
     private final DifyChatClient difyChatClient;
     private final ISysPointService sysPointService;
     private final RobotInvoker robotInvoker;
+    private final IQaRobotChatRelService qaRobotChatRelService;
 
-    public ChatServiceImpl(DifyChatClient difyChatClient, ISysPointService sysPointService, RobotInvoker robotInvoker)
+    public ChatServiceImpl(DifyChatClient difyChatClient, ISysPointService sysPointService, RobotInvoker robotInvoker,
+        IQaRobotChatRelService qaRobotChatRelService)
     {
         this.difyChatClient = difyChatClient;
         this.sysPointService = sysPointService;
         this.robotInvoker = robotInvoker;
+        this.qaRobotChatRelService = qaRobotChatRelService;
     }
 
     @Override
@@ -56,8 +61,29 @@ public class ChatServiceImpl implements ChatService
             return;
         }
 
+        Long robotId = parseRobotId(request.getRobotId());
+        if (robotId == null)
+        {
+            writeSseError(outputStream, "robotId must be numeric");
+            return;
+        }
+
+        QaChat qaChat = qaRobotChatRelService.selectQaChatByRobotId(robotId);
+        if (qaChat == null)
+        {
+            writeSseError(outputStream, "robot chat config not found");
+            return;
+        }
+        if (!StringUtils.hasText(qaChat.getDifyApiKey()))
+        {
+            writeSseError(outputStream, "dify api key is blank");
+            return;
+        }
+
         Map<String, Object> inputs = new HashMap<>();
         inputs.put("robot_id", request.getRobotId());
+        inputs.put("chat_id", qaChat.getId());
+        inputs.put("chat_name", qaChat.getChatName());
 
         DifyChatMessagesRequest difyReq = new DifyChatMessagesRequest();
         difyReq.setInputs(inputs);
@@ -70,14 +96,15 @@ public class ChatServiceImpl implements ChatService
         outputStream.write(":\n\n".getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
 
-        log.info("Robot chat stream: robotId={}, conversationId={}, queryLen={}",
+        log.info("Robot chat stream: robotId={}, chatId={}, conversationId={}, queryLen={}",
             request.getRobotId(),
+            qaChat.getId(),
             request.getConversationId(),
             request.getQuery() == null ? 0 : request.getQuery().length());
 
         try
         {
-            difyChatClient.postChatMessagesStreaming(difyReq, outputStream);
+            difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getDifyApiKey(), outputStream);
         }
         catch (InterruptedException e)
         {
@@ -184,5 +211,21 @@ public class ChatServiceImpl implements ChatService
     private String normalizeMessage(String message, String defaultMessage)
     {
         return StringUtils.hasText(message) ? message : defaultMessage;
+    }
+
+    private Long parseRobotId(String robotId)
+    {
+        if (!StringUtils.hasText(robotId))
+        {
+            return null;
+        }
+        try
+        {
+            return Long.parseLong(robotId.trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
     }
 }

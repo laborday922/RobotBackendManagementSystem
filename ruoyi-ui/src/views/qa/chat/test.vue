@@ -8,7 +8,14 @@
           </div>
           <el-form :model="form" label-width="110px">
             <el-form-item label="robotId">
-              <el-input v-model="form.robotId" placeholder="例如：robot-001" />
+              <el-select v-model="form.robotId" placeholder="请选择机器人" filterable style="width: 100%">
+                <el-option
+                  v-for="item in robotOptions"
+                  :key="item.id"
+                  :label="robotLabel(item)"
+                  :value="String(item.id)"
+                />
+              </el-select>
             </el-form-item>
             <el-form-item label="conversationId">
               <el-input v-model="form.conversationId" placeholder="为空表示新对话" />
@@ -47,20 +54,25 @@
 
 <script>
 import { getToken } from "@/utils/auth"
+import { listRobots } from "@/api/robots/robots"
 
 export default {
   name: "RobotChat",
   data() {
     return {
       form: {
-        robotId: "robot-001",
+        robotId: "",
         conversationId: "",
         query: ""
       },
       streaming: false,
       abortController: null,
-      messages: []
+      messages: [],
+      robotOptions: []
     }
+  },
+  created() {
+    this.loadRobots()
   },
   computed: {
     endpoint() {
@@ -68,6 +80,14 @@ export default {
     }
   },
   methods: {
+    loadRobots() {
+      listRobots({ pageNum: 1, pageSize: 1000 }).then(response => {
+        this.robotOptions = response.rows || []
+        if (!this.form.robotId && this.robotOptions.length > 0) {
+          this.form.robotId = String(this.robotOptions[0].id)
+        }
+      })
+    },
     async send() {
       if (this.streaming) return
       if (!this.form.robotId) {
@@ -182,6 +202,10 @@ export default {
       this.stop()
       this.messages = []
     },
+    robotLabel(item) {
+      const name = item.name || ("机器人" + item.id)
+      return item.code ? `${name}（${item.code}）` : name
+    },
     scrollToBottom() {
       const el = this.$refs.chatBody
       if (!el) return
@@ -231,4 +255,3 @@ export default {
   color: #67c23a;
 }
 </style>
-

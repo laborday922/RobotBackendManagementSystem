@@ -46,10 +46,6 @@ public class QaFile extends BaseEntity
     @Excel(name = "处理状态")
     private Short status;
 
-    /** 逻辑删除 */
-    @Excel(name = "逻辑删除")
-    private Boolean isDeleted;
-
     public void setId(Long id)
     {
         this.id = id;
@@ -130,16 +126,6 @@ public class QaFile extends BaseEntity
         return status;
     }
 
-    public void setIsDeleted(Boolean isDeleted)
-    {
-        this.isDeleted = isDeleted;
-    }
-
-    public Boolean getIsDeleted()
-    {
-        return isDeleted;
-    }
-
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -151,7 +137,6 @@ public class QaFile extends BaseEntity
             .append("path", getPath())
             .append("difyDocumentId", getDifyDocumentId())
             .append("status", getStatus())
-            .append("isDeleted", getIsDeleted())
             .toString();
     }
 }

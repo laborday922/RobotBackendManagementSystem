@@ -169,11 +169,6 @@ public class QaFileServiceImpl implements IQaFileService
             return null;
         }
 
-        if (qaFile.getIsDeleted() == null)
-        {
-            qaFile.setIsDeleted(false);
-        }
-
         String oldPath = qaFile.getPath();
         String savedPath;
         try

@@ -12,8 +12,6 @@ public class QaFileListVo
 
     private Short status;
 
-    private Boolean isDeleted;
-
     public Long getId()
     {
         return id;
@@ -64,13 +62,4 @@ public class QaFileListVo
         this.status = status;
     }
 
-    public Boolean getIsDeleted()
-    {
-        return isDeleted;
-    }
-
-    public void setIsDeleted(Boolean isDeleted)
-    {
-        this.isDeleted = isDeleted;
-    }
 }

@@ -66,7 +66,6 @@ public class QaFileController extends BaseController
         vo.setFileSize(qaFile.getFileSize());
         vo.setFileType(qaFile.getFileType());
         vo.setStatus(qaFile.getStatus());
-        vo.setIsDeleted(qaFile.getIsDeleted());
         return vo;
     }
 

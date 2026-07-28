@@ -1,140 +1,102 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="68px">
-      <el-form-item label="文件名" prop="fileName">
-        <el-input
-          v-model="queryParams.fileName"
-          placeholder="请输入文件名"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择" clearable>
-          <el-option label="正常" :value="0"></el-option>
-          <el-option label="上传失败" :value="1"></el-option>
-          <el-option label="知识库上传失败" :value="2"></el-option>
-          <el-option label="图谱构建失败" :value="3"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="逻辑删除" prop="isDeleted">
-        <el-select v-model="queryParams.isDeleted" placeholder="请选择" clearable>
-          <el-option label="否" :value="false"></el-option>
-          <el-option label="是" :value="true"></el-option>
-        </el-select>
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
+    <el-card class="search-card" v-show="showSearch">
+      <el-form :model="queryParams" ref="queryForm" :inline="true" label-width="68px">
+        <el-form-item label="文件名" prop="fileName">
+          <el-input
+            v-model="queryParams.fileName"
+            placeholder="请输入文件名"
+            clearable
+            style="width: 180px"
+            @keyup.enter.native="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="全部" clearable style="width: 160px">
+            <el-option label="正常" :value="0"></el-option>
+            <el-option label="上传失败" :value="1"></el-option>
+            <el-option label="知识库上传失败" :value="2"></el-option>
+            <el-option label="图谱构建失败" :value="3"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['qa:QAfile:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['qa:QAfile:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['qa:QAfile:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['qa:QAfile:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <el-card class="table-card">
+      <template #header>
+        <div class="card-header">
+          <span>QA文件列表</span>
+          <div class="header-actions">
+            <el-button type="primary" icon="el-icon-plus" @click="handleAdd" v-hasPermi="['qa:QAfile:add']">上传文件</el-button>
+            <el-button type="danger" icon="el-icon-delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['qa:QAfile:remove']">删除</el-button>
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+        </div>
+      </template>
 
-    <el-table v-loading="loading" :data="QAfileList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="文件名" align="center" prop="fileName" />
-      <el-table-column label="文件大小(字节)" align="center" prop="fileSize" />
-      <el-table-column label="文件类型(doc/docx/pdf)" align="center" prop="fileType" />
-      <el-table-column label="处理状态" align="center" prop="status">
-        <template slot-scope="scope">
-          <span>{{ statusLabel(scope.row.status) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="逻辑删除" align="center" prop="isDeleted">
-        <template slot-scope="scope">
-          <span v-if="scope.row.isDeleted === true">是</span>
-          <span v-else-if="scope.row.isDeleted === false">否</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['qa:QAfile:edit']">修改</el-button>
-          <el-button size="mini" type="text" icon="el-icon-refresh" :disabled="scope.row.status === 0 || scope.row.status === null || scope.row.status === undefined" @click="handleRetryProcess(scope.row)" v-hasPermi="['qa:QAfile:edit']">重试处理</el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['qa:QAfile:remove']">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-table v-loading="loading" :data="QAfileList" border style="width: 100%" @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="ID" prop="id" width="80" align="center" />
+        <el-table-column label="文件名" prop="fileName" min-width="220" show-overflow-tooltip />
+        <el-table-column label="文件大小(字节)" prop="fileSize" width="140" align="center" />
+        <el-table-column label="文件类型" prop="fileType" width="140" align="center" />
+        <el-table-column label="处理状态" prop="status" width="140" align="center">
+          <template slot-scope="scope">
+            <span>{{ statusLabel(scope.row.status) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right" align="center">
+          <template slot-scope="scope">
+            <el-button
+              size="small"
+              circle
+              title="重试处理"
+              :disabled="scope.row.status === 0 || scope.row.status === null || scope.row.status === undefined"
+              @click="handleRetryProcess(scope.row)"
+              v-hasPermi="['qa:QAfile:edit']"
+            ><i class="el-icon-refresh"></i></el-button>
+            <el-button size="small" type="danger" circle title="删除" @click="handleDelete(scope.row)" v-hasPermi="['qa:QAfile:remove']"><i class="el-icon-delete"></i></el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
 
-    <!-- 添加或修改QA文件管理对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-upload
-        ref="uploader"
-        name="file"
-        :action="uploadUrl"
-        :headers="uploadHeaders"
-        :data="uploadData"
-        :auto-upload="true"
-        :limit="1"
-        :multiple="false"
-        :show-file-list="true"
-        accept=".txt,.doc,.docx,.pdf"
-        :before-upload="beforeUpload"
-        :on-success="handleUploadSuccess"
-        :on-error="handleUploadError"
-        :on-exceed="handleExceed"
-      >
-        <el-button type="primary">上传文件</el-button>
-        <div slot="tip" class="el-upload__tip">支持 txt/doc/docx/pdf，选择文件后自动上传</div>
-      </el-upload>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
+      <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
+        <el-upload
+          ref="uploader"
+          name="file"
+          :action="uploadUrl"
+          :headers="uploadHeaders"
+          :data="uploadData"
+          :auto-upload="true"
+          :limit="1"
+          :multiple="false"
+          :show-file-list="true"
+          accept=".txt,.doc,.docx,.pdf"
+          :before-upload="beforeUpload"
+          :on-success="handleUploadSuccess"
+          :on-error="handleUploadError"
+          :on-exceed="handleExceed"
+        >
+          <el-button type="primary">选择文件</el-button>
+          <div slot="tip" class="el-upload__tip">支持 txt/doc/docx/pdf，选择文件后自动上传</div>
+        </el-upload>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </el-dialog>
+    </el-card>
   </div>
 </template>
 
@@ -151,7 +113,6 @@ export default {
       loading: true,
       showSearch: true,
       ids: [],
-      single: true,
       multiple: true,
       total: 0,
       title: "",
@@ -166,8 +127,7 @@ export default {
         fileName: null,
         fileContent: null,
         fileType: null,
-        status: null,
-        isDeleted: null
+        status: null
       }
     }
   },
@@ -197,20 +157,12 @@ export default {
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id)
-      this.single = selection.length !== 1
       this.multiple = !selection.length
     },
     handleAdd() {
       this.open = true
-      this.title = "添加QA文件管理"
+      this.title = "上传QA文件"
       this.uploadData = {}
-      this.$nextTick(() => this.clearUpload())
-    },
-    handleUpdate(row) {
-      const id = (row && row.id) ? row.id : (Array.isArray(this.ids) ? this.ids[0] : this.ids)
-      this.open = true
-      this.title = "更新QA文件"
-      this.uploadData = { id }
       this.$nextTick(() => this.clearUpload())
     },
     handleDelete(row) {
@@ -231,9 +183,6 @@ export default {
           this.getList()
           this.$modal.msgSuccess("已触发重试")
         })
-    },
-    handleExport() {
-      this.download("qa/QAfile/export", { ...this.queryParams }, `QAfile_${new Date().getTime()}.xlsx`)
     },
     beforeUpload(file) {
       const fileName = file && file.name ? file.name : ""
@@ -278,3 +227,12 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.app-container { padding: 20px; }
+.search-card { margin-bottom: 20px; }
+.table-card { margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.el-table .cell .el-button + .el-button { margin-left: 4px; }
+</style>

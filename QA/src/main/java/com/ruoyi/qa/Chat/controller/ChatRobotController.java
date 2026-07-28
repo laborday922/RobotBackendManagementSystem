@@ -6,7 +6,9 @@ import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateResponse;
 import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
 import com.ruoyi.qa.Chat.service.ChatService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,13 +42,14 @@ public class ChatRobotController
     }
 
     @PostMapping("/robot/navigate")
-    public AjaxResult navigate(@RequestBody RobotNavigateRequest body)
+    public ResponseEntity<AjaxResult> navigate(@RequestBody RobotNavigateRequest body)
     {
         RobotNavigateResponse response = chatService.navigateToPoint(body);
         if (!response.isSuccess())
         {
-            return AjaxResult.error(response.getMessage()).put("data", response);
+            AjaxResult result = AjaxResult.error(response.getMessage()).put("data", response);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(result);
         }
-        return AjaxResult.success(response);
+        return ResponseEntity.ok(AjaxResult.success(response));
     }
 }

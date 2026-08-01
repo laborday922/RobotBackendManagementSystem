@@ -10,6 +10,10 @@ public class QaFileListVo
 
     private String fileType;
 
+    private Long knowledgeBaseId;
+
+    private String knowledgeBaseName;
+
     private Short status;
 
     public Long getId()
@@ -50,6 +54,26 @@ public class QaFileListVo
     public void setFileType(String fileType)
     {
         this.fileType = fileType;
+    }
+
+    public Long getKnowledgeBaseId()
+    {
+        return knowledgeBaseId;
+    }
+
+    public void setKnowledgeBaseId(Long knowledgeBaseId)
+    {
+        this.knowledgeBaseId = knowledgeBaseId;
+    }
+
+    public String getKnowledgeBaseName()
+    {
+        return knowledgeBaseName;
+    }
+
+    public void setKnowledgeBaseName(String knowledgeBaseName)
+    {
+        this.knowledgeBaseName = knowledgeBaseName;
     }
 
     public Short getStatus()

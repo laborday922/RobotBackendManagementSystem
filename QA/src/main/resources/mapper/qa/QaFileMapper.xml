@@ -12,31 +12,65 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="fileType"    column="file_type"    />
         <result property="path"    column="path"    />
         <result property="difyDocumentId"    column="dify_document_id"    />
+        <result property="knowledgeBaseId"    column="knowledge_base_id"    />
+        <result property="knowledgeBaseName"    column="knowledge_base_name"    />
         <result property="status"    column="status"    />
     </resultMap>
 
     <sql id="selectQaFileVo">
-        select id, file_name, file_content, file_size, file_type, path, dify_document_id, status from qa_file
+        select qf.id,
+               qf.file_name,
+               qf.file_content,
+               qf.file_size,
+               qf.file_type,
+               qf.path,
+               qf.dify_document_id,
+               qf.knowledge_base_id,
+               kb.kb_name as knowledge_base_name,
+               qf.status
+        from qa_file qf
+        left join qa_knowledge_base kb on qf.knowledge_base_id = kb.id
     </sql>
 
     <sql id="selectQaFileListVo">
-        select id, file_name, file_size, file_type, path, dify_document_id, status from qa_file
+        select qf.id,
+               qf.file_name,
+               qf.file_size,
+               qf.file_type,
+               qf.path,
+               qf.dify_document_id,
+               qf.knowledge_base_id,
+               kb.kb_name as knowledge_base_name,
+               qf.status
+        from qa_file qf
+        left join qa_knowledge_base kb on qf.knowledge_base_id = kb.id
     </sql>
 
     <select id="selectQaFileList" parameterType="QaFile" resultMap="QaFileResult">
         <include refid="selectQaFileListVo"/>
         <where>
-            <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
-            <if test="fileContent != null  and fileContent != ''"> and file_content = #{fileContent}</if>
-            <if test="fileSize != null "> and file_size = #{fileSize}</if>
-            <if test="fileType != null  and fileType != ''"> and file_type = #{fileType}</if>
-            <if test="status != null"> and status = #{status}</if>
+            <if test="fileName != null  and fileName != ''"> and qf.file_name like concat('%', #{fileName}, '%')</if>
+            <if test="fileContent != null  and fileContent != ''"> and qf.file_content = #{fileContent}</if>
+            <if test="fileSize != null "> and qf.file_size = #{fileSize}</if>
+            <if test="fileType != null  and fileType != ''"> and qf.file_type = #{fileType}</if>
+            <if test="knowledgeBaseId != null"> and qf.knowledge_base_id = #{knowledgeBaseId}</if>
+            <if test="status != null"> and qf.status = #{status}</if>
         </where>
+        order by qf.id desc
     </select>
 
     <select id="selectQaFileById" parameterType="Long" resultMap="QaFileResult">
         <include refid="selectQaFileVo"/>
-        where id = #{id}
+        where qf.id = #{id}
+    </select>
+
+    <select id="selectQaFileByKnowledgeBaseIds" parameterType="Long" resultMap="QaFileResult">
+        <include refid="selectQaFileVo"/>
+        where qf.knowledge_base_id in
+        <foreach item="knowledgeBaseId" collection="array" open="(" separator="," close=")">
+            #{knowledgeBaseId}
+        </foreach>
+        order by qf.id desc
     </select>
 
     <insert id="insertQaFile" parameterType="QaFile" useGeneratedKeys="true" keyProperty="id">
@@ -48,6 +82,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="fileType != null">file_type,</if>
             <if test="path != null and path != ''">path,</if>
             <if test="difyDocumentId != null and difyDocumentId != ''">dify_document_id,</if>
+            <if test="knowledgeBaseId != null">knowledge_base_id,</if>
             <if test="status != null">status,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -57,6 +92,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="fileType != null">#{fileType},</if>
             <if test="path != null and path != ''">#{path},</if>
             <if test="difyDocumentId != null and difyDocumentId != ''">#{difyDocumentId},</if>
+            <if test="knowledgeBaseId != null">#{knowledgeBaseId},</if>
             <if test="status != null">#{status},</if>
          </trim>
     </insert>
@@ -70,6 +106,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="fileType != null">file_type = #{fileType},</if>
             <if test="path != null and path != ''">path = #{path},</if>
             <if test="difyDocumentId != null and difyDocumentId != ''">dify_document_id = #{difyDocumentId},</if>
+            <if test="knowledgeBaseId != null">knowledge_base_id = #{knowledgeBaseId},</if>
             <if test="status != null">status = #{status},</if>
         </trim>
         where id = #{id}

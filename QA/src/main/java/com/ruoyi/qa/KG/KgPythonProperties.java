@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kg.python")
 public class KgPythonProperties
 {
-    private String baseUrl = "http://127.0.0.1:8000";
+    private String baseUrl;
     private String token;
 
     public String getBaseUrl()

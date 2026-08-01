@@ -42,6 +42,13 @@ public class QaFile extends BaseEntity
     @Excel(name = "dify 知识库文档ID")
     private String difyDocumentId;
 
+    /** 所属知识库ID */
+    @Excel(name = "所属知识库ID")
+    private Long knowledgeBaseId;
+
+    /** 所属知识库名称 */
+    private String knowledgeBaseName;
+
     /** 处理状态 */
     @Excel(name = "处理状态")
     private Short status;
@@ -116,6 +123,26 @@ public class QaFile extends BaseEntity
         return difyDocumentId;
     }
 
+    public Long getKnowledgeBaseId()
+    {
+        return knowledgeBaseId;
+    }
+
+    public void setKnowledgeBaseId(Long knowledgeBaseId)
+    {
+        this.knowledgeBaseId = knowledgeBaseId;
+    }
+
+    public String getKnowledgeBaseName()
+    {
+        return knowledgeBaseName;
+    }
+
+    public void setKnowledgeBaseName(String knowledgeBaseName)
+    {
+        this.knowledgeBaseName = knowledgeBaseName;
+    }
+
     public void setStatus(Short status)
     {
         this.status = status;
@@ -136,6 +163,8 @@ public class QaFile extends BaseEntity
             .append("fileType", getFileType())
             .append("path", getPath())
             .append("difyDocumentId", getDifyDocumentId())
+            .append("knowledgeBaseId", getKnowledgeBaseId())
+            .append("knowledgeBaseName", getKnowledgeBaseName())
             .append("status", getStatus())
             .toString();
     }

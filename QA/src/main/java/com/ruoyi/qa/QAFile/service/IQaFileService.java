@@ -63,7 +63,9 @@ public interface IQaFileService
 
     public boolean retryKgBuild(Long id);
 
-    public QaFile uploadAndProcess(MultipartFile file, Long id);
+    public int deleteQaFileByKnowledgeBaseIds(Long[] knowledgeBaseIds);
+
+    public QaFile uploadAndProcess(MultipartFile file, Long id, Long knowledgeBaseId);
 
     public QaFile retryProcess(Long id);
 }

@@ -4,8 +4,8 @@ public enum QaFileStatus
 {
     NORMAL((short) 0, "正常"),
     UPLOAD_FAILED((short) 1, "上传失败"),
-    DIFY_UPLOAD_FAILED((short) 2, "知识库上传失败"),
-    KG_BUILD_FAILED((short) 3, "图谱构建失败");
+    DIFY_UPLOAD_FAILED((short) 2, "Dify知识库上传失败"),
+    KG_BUILD_FAILED((short) 3, "API上传失败");
 
     private final short code;
     private final String label;

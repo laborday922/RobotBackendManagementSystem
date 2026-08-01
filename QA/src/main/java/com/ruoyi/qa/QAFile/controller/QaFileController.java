@@ -65,6 +65,8 @@ public class QaFileController extends BaseController
         vo.setFileName(qaFile.getFileName());
         vo.setFileSize(qaFile.getFileSize());
         vo.setFileType(qaFile.getFileType());
+        vo.setKnowledgeBaseId(qaFile.getKnowledgeBaseId());
+        vo.setKnowledgeBaseName(qaFile.getKnowledgeBaseName());
         vo.setStatus(qaFile.getStatus());
         return vo;
     }
@@ -115,9 +117,11 @@ public class QaFileController extends BaseController
     }
 
     @PostMapping("/upload")
-    public AjaxResult upload(@RequestParam("file") MultipartFile file, @RequestParam(value = "id", required = false) Long id)
+    public AjaxResult upload(@RequestParam("file") MultipartFile file,
+        @RequestParam(value = "id", required = false) Long id,
+        @RequestParam(value = "knowledgeBaseId", required = false) Long knowledgeBaseId)
     {
-        QaFile qaFile = qaFileService.uploadAndProcess(file, id);
+        QaFile qaFile = qaFileService.uploadAndProcess(file, id, knowledgeBaseId);
         if (qaFile == null)
         {
             return AjaxResult.error("上传失败");

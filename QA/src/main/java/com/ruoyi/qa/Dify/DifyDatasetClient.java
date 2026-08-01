@@ -37,9 +37,18 @@ public class DifyDatasetClient
 
     public DifyDocumentUpsertResponse createDocumentByText(String name, String text) throws IOException, InterruptedException
     {
-        URI uri = createByTextUri();
-        DifyDocumentByTextRequest body = defaultByTextRequest(name, text);
-        HttpResponse<String> resp = httpClient.send(buildRequest(uri, body), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        return createDocumentByText(null, null, name, text);
+    }
+
+    public DifyDocumentUpsertResponse createDocumentByText(String datasetId, String datasetApiKey, String name, String text) throws IOException, InterruptedException
+    {
+        return createDocumentByText(datasetId, datasetApiKey, defaultByTextRequest(name, text));
+    }
+
+    public DifyDocumentUpsertResponse createDocumentByText(String datasetId, String datasetApiKey, DifyDocumentByTextRequest request) throws IOException, InterruptedException
+    {
+        URI uri = createByTextUri(datasetId);
+        HttpResponse<String> resp = httpClient.send(buildRequest(uri, request, datasetApiKey), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         log.info("Dify create_by_text response: status={}, body={}", resp.statusCode(), trimForLog(resp.body()));
         if (resp.statusCode() < 200 || resp.statusCode() >= 300)
         {
@@ -50,13 +59,22 @@ public class DifyDatasetClient
 
     public DifyDocumentUpsertResponse updateDocumentByText(String documentId, String name, String text) throws IOException, InterruptedException
     {
+        return updateDocumentByText(null, null, documentId, name, text);
+    }
+
+    public DifyDocumentUpsertResponse updateDocumentByText(String datasetId, String datasetApiKey, String documentId, String name, String text) throws IOException, InterruptedException
+    {
+        return updateDocumentByText(datasetId, datasetApiKey, documentId, defaultByTextRequest(name, text));
+    }
+
+    public DifyDocumentUpsertResponse updateDocumentByText(String datasetId, String datasetApiKey, String documentId, DifyDocumentByTextRequest request) throws IOException, InterruptedException
+    {
         if (!StringUtils.hasText(documentId))
         {
             throw new IllegalArgumentException("documentId is blank");
         }
-        URI uri = updateByTextUri(documentId.trim());
-        DifyDocumentByTextRequest body = defaultByTextRequest(name, text);
-        HttpResponse<String> resp = httpClient.send(buildRequest(uri, body), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        URI uri = updateByTextUri(datasetId, documentId.trim());
+        HttpResponse<String> resp = httpClient.send(buildRequest(uri, request, datasetApiKey), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         log.info("Dify update-by-text response: status={}, body={}", resp.statusCode(), trimForLog(resp.body()));
         if (resp.statusCode() < 200 || resp.statusCode() >= 300)
         {
@@ -67,12 +85,17 @@ public class DifyDatasetClient
 
     public void deleteDocument(String documentId) throws IOException, InterruptedException
     {
+        deleteDocument(null, null, documentId);
+    }
+
+    public void deleteDocument(String datasetId, String datasetApiKey, String documentId) throws IOException, InterruptedException
+    {
         if (!StringUtils.hasText(documentId))
         {
             return;
         }
-        URI uri = deleteDocumentUri(documentId.trim());
-        HttpRequest request = baseRequestBuilder(uri)
+        URI uri = deleteDocumentUri(datasetId, documentId.trim());
+        HttpRequest request = baseRequestBuilder(uri, datasetApiKey)
             .DELETE()
             .build();
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -88,8 +111,13 @@ public class DifyDatasetClient
 
     public DifyListDocumentsResponse listDocuments(int page, int limit) throws IOException, InterruptedException
     {
-        URI uri = listDocumentsUri(page, limit);
-        HttpRequest request = baseRequestBuilder(uri)
+        return listDocuments(null, null, page, limit);
+    }
+
+    public DifyListDocumentsResponse listDocuments(String datasetId, String datasetApiKey, int page, int limit) throws IOException, InterruptedException
+    {
+        URI uri = listDocumentsUri(datasetId, page, limit);
+        HttpRequest request = baseRequestBuilder(uri, datasetApiKey)
             .GET()
             .build();
         HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
@@ -142,16 +170,16 @@ public class DifyDatasetClient
         return req;
     }
 
-    private HttpRequest buildRequest(URI uri, Object body)
+    private HttpRequest buildRequest(URI uri, Object body, String datasetApiKey)
     {
         String json = JSON.toJSONString(body);
-        return baseRequestBuilder(uri)
+        return baseRequestBuilder(uri, datasetApiKey)
             .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
             .header("Content-Type", "application/json")
             .build();
     }
 
-    private HttpRequest.Builder baseRequestBuilder(URI uri)
+    private HttpRequest.Builder baseRequestBuilder(URI uri, String datasetApiKey)
     {
         HttpRequest.Builder builder = HttpRequest.newBuilder(uri);
         int requestTimeoutSeconds = props.getRequestTimeoutSeconds();
@@ -160,26 +188,26 @@ public class DifyDatasetClient
             builder.timeout(Duration.ofSeconds(requestTimeoutSeconds));
         }
 
-        String apiKey = requireDatasetApiKey();
+        String apiKey = requireDatasetApiKey(datasetApiKey);
         builder.header("Authorization", "Bearer " + apiKey);
         return builder;
     }
 
-    private URI createByTextUri()
+    private URI createByTextUri(String datasetId)
     {
         return UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
             .path("/datasets/")
-            .path(requireDatasetId())
+            .path(requireDatasetId(datasetId))
             .path("/document/create-by-text")
             .build(true)
             .toUri();
     }
 
-    private URI updateByTextUri(String documentId)
+    private URI updateByTextUri(String datasetId, String documentId)
     {
         return UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
             .path("/datasets/")
-            .path(requireDatasetId())
+            .path(requireDatasetId(datasetId))
             .path("/documents/")
             .path(documentId)
             .path("/update-by-text")
@@ -187,22 +215,22 @@ public class DifyDatasetClient
             .toUri();
     }
 
-    private URI deleteDocumentUri(String documentId)
+    private URI deleteDocumentUri(String datasetId, String documentId)
     {
         return UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
             .path("/datasets/")
-            .path(requireDatasetId())
+            .path(requireDatasetId(datasetId))
             .path("/documents/")
             .path(documentId)
             .build(true)
             .toUri();
     }
 
-    private URI listDocumentsUri(int page, int limit)
+    private URI listDocumentsUri(String datasetId, int page, int limit)
     {
         return UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
             .path("/datasets/")
-            .path(requireDatasetId())
+            .path(requireDatasetId(datasetId))
             .path("/documents")
             .queryParam("page", Math.max(page, 1))
             .queryParam("limit", Math.max(limit, 1))
@@ -220,19 +248,19 @@ public class DifyDatasetClient
         return baseUrl.trim();
     }
 
-    private String requireDatasetId()
+    private String requireDatasetId(String datasetId)
     {
-        String datasetId = props.getDatasetId();
-        if (!StringUtils.hasText(datasetId))
+        String resolvedDatasetId = StringUtils.hasText(datasetId) ? datasetId : props.getDatasetId();
+        if (!StringUtils.hasText(resolvedDatasetId))
         {
             throw new IllegalStateException("dify.dataset-id is blank");
         }
-        return datasetId.trim();
+        return resolvedDatasetId.trim();
     }
 
-    private String requireDatasetApiKey()
+    private String requireDatasetApiKey(String datasetApiKey)
     {
-        String apiKey = props.getDatasetApiKey();
+        String apiKey = StringUtils.hasText(datasetApiKey) ? datasetApiKey : props.getDatasetApiKey();
         if (!StringUtils.hasText(apiKey))
         {
             throw new IllegalStateException("dify.dataset-api-key is blank");

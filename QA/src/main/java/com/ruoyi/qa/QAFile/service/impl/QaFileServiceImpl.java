@@ -12,10 +12,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.ruoyi.common.config.RuoYiConfig;
+import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.file.FileUploadUtils;
 import com.ruoyi.common.utils.file.FileUtils;
 import com.ruoyi.qa.Dify.DifyDatasetClient;
+import com.ruoyi.qa.Dify.dto.DifyDocumentByTextRequest;
 import com.ruoyi.qa.Dify.dto.DifyDocumentUpsertResponse;
+import com.ruoyi.qa.KnowledgeBase.domain.QaKnowledgeBase;
+import com.ruoyi.qa.KnowledgeBase.mapper.QaKnowledgeBaseMapper;
 import com.ruoyi.qa.QAFile.domain.QaFile;
 import com.ruoyi.qa.QAFile.domain.enums.QaFileStatus;
 import com.ruoyi.qa.QAFile.mapper.QaFileMapper;
@@ -47,6 +51,9 @@ public class QaFileServiceImpl implements IQaFileService
 
     @Autowired
     private QaFileMapper qaFileMapper;
+
+    @Autowired
+    private QaKnowledgeBaseMapper qaKnowledgeBaseMapper;
 
     @Autowired
     private KgPythonClient kgPythonClient;
@@ -118,7 +125,7 @@ public class QaFileServiceImpl implements IQaFileService
                 if (id != null)
                 {
                     QaFile qaFile = qaFileMapper.selectQaFileById(id);
-                    syncDeleteToKg(id);
+                    syncDeleteToKg(qaFile);
                     syncDeleteToDify(qaFile);
                     deleteLocalFile(qaFile);
                 }
@@ -139,11 +146,34 @@ public class QaFileServiceImpl implements IQaFileService
         if (id != null)
         {
             QaFile qaFile = qaFileMapper.selectQaFileById(id);
-            syncDeleteToKg(id);
+            syncDeleteToKg(qaFile);
             syncDeleteToDify(qaFile);
             deleteLocalFile(qaFile);
         }
         return qaFileMapper.deleteQaFileById(id);
+    }
+
+    @Override
+    public int deleteQaFileByKnowledgeBaseIds(Long[] knowledgeBaseIds)
+    {
+        if (knowledgeBaseIds == null || knowledgeBaseIds.length == 0)
+        {
+            return 0;
+        }
+        List<QaFile> files = qaFileMapper.selectQaFileByKnowledgeBaseIds(knowledgeBaseIds);
+        int count = 0;
+        if (files == null)
+        {
+            return 0;
+        }
+        for (QaFile qaFile : files)
+        {
+            if (qaFile != null && qaFile.getId() != null)
+            {
+                count += deleteQaFileById(qaFile.getId());
+            }
+        }
+        return count;
     }
 
     @Override
@@ -154,7 +184,7 @@ public class QaFileServiceImpl implements IQaFileService
     }
 
     @Override
-    public QaFile uploadAndProcess(MultipartFile file, Long id)
+    public QaFile uploadAndProcess(MultipartFile file, Long id, Long knowledgeBaseId)
     {
         if (file == null || file.isEmpty())
         {
@@ -167,6 +197,24 @@ public class QaFileServiceImpl implements IQaFileService
         if (id != null && qaFile == null)
         {
             return null;
+        }
+
+        if (id == null)
+        {
+            if (knowledgeBaseId == null)
+            {
+                throw new ServiceException("请选择所属知识库");
+            }
+            QaKnowledgeBase knowledgeBase = qaKnowledgeBaseMapper.selectQaKnowledgeBaseById(knowledgeBaseId);
+            if (knowledgeBase == null)
+            {
+                throw new ServiceException("所属知识库不存在");
+            }
+            qaFile.setKnowledgeBaseId(knowledgeBaseId);
+        }
+        else if (knowledgeBaseId != null)
+        {
+            qaFile.setKnowledgeBaseId(knowledgeBaseId);
         }
 
         String oldPath = qaFile.getPath();
@@ -249,7 +297,8 @@ public class QaFileServiceImpl implements IQaFileService
         }
 
         if (qaFile.getStatus() != null && qaFile.getStatus() == QaFileStatus.KG_BUILD_FAILED.getCode()
-            && StringUtils.hasText(qaFile.getDifyDocumentId()))
+            && StringUtils.hasText(qaFile.getDifyDocumentId())
+            && shouldSyncApi(resolveKnowledgeBase(qaFile)))
         {
             syncUpsertToKg(qaFile);
             return qaFileMapper.selectQaFileById(id);
@@ -291,39 +340,53 @@ public class QaFileServiceImpl implements IQaFileService
             return;
         }
 
-        try
+        QaKnowledgeBase knowledgeBase = resolveKnowledgeBase(qaFile);
+        if (shouldSyncDify(knowledgeBase))
         {
-            DifyDocumentUpsertResponse resp;
-            if (StringUtils.hasText(qaFile.getDifyDocumentId()))
+            try
             {
-                resp = difyDatasetClient.updateDocumentByText(qaFile.getDifyDocumentId(), qaFile.getFileName(), qaFile.getFileContent());
-            }
-            else
-            {
-                resp = difyDatasetClient.createDocumentByText(qaFile.getFileName(), qaFile.getFileContent());
-            }
+                DifyDocumentUpsertResponse resp;
+                DifyDocumentByTextRequest difyRequest = buildDifyRequest(knowledgeBase, qaFile);
+                if (StringUtils.hasText(qaFile.getDifyDocumentId()))
+                {
+                    resp = difyDatasetClient.updateDocumentByText(
+                        knowledgeBase == null ? null : knowledgeBase.getDifyDatasetId(),
+                        knowledgeBase == null ? null : knowledgeBase.getDifyDatasetApiKey(),
+                        qaFile.getDifyDocumentId(),
+                        difyRequest
+                    );
+                }
+                else
+                {
+                    resp = difyDatasetClient.createDocumentByText(
+                        knowledgeBase == null ? null : knowledgeBase.getDifyDatasetId(),
+                        knowledgeBase == null ? null : knowledgeBase.getDifyDatasetApiKey(),
+                        difyRequest
+                    );
+                }
 
-            String docId = resp == null || resp.getDocument() == null ? null : resp.getDocument().getId();
-            if (!StringUtils.hasText(docId))
+                String docId = resp == null || resp.getDocument() == null ? null : resp.getDocument().getId();
+                if (!StringUtils.hasText(docId))
+                {
+                    log.warn("Dify upsert returned empty document id (qaFileId={}): {}", qaFile.getId(), resp == null ? null : resp.getBatch());
+                    updateStatus(qaFile.getId(), (short) QaFileStatus.DIFY_UPLOAD_FAILED.getCode());
+                    return;
+                }
+                if (StringUtils.hasText(docId) && !docId.equals(qaFile.getDifyDocumentId()))
+                {
+                    QaFile patch = new QaFile();
+                    patch.setId(qaFile.getId());
+                    patch.setDifyDocumentId(docId);
+                    qaFileMapper.updateQaFile(patch);
+                    qaFile.setDifyDocumentId(docId);
+                }
+            }
+            catch (Exception e)
             {
-                log.warn("Dify upsert returned empty document id (qaFileId={}): {}", qaFile.getId(), resp == null ? null : resp.getBatch());
+                log.warn("Dify upsert exception (qaFileId={}): {}", qaFile.getId(), e.getMessage());
                 updateStatus(qaFile.getId(), (short) QaFileStatus.DIFY_UPLOAD_FAILED.getCode());
                 return;
             }
-            if (StringUtils.hasText(docId) && !docId.equals(qaFile.getDifyDocumentId()))
-            {
-                QaFile patch = new QaFile();
-                patch.setId(qaFile.getId());
-                patch.setDifyDocumentId(docId);
-                qaFileMapper.updateQaFile(patch);
-                qaFile.setDifyDocumentId(docId);
-            }
-        }
-        catch (Exception e)
-        {
-            log.warn("Dify upsert exception (qaFileId={}): {}", qaFile.getId(), e.getMessage());
-            updateStatus(qaFile.getId(), (short) QaFileStatus.DIFY_UPLOAD_FAILED.getCode());
-            return;
         }
 
         syncUpsertToKg(qaFile);
@@ -334,6 +397,12 @@ public class QaFileServiceImpl implements IQaFileService
         if (qaFile == null || qaFile.getId() == null)
         {
             return false;
+        }
+        QaKnowledgeBase knowledgeBase = resolveKnowledgeBase(qaFile);
+        if (!shouldSyncApi(knowledgeBase))
+        {
+            updateStatus(qaFile.getId(), (short) QaFileStatus.NORMAL.getCode());
+            return true;
         }
         try
         {
@@ -346,7 +415,17 @@ public class QaFileServiceImpl implements IQaFileService
             {
                 metadata.put("file_size", qaFile.getFileSize());
             }
+            if (qaFile.getKnowledgeBaseId() != null)
+            {
+                metadata.put("knowledge_base_id", qaFile.getKnowledgeBaseId());
+            }
+            if (StringUtils.hasText(qaFile.getKnowledgeBaseName()))
+            {
+                metadata.put("knowledge_base_name", qaFile.getKnowledgeBaseName());
+            }
             KgOkResponse resp = kgPythonClient.upsert(
+                knowledgeBase == null ? null : knowledgeBase.getApiBaseUrl(),
+                knowledgeBase == null ? null : knowledgeBase.getApiAuthToken(),
                 kgPythonClient.toUpsertRequest(
                     String.valueOf(qaFile.getId()),
                     qaFile.getFileName(),
@@ -380,9 +459,18 @@ public class QaFileServiceImpl implements IQaFileService
         {
             return;
         }
+        QaKnowledgeBase knowledgeBase = resolveKnowledgeBase(qaFile);
+        if (!shouldSyncDify(knowledgeBase))
+        {
+            return;
+        }
         try
         {
-            difyDatasetClient.deleteDocument(qaFile.getDifyDocumentId());
+            difyDatasetClient.deleteDocument(
+                knowledgeBase == null ? null : knowledgeBase.getDifyDatasetId(),
+                knowledgeBase == null ? null : knowledgeBase.getDifyDatasetApiKey(),
+                qaFile.getDifyDocumentId()
+            );
         }
         catch (Exception e)
         {
@@ -390,19 +478,32 @@ public class QaFileServiceImpl implements IQaFileService
         }
     }
 
-    private void syncDeleteToKg(Long id)
+    private void syncDeleteToKg(QaFile qaFile)
     {
+        if (qaFile == null || qaFile.getId() == null)
+        {
+            return;
+        }
+        QaKnowledgeBase knowledgeBase = resolveKnowledgeBase(qaFile);
+        if (!shouldSyncApi(knowledgeBase))
+        {
+            return;
+        }
         try
         {
-            KgOkResponse resp = kgPythonClient.delete(String.valueOf(id));
+            KgOkResponse resp = kgPythonClient.delete(
+                knowledgeBase == null ? null : knowledgeBase.getApiBaseUrl(),
+                knowledgeBase == null ? null : knowledgeBase.getApiAuthToken(),
+                String.valueOf(qaFile.getId())
+            );
             if (resp == null || !Boolean.TRUE.equals(resp.getOk()))
             {
-                log.warn("KG delete returned not ok (id={})", id);
+                log.warn("KG delete returned not ok (id={})", qaFile.getId());
             }
         }
         catch (Exception e)
         {
-            log.warn("KG delete exception (id={}): {}", id, e.getMessage());
+            log.warn("KG delete exception (id={}): {}", qaFile.getId(), e.getMessage());
         }
     }
 
@@ -490,6 +591,76 @@ public class QaFileServiceImpl implements IQaFileService
         }
         String localPath = RuoYiConfig.getProfile() + FileUtils.stripPrefix(resourcePath);
         return Paths.get(localPath);
+    }
+
+    private QaKnowledgeBase resolveKnowledgeBase(QaFile qaFile)
+    {
+        if (qaFile == null || qaFile.getKnowledgeBaseId() == null)
+        {
+            return null;
+        }
+        return qaKnowledgeBaseMapper.selectQaKnowledgeBaseById(qaFile.getKnowledgeBaseId());
+    }
+
+    private boolean shouldSyncDify(QaKnowledgeBase knowledgeBase)
+    {
+        return knowledgeBase == null || Boolean.TRUE.equals(knowledgeBase.getDifyEnabled());
+    }
+
+    private boolean shouldSyncApi(QaKnowledgeBase knowledgeBase)
+    {
+        return knowledgeBase == null || Boolean.TRUE.equals(knowledgeBase.getApiEnabled());
+    }
+
+    private DifyDocumentByTextRequest buildDifyRequest(QaKnowledgeBase knowledgeBase, QaFile qaFile)
+    {
+        DifyDocumentByTextRequest req = new DifyDocumentByTextRequest();
+        req.setName(qaFile.getFileName());
+        req.setText(qaFile.getFileContent());
+
+        if (knowledgeBase == null)
+        {
+            req.setIndexingTechnique("high_quality");
+            req.setDocForm("qa_model");
+            req.setDocLanguage("Chinese Simplified");
+            return req;
+        }
+
+        req.setIndexingTechnique(StringUtils.hasText(knowledgeBase.getDifyIndexingTechnique()) ? knowledgeBase.getDifyIndexingTechnique() : "high_quality");
+        req.setDocForm(StringUtils.hasText(knowledgeBase.getDifyDocForm()) ? knowledgeBase.getDifyDocForm() : "qa_model");
+        req.setDocLanguage(StringUtils.hasText(knowledgeBase.getDifyDocLanguage()) ? knowledgeBase.getDifyDocLanguage() : "Chinese Simplified");
+
+        String processMode = StringUtils.hasText(knowledgeBase.getDifyProcessRuleMode()) ? knowledgeBase.getDifyProcessRuleMode() : "custom";
+        DifyDocumentByTextRequest.ProcessRule processRule = new DifyDocumentByTextRequest.ProcessRule();
+        processRule.setMode(processMode);
+
+        if ("custom".equals(processMode))
+        {
+            DifyDocumentByTextRequest.Rules rules = new DifyDocumentByTextRequest.Rules();
+            rules.setPreProcessingRules(buildPreProcessingRules(knowledgeBase));
+
+            DifyDocumentByTextRequest.Segmentation segmentation = new DifyDocumentByTextRequest.Segmentation();
+            segmentation.setSeparator(knowledgeBase.getDifyRuleSeparator() == null ? "\n\n" : knowledgeBase.getDifyRuleSeparator());
+            segmentation.setMaxTokens(knowledgeBase.getDifyRuleMaxTokens() == null ? 500 : knowledgeBase.getDifyRuleMaxTokens());
+            segmentation.setChunkOverlap(knowledgeBase.getDifyRuleChunkOverlap() == null ? 50 : knowledgeBase.getDifyRuleChunkOverlap());
+            rules.setSegmentation(segmentation);
+            processRule.setRules(rules);
+        }
+
+        req.setProcessRule(processRule);
+        return req;
+    }
+
+    private DifyDocumentByTextRequest.PreProcessingRuleItem[] buildPreProcessingRules(QaKnowledgeBase knowledgeBase)
+    {
+        DifyDocumentByTextRequest.PreProcessingRuleItem removeExtraSpaces = new DifyDocumentByTextRequest.PreProcessingRuleItem();
+        removeExtraSpaces.setId("remove_extra_spaces");
+        removeExtraSpaces.setEnabled(Boolean.TRUE.equals(knowledgeBase.getDifyRemoveExtraSpaces()));
+
+        DifyDocumentByTextRequest.PreProcessingRuleItem removeUrlsEmails = new DifyDocumentByTextRequest.PreProcessingRuleItem();
+        removeUrlsEmails.setId("remove_urls_emails");
+        removeUrlsEmails.setEnabled(Boolean.TRUE.equals(knowledgeBase.getDifyRemoveUrlsEmails()));
+        return new DifyDocumentByTextRequest.PreProcessingRuleItem[] { removeExtraSpaces, removeUrlsEmails };
     }
 
     private void deleteLocalFile(QaFile qaFile)

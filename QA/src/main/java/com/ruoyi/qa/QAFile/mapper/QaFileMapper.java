@@ -28,6 +28,8 @@ public interface QaFileMapper
      */
     public List<QaFile> selectQaFileList(QaFile qaFile);
 
+    public List<QaFile> selectQaFileByKnowledgeBaseIds(Long[] knowledgeBaseIds);
+
     /**
      * 新增QA文件管理
      *

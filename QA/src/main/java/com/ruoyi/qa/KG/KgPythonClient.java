@@ -32,12 +32,17 @@ public class KgPythonClient
 
     public KgOkResponse upsert(KgUpsertRequest req)
     {
-        URI uri = UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
+        return upsert(null, null, req);
+    }
+
+    public KgOkResponse upsert(String baseUrl, String token, KgUpsertRequest req)
+    {
+        URI uri = UriComponentsBuilder.fromHttpUrl(requireBaseUrl(baseUrl))
             .path("/files/upsert")
             .build(true)
             .toUri();
 
-        HttpHeaders headers = buildHeaders();
+        HttpHeaders headers = buildHeaders(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<KgUpsertRequest> entity = new HttpEntity<>(req, headers);
@@ -55,12 +60,17 @@ public class KgPythonClient
 
     public KgOkResponse delete(String fileId)
     {
-        URI uri = UriComponentsBuilder.fromHttpUrl(requireBaseUrl())
+        return delete(null, null, fileId);
+    }
+
+    public KgOkResponse delete(String baseUrl, String token, String fileId)
+    {
+        URI uri = UriComponentsBuilder.fromHttpUrl(requireBaseUrl(baseUrl))
             .path("/files/{fileId}")
             .buildAndExpand(fileId)
             .toUri();
 
-        HttpHeaders headers = buildHeaders();
+        HttpHeaders headers = buildHeaders(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         try
         {
@@ -84,24 +94,25 @@ public class KgPythonClient
         return req;
     }
 
-    private HttpHeaders buildHeaders()
+    private HttpHeaders buildHeaders(String token)
     {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
-        if (StringUtils.hasText(props.getToken()))
+        String resolvedToken = StringUtils.hasText(token) ? token : props.getToken();
+        if (StringUtils.hasText(resolvedToken))
         {
-            headers.setBearerAuth(props.getToken().trim());
+            headers.setBearerAuth(resolvedToken.trim());
         }
         return headers;
     }
 
-    private String requireBaseUrl()
+    private String requireBaseUrl(String baseUrl)
     {
-        String baseUrl = props.getBaseUrl();
-        if (!StringUtils.hasText(baseUrl))
+        String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : props.getBaseUrl();
+        if (!StringUtils.hasText(resolvedBaseUrl))
         {
             throw new IllegalStateException("kg.python.base-url is blank");
         }
-        return baseUrl.trim();
+        return resolvedBaseUrl.trim();
     }
 }

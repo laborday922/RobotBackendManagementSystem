@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qa.KnowledgeBase.mapper.QaKnowledgeBaseMapper">
+
+    <resultMap type="QaKnowledgeBase" id="QaKnowledgeBaseResult">
+        <result property="id" column="id"/>
+        <result property="kbName" column="kb_name"/>
+        <result property="kbDesc" column="kb_desc"/>
+        <result property="difyEnabled" column="dify_enabled"/>
+        <result property="difyDatasetId" column="dify_dataset_id"/>
+        <result property="difyDatasetApiKey" column="dify_dataset_api_key"/>
+        <result property="difyIndexingTechnique" column="dify_indexing_technique"/>
+        <result property="difyDocForm" column="dify_doc_form"/>
+        <result property="difyDocLanguage" column="dify_doc_language"/>
+        <result property="difyProcessRuleMode" column="dify_process_rule_mode"/>
+        <result property="difyRuleSeparator" column="dify_rule_separator"/>
+        <result property="difyRuleMaxTokens" column="dify_rule_max_tokens"/>
+        <result property="difyRuleChunkOverlap" column="dify_rule_chunk_overlap"/>
+        <result property="difyRemoveExtraSpaces" column="dify_remove_extra_spaces"/>
+        <result property="difyRemoveUrlsEmails" column="dify_remove_urls_emails"/>
+        <result property="apiEnabled" column="api_enabled"/>
+        <result property="apiBaseUrl" column="api_base_url"/>
+        <result property="apiAuthToken" column="api_auth_token"/>
+        <result property="fileCount" column="file_count"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectQaKnowledgeBaseVo">
+        select kb.id,
+               kb.kb_name,
+               kb.kb_desc,
+               kb.dify_enabled,
+               kb.dify_dataset_id,
+               kb.dify_dataset_api_key,
+               kb.dify_indexing_technique,
+               kb.dify_doc_form,
+               kb.dify_doc_language,
+               kb.dify_process_rule_mode,
+               kb.dify_rule_separator,
+               kb.dify_rule_max_tokens,
+               kb.dify_rule_chunk_overlap,
+               kb.dify_remove_extra_spaces,
+               kb.dify_remove_urls_emails,
+               kb.api_enabled,
+               kb.api_base_url,
+               kb.api_auth_token,
+               ifnull(f.file_count, 0) as file_count,
+               kb.create_by,
+               kb.create_time,
+               kb.update_by,
+               kb.update_time
+        from qa_knowledge_base kb
+        left join (
+            select knowledge_base_id, count(1) as file_count
+            from qa_file
+            where knowledge_base_id is not null
+            group by knowledge_base_id
+        ) f on kb.id = f.knowledge_base_id
+    </sql>
+
+    <select id="selectQaKnowledgeBaseById" parameterType="Long" resultMap="QaKnowledgeBaseResult">
+        <include refid="selectQaKnowledgeBaseVo"/>
+        where kb.id = #{id}
+    </select>
+
+    <select id="selectQaKnowledgeBaseByName" parameterType="String" resultMap="QaKnowledgeBaseResult">
+        <include refid="selectQaKnowledgeBaseVo"/>
+        where kb.kb_name = #{kbName}
+        limit 1
+    </select>
+
+    <select id="selectQaKnowledgeBaseList" parameterType="QaKnowledgeBase" resultMap="QaKnowledgeBaseResult">
+        <include refid="selectQaKnowledgeBaseVo"/>
+        <where>
+            <if test="kbName != null and kbName != ''">and kb.kb_name like concat('%', #{kbName}, '%')</if>
+        </where>
+        order by kb.id desc
+    </select>
+
+    <select id="selectQaKnowledgeBaseOptions" resultMap="QaKnowledgeBaseResult">
+        select id, kb_name
+        from qa_knowledge_base
+        order by id desc
+    </select>
+
+    <insert id="insertQaKnowledgeBase" parameterType="QaKnowledgeBase" useGeneratedKeys="true" keyProperty="id">
+        insert into qa_knowledge_base
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="kbName != null and kbName != ''">kb_name,</if>
+            <if test="kbDesc != null">kb_desc,</if>
+            <if test="difyEnabled != null">dify_enabled,</if>
+            <if test="difyDatasetId != null and difyDatasetId != ''">dify_dataset_id,</if>
+            <if test="difyDatasetApiKey != null and difyDatasetApiKey != ''">dify_dataset_api_key,</if>
+            <if test="difyIndexingTechnique != null and difyIndexingTechnique != ''">dify_indexing_technique,</if>
+            <if test="difyDocForm != null and difyDocForm != ''">dify_doc_form,</if>
+            <if test="difyDocLanguage != null and difyDocLanguage != ''">dify_doc_language,</if>
+            <if test="difyProcessRuleMode != null and difyProcessRuleMode != ''">dify_process_rule_mode,</if>
+            <if test="difyRuleSeparator != null">dify_rule_separator,</if>
+            <if test="difyRuleMaxTokens != null">dify_rule_max_tokens,</if>
+            <if test="difyRuleChunkOverlap != null">dify_rule_chunk_overlap,</if>
+            <if test="difyRemoveExtraSpaces != null">dify_remove_extra_spaces,</if>
+            <if test="difyRemoveUrlsEmails != null">dify_remove_urls_emails,</if>
+            <if test="apiEnabled != null">api_enabled,</if>
+            <if test="apiBaseUrl != null and apiBaseUrl != ''">api_base_url,</if>
+            <if test="apiAuthToken != null and apiAuthToken != ''">api_auth_token,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="kbName != null and kbName != ''">#{kbName},</if>
+            <if test="kbDesc != null">#{kbDesc},</if>
+            <if test="difyEnabled != null">#{difyEnabled},</if>
+            <if test="difyDatasetId != null and difyDatasetId != ''">#{difyDatasetId},</if>
+            <if test="difyDatasetApiKey != null and difyDatasetApiKey != ''">#{difyDatasetApiKey},</if>
+            <if test="difyIndexingTechnique != null and difyIndexingTechnique != ''">#{difyIndexingTechnique},</if>
+            <if test="difyDocForm != null and difyDocForm != ''">#{difyDocForm},</if>
+            <if test="difyDocLanguage != null and difyDocLanguage != ''">#{difyDocLanguage},</if>
+            <if test="difyProcessRuleMode != null and difyProcessRuleMode != ''">#{difyProcessRuleMode},</if>
+            <if test="difyRuleSeparator != null">#{difyRuleSeparator},</if>
+            <if test="difyRuleMaxTokens != null">#{difyRuleMaxTokens},</if>
+            <if test="difyRuleChunkOverlap != null">#{difyRuleChunkOverlap},</if>
+            <if test="difyRemoveExtraSpaces != null">#{difyRemoveExtraSpaces},</if>
+            <if test="difyRemoveUrlsEmails != null">#{difyRemoveUrlsEmails},</if>
+            <if test="apiEnabled != null">#{apiEnabled},</if>
+            <if test="apiBaseUrl != null and apiBaseUrl != ''">#{apiBaseUrl},</if>
+            <if test="apiAuthToken != null and apiAuthToken != ''">#{apiAuthToken},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateQaKnowledgeBase" parameterType="QaKnowledgeBase">
+        update qa_knowledge_base
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="kbName != null and kbName != ''">kb_name = #{kbName},</if>
+            <if test="kbDesc != null">kb_desc = #{kbDesc},</if>
+            <if test="difyEnabled != null">dify_enabled = #{difyEnabled},</if>
+            <if test="difyDatasetId != null and difyDatasetId != ''">dify_dataset_id = #{difyDatasetId},</if>
+            <if test="difyDatasetApiKey != null and difyDatasetApiKey != ''">dify_dataset_api_key = #{difyDatasetApiKey},</if>
+            <if test="difyIndexingTechnique != null and difyIndexingTechnique != ''">dify_indexing_technique = #{difyIndexingTechnique},</if>
+            <if test="difyDocForm != null and difyDocForm != ''">dify_doc_form = #{difyDocForm},</if>
+            <if test="difyDocLanguage != null and difyDocLanguage != ''">dify_doc_language = #{difyDocLanguage},</if>
+            <if test="difyProcessRuleMode != null and difyProcessRuleMode != ''">dify_process_rule_mode = #{difyProcessRuleMode},</if>
+            <if test="difyRuleSeparator != null">dify_rule_separator = #{difyRuleSeparator},</if>
+            <if test="difyRuleMaxTokens != null">dify_rule_max_tokens = #{difyRuleMaxTokens},</if>
+            <if test="difyRuleChunkOverlap != null">dify_rule_chunk_overlap = #{difyRuleChunkOverlap},</if>
+            <if test="difyRemoveExtraSpaces != null">dify_remove_extra_spaces = #{difyRemoveExtraSpaces},</if>
+            <if test="difyRemoveUrlsEmails != null">dify_remove_urls_emails = #{difyRemoveUrlsEmails},</if>
+            <if test="apiEnabled != null">api_enabled = #{apiEnabled},</if>
+            <if test="apiBaseUrl != null and apiBaseUrl != ''">api_base_url = #{apiBaseUrl},</if>
+            <if test="apiAuthToken != null and apiAuthToken != ''">api_auth_token = #{apiAuthToken},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteQaKnowledgeBaseByIds" parameterType="Long">
+        delete from qa_knowledge_base where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

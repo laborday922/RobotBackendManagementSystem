@@ -1,6 +1,7 @@
 package com.ruoyi.qa.Chat.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.service.ISysPointService;
 import com.ruoyi.qa.Dify.DifyChatClient;
@@ -8,6 +9,9 @@ import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateResponse;
+import com.ruoyi.qa.Chat.translate.ChatTranslationProperties;
+import com.ruoyi.qa.Chat.translate.ChatTranslationService;
+import com.ruoyi.qa.Chat.translate.ChatTranslationService.TranslationPreparation;
 import com.ruoyi.qa.ChatManage.domain.QaChat;
 import com.ruoyi.qa.ChatManage.service.IQaRobotChatRelService;
 import com.ruoyi.qa.Chat.service.ChatService;
@@ -19,9 +23,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,14 +45,19 @@ public class ChatServiceImpl implements ChatService
     private final ISysPointService sysPointService;
     private final RobotInvoker robotInvoker;
     private final IQaRobotChatRelService qaRobotChatRelService;
+    private final ChatTranslationService chatTranslationService;
+    private final ChatTranslationProperties chatTranslationProperties;
 
     public ChatServiceImpl(DifyChatClient difyChatClient, ISysPointService sysPointService, RobotInvoker robotInvoker,
-        IQaRobotChatRelService qaRobotChatRelService)
+        IQaRobotChatRelService qaRobotChatRelService, ChatTranslationService chatTranslationService,
+        ChatTranslationProperties chatTranslationProperties)
     {
         this.difyChatClient = difyChatClient;
         this.sysPointService = sysPointService;
         this.robotInvoker = robotInvoker;
         this.qaRobotChatRelService = qaRobotChatRelService;
+        this.chatTranslationService = chatTranslationService;
+        this.chatTranslationProperties = chatTranslationProperties;
     }
 
     @Override
@@ -85,10 +98,11 @@ public class ChatServiceImpl implements ChatService
         inputs.put("chat_id", qaChat.getId());
         inputs.put("chat_name", qaChat.getChatName());
 
+        TranslationPreparation translationPreparation = chatTranslationService.prepareQuery(request.getQuery());
         DifyChatMessagesRequest difyReq = new DifyChatMessagesRequest();
         difyReq.setInputs(inputs);
         difyReq.setFiles(Collections.emptyList());
-        difyReq.setQuery(request.getQuery());
+        difyReq.setQuery(translationPreparation.getChineseQuery());
         difyReq.setResponseMode("streaming");
         difyReq.setConversationId(StringUtils.hasText(request.getConversationId()) ? request.getConversationId() : "");
         difyReq.setUser(request.getRobotId());
@@ -101,10 +115,25 @@ public class ChatServiceImpl implements ChatService
             qaChat.getId(),
             request.getConversationId(),
             request.getQuery() == null ? 0 : request.getQuery().length());
+        log.info("Robot chat translation: configured={}, sourceLanguage={}, sourceLanguageCode={}, answerTranslationRequired={}",
+            chatTranslationService.isConfigured(),
+            translationPreparation.getSourceLanguage(),
+            translationPreparation.getSourceLanguageCode(),
+            translationPreparation.isAnswerTranslationRequired());
 
         try
         {
-            difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getDifyApiKey(), outputStream);
+            if (translationPreparation.isAnswerTranslationRequired())
+            {
+                try (InputStream upstream = difyChatClient.openChatMessagesStreaming(difyReq, qaChat.getDifyApiKey()))
+                {
+                    relayTranslatedSse(upstream, outputStream, translationPreparation);
+                }
+            }
+            else
+            {
+                difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getDifyApiKey(), outputStream);
+            }
         }
         catch (InterruptedException e)
         {
@@ -115,6 +144,108 @@ public class ChatServiceImpl implements ChatService
         {
             writeSseError(outputStream, e.getMessage());
         }
+    }
+
+    private void relayTranslatedSse(InputStream upstream, OutputStream downstream, TranslationPreparation preparation)
+        throws IOException
+    {
+        AnswerStreamTranslator translator = new AnswerStreamTranslator(chatTranslationService, chatTranslationProperties, preparation);
+        List<String> eventLines = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(upstream, StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.isEmpty())
+                {
+                    handleSseEvent(eventLines, downstream, translator);
+                    eventLines.clear();
+                    continue;
+                }
+                eventLines.add(line);
+            }
+        }
+
+        if (!eventLines.isEmpty())
+        {
+            handleSseEvent(eventLines, downstream, translator);
+        }
+        translator.flushRemaining(downstream, null);
+    }
+
+    private void handleSseEvent(List<String> eventLines, OutputStream downstream, AnswerStreamTranslator translator)
+        throws IOException
+    {
+        if (eventLines == null || eventLines.isEmpty())
+        {
+            return;
+        }
+
+        StringBuilder dataBuilder = new StringBuilder();
+        for (String line : eventLines)
+        {
+            if (!line.startsWith("data:"))
+            {
+                continue;
+            }
+            String value = line.substring(5).trim();
+            if (dataBuilder.length() > 0)
+            {
+                dataBuilder.append('\n');
+            }
+            dataBuilder.append(value);
+        }
+
+        if (dataBuilder.length() == 0)
+        {
+            forwardRawSse(eventLines, downstream);
+            return;
+        }
+
+        String rawData = dataBuilder.toString();
+        if ("[DONE]".equals(rawData))
+        {
+            translator.flushRemaining(downstream, null);
+            forwardRawSse(eventLines, downstream);
+            return;
+        }
+
+        JSONObject data;
+        try
+        {
+            data = JSON.parseObject(rawData);
+        }
+        catch (Exception e)
+        {
+            forwardRawSse(eventLines, downstream);
+            return;
+        }
+
+        String answer = data.getString("answer");
+        if (answer != null)
+        {
+            translator.accept(data, answer, downstream);
+            return;
+        }
+
+        String eventName = data.getString("event");
+        if ("message_end".equals(eventName) || "error".equals(eventName))
+        {
+            translator.flushRemaining(downstream, data);
+        }
+        forwardRawSse(eventLines, downstream);
+    }
+
+    private void forwardRawSse(List<String> eventLines, OutputStream downstream) throws IOException
+    {
+        for (String line : eventLines)
+        {
+            downstream.write(line.getBytes(StandardCharsets.UTF_8));
+            downstream.write('\n');
+        }
+        downstream.write('\n');
+        downstream.flush();
     }
 
     @Override
@@ -226,6 +357,115 @@ public class ChatServiceImpl implements ChatService
         catch (NumberFormatException e)
         {
             return null;
+        }
+    }
+
+    private static class AnswerStreamTranslator
+    {
+        private final ChatTranslationService translationService;
+        private final TranslationPreparation preparation;
+        private final int streamFlushThreshold;
+        private final StringBuilder pendingChinese = new StringBuilder();
+        private JSONObject lastAnswerEvent;
+
+        private AnswerStreamTranslator(ChatTranslationService translationService,
+            ChatTranslationProperties translationProperties, TranslationPreparation preparation)
+        {
+            this.translationService = translationService;
+            this.preparation = preparation;
+            this.streamFlushThreshold = translationProperties.getStreamFlushThreshold() > 0
+                ? translationProperties.getStreamFlushThreshold()
+                : 80;
+        }
+
+        private void accept(JSONObject answerEvent, String answerChunk, OutputStream downstream) throws IOException
+        {
+            this.lastAnswerEvent = answerEvent;
+            if (answerChunk == null)
+            {
+                return;
+            }
+            pendingChinese.append(answerChunk);
+            flushCompletedSegments(downstream, answerEvent, false);
+        }
+
+        private void flushRemaining(OutputStream downstream, JSONObject answerEvent) throws IOException
+        {
+            if (answerEvent != null)
+            {
+                this.lastAnswerEvent = answerEvent;
+            }
+            flushCompletedSegments(downstream, this.lastAnswerEvent, true);
+        }
+
+        private void flushCompletedSegments(OutputStream downstream, JSONObject answerEvent, boolean flushAll)
+            throws IOException
+        {
+            while (true)
+            {
+                String segment = extractNextSegment(flushAll);
+                if (segment == null)
+                {
+                    return;
+                }
+                String translated = translationService.translateAssistantText(segment,
+                    preparation.getSourceLanguage(), preparation.getSourceLanguageCode());
+                if (translated == null)
+                {
+                    translated = segment;
+                }
+                emitAnswerEvent(answerEvent, translated, downstream);
+            }
+        }
+
+        private String extractNextSegment(boolean flushAll)
+        {
+            if (pendingChinese.length() == 0)
+            {
+                return null;
+            }
+
+            int boundary = firstBoundaryIndex(pendingChinese);
+            if (boundary < 0)
+            {
+                if (!flushAll && pendingChinese.length() < streamFlushThreshold)
+                {
+                    return null;
+                }
+                boundary = pendingChinese.length();
+            }
+
+            String segment = pendingChinese.substring(0, boundary);
+            pendingChinese.delete(0, boundary);
+            return segment;
+        }
+
+        private int firstBoundaryIndex(CharSequence text)
+        {
+            for (int i = 0; i < text.length(); i++)
+            {
+                char ch = text.charAt(i);
+                if (ch == '\n' || ch == '。' || ch == '！' || ch == '？' || ch == '；'
+                    || ch == '!' || ch == '?' || ch == ';')
+                {
+                    return i + 1;
+                }
+            }
+            return -1;
+        }
+
+        private void emitAnswerEvent(JSONObject answerEvent, String translatedAnswer, OutputStream downstream)
+            throws IOException
+        {
+            JSONObject payload = new JSONObject();
+            if (answerEvent != null)
+            {
+                payload.putAll(answerEvent);
+            }
+            payload.put("answer", translatedAnswer);
+            String sse = "data: " + payload.toJSONString() + "\n\n";
+            downstream.write(sse.getBytes(StandardCharsets.UTF_8));
+            downstream.flush();
         }
     }
 }

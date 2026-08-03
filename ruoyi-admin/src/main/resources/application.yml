@@ -179,3 +179,14 @@ dify:
   dataset-api-key: "dataset-8KxfPzicN2K0epRTSNkVZ1Ww"
   connect-timeout-seconds: 10
   request-timeout-seconds: 300
+
+qa:
+  chat:
+    translation:
+      enabled: true
+      base-url: ${QA_CHAT_TRANSLATION_BASE_URL:https://api.siliconflow.cn/v1}
+      api-key: ${QA_CHAT_TRANSLATION_API_KEY:sk-sgisogtvczvranturblgmfnnmzpwflmzpeaakbhyolrejhbd}
+      model: ${QA_CHAT_TRANSLATION_MODEL:Qwen/Qwen2.5-14B-Instruct}
+      connect-timeout-seconds: 10
+      request-timeout-seconds: 60
+      stream-flush-threshold: 80

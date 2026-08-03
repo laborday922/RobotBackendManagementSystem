@@ -55,6 +55,26 @@ public class DifyChatClient
 
     public void postChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey, OutputStream downstream) throws IOException, InterruptedException
     {
+        try (InputStream upstream = openChatMessagesStreaming(body, apiKey))
+        {
+            byte[] buf = new byte[8192];
+            int n;
+            boolean loggedFirstChunk = false;
+            while ((n = upstream.read(buf)) != -1)
+            {
+                if (!loggedFirstChunk && n > 0)
+                {
+                    loggedFirstChunk = true;
+                    log.info("Dify streaming first chunk received: bytes={}", n);
+                }
+                downstream.write(buf, 0, n);
+                downstream.flush();
+            }
+        }
+    }
+
+    public InputStream openChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey) throws IOException, InterruptedException
+    {
         URI uri = chatMessagesUri();
         log.info("Dify streaming request: uri={}, user={}, conversationId={}, queryLen={}",
             uri,
@@ -76,23 +96,7 @@ public class DifyChatClient
             log.warn("Dify /chat-messages streaming failed (status={}): {}", resp.statusCode(), trimForLog(err));
             throw new IOException("Dify /chat-messages streaming failed (status=" + resp.statusCode() + "): " + trimForLog(err));
         }
-
-        try (InputStream upstream = resp.body())
-        {
-            byte[] buf = new byte[8192];
-            int n;
-            boolean loggedFirstChunk = false;
-            while ((n = upstream.read(buf)) != -1)
-            {
-                if (!loggedFirstChunk && n > 0)
-                {
-                    loggedFirstChunk = true;
-                    log.info("Dify streaming first chunk received: bytes={}", n);
-                }
-                downstream.write(buf, 0, n);
-                downstream.flush();
-            }
-        }
+        return resp.body();
     }
 
     private HttpRequest buildRequest(URI uri, DifyChatMessagesRequest body, String apiKey)

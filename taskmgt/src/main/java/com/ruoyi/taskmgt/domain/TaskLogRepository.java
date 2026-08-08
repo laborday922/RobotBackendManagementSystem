@@ -135,4 +135,18 @@ public class TaskLogRepository {
                 .findFirst()
                 .map(po -> build(po, Optional.empty()));
     }
+
+    /**
+     * 根据 interactionId 查询该次任务执行的所有日志（按创建时间升序）
+     */
+    public List<TaskLog> findByInteractionId(String interactionId) {
+        Assert.hasText(interactionId, "TaskLogRepository.findByInteractionId: interactionId is null or empty");
+        Specification<TaskLogPo> spec = (root, query, cb) -> {
+            query.orderBy(cb.asc(root.get("createTime")));
+            return cb.equal(root.get("interactionId"), interactionId);
+        };
+        return taskLogPoMapper.findAll(spec).stream()
+                .map(po -> build(po, Optional.empty()))
+                .collect(Collectors.toList());
+    }
 }

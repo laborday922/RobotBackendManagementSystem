@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询交互历史记录列表
 export function listIntHistory(query) {
   return request({
-    url: '/app/intHistory/list',
+    url: '/taskmgt/intHistory/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listIntHistory(query) {
 // 查询交互历史记录详细
 export function getIntHistory(id) {
   return request({
-    url: '/app/intHistory/' + id,
+    url: '/taskmgt/intHistory/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getIntHistory(id) {
 // 新增交互历史记录
 export function addIntHistory(data) {
   return request({
-    url: '/app/intHistory',
+    url: '/taskmgt/intHistory',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addIntHistory(data) {
 // 修改交互历史记录
 export function updateIntHistory(data) {
   return request({
-    url: '/app/intHistory',
+    url: '/taskmgt/intHistory',
     method: 'put',
     data: data
   })
@@ -38,14 +38,14 @@ export function updateIntHistory(data) {
 // 删除交互历史记录
 export function delIntHistory(id) {
   return request({
-    url: '/app/intHistory/' + id,
+    url: '/taskmgt/intHistory/' + id,
     method: 'delete'
   })
 }
 // 查询交互历史记录汇总
 export function getSumOfIntHistory() {
   return request({
-    url: '/app/intHistory/list/sumof' ,
+    url: '/taskmgt/intHistory/list/sumof' ,
     method: 'get'
   })
 }

@@ -102,40 +102,44 @@ public class TInteractionHistoryController extends BaseController
     }
 
     /**
-     * 提交任务评价（评分 + 评价内容），从 TaskLog 自动获取时间和交互状态
+     * 提交任务评价（评分 + 评价内容），根据 interactionId 从 TaskLog 获取时间和状态
      */
     @ApiOperation("提交任务评价")
     @PostMapping("/evaluate")
     public AjaxResult evaluate(
-            @RequestParam Long taskId,
+            @RequestParam String interactionId,
             @RequestParam Long rating,
             @RequestParam(required = false) String evaluationText) {
-        // 1. 查询该任务最新一条带 interactionId 的执行日志
-        TaskLog latestLog = taskLogRepository.findLatestWithInteractionId(taskId)
-                .orElse(null);
 
-        // 2. 构建交互历史记录
-        TInteractionHistory record = new TInteractionHistory();
-        record.setTaskId(taskId.toString());
-
-        if (latestLog != null) {
-            record.setInteractionId(latestLog.getInteractionId());
-            record.setInteractionTime(latestLog.getCreateTime());
-            // 根据事件类型推断交互状态：TASK_COMPLETE→成功, TASK_TERMINATE→失败, 其他→成功
-            String eventType = latestLog.getEventType();
-            if ("TASK_TERMINATE".equals(eventType)) {
-                record.setStatus(1L); // 失败
-            } else if ("TASK_COMPLETE".equals(eventType)) {
-                record.setStatus(0L); // 成功
-            } else {
-                record.setStatus(0L); // 默认成功
-            }
-        } else {
-            // 无 interactionId 的日志时，生成新的
-            record.setInteractionId(java.util.UUID.randomUUID().toString().replace("-", ""));
-            record.setInteractionTime(new Date());
-            record.setStatus(0L);
+        // 1. 查询该 interactionId 对应的所有日志（按时间升序）
+        List<TaskLog> logs = taskLogRepository.findByInteractionId(interactionId);
+        if (logs.isEmpty()) {
+            return error("未找到 interactionId=" + interactionId + " 的任务执行日志");
         }
+
+        // 2. 第一条日志的时间为交互开始时间，最后一条的事件类型决定状态
+        TaskLog firstLog = logs.get(0);
+        TaskLog lastLog = logs.get(logs.size() - 1);
+
+        // 3. 构建交互历史记录
+        TInteractionHistory record = new TInteractionHistory();
+        record.setTaskId(firstLog.getTaskId().toString());
+        record.setInteractionId(interactionId);
+        record.setInteractionTime(firstLog.getCreateTime());
+
+        // 成功：最后一条是 TASK_COMPLETE；失败：最后一条是 TASK_TERMINATE
+        String lastEventType = lastLog.getEventType();
+        if ("TASK_TERMINATE".equals(lastEventType)) {
+            record.setStatus(1L); // 失败
+        } else if ("TASK_COMPLETE".equals(lastEventType)) {
+            record.setStatus(0L); // 成功
+        } else {
+            record.setStatus(0L); // 默认成功
+        }
+
+        // 计算耗时（秒）
+        long durationSeconds = (lastLog.getCreateTime().getTime() - firstLog.getCreateTime().getTime()) / 1000;
+        record.setDuration(durationSeconds);
 
         record.setRating(rating);
         record.setEvaluationText(evaluationText);

@@ -26,11 +26,11 @@
 
     <!-- 原有：搜索区域美化 -->
     <div class="search-card">
-      <el-form 
-        :model="queryParams" 
-        ref="queryForm" 
-        size="small" 
-        :inline="true" 
+      <el-form
+        :model="queryParams"
+        ref="queryForm"
+        size="small"
+        :inline="true"
         label-width="70px"
         class="search-form"
       >
@@ -62,18 +62,18 @@
           />
         </el-form-item>
         <el-form-item label="操作" class="search-btn-group">
-          <el-button 
-            type="primary" 
-            icon="el-icon-search" 
-            size="mini" 
+          <el-button
+            type="primary"
+            icon="el-icon-search"
+            size="mini"
             @click="handleQuery"
             class="search-btn"
           >
             查询
           </el-button>
-          <el-button 
-            icon="el-icon-refresh" 
-            size="mini" 
+          <el-button
+            icon="el-icon-refresh"
+            size="mini"
             @click="resetQuery"
             class="reset-btn"
           >
@@ -111,11 +111,11 @@
     </el-row>
 
     <!-- 原有：表格区域 -->
-    <el-table 
-      v-loading="loading" 
-      :data="intHistoryList" 
-      border 
-      stripe 
+    <el-table
+      v-loading="loading"
+      :data="intHistoryList"
+      border
+      stripe
       highlight-current-row
       class="data-table"
       :header-cell-style="{background: '#f5f7fa', color: '#303133', fontWeight: '500'}"
@@ -151,7 +151,7 @@
       </el-table-column>
       <el-table-column label="扩展信息" align="center" prop="extInfo" min-width="150" show-overflow-tooltip />
     </el-table>
-    
+
     <!-- 原有：分页区域 -->
     <div class="pagination-container">
       <pagination
@@ -165,19 +165,19 @@
     </div>
 
     <!-- 原有：新增对话框 - 美化版 -->
-    <el-dialog 
-      :title="title" 
-      :visible.sync="open" 
-      width="800px" 
+    <el-dialog
+      :title="title"
+      :visible.sync="open"
+      width="800px"
       append-to-body
       :close-on-click-modal="false"
       class="add-dialog"
       @close="cancel"
     >
-      <el-form 
-        ref="form" 
-        :model="form" 
-        :rules="rules" 
+      <el-form
+        ref="form"
+        :model="form"
+        :rules="rules"
         label-width="110px"
         class="dialog-form"
         size="small"
@@ -275,10 +275,10 @@
             </el-col>
           </el-row>
           <el-form-item label="交互内容" prop="interactionContent">
-            <el-input 
-              v-model="form.interactionContent" 
-              type="textarea" 
-              :rows="3" 
+            <el-input
+              v-model="form.interactionContent"
+              type="textarea"
+              :rows="3"
               placeholder="请输入交互内容（请求/响应数据）"
               clearable
               maxlength="1000"
@@ -293,10 +293,10 @@
             <i class="el-icon-comments-solid"></i> 评价反馈
           </div>
           <el-form-item label="评价文本" prop="evaluationText">
-            <el-input 
-              v-model="form.evaluationText" 
-              type="textarea" 
-              :rows="2" 
+            <el-input
+              v-model="form.evaluationText"
+              type="textarea"
+              :rows="2"
               placeholder="请输入用户的评价文本"
               clearable
               maxlength="500"
@@ -304,10 +304,10 @@
             />
           </el-form-item>
           <el-form-item label="扩展信息" prop="extInfo">
-            <el-input 
-              v-model="form.extInfo" 
-              type="textarea" 
-              :rows="2" 
+            <el-input
+              v-model="form.extInfo"
+              type="textarea"
+              :rows="2"
               placeholder="请输入扩展信息（JSON格式）"
               clearable
               maxlength="2000"
@@ -325,8 +325,7 @@
 </template>
 
 <script>
-import { listIntHistory, addIntHistory } from "@/api/app/intHistory"
-import { getSumOfIntHistory } from "@/api/app/intHistory"
+import { listIntHistory, addIntHistory, getSumOfIntHistory } from "@/api/taskmgt/intHistory"
 
 export default {
   name: "IntHistory",

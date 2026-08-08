@@ -7,7 +7,7 @@ import com.ruoyi.data.ai.domain.bo.CategoryCount;
 import com.ruoyi.data.ai.domain.bo.TimeSeriesData;
 import com.ruoyi.data.ai.mapper.IssueClassificationMapper;
 import com.ruoyi.data.ai.service.IssueClassificationService;
-import com.ruoyi.data.ai.service.TongYiService;
+import com.ruoyi.data.ai.service.SiliconFlowService;
 import com.ruoyi.data.ai.util.JsonParseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
     private IssueClassificationMapper mapper;
 
     @Autowired
-    private TongYiService tongYiService;
+    private SiliconFlowService siliconFlowService;
 
     /**
      * 动态获取当前租户ID（根据用户权限决定是否过滤）
@@ -59,7 +59,7 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
                 "[{\"category\":\"技术问题\",\"count\":10,\"suggestion\":\"优化系统稳定性\",\"percentage\":30}]\n\n" +
                 "数据如下：\n" + data;
 
-        String aiResult = tongYiService.chat(prompt);
+        String aiResult = siliconFlowService.chat(prompt);
 
         try {
             return JsonParseUtil.parseList(aiResult, CategoryCount.class);
@@ -90,7 +90,7 @@ public class IssueClassificationServiceImpl implements IssueClassificationServic
                 category, granularity, data
         );
 
-        String aiResult = tongYiService.chat(prompt);
+        String aiResult = siliconFlowService.chat(prompt);
 
         try {
             return JsonParseUtil.parseObject(aiResult, TimeSeriesData.class);

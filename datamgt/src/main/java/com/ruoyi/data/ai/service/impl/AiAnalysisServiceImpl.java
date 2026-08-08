@@ -2,7 +2,7 @@ package com.ruoyi.data.ai.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.ruoyi.data.ai.service.AiAnalysisService;
-import com.ruoyi.data.ai.service.TongYiService;
+import com.ruoyi.data.ai.service.SiliconFlowService;
 import com.ruoyi.data.ai.util.JsonParseUtil;
 import com.ruoyi.data.dashboard.controller.vo.WordCloudItem;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,7 @@ import java.util.List;
 public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     @Autowired
-    private TongYiService tongYiService;
+    private SiliconFlowService siliconFlowService;
 
     @Override
     public List<WordCloudItem> generateWordCloud(List<String> texts) {
@@ -38,7 +38,7 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
                 "格式：[{\"name\":\"卡顿\",\"value\":10}]\n\n" +
                 "数据如下：\n" + data;
 
-        String aiResult = tongYiService.chat(prompt);
+        String aiResult = siliconFlowService.chat(prompt);
 
         try {
             return JsonParseUtil.parseList(aiResult, WordCloudItem.class);

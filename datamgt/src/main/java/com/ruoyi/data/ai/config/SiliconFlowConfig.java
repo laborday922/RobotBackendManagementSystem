@@ -8,10 +8,9 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "tongyi")
-public class TongYiConfig {
-    // getters and setters
+@ConfigurationProperties(prefix = "siliconflow")
+public class SiliconFlowConfig {
     private String apiKey;
-    private String model = "qwen-plus"; // 默认值
-    private boolean enableSearch = true;
+    private String baseUrl = "https://api.siliconflow.cn";
+    private String model = "Qwen/Qwen2.5-72B-Instruct";
 }

@@ -161,11 +161,11 @@ mode:
     charge-battery-threshold: 30
     status-sync-interval: 300000  # 5分钟，单位毫秒
 
-# 通义千问配置
-tongyi:
-  api-key: sk-5ac684bcfa7043a48dfa23e1a6c71971
-  model: qwen-plus   # 可根据需要选择 qwen-turbo, qwen-plus, qwen-max 等
-  enable-search: true
+# 硅基流动配置
+siliconflow:
+  api-key: ${SILICONFLOW_API_KEY:sk-sgisogtvczvranturblgmfnnmzpwflmzpeaakbhyolrejhbd}
+  base-url: https://api.siliconflow.cn
+  model: Qwen/Qwen2.5-72B-Instruct
 
 kg:
   python:

@@ -5,7 +5,7 @@ import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.data.TestApplication;
 import com.ruoyi.data.ai.controller.dto.ReportGenerateRequestDto;
 import com.ruoyi.data.ai.service.AiAnalysisService;
-import com.ruoyi.data.ai.service.TongYiService;
+import com.ruoyi.data.ai.service.SiliconFlowService;
 import com.ruoyi.data.mock.WithMockRuoyiUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ public class ReportControllerTest {
     private AiAnalysisService aiAnalysisService;
 
     @MockBean
-    private TongYiService tongYiService;
+    private SiliconFlowService siliconFlowService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

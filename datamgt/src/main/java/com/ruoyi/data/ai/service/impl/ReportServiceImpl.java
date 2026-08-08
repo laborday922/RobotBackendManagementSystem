@@ -9,7 +9,7 @@ import com.ruoyi.data.ai.mapper.ReportMapper;
 import com.ruoyi.data.ai.mapper.po.ReportContentPo;
 import com.ruoyi.data.ai.mapper.po.ReportPo;
 import com.ruoyi.data.ai.service.ReportService;
-import com.ruoyi.data.ai.service.TongYiService;
+import com.ruoyi.data.ai.service.SiliconFlowService;
 import com.ruoyi.data.ai.service.vo.ReportDetailVo;
 import com.ruoyi.data.ai.service.vo.ReportVo;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class ReportServiceImpl implements ReportService {
 
     @Autowired
-    private TongYiService tongYiService;
+    private SiliconFlowService siliconFlowService;
 
     @Autowired
     private ReportMapper reportMapper;
@@ -99,7 +99,7 @@ public class ReportServiceImpl implements ReportService {
                 rawData, customPrompt, reportDepth);
 
         // 5. 调用 AI 服务生成报告
-        String aiResult = tongYiService.chat(aiPrompt);
+        String aiResult = siliconFlowService.chat(aiPrompt);
 
         // 6. 保存报告元数据
         ReportPo reportPO = new ReportPo();

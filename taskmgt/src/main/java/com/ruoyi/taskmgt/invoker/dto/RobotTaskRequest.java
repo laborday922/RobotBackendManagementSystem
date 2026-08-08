@@ -7,6 +7,7 @@ import java.util.Map;
 @Data
 public class RobotTaskRequest {
     private String traceId;
+    private String interactionId;
     private Long operationId;
     private Map<String, Object> params;
     //private String callbackUrl;

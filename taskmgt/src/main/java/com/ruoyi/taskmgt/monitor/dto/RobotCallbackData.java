@@ -9,6 +9,7 @@ public class RobotCallbackData {
     private String errorMsg;
     private Object data;
     private String traceId;
+    private String interactionId;
     private Long robotId;
     private Date timestamp;
 }

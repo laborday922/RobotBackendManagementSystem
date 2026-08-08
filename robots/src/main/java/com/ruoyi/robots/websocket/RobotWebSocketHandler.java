@@ -149,9 +149,10 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
      */
     protected void handleAsyncResult(RobotWebSocketMessage wsMsg) {
         String traceId = wsMsg.getTraceId();
+        String interactionId = wsMsg.getInteractionId();
         boolean success = wsMsg.getSuccess() != null && wsMsg.getSuccess();
-        log.info("收到异步结果: traceId={}, success={}", traceId, success);
-        eventPublisher.publishEvent(new WebSocketAsyncResultEvent(this, traceId, success, wsMsg.getData(), wsMsg.getErrorMsg()));
+        log.info("收到异步结果: traceId={}, interactionId={}, success={}", traceId, interactionId, success);
+        eventPublisher.publishEvent(new WebSocketAsyncResultEvent(this, traceId, interactionId, success, wsMsg.getData(), wsMsg.getErrorMsg()));
     }
 
     /**

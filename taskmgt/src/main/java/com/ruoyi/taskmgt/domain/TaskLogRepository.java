@@ -104,4 +104,35 @@ public class TaskLogRepository {
         // 删除缓存（如果需要）
         logs.forEach(log -> redisUtil.deleteObject(String.format(TASK_LOG_BY_ID, log.getId())));
     }
+
+    /**
+     * 查询指定任务的最新一条日志（按创建时间倒序）
+     */
+    public Optional<TaskLog> findLatestByTaskId(Long taskId) {
+        Assert.notNull(taskId, "TaskLogRepository.findLatestByTaskId: taskId is null");
+        Specification<TaskLogPo> spec = (root, query, cb) -> {
+            query.orderBy(cb.desc(root.get("createTime")));
+            return cb.equal(root.get("taskId"), taskId);
+        };
+        return taskLogPoMapper.findAll(spec).stream()
+                .findFirst()
+                .map(po -> build(po, Optional.empty()));
+    }
+
+    /**
+     * 查询指定任务的最新一条带 interactionId 的日志
+     */
+    public Optional<TaskLog> findLatestWithInteractionId(Long taskId) {
+        Assert.notNull(taskId, "TaskLogRepository.findLatestWithInteractionId: taskId is null");
+        Specification<TaskLogPo> spec = (root, query, cb) -> {
+            query.orderBy(cb.desc(root.get("createTime")));
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("taskId"), taskId));
+            predicates.add(cb.isNotNull(root.get("interactionId")));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return taskLogPoMapper.findAll(spec).stream()
+                .findFirst()
+                .map(po -> build(po, Optional.empty()));
+    }
 }

@@ -232,8 +232,9 @@ public class TaskTrigger {
             redisUtil.deleteObject(redisKeys);
         }
 
+        String interactionId = taskLogService.startInteraction(task.getId());
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_START,
-                "任务开始执行", "system", null);
+                "任务开始执行", "system", null, interactionId);
         log.info("任务 {} 开始执行", task.getId());
 
         // 触发第一个步骤

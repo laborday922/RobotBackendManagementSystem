@@ -30,6 +30,10 @@ public class RobotWebSocketMessage {
      */
     private String traceId;
     /**
+     * 任务级交互ID（一次任务执行共享）
+     */
+    private String interactionId;
+    /**
      * 操作是否成功（用于异步结果）
      */
     private Boolean success;

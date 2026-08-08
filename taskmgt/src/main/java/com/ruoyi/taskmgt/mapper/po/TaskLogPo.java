@@ -41,4 +41,8 @@ public class TaskLogPo extends BaseEntity {
     @Column(length = 50)
     private String operator;
 
+    /** 交互唯一标识，同一次任务执行的所有日志共享 */
+    @Column(length = 64)
+    private String interactionId;
+
 }

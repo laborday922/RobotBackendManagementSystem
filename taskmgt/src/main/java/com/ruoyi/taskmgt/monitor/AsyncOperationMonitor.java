@@ -137,7 +137,7 @@ public class AsyncOperationMonitor {
 
     @EventListener
     public void onWebSocketAsyncResult(WebSocketAsyncResultEvent event) {
-        handleWebSocketCallback(event.getTraceId(), event.isSuccess(), event.getData(), event.getErrorMsg());
+        handleWebSocketCallback(event.getTraceId(), event.getInteractionId(), event.isSuccess(), event.getData(), event.getErrorMsg());
     }
 
     public void handleRobotCallback(String traceId, RobotCallbackData callbackData) {
@@ -159,8 +159,8 @@ public class AsyncOperationMonitor {
     /**
      * 处理通过 WebSocket 推送的异步结果
      */
-    public void handleWebSocketCallback(String traceId, boolean success, Object data, String errorMsg) {
-        log.info("收到WebSocket异步结果, traceId={}, success={}", traceId, success);
+    public void handleWebSocketCallback(String traceId, String interactionId, boolean success, Object data, String errorMsg) {
+        log.info("收到WebSocket异步结果, traceId={}, interactionId={}, success={}", traceId, interactionId, success);
         AtomicBoolean completedFlag = completedTraceIds.computeIfAbsent(traceId, k -> new AtomicBoolean(false));
         if (!completedFlag.compareAndSet(false, true)) {
             log.warn("重复处理异步结果, traceId={}", traceId);

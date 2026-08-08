@@ -8,6 +8,7 @@ import java.util.Date;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RobotTaskResponse {
     private String traceId;
+    private String interactionId;
     private String mode;
     private boolean success;
     private Object data;

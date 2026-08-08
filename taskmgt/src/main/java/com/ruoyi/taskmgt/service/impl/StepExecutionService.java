@@ -93,6 +93,9 @@ public class StepExecutionService {
             request.setParams(params);
             //request.setCallbackUrl(callbackBaseUrl + "/callback/robot");
             request.setMode(null);
+            // 设置任务级交互ID
+            String interactionId = taskLogService.getInteractionId(step.getTaskId());
+            request.setInteractionId(interactionId);
 
             RobotTaskResponse response = robotInvoker.execute(robotId, request);
 

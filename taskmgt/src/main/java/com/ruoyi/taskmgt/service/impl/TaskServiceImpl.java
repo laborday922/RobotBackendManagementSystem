@@ -490,8 +490,9 @@ public class TaskServiceImpl implements ITaskService {
         else{
             redisKeys = this.updateTaskStatus(task, Task.EXECUTING);
 
+            String interactionId = taskLogService.startInteraction(id);
             this.taskLogService.record(id, null, TaskLogEventType.TASK_RESUME,
-                    "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId);
+                    "任务" + task.getName() + "已继续", SecurityUtils.getUsername(), tenantId, interactionId);
             if (StringUtils.isNotNull(task.getTemplateId())) {
                 List<String> stepRedisKeys = this.stepReuseService.continueStepsByTask(task);
                 redisKeys.addAll(stepRedisKeys);

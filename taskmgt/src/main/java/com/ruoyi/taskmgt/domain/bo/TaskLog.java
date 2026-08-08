@@ -40,4 +40,8 @@ public class TaskLog extends BaseEntity implements Serializable {
     private String content;
 
     /** 操作人 */
-    private String operator;}
+    private String operator;
+
+    /** 交互唯一标识，同一次任务执行的所有日志共享 */
+    private String interactionId;
+}

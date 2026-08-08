@@ -1,8 +1,8 @@
-package com.ruoyi.app.mapper;
+package com.ruoyi.taskmgt.mapper;
 
 import java.util.List;
-import com.ruoyi.app.domain.TInteractionHistory;
-import com.ruoyi.app.domain.vo.SumOfInteractionHistoryVo;
+import com.ruoyi.taskmgt.domain.TInteractionHistory;
+import com.ruoyi.taskmgt.domain.vo.SumOfInteractionHistoryVo;
 import org.apache.ibatis.annotations.Select;
 
 /**

@@ -1,13 +1,13 @@
-package com.ruoyi.app.service.impl;
+package com.ruoyi.taskmgt.service.impl;
 
 import java.util.List;
 
-import com.ruoyi.app.domain.vo.SumOfInteractionHistoryVo;
+import com.ruoyi.taskmgt.domain.vo.SumOfInteractionHistoryVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.ruoyi.app.mapper.TInteractionHistoryMapper;
-import com.ruoyi.app.domain.TInteractionHistory;
-import com.ruoyi.app.service.ITInteractionHistoryService;
+import com.ruoyi.taskmgt.mapper.TInteractionHistoryMapper;
+import com.ruoyi.taskmgt.domain.TInteractionHistory;
+import com.ruoyi.taskmgt.service.ITInteractionHistoryService;
 
 /**
  * 交互历史记录Service业务层处理

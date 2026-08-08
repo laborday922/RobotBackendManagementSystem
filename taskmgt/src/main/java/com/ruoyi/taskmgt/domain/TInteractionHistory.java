@@ -1,4 +1,4 @@
-package com.ruoyi.app.domain;
+package com.ruoyi.taskmgt.domain;
 
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;

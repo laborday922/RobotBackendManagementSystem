@@ -1,9 +1,9 @@
-package com.ruoyi.app.service;
+package com.ruoyi.taskmgt.service;
 
 import java.util.List;
 
-import com.ruoyi.app.domain.vo.SumOfInteractionHistoryVo;
-import com.ruoyi.app.domain.TInteractionHistory;
+import com.ruoyi.taskmgt.domain.vo.SumOfInteractionHistoryVo;
+import com.ruoyi.taskmgt.domain.TInteractionHistory;
 
 /**
  * 交互历史记录Service接口

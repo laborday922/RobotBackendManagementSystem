@@ -1,4 +1,4 @@
-package com.ruoyi.app.controller;
+package com.ruoyi.taskmgt.controller;
 
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
@@ -18,8 +18,8 @@ import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
-import com.ruoyi.app.domain.TInteractionHistory;
-import com.ruoyi.app.service.ITInteractionHistoryService;
+import com.ruoyi.taskmgt.domain.TInteractionHistory;
+import com.ruoyi.taskmgt.service.ITInteractionHistoryService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
 
@@ -30,7 +30,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
  * @date 2026-03-13
  */
 @RestController
-@RequestMapping("/app/intHistory")
+@RequestMapping("/taskmgt/intHistory")
 public class TInteractionHistoryController extends BaseController
 {
     @Autowired
@@ -39,7 +39,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 查询交互历史记录列表
      */
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:list')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:list')")
     @GetMapping("/list")
     @ApiOperation("查询交互历史记录列表")
     public TableDataInfo list(TInteractionHistory tInteractionHistory)
@@ -52,7 +52,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 导出交互历史记录列表
      */
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:export')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:export')")
     @Log(title = "交互历史记录", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(HttpServletResponse response, TInteractionHistory tInteractionHistory)
@@ -65,7 +65,7 @@ public class TInteractionHistoryController extends BaseController
     /**
      * 获取交互历史记录详细信息
      */
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:query')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:query')")
     @GetMapping(value = "/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id)
     {
@@ -76,7 +76,7 @@ public class TInteractionHistoryController extends BaseController
      * 新增交互历史记录
      */
     @ApiOperation("新增交互历史记录列表")
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:add')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:add')")
     @Log(title = "交互历史记录", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult add(@RequestBody TInteractionHistory tInteractionHistory)
@@ -100,7 +100,7 @@ public class TInteractionHistoryController extends BaseController
 //    /**
 //     * 修改交互历史记录
 //     */
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:edit')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:edit')")
 //    @Log(title = "交互历史记录", businessType = BusinessType.UPDATE)
 //    @PutMapping
 //    public AjaxResult edit(@RequestBody TInteractionHistory tInteractionHistory)
@@ -111,7 +111,7 @@ public class TInteractionHistoryController extends BaseController
 //    /**
 //     * 删除交互历史记录
 //     */
-//    @PreAuthorize("@ss.hasPermi('app:intHistory:remove')")
+//    @PreAuthorize("@ss.hasPermi('taskmgt:intHistory:remove')")
 //    @Log(title = "交互历史记录", businessType = BusinessType.DELETE)
 //	@DeleteMapping("/{ids}")
 //    public AjaxResult remove(@PathVariable Long[] ids)

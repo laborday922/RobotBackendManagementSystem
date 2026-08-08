@@ -1,4 +1,4 @@
-package com.ruoyi.app.domain.vo;
+package com.ruoyi.taskmgt.domain.vo;
 
 import lombok.Data;
 

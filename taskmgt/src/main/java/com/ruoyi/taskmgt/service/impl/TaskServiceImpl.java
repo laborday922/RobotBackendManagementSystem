@@ -555,7 +555,6 @@ public class TaskServiceImpl implements ITaskService {
                 " 任务" + task.getName() + "已终止 终止原因："+terminateReason,
                 SecurityUtils.getUsername(),
                 tenantId);
-        this.taskLogService.endInteraction(id);
         if(StringUtils.isNotNull(task.getTemplateId())){
             List<String> stepRedisKeys = this.stepReuseService.terminatedStepsByTask(task);
             redisKeys.addAll(stepRedisKeys);

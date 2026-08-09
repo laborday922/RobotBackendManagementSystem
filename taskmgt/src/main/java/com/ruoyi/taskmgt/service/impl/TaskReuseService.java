@@ -54,7 +54,6 @@ public class TaskReuseService {
             }
             taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
                     "周期性任务完成，下次执行时间：" + nextTime, "system", null);
-            taskLogService.endInteraction(task.getId());
         } else {
             // 一次性任务，直接完成
             task.setStatus(Task.FINISHED);
@@ -72,7 +71,6 @@ public class TaskReuseService {
             task.setDuration(duration);
             taskLogService.record(task.getId(), null, TaskLogEventType.TASK_COMPLETE,
                     "任务执行完成", "system", null);
-            taskLogService.endInteraction(task.getId());
         }
 
         task.setUpdateBy("system");

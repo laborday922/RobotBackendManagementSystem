@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import com.ruoyi.taskmgt.constants.TaskLogEventType;
 import com.ruoyi.taskmgt.domain.TaskLogRepository;
 import com.ruoyi.taskmgt.domain.bo.TaskLog;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,11 @@ public class TaskLogReuseService {
                     .interactionId(interactionId)
                     .build();
             taskLogRepository.insert(taskLog);
+            // TASK_COMPLETE / TASK_TERMINATE 时清理内存映射
+            if (TaskLogEventType.TASK_COMPLETE.equals(eventType) || TaskLogEventType.TASK_TERMINATE.equals(eventType)) {
+                taskInteractionIds.remove(taskId);
+                log.info("任务 {} 交互结束, 清理interactionId", taskId);
+            }
         } catch (Exception e) {
             log.error("记录任务日志失败: taskId={}, eventType={}", taskId, eventType, e);
         }
@@ -73,13 +79,5 @@ public class TaskLogReuseService {
      */
     public String getInteractionId(Long taskId) {
         return taskInteractionIds.get(taskId);
-    }
-
-    /**
-     * 任务执行结束，清理 interactionId 映射
-     */
-    public void endInteraction(Long taskId) {
-        taskInteractionIds.remove(taskId);
-        log.info("任务 {} 交互结束, 清理interactionId", taskId);
     }
 }

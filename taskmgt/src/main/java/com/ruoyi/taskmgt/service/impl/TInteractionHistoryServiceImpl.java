@@ -16,12 +16,12 @@ import com.ruoyi.taskmgt.service.ITInteractionHistoryService;
 
 /**
  * 交互历史记录Service业务层处理
- * 
+ *
  * @author xiaocai
  * @date 2026-03-13
  */
 @Service
-public class TInteractionHistoryServiceImpl implements ITInteractionHistoryService 
+public class TInteractionHistoryServiceImpl implements ITInteractionHistoryService
 {
     @Autowired
     private TInteractionHistoryMapper tInteractionHistoryMapper;
@@ -34,7 +34,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 查询交互历史记录
-     * 
+     *
      * @param id 交互历史记录主键
      * @return 交互历史记录
      */
@@ -46,7 +46,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 查询交互历史记录列表
-     * 
+     *
      * @param tInteractionHistory 交互历史记录
      * @return 交互历史记录
      */
@@ -58,7 +58,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 新增交互历史记录
-     * 
+     *
      * @param tInteractionHistory 交互历史记录
      * @return 结果
      */
@@ -70,7 +70,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 修改交互历史记录
-     * 
+     *
      * @param tInteractionHistory 交互历史记录
      * @return 结果
      */
@@ -82,7 +82,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 批量删除交互历史记录
-     * 
+     *
      * @param ids 需要删除的交互历史记录主键
      * @return 结果
      */
@@ -94,7 +94,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
     /**
      * 删除交互历史记录信息
-     * 
+     *
      * @param id 交互历史记录主键
      * @return 结果
      */
@@ -134,7 +134,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         if (taskOpt.isPresent()) {
             Task task = taskOpt.get();
             record.setRobotId(task.getRobotId());
-            record.setInteractionContent(task.getName());
+            record.setInteractionContent("完成任务：" + task.getName());
         }
 
         // 5. 根据最后一条日志的事件类型判断交互状态

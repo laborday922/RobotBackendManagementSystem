@@ -1,7 +1,12 @@
 package com.ruoyi.taskmgt.service.impl;
 
 import java.util.List;
+import java.util.Optional;
 
+import com.ruoyi.taskmgt.domain.TaskLogRepository;
+import com.ruoyi.taskmgt.domain.TaskRepository;
+import com.ruoyi.taskmgt.domain.bo.Task;
+import com.ruoyi.taskmgt.domain.bo.TaskLog;
 import com.ruoyi.taskmgt.domain.vo.SumOfInteractionHistoryVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +25,12 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 {
     @Autowired
     private TInteractionHistoryMapper tInteractionHistoryMapper;
+
+    @Autowired
+    private TaskLogRepository taskLogRepository;
+
+    @Autowired
+    private TaskRepository taskRepository;
 
     /**
      * 查询交互历史记录
@@ -98,5 +109,52 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         SumOfInteractionHistoryVo sumOfInteractionHistoryVo = tInteractionHistoryMapper.sumOfInteractionHistory();
         sumOfInteractionHistoryVo.calculateAverageRating();
         return sumOfInteractionHistoryVo;
+    }
+
+    @Override
+    public int buildAndSaveEvaluation(String interactionId, Long rating, String evaluationText) {
+        // 1. 查询该 interactionId 对应的所有日志（按时间升序）
+        List<TaskLog> logs = taskLogRepository.findByInteractionId(interactionId);
+        if (logs.isEmpty()) {
+            throw new IllegalArgumentException("未找到 interactionId=" + interactionId + " 的任务执行日志");
+        }
+
+        // 2. 第一条日志的时间为交互开始时间，最后一条的事件类型决定状态
+        TaskLog firstLog = logs.get(0);
+        TaskLog lastLog = logs.get(logs.size() - 1);
+
+        // 3. 构建交互历史记录
+        TInteractionHistory record = new TInteractionHistory();
+        record.setTaskId(firstLog.getTaskId().toString());
+        record.setInteractionId(interactionId);
+        record.setInteractionTime(firstLog.getCreateTime());
+
+        // 4. 从任务表获取 robotId 和任务名称
+        Optional<Task> taskOpt = taskRepository.findById(firstLog.getTaskId());
+        if (taskOpt.isPresent()) {
+            Task task = taskOpt.get();
+            record.setRobotId(task.getRobotId());
+            record.setInteractionContent(task.getName());
+        }
+
+        // 5. 根据最后一条日志的事件类型判断交互状态
+        // 成功：最后一条是 TASK_COMPLETE；失败：最后一条是 TASK_TERMINATE
+        String lastEventType = lastLog.getEventType();
+        if ("TASK_TERMINATE".equals(lastEventType)) {
+            record.setStatus(1L); // 失败
+        } else if ("TASK_COMPLETE".equals(lastEventType)) {
+            record.setStatus(0L); // 成功
+        } else {
+            record.setStatus(0L); // 默认成功
+        }
+
+        // 6. 计算耗时（秒）
+        long durationSeconds = (lastLog.getCreateTime().getTime() - firstLog.getCreateTime().getTime()) / 1000;
+        record.setDuration(durationSeconds);
+
+        record.setRating(rating);
+        record.setEvaluationText(evaluationText);
+
+        return insertTInteractionHistory(record);
     }
 }

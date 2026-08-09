@@ -62,4 +62,14 @@ public interface ITInteractionHistoryService
     public int deleteTInteractionHistoryById(Long id);
 
     SumOfInteractionHistoryVo sumOfInteractionHistory();
+
+    /**
+     * 根据 interactionId 从 TaskLog 构建交互历史记录并保存
+     *
+     * @param interactionId 交互唯一标识
+     * @param rating        评分
+     * @param evaluationText 评价文本
+     * @return 保存的记录条数
+     */
+    int buildAndSaveEvaluation(String interactionId, Long rating, String evaluationText);
 }

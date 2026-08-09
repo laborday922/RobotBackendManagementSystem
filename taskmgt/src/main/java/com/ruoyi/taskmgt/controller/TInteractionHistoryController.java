@@ -1,6 +1,5 @@
 package com.ruoyi.taskmgt.controller;
 
-import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
@@ -21,8 +20,6 @@ import com.ruoyi.common.core.controller.BaseController;
 import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.taskmgt.domain.TInteractionHistory;
-import com.ruoyi.taskmgt.domain.TaskLogRepository;
-import com.ruoyi.taskmgt.domain.bo.TaskLog;
 import com.ruoyi.taskmgt.service.ITInteractionHistoryService;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.page.TableDataInfo;
@@ -39,9 +36,6 @@ public class TInteractionHistoryController extends BaseController
 {
     @Autowired
     private ITInteractionHistoryService tInteractionHistoryService;
-
-    @Autowired
-    private TaskLogRepository taskLogRepository;
 
     /**
      * 查询交互历史记录列表
@@ -111,42 +105,12 @@ public class TInteractionHistoryController extends BaseController
             @RequestParam Long rating,
             @RequestParam(required = false) String evaluationText) {
 
-        // 1. 查询该 interactionId 对应的所有日志（按时间升序）
-        List<TaskLog> logs = taskLogRepository.findByInteractionId(interactionId);
-        if (logs.isEmpty()) {
-            return error("未找到 interactionId=" + interactionId + " 的任务执行日志");
+        try {
+            int rows = tInteractionHistoryService.buildAndSaveEvaluation(interactionId, rating, evaluationText);
+            return rows > 0 ? success() : error("提交评价失败");
+        } catch (IllegalArgumentException e) {
+            return error(e.getMessage());
         }
-
-        // 2. 第一条日志的时间为交互开始时间，最后一条的事件类型决定状态
-        TaskLog firstLog = logs.get(0);
-        TaskLog lastLog = logs.get(logs.size() - 1);
-
-        // 3. 构建交互历史记录
-        TInteractionHistory record = new TInteractionHistory();
-        record.setTaskId(firstLog.getTaskId().toString());
-        record.setInteractionId(interactionId);
-        record.setInteractionTime(firstLog.getCreateTime());
-
-        // 成功：最后一条是 TASK_COMPLETE；失败：最后一条是 TASK_TERMINATE
-        String lastEventType = lastLog.getEventType();
-        if ("TASK_TERMINATE".equals(lastEventType)) {
-            record.setStatus(1L); // 失败
-        } else if ("TASK_COMPLETE".equals(lastEventType)) {
-            record.setStatus(0L); // 成功
-        } else {
-            record.setStatus(0L); // 默认成功
-        }
-
-        // 计算耗时（秒）
-        long durationSeconds = (lastLog.getCreateTime().getTime() - firstLog.getCreateTime().getTime()) / 1000;
-        record.setDuration(durationSeconds);
-
-        record.setRating(rating);
-        record.setEvaluationText(evaluationText);
-        // 其他字段留空：userId, userName, interactionType, interactionContent, extInfo 等
-
-        int rows = tInteractionHistoryService.insertTInteractionHistory(record);
-        return rows > 0 ? success() : error("提交评价失败");
     }
 
 //    /**

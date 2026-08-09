@@ -49,6 +49,7 @@ public class TaskReuseService {
                 step.setStatus(TaskStep.NOTSTART);
                 step.setStartTime(null);
                 step.setEndTime(null);
+                step.setTraceId(null);
                 if(task.getIsGroupTask()==1)step.setAssignedRobotId(null);
                 stepRepository.update(step);
             }

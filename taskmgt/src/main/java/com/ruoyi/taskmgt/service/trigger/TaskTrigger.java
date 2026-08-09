@@ -160,6 +160,7 @@ public class TaskTrigger {
             redisUtil.deleteObject(redisKeys);
         }
 
+        taskLogService.startInteraction(task.getId());
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_PENDING,
                 "任务达到触发条件，进入准备队列", "system", null);
         log.info("任务 {} 已触发进入准备队列", task.getId());
@@ -232,7 +233,7 @@ public class TaskTrigger {
             redisUtil.deleteObject(redisKeys);
         }
 
-        String interactionId = taskLogService.startInteraction(task.getId());
+        String interactionId = taskLogService.getInteractionId(task.getId());
         taskLogService.record(task.getId(), null, TaskLogEventType.TASK_START,
                 "任务开始执行", "system", null, interactionId);
         log.info("任务 {} 开始执行", task.getId());

@@ -26,7 +26,8 @@ public class TaskLogReuseService {
      */
     @Async
     public void record(Long taskId, Long stepId, String eventType, String content, String operator, Long tenantId) {
-        record(taskId, stepId, eventType, content, operator, tenantId, null);
+        String interactionId = taskInteractionIds.get(taskId);
+        record(taskId, stepId, eventType, content, operator, tenantId, interactionId);
     }
 
     /**

@@ -33,9 +33,9 @@ public class MetricDefinitionServiceImpl implements MetricDefinitionService {
     @Override
     public Long create(MetricDefinition bo) {
         MetricDefinitionPo po = convertToPO(bo);
-        Long tenantId = getQueryTenantId();   // 使用与查询一致的方法
-        // admin 允许 tenantId = null，普通用户不能为 null
-        if (tenantId == null && !SecurityUtils.isAdmin(SecurityUtils.getUserId())) {
+        // 写入操作直接取 TenantContext，不使用查询专用的 getQueryTenantId()
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
             throw new RuntimeException("无法获取租户信息，请检查登录状态");
         }
         po.setTenantId(tenantId);

@@ -672,6 +672,8 @@ CREATE TABLE `robots`  (
   `task_status` tinyint UNSIGNED NOT NULL DEFAULT 2 COMMENT '任务状态（0-执行中，1-充电中，2-闲置，3-维护）',
   `battery` tinyint UNSIGNED NOT NULL DEFAULT 100 COMMENT '当前电量（0-100）',
   `near_area_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '位置名称',
+  `coordinate_x` decimal(10,2) NULL DEFAULT NULL COMMENT '坐标X',
+  `coordinate_y` decimal(10,2) NULL DEFAULT NULL COMMENT '坐标Y',
   `current_mode` int NULL DEFAULT NULL COMMENT '当前模式ID',
   `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志（0代表存在 2代表删除）',
   `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
@@ -691,15 +693,15 @@ CREATE TABLE `robots`  (
 -- ----------------------------
 -- Records of robots
 -- ----------------------------
-INSERT INTO `robots` VALUES (1, 'ROB001', '小旋1号', 4, '极智科技', '2024-01-10', '药房', 1, 0, 2, 100, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-08-09 14:46:51', '2026-08-09 14:45:15', '2026-08-09 14:46:52');
-INSERT INTO `robots` VALUES (2, 'ROB002', '小旋2号', 4, '极智科技', '2024-01-15', '病房区', 0, 0, 1, 100, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-08-05 10:56:13', NULL, NULL);
-INSERT INTO `robots` VALUES (3, 'ROB003', '大白1号', 2, '清洁科技', '2023-12-01', '门诊大厅', 0, 0, 2, 76, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-06-02 15:56:31', '2026-03-30 16:34:33', NULL);
-INSERT INTO `robots` VALUES (4, 'ROB004', '安巡1号', 3, '安防科技', '2024-02-20', '走廊', 0, 0, 3, 30, NULL, 2, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-03-02 20:37:52', NULL, NULL);
-INSERT INTO `robots` VALUES (5, 'ROB005', '闪电侠', 1, '极智科技', '2024-03-01', '监控室', 0, 0, 2, 95, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-06-02 15:56:32', '2026-03-31 08:50:44', NULL);
-INSERT INTO `robots` VALUES (6, 'ROB006', '小黄人', 1, '清洁科技', '2024-01-05', '物流分拣中心', 0, 0, 2, 60, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:33', '2026-03-30 21:36:44', NULL);
-INSERT INTO `robots` VALUES (7, 'ROB007', '巡警1号', 2, '安防科技', '2023-11-11', '东区巡逻路线', 0, 0, 1, 45, NULL, 3, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-03-30 21:36:44', NULL, NULL);
-INSERT INTO `robots` VALUES (8, 'ROB008', '引路人', 4, '极智科技', '2024-03-15', '门诊大厅导诊台', 0, 0, 2, 95, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:34', '2026-03-31 00:37:14', NULL);
-INSERT INTO `robots` VALUES (9, 'ROB009', '解说员', 4, '极智科技', '2024-03-20', '院史馆/文化长廊', 0, 0, 2, 88, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:35', '2026-03-30 21:36:44', NULL);
+INSERT INTO `robots` VALUES (1, 'ROB001', '小旋1号', 4, '极智科技', '2024-01-10', '药房', 1, 0, 2, 100, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-08-09 14:46:51', '2026-08-09 14:45:15', '2026-08-09 14:46:52');
+INSERT INTO `robots` VALUES (2, 'ROB002', '小旋2号', 4, '极智科技', '2024-01-15', '病房区', 0, 0, 1, 100, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-08-05 10:56:13', NULL, NULL);
+INSERT INTO `robots` VALUES (3, 'ROB003', '大白1号', 2, '清洁科技', '2023-12-01', '门诊大厅', 0, 0, 2, 76, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-06-02 15:56:31', '2026-03-30 16:34:33', NULL);
+INSERT INTO `robots` VALUES (4, 'ROB004', '安巡1号', 3, '安防科技', '2024-02-20', '走廊', 0, 0, 3, 30, NULL, NULL, NULL, 2, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-03-02 20:37:52', NULL, NULL);
+INSERT INTO `robots` VALUES (5, 'ROB005', '闪电侠', 1, '极智科技', '2024-03-01', '监控室', 0, 0, 2, 95, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-02 20:37:52', 'admin', '2026-06-02 15:56:32', '2026-03-31 08:50:44', NULL);
+INSERT INTO `robots` VALUES (6, 'ROB006', '小黄人', 1, '清洁科技', '2024-01-05', '物流分拣中心', 0, 0, 2, 60, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:33', '2026-03-30 21:36:44', NULL);
+INSERT INTO `robots` VALUES (7, 'ROB007', '巡警1号', 2, '安防科技', '2023-11-11', '东区巡逻路线', 0, 0, 1, 45, NULL, NULL, NULL, 3, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-03-30 21:36:44', NULL, NULL);
+INSERT INTO `robots` VALUES (8, 'ROB008', '引路人', 4, '极智科技', '2024-03-15', '门诊大厅导诊台', 0, 0, 2, 95, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:34', '2026-03-31 00:37:14', NULL);
+INSERT INTO `robots` VALUES (9, 'ROB009', '解说员', 4, '极智科技', '2024-03-20', '院史馆/文化长廊', 0, 0, 2, 88, NULL, NULL, NULL, 1, '0', 'admin', '2026-03-30 21:36:44', 'admin', '2026-06-02 15:56:35', '2026-03-30 21:36:44', NULL);
 
 -- ----------------------------
 -- Table structure for sys_config

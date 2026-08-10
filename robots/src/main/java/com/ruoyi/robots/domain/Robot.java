@@ -1,5 +1,6 @@
 package com.ruoyi.robots.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -68,6 +69,12 @@ public class Robot extends BaseEntity
 
     /** 位置名称 */
     private String nearAreaName;
+
+    /** 坐标X */
+    private BigDecimal coordinateX;
+
+    /** 坐标Y */
+    private BigDecimal coordinateY;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "闲置开始时间",width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")

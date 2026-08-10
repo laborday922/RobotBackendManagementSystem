@@ -16,6 +16,7 @@
         <result property="hardwareStatus"    column="hardware_status"    />
         <result property="taskStatus"    column="task_status"    />
         <result property="battery"    column="battery"    />
+        <result property="nearAreaName"    column="near_area_name"    />
         <result property="currentMode"    column="current_mode"    />
         <result property="idleStartTime"    column="idle_start_time" />
         <result property="createdAt"    column="created_at"    />
@@ -23,7 +24,7 @@
 
     <sql id="selectRobotsVo">
         select id, code, name, group_id, manufacturer, production_date,
-        area, status, hardware_status, task_status, battery,
+        area, status, hardware_status, task_status, battery, near_area_name,
         current_mode, idle_start_time, created_at
         from robots
     </sql>
@@ -56,6 +57,7 @@
             <if test="hardwareStatus != null">hardware_status,</if>
             <if test="taskStatus != null">task_status,</if>
             <if test="battery != null and battery != ''">battery,</if>
+            <if test="nearAreaName != null and nearAreaName != ''">near_area_name,</if>
             <if test="currentMode != null and currentMode != ''">current_mode,</if>
             <if test="idleStartTime != null">idle_start_time,</if>
             <if test="createdAt != null">created_at,</if>
@@ -71,6 +73,7 @@
             <if test="hardwareStatus != null">#{hardwareStatus},</if>
             <if test="taskStatus != null">#{taskStatus},</if>
             <if test="battery != null and battery != ''">#{battery},</if>
+            <if test="nearAreaName != null and nearAreaName != ''">#{nearAreaName},</if>
             <if test="currentMode != null and currentMode != ''">#{currentMode},</if>
             <if test="idleStartTime != null">#{idleStartTime},</if>
             <if test="createdAt != null">#{createdAt},</if>
@@ -90,6 +93,7 @@
             <if test="hardwareStatus != null">hardware_status = #{hardwareStatus},</if>
             <if test="taskStatus != null">task_status = #{taskStatus},</if>
             <if test="battery != null and battery != ''">battery = #{battery},</if>
+            <if test="nearAreaName != null and nearAreaName != ''">near_area_name = #{nearAreaName},</if>
             <if test="currentMode != null and currentMode != ''">current_mode = #{currentMode},</if>
             <if test="idleStartTime != null">
                 idle_start_time =

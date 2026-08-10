@@ -11,7 +11,7 @@ import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
  * 机器人基础信息对象 robots
- * 
+ *
  * @author xiaocai
  * @date 2026-03-07
  */
@@ -65,6 +65,9 @@ public class Robot extends BaseEntity
     /** 当前电量（0-100） */
     @Excel(name = "当前电量", readConverterExp = "0=-100")
     private Integer battery;
+
+    /** 位置名称 */
+    private String nearAreaName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "闲置开始时间",width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")

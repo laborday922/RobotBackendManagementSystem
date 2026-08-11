@@ -1,20 +1,23 @@
 package com.ruoyi.qa.Chat.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.service.ISysPointService;
-import com.ruoyi.qa.Dify.DifyChatClient;
 import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateResponse;
+import com.ruoyi.qa.Chat.openai.OpenAiChatClient;
+import com.ruoyi.qa.Chat.openai.OpenAiConversationStore;
 import com.ruoyi.qa.Chat.translate.ChatTranslationProperties;
 import com.ruoyi.qa.Chat.translate.ChatTranslationService;
 import com.ruoyi.qa.Chat.translate.ChatTranslationService.TranslationPreparation;
 import com.ruoyi.qa.ChatManage.domain.QaChat;
 import com.ruoyi.qa.ChatManage.service.IQaRobotChatRelService;
 import com.ruoyi.qa.Chat.service.ChatService;
+import com.ruoyi.qa.Dify.DifyChatClient;
 import com.ruoyi.taskmgt.invoker.RobotInvoker;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskRequest;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
@@ -47,10 +50,11 @@ public class ChatServiceImpl implements ChatService
     private final IQaRobotChatRelService qaRobotChatRelService;
     private final ChatTranslationService chatTranslationService;
     private final ChatTranslationProperties chatTranslationProperties;
+    private final OpenAiConversationStore openAiConversationStore;
 
     public ChatServiceImpl(DifyChatClient difyChatClient, ISysPointService sysPointService, RobotInvoker robotInvoker,
         IQaRobotChatRelService qaRobotChatRelService, ChatTranslationService chatTranslationService,
-        ChatTranslationProperties chatTranslationProperties)
+        ChatTranslationProperties chatTranslationProperties, OpenAiConversationStore openAiConversationStore)
     {
         this.difyChatClient = difyChatClient;
         this.sysPointService = sysPointService;
@@ -58,6 +62,7 @@ public class ChatServiceImpl implements ChatService
         this.qaRobotChatRelService = qaRobotChatRelService;
         this.chatTranslationService = chatTranslationService;
         this.chatTranslationProperties = chatTranslationProperties;
+        this.openAiConversationStore = openAiConversationStore;
     }
 
     @Override
@@ -87,12 +92,31 @@ public class ChatServiceImpl implements ChatService
             writeSseError(outputStream, "robot chat config not found");
             return;
         }
-        if (!StringUtils.hasText(qaChat.getDifyApiKey()))
+        if (!StringUtils.hasText(qaChat.getApiKey()))
         {
-            writeSseError(outputStream, "dify api key is blank");
+            writeSseError(outputStream, "api key is blank");
             return;
         }
 
+        if (qaChat.isDify())
+        {
+            streamDifyChat(request, outputStream, robotId, qaChat);
+        }
+        else if (qaChat.isOpenai())
+        {
+            streamOpenAiChat(request, outputStream, qaChat);
+        }
+        else
+        {
+            writeSseError(outputStream, "unsupported chat type: " + qaChat.getChatType());
+        }
+    }
+
+    // ==================== Dify 路径 ====================
+
+    private void streamDifyChat(RobotChatRequest request, OutputStream outputStream, Long robotId, QaChat qaChat)
+        throws IOException
+    {
         Map<String, Object> inputs = new HashMap<>();
         inputs.put("robot_id", request.getRobotId());
         inputs.put("chat_id", qaChat.getId());
@@ -110,7 +134,7 @@ public class ChatServiceImpl implements ChatService
         outputStream.write(":\n\n".getBytes(StandardCharsets.UTF_8));
         outputStream.flush();
 
-        log.info("Robot chat stream: robotId={}, chatId={}, conversationId={}, queryLen={}",
+        log.info("Robot chat stream [DIFY]: robotId={}, chatId={}, conversationId={}, queryLen={}",
             request.getRobotId(),
             qaChat.getId(),
             request.getConversationId(),
@@ -121,18 +145,21 @@ public class ChatServiceImpl implements ChatService
             translationPreparation.getSourceLanguageCode(),
             translationPreparation.isAnswerTranslationRequired());
 
+        // 使用 QA 配置中的 baseUrl，若为空则回退到全局配置
+        String baseUrl = StringUtils.hasText(qaChat.getBaseUrl()) ? qaChat.getBaseUrl().trim() : null;
+
         try
         {
             if (translationPreparation.isAnswerTranslationRequired())
             {
-                try (InputStream upstream = difyChatClient.openChatMessagesStreaming(difyReq, qaChat.getDifyApiKey()))
+                try (InputStream upstream = difyChatClient.openChatMessagesStreaming(difyReq, qaChat.getApiKey(), baseUrl))
                 {
                     relayTranslatedSse(upstream, outputStream, translationPreparation);
                 }
             }
             else
             {
-                difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getDifyApiKey(), outputStream);
+                difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getApiKey(), outputStream);
             }
         }
         catch (InterruptedException e)
@@ -145,6 +172,144 @@ public class ChatServiceImpl implements ChatService
             writeSseError(outputStream, e.getMessage());
         }
     }
+
+    // ==================== OpenAI 路径 ====================
+
+    private void streamOpenAiChat(RobotChatRequest request, OutputStream outputStream, QaChat qaChat) throws IOException
+    {
+        String conversationId = request.getConversationId();
+        boolean isNewConversation = !StringUtils.hasText(conversationId);
+
+        if (isNewConversation)
+        {
+            conversationId = openAiConversationStore.createConversation(request.getRobotId());
+        }
+
+        // 追加用户消息到对话历史
+        openAiConversationStore.appendUserMessage(conversationId, request.getQuery());
+
+        // 获取完整消息历史
+        JSONArray messages = openAiConversationStore.getMessages(conversationId);
+
+        String baseUrl = qaChat.getBaseUrl().trim();
+        String apiKey = qaChat.getApiKey().trim();
+        String modelName = qaChat.getModelName().trim();
+
+        OpenAiChatClient client = new OpenAiChatClient(baseUrl, apiKey, modelName, 10, 300);
+
+        outputStream.write(":\n\n".getBytes(StandardCharsets.UTF_8));
+        outputStream.flush();
+
+        log.info("Robot chat stream [OPENAI]: robotId={}, chatId={}, model={}, conversationId={}, isNew={}, queryLen={}",
+            request.getRobotId(),
+            qaChat.getId(),
+            modelName,
+            conversationId,
+            isNewConversation,
+            request.getQuery() == null ? 0 : request.getQuery().length());
+
+        StringBuilder assistantResponse = new StringBuilder();
+
+        try (InputStream upstream = client.openChatCompletionsStream(messages))
+        {
+            relayOpenAiSseToDifyFormat(upstream, outputStream, conversationId, assistantResponse);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            writeSseError(outputStream, "interrupted");
+        }
+        catch (Exception e)
+        {
+            writeSseError(outputStream, e.getMessage());
+        }
+
+        // 存储 assistant 回复到对话历史
+        if (assistantResponse.length() > 0)
+        {
+            openAiConversationStore.appendAssistantMessage(conversationId, assistantResponse.toString());
+        }
+    }
+
+    /**
+     * 将 OpenAI SSE 流转换为 Dify 兼容的 SSE 格式输出。
+     * OpenAI 格式: data: {"choices":[{"delta":{"content":"..."}}]}
+     * Dify 格式:   data: {"event":"message","answer":"..."}
+     */
+    private void relayOpenAiSseToDifyFormat(InputStream upstream, OutputStream downstream,
+        String conversationId, StringBuilder assistantCollector) throws IOException
+    {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(upstream, StandardCharsets.UTF_8)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.isEmpty())
+                {
+                    continue;
+                }
+                if (!line.startsWith("data:"))
+                {
+                    continue;
+                }
+
+                String data = line.substring(5).trim();
+                if ("[DONE]".equals(data))
+                {
+                    // 发送 Dify 兼容的 message_end 事件
+                    JSONObject endEvent = new JSONObject();
+                    endEvent.put("event", "message_end");
+                    endEvent.put("conversation_id", conversationId);
+                    String sse = "data: " + endEvent.toJSONString() + "\n\n";
+                    downstream.write(sse.getBytes(StandardCharsets.UTF_8));
+                    downstream.flush();
+                    break;
+                }
+
+                try
+                {
+                    JSONObject json = JSON.parseObject(data);
+                    JSONArray choices = json.getJSONArray("choices");
+                    if (choices == null || choices.isEmpty())
+                    {
+                        continue;
+                    }
+                    JSONObject first = choices.getJSONObject(0);
+                    if (first == null)
+                    {
+                        continue;
+                    }
+                    JSONObject delta = first.getJSONObject("delta");
+                    if (delta == null)
+                    {
+                        continue;
+                    }
+                    String content = delta.getString("content");
+                    if (!StringUtils.hasText(content))
+                    {
+                        continue;
+                    }
+
+                    assistantCollector.append(content);
+
+                    // 包装为 Dify 兼容的 message 事件
+                    JSONObject msgEvent = new JSONObject();
+                    msgEvent.put("event", "message");
+                    msgEvent.put("answer", content);
+                    msgEvent.put("conversation_id", conversationId);
+                    String sse = "data: " + msgEvent.toJSONString() + "\n\n";
+                    downstream.write(sse.getBytes(StandardCharsets.UTF_8));
+                    downstream.flush();
+                }
+                catch (Exception e)
+                {
+                    log.debug("OpenAI SSE parse skipped: {}", e.getMessage());
+                }
+            }
+        }
+    }
+
+    // ==================== Dify 翻译相关（仅 Dify 路径使用） ====================
 
     private void relayTranslatedSse(InputStream upstream, OutputStream downstream, TranslationPreparation preparation)
         throws IOException
@@ -248,6 +413,8 @@ public class ChatServiceImpl implements ChatService
         downstream.flush();
     }
 
+    // ==================== 导航相关 ====================
+
     @Override
     public RobotNavigateResponse navigateToPoint(RobotNavigateRequest request)
     {
@@ -302,6 +469,8 @@ public class ChatServiceImpl implements ChatService
             request.getRobotId(), point.getRobotPointId(), point.getSysPointId(), result.getTraceId(), result.isSuccess(), result.getMode());
         return result;
     }
+
+    // ==================== 工具方法 ====================
 
     private static void writeSseError(OutputStream outputStream, String message) throws IOException
     {
@@ -359,6 +528,8 @@ public class ChatServiceImpl implements ChatService
             return null;
         }
     }
+
+    // ==================== Dify 翻译内部类 ====================
 
     private static class AnswerStreamTranslator
     {

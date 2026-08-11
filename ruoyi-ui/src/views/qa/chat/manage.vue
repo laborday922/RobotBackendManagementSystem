@@ -5,7 +5,7 @@
         <div class="card-title">
           <i class="fas fa-comments"></i> 问答管理
         </div>
-        <div class="card-desc">统一维护 Dify 问答配置，并为机器人分配唯一的问答入口。</div>
+        <div class="card-desc">统一维护 Dify / OpenAI 问答配置，并为机器人分配唯一的问答入口。</div>
       </div>
       <div class="page-badge">
         <span class="badge"><i class="fas fa-robot"></i> 机器人问答管理台</span>
@@ -45,9 +45,16 @@
                 <el-table-column label="ID" align="center" prop="id" width="80" />
                 <el-table-column label="问答名称" align="center" prop="chatName" min-width="160" show-overflow-tooltip />
                 <el-table-column label="问答描述" align="center" prop="chatDesc" min-width="220" show-overflow-tooltip />
-                <el-table-column label="Dify App Key" align="center" min-width="220" show-overflow-tooltip>
+                <el-table-column label="对话类型" align="center" prop="chatType" width="90">
                   <template slot-scope="scope">
-                    <span>{{ scope.row.apiKeyMasked || keyStatusText(scope.row.hasDifyApiKey) }}</span>
+                    <el-tag :type="scope.row.chatType === 'dify' ? '' : 'success'" size="small">
+                      {{ scope.row.chatType === 'dify' ? 'Dify' : 'OpenAI' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="API Key" align="center" min-width="220" show-overflow-tooltip>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.apiKeyMasked || keyStatusText(scope.row.hasApiKey) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="更新时间" align="center" prop="updateTime" width="180">
@@ -158,27 +165,42 @@
       </el-tabs>
     </div>
 
-    <el-dialog :title="chatDialogTitle" :visible.sync="chatDialogOpen" width="620px" append-to-body class="global-dialog">
+    <el-dialog :title="chatDialogTitle" :visible.sync="chatDialogOpen" width="650px" append-to-body class="global-dialog">
       <el-form ref="chatForm" :model="chatForm" :rules="chatRules" label-width="110px">
         <el-form-item label="问答名称" prop="chatName">
           <el-input v-model="chatForm.chatName" placeholder="请输入问答名称" maxlength="100" />
         </el-form-item>
         <el-form-item label="问答描述" prop="chatDesc">
-          <el-input v-model="chatForm.chatDesc" type="textarea" :rows="4" placeholder="请输入问答描述" maxlength="500" show-word-limit />
+          <el-input v-model="chatForm.chatDesc" type="textarea" :rows="3" placeholder="请输入问答描述" maxlength="500" show-word-limit />
         </el-form-item>
-        <el-form-item label="Dify App Key" prop="difyApiKey">
+        <el-form-item label="对话类型" prop="chatType">
+          <el-select v-model="chatForm.chatType" placeholder="请选择对话类型" style="width: 100%" @change="onChatTypeChange">
+            <el-option label="Dify（工作流知识库）" value="dify" />
+            <el-option label="OpenAI 体系（DeepSeek / 豆包等）" value="openai" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="API Key" prop="apiKey">
           <el-input
-            v-model="chatForm.difyApiKey"
+            v-model="chatForm.apiKey"
             type="textarea"
-            :rows="4"
-            :placeholder="chatForm.id ? '留空则保持原 App Key 不变；如需替换请直接输入新 Key' : '请输入该问答对应的 Dify App Key'"
+            :rows="3"
+            :placeholder="chatForm.id ? '留空则保持原 Key 不变；如需替换请直接输入新 Key' : '请输入 API Key'"
             maxlength="500"
             show-word-limit
           />
         </el-form-item>
+        <template v-if="chatForm.chatType === 'openai'">
+          <el-form-item label="接口地址" prop="baseUrl">
+            <el-input v-model="chatForm.baseUrl" placeholder="例如 https://api.deepseek.com" maxlength="500" />
+          </el-form-item>
+          <el-form-item label="模型名称" prop="modelName">
+            <el-input v-model="chatForm.modelName" placeholder="例如 deepseek-chat 或 deepseek-v4-pro" maxlength="100" />
+          </el-form-item>
+        </template>
         <div class="form-tip">
-          说明：`base_url` 固定走系统公共配置，这里只维护不同 chatflow 对应的 App Key。
-          <span v-if="chatForm.id && chatForm.hasDifyApiKey">当前后端已保存 App Key，本次留空则保持不变。</span>
+          <template v-if="chatForm.chatType === 'dify'">说明：Dify 模式下，翻译层和 conversationId 由系统自动管理。</template>
+          <template v-else-if="chatForm.chatType === 'openai'">说明：OpenAI 体系模式下不经过翻译层，对话历史由服务端内存管理。</template>
+          <span v-if="chatForm.id && chatForm.hasApiKey"> 当前后端已保存 Key，本次留空则保持不变。</span>
         </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -256,8 +278,11 @@ export default {
         id: null,
         chatName: '',
         chatDesc: '',
-        difyApiKey: '',
-        hasDifyApiKey: false
+        chatType: 'dify',
+        apiKey: '',
+        baseUrl: '',
+        modelName: '',
+        hasApiKey: false
       },
       relForm: {
         robotId: null,
@@ -275,7 +300,8 @@ export default {
         chatId: undefined
       },
       chatRules: {
-        chatName: [{ required: true, message: '问答名称不能为空', trigger: 'blur' }]
+        chatName: [{ required: true, message: '问答名称不能为空', trigger: 'blur' }],
+        chatType: [{ required: true, message: '对话类型不能为空', trigger: 'change' }]
       },
       relRules: {
         robotId: [{ required: true, message: '机器人不能为空', trigger: 'change' }],
@@ -341,8 +367,11 @@ export default {
         id: null,
         chatName: '',
         chatDesc: '',
-        difyApiKey: '',
-        hasDifyApiKey: false
+        chatType: 'dify',
+        apiKey: '',
+        baseUrl: '',
+        modelName: '',
+        hasApiKey: false
       }
       this.$nextTick(() => this.resetForm('chatForm'))
     },
@@ -352,22 +381,41 @@ export default {
           id: null,
           chatName: '',
           chatDesc: '',
-          difyApiKey: '',
-          hasDifyApiKey: false
+          chatType: 'dify',
+          apiKey: '',
+          baseUrl: '',
+          modelName: '',
+          hasApiKey: false
         }, response.data || {})
         this.chatDialogTitle = '修改问答配置'
         this.chatDialogOpen = true
         this.$nextTick(() => this.resetForm('chatForm'))
       })
     },
+    onChatTypeChange(val) {
+      if (val === 'dify') {
+        this.chatForm.baseUrl = ''
+        this.chatForm.modelName = ''
+      }
+    },
     submitChatForm() {
       this.$refs.chatForm.validate(valid => {
         if (!valid) {
           return
         }
-        if (!this.chatForm.id && !this.chatForm.difyApiKey) {
-          this.$message.error('新增时 Dify App Key 不能为空')
+        if (!this.chatForm.id && !this.chatForm.apiKey) {
+          this.$message.error('新增时 API Key 不能为空')
           return
+        }
+        if (this.chatForm.chatType === 'openai') {
+          if (!this.chatForm.baseUrl) {
+            this.$message.error('OpenAI 类型必须填写接口地址')
+            return
+          }
+          if (!this.chatForm.modelName) {
+            this.$message.error('OpenAI 类型必须填写模型名称')
+            return
+          }
         }
         const request = this.chatForm.id ? updateQaChat(this.chatForm) : addQaChat(this.chatForm)
         request.then(() => {

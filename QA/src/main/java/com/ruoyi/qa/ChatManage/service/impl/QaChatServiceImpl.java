@@ -85,16 +85,32 @@ public class QaChatServiceImpl implements IQaChatService
         {
             throw new ServiceException("问答名称不能为空");
         }
-        if (!StringUtils.hasText(qaChat.getDifyApiKey()))
+        if (!StringUtils.hasText(qaChat.getChatType()))
         {
-            throw new ServiceException("Dify应用Key不能为空");
+            throw new ServiceException("对话类型不能为空");
         }
+        if (!StringUtils.hasText(qaChat.getApiKey()))
+        {
+            throw new ServiceException("API Key不能为空");
+        }
+
         qaChat.setChatName(qaChat.getChatName().trim());
-        qaChat.setDifyApiKey(qaChat.getDifyApiKey().trim());
+        qaChat.setChatType(qaChat.getChatType().trim().toLowerCase());
+        qaChat.setApiKey(qaChat.getApiKey().trim());
         if (qaChat.getChatDesc() != null)
         {
             qaChat.setChatDesc(qaChat.getChatDesc().trim());
         }
+        if (qaChat.getBaseUrl() != null)
+        {
+            qaChat.setBaseUrl(qaChat.getBaseUrl().trim());
+        }
+        if (qaChat.getModelName() != null)
+        {
+            qaChat.setModelName(qaChat.getModelName().trim());
+        }
+
+        validateChatType(qaChat);
     }
 
     private void validateQaChatForUpdate(QaChat qaChat, QaChat db)
@@ -107,16 +123,65 @@ public class QaChatServiceImpl implements IQaChatService
         {
             throw new ServiceException("问答名称不能为空");
         }
+
         qaChat.setChatName(qaChat.getChatName().trim());
         if (qaChat.getChatDesc() != null)
         {
             qaChat.setChatDesc(qaChat.getChatDesc().trim());
         }
-        if (StringUtils.hasText(qaChat.getDifyApiKey()))
+        if (StringUtils.hasText(qaChat.getChatType()))
         {
-            qaChat.setDifyApiKey(qaChat.getDifyApiKey().trim());
-            return;
+            qaChat.setChatType(qaChat.getChatType().trim().toLowerCase());
         }
-        qaChat.setDifyApiKey(db.getDifyApiKey());
+        else
+        {
+            qaChat.setChatType(db.getChatType());
+        }
+        if (StringUtils.hasText(qaChat.getApiKey()))
+        {
+            qaChat.setApiKey(qaChat.getApiKey().trim());
+        }
+        else
+        {
+            qaChat.setApiKey(db.getApiKey());
+        }
+        if (qaChat.getBaseUrl() != null)
+        {
+            qaChat.setBaseUrl(qaChat.getBaseUrl().trim());
+        }
+        else
+        {
+            qaChat.setBaseUrl(db.getBaseUrl());
+        }
+        if (qaChat.getModelName() != null)
+        {
+            qaChat.setModelName(qaChat.getModelName().trim());
+        }
+        else
+        {
+            qaChat.setModelName(db.getModelName());
+        }
+
+        validateChatType(qaChat);
+    }
+
+    private void validateChatType(QaChat qaChat)
+    {
+        String chatType = qaChat.getChatType();
+        if (!"dify".equals(chatType) && !"openai".equals(chatType))
+        {
+            throw new ServiceException("对话类型仅支持 dify 或 openai");
+        }
+        if ("openai".equals(chatType))
+        {
+            if (!StringUtils.hasText(qaChat.getBaseUrl()))
+            {
+                throw new ServiceException("OpenAI 类型必须配置接口地址");
+            }
+            if (!StringUtils.hasText(qaChat.getModelName()))
+            {
+                throw new ServiceException("OpenAI 类型必须配置模型名称");
+            }
+        }
     }
 }

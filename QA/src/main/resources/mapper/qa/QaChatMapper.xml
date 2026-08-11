@@ -8,7 +8,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id" column="id"/>
         <result property="chatName" column="chat_name"/>
         <result property="chatDesc" column="chat_desc"/>
-        <result property="difyApiKey" column="dify_api_key"/>
+        <result property="chatType" column="chat_type"/>
+        <result property="apiKey" column="api_key"/>
+        <result property="baseUrl" column="base_url"/>
+        <result property="modelName" column="model_name"/>
         <result property="createBy" column="create_by"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
@@ -16,7 +19,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectQaChatVo">
-        select id, chat_name, chat_desc, dify_api_key, create_by, create_time, update_by, update_time
+        select id, chat_name, chat_desc, chat_type, api_key, base_url, model_name, create_by, create_time, update_by, update_time
         from qa_chat
     </sql>
 
@@ -44,7 +47,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="chatName != null and chatName != ''">chat_name,</if>
             <if test="chatDesc != null">chat_desc,</if>
-            <if test="difyApiKey != null and difyApiKey != ''">dify_api_key,</if>
+            <if test="chatType != null and chatType != ''">chat_type,</if>
+            <if test="apiKey != null and apiKey != ''">api_key,</if>
+            <if test="baseUrl != null and baseUrl != ''">base_url,</if>
+            <if test="modelName != null and modelName != ''">model_name,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null and updateBy != ''">update_by,</if>
@@ -53,7 +59,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="chatName != null and chatName != ''">#{chatName},</if>
             <if test="chatDesc != null">#{chatDesc},</if>
-            <if test="difyApiKey != null and difyApiKey != ''">#{difyApiKey},</if>
+            <if test="chatType != null and chatType != ''">#{chatType},</if>
+            <if test="apiKey != null and apiKey != ''">#{apiKey},</if>
+            <if test="baseUrl != null and baseUrl != ''">#{baseUrl},</if>
+            <if test="modelName != null and modelName != ''">#{modelName},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
@@ -66,7 +75,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="chatName != null and chatName != ''">chat_name = #{chatName},</if>
             <if test="chatDesc != null">chat_desc = #{chatDesc},</if>
-            <if test="difyApiKey != null and difyApiKey != ''">dify_api_key = #{difyApiKey},</if>
+            <if test="chatType != null and chatType != ''">chat_type = #{chatType},</if>
+            <if test="apiKey != null and apiKey != ''">api_key = #{apiKey},</if>
+            <if test="baseUrl != null and baseUrl != ''">base_url = #{baseUrl},</if>
+            <if test="modelName != null and modelName != ''">model_name = #{modelName},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>

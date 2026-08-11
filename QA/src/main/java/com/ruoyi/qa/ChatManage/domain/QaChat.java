@@ -17,8 +17,17 @@ public class QaChat extends BaseEntity
     @Excel(name = "问答描述")
     private String chatDesc;
 
-    @Excel(name = "Dify应用Key")
-    private String difyApiKey;
+    @Excel(name = "对话类型")
+    private String chatType;
+
+    @Excel(name = "API Key")
+    private String apiKey;
+
+    @Excel(name = "接口地址")
+    private String baseUrl;
+
+    @Excel(name = "模型名称")
+    private String modelName;
 
     public Long getId()
     {
@@ -50,14 +59,54 @@ public class QaChat extends BaseEntity
         this.chatDesc = chatDesc;
     }
 
-    public String getDifyApiKey()
+    public String getChatType()
     {
-        return difyApiKey;
+        return chatType;
     }
 
-    public void setDifyApiKey(String difyApiKey)
+    public void setChatType(String chatType)
     {
-        this.difyApiKey = difyApiKey;
+        this.chatType = chatType;
+    }
+
+    public String getApiKey()
+    {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey)
+    {
+        this.apiKey = apiKey;
+    }
+
+    public String getBaseUrl()
+    {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl)
+    {
+        this.baseUrl = baseUrl;
+    }
+
+    public String getModelName()
+    {
+        return modelName;
+    }
+
+    public void setModelName(String modelName)
+    {
+        this.modelName = modelName;
+    }
+
+    public boolean isDify()
+    {
+        return "dify".equalsIgnoreCase(chatType);
+    }
+
+    public boolean isOpenai()
+    {
+        return "openai".equalsIgnoreCase(chatType);
     }
 
     @Override
@@ -67,7 +116,10 @@ public class QaChat extends BaseEntity
             .append("id", getId())
             .append("chatName", getChatName())
             .append("chatDesc", getChatDesc())
-            .append("difyApiKey", getDifyApiKey())
+            .append("chatType", getChatType())
+            .append("apiKey", getApiKey())
+            .append("baseUrl", getBaseUrl())
+            .append("modelName", getModelName())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

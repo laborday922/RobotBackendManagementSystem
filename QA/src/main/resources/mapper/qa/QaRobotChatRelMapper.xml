@@ -18,7 +18,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="id" column="id"/>
         <result property="chatName" column="chat_name"/>
         <result property="chatDesc" column="chat_desc"/>
-        <result property="difyApiKey" column="dify_api_key"/>
+        <result property="chatType" column="chat_type"/>
+        <result property="apiKey" column="api_key"/>
+        <result property="baseUrl" column="base_url"/>
+        <result property="modelName" column="model_name"/>
     </resultMap>
 
     <sql id="selectQaRobotChatRelVo">
@@ -88,7 +91,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <select id="selectQaChatByRobotId" parameterType="Long" resultMap="QaChatRoutingResult">
-        select c.id, c.chat_name, c.chat_desc, c.dify_api_key
+        select c.id, c.chat_name, c.chat_desc, c.chat_type, c.api_key, c.base_url, c.model_name
         from qa_robot_chat_rel r
         inner join qa_chat c on c.id = r.chat_id
         where r.robot_id = #{robotId}

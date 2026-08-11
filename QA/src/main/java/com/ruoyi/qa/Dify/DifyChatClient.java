@@ -73,9 +73,12 @@ public class DifyChatClient
         }
     }
 
-    public InputStream openChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey) throws IOException, InterruptedException
+    /**
+     * 以指定 baseUrl 打开流式对话连接（用于按 QA 配置的动态 baseUrl）。
+     */
+    public InputStream openChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey, String baseUrl) throws IOException, InterruptedException
     {
-        URI uri = chatMessagesUri();
+        URI uri = chatMessagesUri(baseUrl);
         log.info("Dify streaming request: uri={}, user={}, conversationId={}, queryLen={}",
             uri,
             body == null ? null : body.getUser(),
@@ -97,6 +100,11 @@ public class DifyChatClient
             throw new IOException("Dify /chat-messages streaming failed (status=" + resp.statusCode() + "): " + trimForLog(err));
         }
         return resp.body();
+    }
+
+    public InputStream openChatMessagesStreaming(DifyChatMessagesRequest body, String apiKey) throws IOException, InterruptedException
+    {
+        return openChatMessagesStreaming(body, apiKey, null);
     }
 
     private HttpRequest buildRequest(URI uri, DifyChatMessagesRequest body, String apiKey)
@@ -126,16 +134,27 @@ public class DifyChatClient
 
     private URI chatMessagesUri()
     {
-        String baseUrl = requireBaseUrl();
+        String baseUrl = requireBaseUrl(props.getBaseUrl());
+        return buildChatMessagesUri(baseUrl);
+    }
+
+    private URI chatMessagesUri(String baseUrl)
+    {
+        String resolved = StringUtils.hasText(baseUrl) ? baseUrl : props.getBaseUrl();
+        String url = requireBaseUrl(resolved);
+        return buildChatMessagesUri(url);
+    }
+
+    private URI buildChatMessagesUri(String baseUrl)
+    {
         return UriComponentsBuilder.fromHttpUrl(baseUrl)
             .path("/chat-messages")
             .build(true)
             .toUri();
     }
 
-    private String requireBaseUrl()
+    private String requireBaseUrl(String baseUrl)
     {
-        String baseUrl = props.getBaseUrl();
         if (!StringUtils.hasText(baseUrl))
         {
             throw new IllegalStateException("dify.base-url is blank");

@@ -8,9 +8,15 @@ public class QaChatDetailVo
 
     private String chatDesc;
 
-    private String difyApiKey;
+    private String chatType;
 
-    private Boolean hasDifyApiKey;
+    private String apiKey;
+
+    private String baseUrl;
+
+    private String modelName;
+
+    private Boolean hasApiKey;
 
     public Long getId()
     {
@@ -42,23 +48,53 @@ public class QaChatDetailVo
         this.chatDesc = chatDesc;
     }
 
-    public String getDifyApiKey()
+    public String getChatType()
     {
-        return difyApiKey;
+        return chatType;
     }
 
-    public void setDifyApiKey(String difyApiKey)
+    public void setChatType(String chatType)
     {
-        this.difyApiKey = difyApiKey;
+        this.chatType = chatType;
     }
 
-    public Boolean getHasDifyApiKey()
+    public String getApiKey()
     {
-        return hasDifyApiKey;
+        return apiKey;
     }
 
-    public void setHasDifyApiKey(Boolean hasDifyApiKey)
+    public void setApiKey(String apiKey)
     {
-        this.hasDifyApiKey = hasDifyApiKey;
+        this.apiKey = apiKey;
+    }
+
+    public String getBaseUrl()
+    {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl)
+    {
+        this.baseUrl = baseUrl;
+    }
+
+    public String getModelName()
+    {
+        return modelName;
+    }
+
+    public void setModelName(String modelName)
+    {
+        this.modelName = modelName;
+    }
+
+    public Boolean getHasApiKey()
+    {
+        return hasApiKey;
+    }
+
+    public void setHasApiKey(Boolean hasApiKey)
+    {
+        this.hasApiKey = hasApiKey;
     }
 }

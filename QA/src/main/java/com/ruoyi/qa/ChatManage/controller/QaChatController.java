@@ -79,8 +79,9 @@ public class QaChatController extends BaseController
         vo.setId(qaChat.getId());
         vo.setChatName(qaChat.getChatName());
         vo.setChatDesc(qaChat.getChatDesc());
-        vo.setHasDifyApiKey(StringUtils.hasText(qaChat.getDifyApiKey()));
-        vo.setApiKeyMasked(maskApiKey(qaChat.getDifyApiKey()));
+        vo.setChatType(qaChat.getChatType());
+        vo.setHasApiKey(StringUtils.hasText(qaChat.getApiKey()));
+        vo.setApiKeyMasked(maskApiKey(qaChat.getApiKey()));
         vo.setUpdateTime(qaChat.getUpdateTime());
         return vo;
     }
@@ -95,8 +96,11 @@ public class QaChatController extends BaseController
         vo.setId(qaChat.getId());
         vo.setChatName(qaChat.getChatName());
         vo.setChatDesc(qaChat.getChatDesc());
-        vo.setDifyApiKey("");
-        vo.setHasDifyApiKey(StringUtils.hasText(qaChat.getDifyApiKey()));
+        vo.setChatType(qaChat.getChatType());
+        vo.setApiKey("");
+        vo.setBaseUrl(qaChat.getBaseUrl());
+        vo.setModelName(qaChat.getModelName());
+        vo.setHasApiKey(StringUtils.hasText(qaChat.getApiKey()));
         return vo;
     }
 

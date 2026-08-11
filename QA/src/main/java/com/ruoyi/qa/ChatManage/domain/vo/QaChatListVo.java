@@ -10,7 +10,9 @@ public class QaChatListVo
 
     private String chatDesc;
 
-    private Boolean hasDifyApiKey;
+    private String chatType;
+
+    private Boolean hasApiKey;
 
     private String apiKeyMasked;
 
@@ -46,14 +48,24 @@ public class QaChatListVo
         this.chatDesc = chatDesc;
     }
 
-    public Boolean getHasDifyApiKey()
+    public String getChatType()
     {
-        return hasDifyApiKey;
+        return chatType;
     }
 
-    public void setHasDifyApiKey(Boolean hasDifyApiKey)
+    public void setChatType(String chatType)
     {
-        this.hasDifyApiKey = hasDifyApiKey;
+        this.chatType = chatType;
+    }
+
+    public Boolean getHasApiKey()
+    {
+        return hasApiKey;
+    }
+
+    public void setHasApiKey(Boolean hasApiKey)
+    {
+        this.hasApiKey = hasApiKey;
     }
 
     public String getApiKeyMasked()

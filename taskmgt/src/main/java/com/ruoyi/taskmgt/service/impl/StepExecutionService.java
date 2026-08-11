@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.enums.ReturnNo;
 import com.ruoyi.common.exception.task.TaskmgtException;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.robots.domain.Robot;
 import com.ruoyi.robots.service.IRobotsService;
@@ -128,9 +129,15 @@ public class StepExecutionService {
                     step.setStatus(TaskStep.WAITING_CALLBACK);
                     stepRepository.update(step);
                     // 注册超时检测（estimatedFinishTime若无默认30分钟）
-                    long timeout = response.getEstimatedFinishTime() != null ?
-                            response.getEstimatedFinishTime().getTime() - System.currentTimeMillis() :
-                            30 * 60 * 1000;
+                    long timeout = 30 * 60 * 1000L;
+                    if (response.getEstimatedFinishTime() != null && !response.getEstimatedFinishTime().isEmpty()) {
+                        try {
+                            Date finishTime = DateUtils.parseDate(response.getEstimatedFinishTime(), DateUtils.YYYY_MM_DD_HH_MM_SS);
+                            timeout = finishTime.getTime() - System.currentTimeMillis();
+                        } catch (Exception e) {
+                            log.warn("解析 estimatedFinishTime 失败: {}", response.getEstimatedFinishTime());
+                        }
+                    }
                     asyncMonitor.registerCallbackTimeout(step.getId(), response.getTraceId(), timeout);
                     taskLogService.record(step.getTaskId(), step.getId(),
                             TaskLogEventType.STEP_WAITING_CALLBACK,

@@ -162,16 +162,24 @@ export default {
   mounted() {
     echarts.registerMap("china", chinaJson)
     this.updateTime()
-    setInterval(this.updateTime, 1000)
+    this.timeTimer = setInterval(this.updateTime, 1000)
 
     this.initCharts()
     this.loadAllDataExceptWordCloud()
     this.loadWordCloudAsync()
 
+    // 每 5 秒自动刷新所有数据
+    this.dataTimer = setInterval(() => {
+      this.loadAllDataExceptWordCloud()
+      this.loadWordCloudAsync()
+    }, 5000)
+
     window.addEventListener("resize", this.resizeCharts)
   },
 
   beforeDestroy() {
+    this.timeTimer && clearInterval(this.timeTimer)
+    this.dataTimer && clearInterval(this.dataTimer)
     window.removeEventListener("resize", this.resizeCharts)
   },
 

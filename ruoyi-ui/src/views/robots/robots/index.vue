@@ -62,16 +62,16 @@
           v-hasPermi="['robots:robots:remove']"
         >删除</el-button>
       </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['robots:robots:export']"
-        >导出</el-button>
-      </el-col>
+<!--      <el-col :span="1.5">-->
+<!--        <el-button-->
+<!--          type="warning"-->
+<!--          plain-->
+<!--          icon="el-icon-download"-->
+<!--          size="mini"-->
+<!--          @click="handleExport"-->
+<!--          v-hasPermi="['robots:robots:export']"-->
+<!--        >导出</el-button>-->
+<!--      </el-col>-->
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -102,6 +102,11 @@
             <el-tag :type="getStatusTagType(scope.row.status)" effect="light">{{ getStatusText(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="位置" align="center" prop="nearAreaName" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.nearAreaName || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="硬件" align="center" prop="hardwareStatus" width="70">
           <template slot-scope="scope">
             <span v-if="String(scope.row.status) === '0'">-</span>
@@ -120,19 +125,20 @@
             <span v-else>{{ scope.row.battery }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" align="center" prop="createdAt" width="110" show-overflow-tooltip>
+        <el-table-column label="当前模式" align="center" prop="currentMode" width="90">
           <template slot-scope="scope">
-            <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
+            <el-tag :type="getModeTagType(scope.row.currentMode)" effect="light">{{ getModeName(scope.row.currentMode) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
           <template slot-scope="scope">
-            <el-button
+            <!-- 位置历史功能未完成，暂时隐藏 -->
+            <!-- <el-button
               size="mini"
               type="text"
               icon="el-icon-view"
               @click="handleViewHistory(scope.row)"
-            >查看</el-button>
+            >查看</el-button> -->
             <el-button
               size="mini"
               type="text"
@@ -249,6 +255,11 @@ export default {
         '2': '闲置',
         '3': '维护'
       },
+      currentModeMap: {
+        1: '待机模式',
+        2: '维护模式',
+        3: '充电模式'
+      },
       rules: {
         code: [{ required: true, message: "机器人编号不能为空", trigger: "blur" }],
         name: [{ required: true, message: "机器人名称不能为空", trigger: "blur" }],
@@ -318,6 +329,15 @@ export default {
         case '2': return 'info'
         case '3': return 'danger'
         default: return 'info'
+      }
+    },
+    getModeName(modeId) { return this.currentModeMap[modeId] || '未知' },
+    getModeTagType(modeId) {
+      switch (modeId) {
+        case 1: return 'info'
+        case 2: return 'warning'
+        case 3: return 'success'
+        default: return ''
       }
     },
     cancel() { this.open = false; this.reset() },

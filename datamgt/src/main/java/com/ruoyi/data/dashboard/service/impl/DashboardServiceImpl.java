@@ -151,9 +151,10 @@ public class DashboardServiceImpl implements DashboardService {
 
         for (TaskExecutionPo po : list) {
             TaskExecutionItem vo = convertToVO(po);
-            if (po.getStatus() == 1) {
+            // Task 领域对象: 0=EXECUTING(执行中), 1=PENDING(准备中)
+            if (po.getStatus() == 0) {
                 running.add(vo);
-            } else if (po.getStatus() == 0) {
+            } else if (po.getStatus() == 1) {
                 pending.add(vo);
             }
         }
@@ -174,21 +175,29 @@ public class DashboardServiceImpl implements DashboardService {
         vo.setStatusDesc(convertTaskStatus(po.getStatus()));
         vo.setScheduledTime(po.getScheduledTime());
         vo.setPriority(po.getPriority());
+        vo.setTotalSteps(po.getTotalSteps());
+        vo.setCompletedSteps(po.getCompletedSteps());
+
+        // 计算进度百分比：已完成步骤数 / 总步骤数 * 100
+        int total = po.getTotalSteps() != null ? po.getTotalSteps() : 0;
+        int completed = po.getCompletedSteps() != null ? po.getCompletedSteps() : 0;
+        vo.setProgress(total > 0 ? completed * 100 / total : 0);
+
         return vo;
     }
 
+    /** Task 领域对象状态常量: 0-执行中 1-准备中 2-已暂停 3-未开始 4-已禁用 5-已终止 6-已结束 7-已删除 */
     private String convertTaskStatus(Integer status) {
         switch (status) {
-            case 0:
-                return "待执行";
-            case 1:
-                return "执行中";
-            case 2:
-                return "已完成";
-            case 3:
-                return "失败";
-            default:
-                return "未知";
+            case 0:  return "执行中";
+            case 1:  return "准备中";
+            case 2:  return "已暂停";
+            case 3:  return "未开始";
+            case 4:  return "已禁用";
+            case 5:  return "已终止";
+            case 6:  return "已结束";
+            case 7:  return "已删除";
+            default: return "未知";
         }
     }
 

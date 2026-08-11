@@ -19,4 +19,10 @@ public class TaskExecutionPo {
 
     private Integer priority;
 
+    /** 总步骤数 */
+    private Integer totalSteps;
+
+    /** 已完成步骤数 */
+    private Integer completedSteps;
+
 }

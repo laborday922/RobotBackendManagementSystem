@@ -110,7 +110,7 @@
 
         <!-- 词云图卡片，带独立 loading -->
         <div class="cell">
-          <div class="panel" v-loading="wordCloudLoading" element-loading-text="词云图加载中，请稍后...">
+          <div class="panel">
             <div class="panel-title">词云图</div>
             <div id="wordCloudChart" class="chart"></div>
           </div>
@@ -316,14 +316,13 @@ export default {
         const res = await getTaskExecutions({start_time: null, end_time: null, limit: 20, offset: 0})
         if (res.code === 200) {
           const data = res.data
-          this.executingTasks = data.executingTasks || []
+          this.executingTasks = data.runningTasks || []
           this.pendingTasks = (data.pendingTasks || []).map(task => ({
             ...task,
             scheduledTime: this.formatDateTime(task.scheduledTime)
           }))
           this.taskStats.executing = this.executingTasks.length
           this.taskStats.pending = this.pendingTasks.length
-          if (data.completedCount !== undefined) this.taskStats.completed = data.completedCount
         }
       } catch (error) {
         console.error('加载任务列表失败:', error)

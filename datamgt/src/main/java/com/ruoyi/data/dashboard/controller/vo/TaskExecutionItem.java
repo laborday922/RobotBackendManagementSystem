@@ -22,4 +22,13 @@ public class TaskExecutionItem {
 
     private Integer priority;
 
+    /** 总步骤数 */
+    private Integer totalSteps;
+
+    /** 已完成步骤数 */
+    private Integer completedSteps;
+
+    /** 进度百分比 0-100 */
+    private Integer progress;
+
 }

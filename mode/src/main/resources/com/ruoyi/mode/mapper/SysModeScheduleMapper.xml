@@ -25,13 +25,13 @@
         <result property="updateBy" column="update_by" />
         <result property="updateTime" column="update_time" />
         <!-- 添加机器人集合 -->
-        <collection property="robots" ofType="com.ruoyi.mode.domain.SysRobot"
+        <collection property="robots" ofType="com.ruoyi.robots.domain.Robot"
                     select="selectRobotsByScheduleId" column="schedule_id" />
     </resultMap>
 
     <!-- 机器人结果映射 -->
-    <resultMap type="com.ruoyi.mode.domain.SysRobot" id="SysRobotResult">
-        <id     property="robotId"          column="id"                 />
+    <resultMap type="com.ruoyi.robots.domain.Robot" id="SysRobotResult">
+        <id     property="id"               column="id"                 />
         <result property="name"             column="name"               />
         <result property="code"             column="code"               />
         <result property="groupId"          column="group_id"           />
@@ -39,7 +39,6 @@
         <result property="status"           column="status"             />
         <result property="area"             column="area"               />
         <result property="currentMode"      column="current_mode"       />
-        <result property="delFlag"          column="del_flag"           />
         <result property="createBy"         column="create_by"          />
         <result property="createTime"       column="created_at"         />
         <result property="updateBy"         column="update_by"          />
@@ -109,7 +108,6 @@
         r.status,
         r.area,
         r.current_mode,
-        r.del_flag,
         r.create_by,
         r.created_at,
         r.update_by,

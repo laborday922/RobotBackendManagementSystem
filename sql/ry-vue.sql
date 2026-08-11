@@ -5468,33 +5468,9 @@ INSERT INTO `sys_reception_config` VALUES (5, 9, '请问关于公司：有哪些
 INSERT INTO `sys_reception_config` VALUES (6, 8, '请问关于公司：有哪些需要了解的？', '您好', '真正的智能服务机器人 #机器人名称# 即将为您服务', '1', '尊敬的 #全名# #职称# 您好', '尊敬的贵宾们您们好', '1', '#性别# 您好', '先生女士们好', NULL, '2026-05-31 13:44:55', '', NULL, 1);
 
 -- ----------------------------
--- Table structure for sys_robot_ext
+-- sys_robot_ext 表已废弃，current_mode 已迁移至 robots 表的 current_mode 字段
+-- 如需清理旧表：DROP TABLE IF EXISTS `sys_robot_ext`;
 -- ----------------------------
-DROP TABLE IF EXISTS `sys_robot_ext`;
-CREATE TABLE `sys_robot_ext`  (
-  `robot_id` bigint NOT NULL COMMENT '机器人ID',
-  `current_mode` bigint NULL DEFAULT NULL COMMENT '当前模式ID',
-  `current_mode_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '当前模式名称',
-  `last_mode_switch_time` datetime NULL DEFAULT NULL COMMENT '最后模式切换时间',
-  `mode_switch_count` int NULL DEFAULT 0 COMMENT '模式切换次数',
-  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户ID',
-  `create_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '创建者',
-  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '' COMMENT '更新者',
-  `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `del_flag` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT '0' COMMENT '删除标志',
-  `need_auto_charge` tinyint NULL DEFAULT 0 COMMENT '是否需要自动充电 0-否 1-是',
-  PRIMARY KEY (`robot_id`) USING BTREE,
-  INDEX `idx_tenant_id`(`tenant_id` ASC) USING BTREE,
-  INDEX `idx_current_mode`(`current_mode` ASC) USING BTREE,
-  INDEX `idx_sys_robot_ext_tenant`(`tenant_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '机器人模式扩展表' ROW_FORMAT = DYNAMIC;
-
--- ----------------------------
--- Records of sys_robot_ext
--- ----------------------------
-INSERT INTO `sys_robot_ext` VALUES (1, 1, NULL, '2026-08-04 09:51:43', 5, 0, '', '2026-04-15 15:28:00', '', '2026-08-04 09:51:43', '0', 0);
-INSERT INTO `sys_robot_ext` VALUES (3, 1, NULL, '2026-04-15 15:28:00', 1, 0, '', '2026-04-15 15:28:00', '', '2026-04-15 15:28:00', '0', 0);
 
 -- ----------------------------
 -- Table structure for sys_robot_mode_config

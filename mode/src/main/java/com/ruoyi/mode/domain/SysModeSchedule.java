@@ -2,6 +2,7 @@ package com.ruoyi.mode.domain;
 
 import com.ruoyi.common.core.domain.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruoyi.robots.domain.Robot;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -70,7 +71,7 @@ public class SysModeSchedule extends BaseEntity
     private Long tenantId;
 
     /** 关联的机器人列表 */
-    private List<SysRobot> robots;
+    private List<Robot> robots;
 
     /** 机器人ID列表（用于接收前端数据） */
     private Long[] robotIds;

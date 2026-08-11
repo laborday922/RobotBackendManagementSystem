@@ -4,11 +4,12 @@
       <div class="card-title">
         <i class="fas fa-edit"></i> 编辑模式
       </div>
-      <div>
+      <!-- 新增按钮已注释，系统仅保留3个预留模式 -->
+      <!-- <div>
         <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['system:mode:add']">
           <i class="fas fa-plus"></i> 新增
         </el-button>
-      </div>
+      </div> -->
     </div>
 
     <div class="card-body">
@@ -154,12 +155,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="模式名称" prop="modeName">
-              <el-input v-model="form.modeName" placeholder="请输入模式名称" />
+              <el-input v-model="form.modeName" placeholder="请输入模式名称" :disabled="form.modeId != null" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="模式类型" prop="modeType">
-              <el-select v-model="form.modeType" placeholder="请选择模式类型">
+              <el-select v-model="form.modeType" placeholder="请选择模式类型" :disabled="form.modeId != null">
                 <el-option label="系统模式" value="system" />
                 <el-option label="自定义模式" value="custom" />
               </el-select>
@@ -169,13 +170,13 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="模式颜色" prop="modeColor">
-              <el-color-picker v-model="form.modeColor" show-alpha></el-color-picker>
+              <el-color-picker v-model="form.modeColor" show-alpha :disabled="form.modeId != null"></el-color-picker>
               <span style="margin-left: 10px;">{{ form.modeColor }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="模式图标" prop="modeIcon">
-              <el-select v-model="form.modeIcon" placeholder="请选择图标">
+              <el-select v-model="form.modeIcon" placeholder="请选择图标" :disabled="form.modeId != null">
                 <el-option label="待机图标" value="fa fa-pause-circle" />
                 <el-option label="维护图标" value="fa fa-tools" />
                 <el-option label="充电图标" value="fa fa-bolt" />
@@ -185,7 +186,7 @@
           </el-col>
         </el-row>
         <el-form-item label="模式描述" prop="description">
-          <el-input type="textarea" v-model="form.description" placeholder="请输入内容" :rows="3" />
+          <el-input type="textarea" v-model="form.description" placeholder="请输入内容" :rows="3" :disabled="form.modeId != null" />
         </el-form-item>
 
         <el-divider content-position="left">
@@ -206,10 +207,10 @@
           <div v-for="(param, index) in form.modeParams" :key="index" class="param-item">
             <div class="param-row">
               <div class="param-field param-name">
-                <el-input v-model="param.paramName" placeholder="参数名称" size="small" />
+                <el-input v-model="param.paramName" placeholder="参数名称" size="small" :disabled="form.modeId != null" />
               </div>
               <div class="param-field param-type">
-                <el-select v-model="param.paramType" placeholder="参数类型" size="small" @change="onParamTypeChange(param)">
+                <el-select v-model="param.paramType" placeholder="参数类型" size="small" @change="onParamTypeChange(param)" :disabled="form.modeId != null">
                   <el-option label="开关" value="boolean" />
                   <el-option label="数值" value="number" />
                   <el-option label="下拉选择" value="select" />
@@ -220,28 +221,28 @@
               <div class="param-field param-value">
                 <!-- 根据类型显示不同的输入控件 -->
                 <div v-if="param.paramType === 'boolean'">
-                  <el-switch v-model="param.paramValue" active-text="开启" inactive-text="关闭"></el-switch>
+                  <el-switch v-model="param.paramValue" active-text="开启" inactive-text="关闭" :disabled="form.modeId != null"></el-switch>
                 </div>
                 <div v-else-if="param.paramType === 'number'">
-                  <el-input-number v-model="param.paramValue" :min="param.paramMin || 0" :max="param.paramMax || 100" size="small" controls-position="right"></el-input-number>
+                  <el-input-number v-model="param.paramValue" :min="param.paramMin || 0" :max="param.paramMax || 100" size="small" controls-position="right" :disabled="form.modeId != null"></el-input-number>
                 </div>
                 <div v-else-if="param.paramType === 'select'">
-                  <el-select v-model="param.paramValue" placeholder="请选择" size="small">
+                  <el-select v-model="param.paramValue" placeholder="请选择" size="small" :disabled="form.modeId != null">
                     <el-option v-for="opt in getParamOptions(param)" :key="opt.value" :label="opt.label" :value="opt.value"></el-option>
                   </el-select>
                 </div>
                 <div v-else>
-                  <el-input v-model="param.paramValue" placeholder="参数值" size="small" />
+                  <el-input v-model="param.paramValue" placeholder="参数值" size="small" :disabled="form.modeId != null" />
                 </div>
               </div>
-              <div class="param-actions">
+              <div class="param-actions" v-if="form.modeId == null">
                 <el-button type="primary" icon="el-icon-edit" size="mini" circle @click="editParam(index)"></el-button>
                 <el-button type="danger" icon="el-icon-delete" size="mini" circle @click="removeParam(index)"></el-button>
               </div>
             </div>
           </div>
 
-          <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <div style="display: flex; gap: 10px; margin-top: 8px;" v-if="form.modeId == null">
             <el-button type="primary" plain icon="el-icon-plus" size="small" @click="addParam" class="add-param-btn">
               添加参数
             </el-button>
@@ -258,8 +259,8 @@
         </div>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
+        <el-button v-if="form.modeId == null" type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="cancel">关 闭</el-button>
       </div>
     </el-dialog>
 

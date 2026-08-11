@@ -1,7 +1,7 @@
 package com.ruoyi.mode.mapper;
 
 import com.ruoyi.mode.domain.SysModeSchedule;
-import com.ruoyi.mode.domain.SysRobot;
+import com.ruoyi.robots.domain.Robot;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -77,7 +77,7 @@ public interface SysModeScheduleMapper
      * @param tenantId 租户ID（为null时查询所有租户）
      * @return 机器人集合
      */
-    public List<SysRobot> selectRobotsByScheduleId(@Param("scheduleId") Long scheduleId, @Param("tenantId") Long tenantId);
+    public List<Robot> selectRobotsByScheduleId(@Param("scheduleId") Long scheduleId, @Param("tenantId") Long tenantId);
 
     /**
      * 批量插入排程机器人关联

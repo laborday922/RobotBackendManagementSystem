@@ -6,7 +6,6 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.mode.domain.SysMode;
-import com.ruoyi.mode.domain.SysRobot;
 import com.ruoyi.mode.service.ISysModeService;
 import com.ruoyi.mode.service.ISysRobotService;
 import com.ruoyi.robots.domain.Robot;

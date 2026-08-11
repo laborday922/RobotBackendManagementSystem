@@ -55,12 +55,9 @@
         GROUP BY mode_id
         ) h ON m.mode_id = h.mode_id
         LEFT JOIN (
-        SELECT current_mode as mode_id, COUNT(DISTINCT robot_id) as robot_count
-        FROM sys_robot_ext
+        SELECT current_mode as mode_id, COUNT(DISTINCT id) as robot_count
+        FROM robots
         WHERE current_mode IS NOT NULL AND del_flag = '0'
-        <if test="tenantId != null and tenantId != ''">
-            AND tenant_id = #{tenantId}
-        </if>
         GROUP BY current_mode
         ) r ON m.mode_id = r.mode_id
         <where>
@@ -112,8 +109,8 @@
         GROUP BY mode_id
         ) h ON m.mode_id = h.mode_id
         LEFT JOIN (
-        SELECT current_mode as mode_id, COUNT(DISTINCT robot_id) as robot_count
-        FROM sys_robot_ext
+        SELECT current_mode as mode_id, COUNT(DISTINCT id) as robot_count
+        FROM robots
         WHERE current_mode = #{modeId} AND del_flag = '0'
         GROUP BY current_mode
         ) r ON m.mode_id = r.mode_id
@@ -195,11 +192,10 @@
     <update id="updateRobotCount" parameterType="Long">
         UPDATE sys_mode m
         SET m.robot_count = (
-        SELECT COUNT(DISTINCT e.robot_id)
-        FROM sys_robot_ext e
-        WHERE e.current_mode = m.mode_id
-        AND e.del_flag = '0'
-        AND e.tenant_id = m.tenant_id
+        SELECT COUNT(DISTINCT r.id)
+        FROM robots r
+        WHERE r.current_mode = m.mode_id
+        AND r.del_flag = '0'
         )
         WHERE m.mode_id = #{modeId}
         AND m.del_flag = '0'
@@ -209,18 +205,12 @@
     <update id="updateAllRobotCounts" parameterType="Long">
         UPDATE sys_mode m
         SET m.robot_count = (
-        SELECT COUNT(DISTINCT e.robot_id)
-        FROM sys_robot_ext e
-        WHERE e.current_mode = m.mode_id
-        AND e.del_flag = '0'
-        <if test="tenantId != null">
-            AND e.tenant_id = #{tenantId}
-        </if>
+        SELECT COUNT(DISTINCT r.id)
+        FROM robots r
+        WHERE r.current_mode = m.mode_id
+        AND r.del_flag = '0'
         )
         WHERE m.del_flag = '0'
-        <if test="tenantId != null">
-            AND m.tenant_id = #{tenantId}
-        </if>
     </update>
 
     <!-- 更新所有模式的使用次数 -->

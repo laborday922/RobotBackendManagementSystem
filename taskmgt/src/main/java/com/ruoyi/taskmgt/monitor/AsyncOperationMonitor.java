@@ -1,6 +1,5 @@
 package com.ruoyi.taskmgt.monitor;
 
-import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
 import com.ruoyi.taskmgt.invoker.dto.TaskStatusResponse;
 import com.ruoyi.taskmgt.domain.StepRepository;
@@ -52,21 +51,11 @@ public class AsyncOperationMonitor {
         }
     }
 
-    public void registerPolling(Long stepId, String traceId, Long operationId, Long robotId, String estimatedFinishTimeStr) {
+    public void registerPolling(Long stepId, String traceId, Long operationId, Long robotId, Date estimatedFinishTime) {
         if (pollingTasks.containsKey(traceId)) {
             log.warn("轮询已存在，忽略重复注册: stepId={}, traceId={}", stepId, traceId);
             return;
         }
-        // 解析 estimatedFinishTime 字符串为 Date
-        Date estimatedFinishTime = null;
-        if (estimatedFinishTimeStr != null && !estimatedFinishTimeStr.isEmpty()) {
-            try {
-                estimatedFinishTime = DateUtils.parseDate(estimatedFinishTimeStr, DateUtils.YYYY_MM_DD_HH_MM_SS);
-            } catch (Exception e) {
-                log.warn("解析 estimatedFinishTime 失败: {}", estimatedFinishTimeStr);
-            }
-        }
-
         long initialDelay = 1000;
         long period = calculatePeriod(estimatedFinishTime);
 

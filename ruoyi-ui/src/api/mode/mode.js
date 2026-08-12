@@ -58,7 +58,8 @@ export function changeModeStatus(data) {
 export function getChargeStrategyParam() {
   return {
     paramId: null,
-    paramName: '充电策略',
+    paramName: 'charge_strategy',
+    paramLabel: '充电策略',
     paramType: 'select',
     paramDescription: '选择机器人充电方式：立即充电或完成任务后充电',
     paramValue: 'after_task',

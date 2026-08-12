@@ -23,8 +23,11 @@ public class SysModeParam extends BaseEntity
     /** 所属模式ID */
     private Long modeId;
 
-    /** 参数名称 */
+    /** 参数名称（程序用，如 charge_strategy） */
     private String paramName;
+
+    /** 参数标签（前端显示用，如 充电策略） */
+    private String paramLabel;
 
     /** 参数类型(string文本/number数字/boolean开关/select下拉/range滑块) */
     private String paramType;
@@ -65,6 +68,7 @@ public class SysModeParam extends BaseEntity
                 .append("paramId", getParamId())
                 .append("modeId", getModeId())
                 .append("paramName", getParamName())
+                .append("paramLabel", getParamLabel())
                 .append("paramType", getParamType())
                 .append("paramDescription", getParamDescription())
                 .append("paramValue", getParamValue())

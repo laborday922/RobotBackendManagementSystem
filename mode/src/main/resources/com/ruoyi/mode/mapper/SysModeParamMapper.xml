@@ -8,6 +8,7 @@
         <id     property="paramId"           column="param_id"          />
         <result property="modeId"            column="mode_id"           />
         <result property="paramName"         column="param_name"        />
+        <result property="paramLabel"        column="param_label"       />
         <result property="paramType"         column="param_type"        />
         <result property="paramDescription"  column="param_description" />
         <result property="paramValue"        column="param_value"       />
@@ -25,7 +26,7 @@
     </resultMap>
 
     <sql id="selectParamVo">
-        select param_id, mode_id, param_name, param_type, param_description,
+        select param_id, mode_id, param_name, param_label, param_type, param_description,
         param_value, param_options, param_min, param_max, param_unit,
         order_num, del_flag, tenant_id, create_by, create_time, update_by, update_time
         from sys_mode_param
@@ -40,6 +41,9 @@
             </if>
             <if test="paramName != null and paramName != ''">
                 AND param_name like concat('%', #{paramName}, '%')
+            </if>
+            <if test="paramLabel != null and paramLabel != ''">
+                AND param_label like concat('%', #{paramLabel}, '%')
             </if>
             <if test="tenantId != null and tenantId != ''">
                 AND tenant_id = #{tenantId}
@@ -67,6 +71,7 @@
         insert into sys_mode_param(
         <if test="modeId != null">mode_id,</if>
         <if test="paramName != null and paramName != ''">param_name,</if>
+        <if test="paramLabel != null and paramLabel != ''">param_label,</if>
         <if test="paramType != null and paramType != ''">param_type,</if>
         <if test="paramDescription != null and paramDescription != ''">param_description,</if>
         <if test="paramValue != null">param_value,</if>
@@ -81,6 +86,7 @@
         )values(
         <if test="modeId != null">#{modeId},</if>
         <if test="paramName != null and paramName != ''">#{paramName},</if>
+        <if test="paramLabel != null and paramLabel != ''">#{paramLabel},</if>
         <if test="paramType != null and paramType != ''">#{paramType},</if>
         <if test="paramDescription != null and paramDescription != ''">#{paramDescription},</if>
         <if test="paramValue != null">#{paramValue},</if>
@@ -100,6 +106,7 @@
         update sys_mode_param
         <set>
             <if test="paramName != null and paramName != ''">param_name = #{paramName},</if>
+            <if test="paramLabel != null and paramLabel != ''">param_label = #{paramLabel},</if>
             <if test="paramType != null and paramType != ''">param_type = #{paramType},</if>
             <if test="paramDescription != null and paramDescription != ''">param_description = #{paramDescription},</if>
             <if test="paramValue != null">param_value = #{paramValue},</if>

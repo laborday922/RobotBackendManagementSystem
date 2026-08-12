@@ -60,7 +60,7 @@
           <!-- 动态生成参数配置项 -->
           <template v-if="selectedMode.modeParams && selectedMode.modeParams.length > 0">
             <div v-for="param in selectedMode.modeParams" :key="param.paramId" class="param-config-item">
-              <el-form-item :label="param.paramName + (param.paramUnit ? ` (${param.paramUnit})` : '')">
+              <el-form-item :label="(param.paramLabel || param.paramName) + (param.paramUnit ? ` (${param.paramUnit})` : '')">
                 <!-- 根据参数类型显示不同的控件 -->
                 <template v-if="param.paramType === 'boolean'">
                   <el-switch
@@ -100,7 +100,7 @@
                 <template v-else>
                   <el-input
                     v-model="configData[`param_${param.paramId}`]"
-                    :placeholder="`请输入${param.paramName}`"
+                    :placeholder="`请输入${param.paramLabel || param.paramName}`"
                     clearable>
                   </el-input>
                   <span class="param-desc" v-if="param.paramDescription">{{ param.paramDescription }}</span>

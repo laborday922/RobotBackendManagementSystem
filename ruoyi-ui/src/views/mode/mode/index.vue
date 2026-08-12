@@ -91,7 +91,7 @@
                   </div>
                   <div class="mode-params-list">
                     <el-tag size="mini" v-for="param in mode.modeParams.slice(0, 3)" :key="param.paramId" class="param-tag">
-                      {{ param.paramName }}
+                      {{ param.paramLabel || param.paramName }}
                     </el-tag>
                     <el-tag size="mini" v-if="mode.modeParams.length > 3" class="param-tag more-tag">
                       +{{ mode.modeParams.length - 3 }}
@@ -207,7 +207,7 @@
           <div v-for="(param, index) in form.modeParams" :key="index" class="param-item">
             <div class="param-row">
               <div class="param-field param-name">
-                <el-input v-model="param.paramName" placeholder="参数名称" size="small" :disabled="form.modeId != null" />
+                <el-input v-model="param.paramLabel" placeholder="显示标签（如 充电策略）" size="small" :disabled="form.modeId != null" />
               </div>
               <div class="param-field param-type">
                 <el-select v-model="param.paramType" placeholder="参数类型" size="small" @change="onParamTypeChange(param)" :disabled="form.modeId != null">
@@ -268,7 +268,10 @@
     <el-dialog title="参数配置" :visible.sync="paramDialogOpen" width="550px" append-to-body>
       <el-form ref="paramForm" :model="currentParam" label-width="90px">
         <el-form-item label="参数名称" required>
-          <el-input v-model="currentParam.paramName" placeholder="请输入参数名称" />
+          <el-input v-model="currentParam.paramName" placeholder="请输入参数名称（程序使用，如 charge_strategy）" />
+        </el-form-item>
+        <el-form-item label="参数标签" required>
+          <el-input v-model="currentParam.paramLabel" placeholder="请输入显示标签（如 充电策略）" />
         </el-form-item>
         <el-form-item label="参数类型" required>
           <el-select v-model="currentParam.paramType" placeholder="请选择参数类型" @change="onParamTypeChange(currentParam)" style="width: 100%;">
@@ -404,6 +407,7 @@ export default {
       currentParam: {
         paramId: null,
         paramName: '',
+          paramLabel: '',
         paramType: 'string',
         paramDescription: '',
         paramValue: '',
@@ -733,6 +737,7 @@ export default {
       this.currentParam = {
         paramId: null,
         paramName: '',
+        paramLabel: '',
         paramType: 'string',
         paramDescription: '',
         paramValue: '',

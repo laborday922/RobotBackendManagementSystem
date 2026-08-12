@@ -63,7 +63,7 @@ public interface ISysRobotService
     public int standbyMode(Long[] robotIds);
 
     /**
-     * 切换维护模式
+     * 切换维护模式（暂停全部任务）
      */
     public int maintenanceMode(Long[] robotIds);
 
@@ -102,12 +102,7 @@ public interface ISysRobotService
     // ==================== WebSocket 模式切换方法 ====================
 
     /**
-     * 通过 WebSocket 切换机器人模式（同步）
+     * 通过 WebSocket 切换机器人模式（同步），携带 sys_mode_param 参数
      */
     public boolean switchModeViaWebSocketSync(Long robotId, Long modeId, String modeName);
-
-    /**
-     * 通过 WebSocket 切换机器人模式（异步）
-     */
-    public String switchModeViaWebSocketAsync(Long robotId, Long modeId, String modeName);
 }

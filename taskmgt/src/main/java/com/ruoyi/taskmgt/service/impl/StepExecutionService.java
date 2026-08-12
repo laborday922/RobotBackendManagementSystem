@@ -96,6 +96,13 @@ public class StepExecutionService {
             // 设置任务级交互ID
             String interactionId = taskLogService.getInteractionId(step.getTaskId());
             request.setInteractionId(interactionId);
+            // 判断是否为最后一个步骤
+            List<TaskStep> allSteps = stepRepository.findStepsByTaskId(step.getTaskId());
+            int maxOrder = allSteps.stream()
+                    .mapToInt(s -> s.getOrderNum() != null ? s.getOrderNum() : 0)
+                    .max().orElse(0);
+            int curOrder = step.getOrderNum() != null ? step.getOrderNum() : 0;
+            request.setLatest(curOrder == maxOrder);
 
             RobotTaskResponse response = robotInvoker.execute(robotId, request);
 

@@ -10,6 +10,7 @@ public class RobotTaskRequest {
     private String interactionId;
     private Long operationId;
     private Map<String, Object> params;
+    private Boolean latest;   // 是否为最后一个步骤
     //private String callbackUrl;
     private String mode; // SYNC, ASYNC, CALLBACK
 }

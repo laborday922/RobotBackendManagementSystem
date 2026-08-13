@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -245,7 +244,13 @@ public class ModeScheduleJob {
     private LocalTime parseStartTime(String startTime) {
         if (startTime == null || startTime.isEmpty()) return null;
         try {
-            return LocalTime.parse(startTime, DateTimeFormatter.ofPattern("HH:mm"));
+            String t = startTime.trim();
+            if (t.length() >= 5) {
+                int hour = Integer.parseInt(t.substring(0, 2));
+                int minute = Integer.parseInt(t.substring(3, 5));
+                return LocalTime.of(hour, minute);
+            }
+            return null;
         } catch (Exception e) {
             logger.warn("解析开始时间失败: {}", startTime, e);
             return null;

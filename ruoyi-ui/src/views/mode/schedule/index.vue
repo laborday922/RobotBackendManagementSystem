@@ -389,6 +389,7 @@
                 v-model="form.startTime"
                 placeholder="选择开始时间"
                 style="width:100%"
+                format="HH:mm"
                 value-format="HH:mm"
               />
             </el-form-item>
@@ -954,8 +955,8 @@ export default {
         }
 
         let startTime = data.startTime;
-        if (startTime && startTime.length === 5) {
-          startTime = startTime;
+        if (startTime && startTime.length >= 5) {
+          startTime = startTime.substring(0, 5);
         }
 
         this.form = {

@@ -57,6 +57,9 @@ public class SysModeSchedule extends BaseEntity
     /** 状态(running/paused/pending/completed/failed) */
     private String status;
 
+    /** 是否启用（0停用 1启用） */
+    private String usable;
+
     /** 上次执行时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date lastExecuteTime;
@@ -90,6 +93,7 @@ public class SysModeSchedule extends BaseEntity
                 .append("startTime", getStartTime())
                 .append("duration", getDuration())
                 .append("status", getStatus())
+                .append("usable", getUsable())
                 .append("lastExecuteTime", getLastExecuteTime())
                 .append("lastExecuteStatus", getLastExecuteStatus())
                 .append("delFlag", getDelFlag())

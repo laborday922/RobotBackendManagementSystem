@@ -83,6 +83,16 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         // 设置租户ID
         sysModeSchedule.setTenantId(TenantContext.get());
         sysModeSchedule.setCreateTime(DateUtils.getNowDate());
+
+        // 默认启用
+        if (sysModeSchedule.getUsable() == null || sysModeSchedule.getUsable().isEmpty()) {
+            sysModeSchedule.setUsable("1");
+        }
+        // 初始状态由启用标志决定
+        if (sysModeSchedule.getStatus() == null || sysModeSchedule.getStatus().isEmpty()) {
+            sysModeSchedule.setStatus("1".equals(sysModeSchedule.getUsable()) ? "pending" : "paused");
+        }
+
         // 生成执行时间描述
         if (sysModeSchedule.getStartDate() != null && sysModeSchedule.getStartTime() != null) {
             String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
@@ -113,11 +123,29 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     {
         sysModeSchedule.setUpdateTime(DateUtils.getNowDate());
 
+        // 编辑排程时，重置执行状态：
+        // 启用 -> 待执行，停用 -> 已暂停，并清空上次执行时间以便重新触发
+        if (sysModeSchedule.getUsable() != null && !sysModeSchedule.getUsable().isEmpty()) {
+            if ("0".equals(sysModeSchedule.getUsable())) {
+                sysModeSchedule.setStatus("paused");
+            } else if (!"completed".equals(sysModeSchedule.getStatus())
+                    && !"failed".equals(sysModeSchedule.getStatus())) {
+                sysModeSchedule.setStatus("pending");
+            }
+            sysModeSchedule.setLastExecuteTime(null);
+            sysModeSchedule.setLastExecuteStatus(null);
+        }
+
         // 更新执行时间描述（只有当 startDate 和 startTime 都存在时才更新）
         if (sysModeSchedule.getStartDate() != null && sysModeSchedule.getStartTime() != null) {
             String executeTime = DateUtils.parseDateToStr("yyyy-MM-dd", sysModeSchedule.getStartDate())
                     + " " + sysModeSchedule.getStartTime();
             sysModeSchedule.setExecuteTime(executeTime);
+        }
+
+        // 编辑排程时重置执行标记（lastExecuteTime 为 null 会被 MyBatis 动态 SQL 忽略，需显式清空）
+        if (sysModeSchedule.getUsable() != null && !sysModeSchedule.getUsable().isEmpty()) {
+            sysModeScheduleMapper.resetScheduleExecution(sysModeSchedule.getScheduleId());
         }
 
         // 关键修改：只有当 robotIds 不为 null 时才更新机器人关联
@@ -168,7 +196,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     }
 
     /**
-     * 切换排程状态
+     * 切换排程启用状态
      *
      * @param scheduleId 排程ID
      * @return 结果
@@ -178,8 +206,16 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     {
         SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(scheduleId);
         if (schedule != null) {
-            String newStatus = "running".equals(schedule.getStatus()) ? "paused" : "running";
-            return sysModeScheduleMapper.updateScheduleStatus(scheduleId, newStatus);
+            String usable = "1".equals(schedule.getUsable()) ? "0" : "1";
+            String newStatus = "1".equals(usable) ? "pending" : "paused";
+            // 重置执行标记
+            sysModeScheduleMapper.resetScheduleExecution(scheduleId);
+
+            SysModeSchedule update = new SysModeSchedule();
+            update.setScheduleId(scheduleId);
+            update.setUsable(usable);
+            update.setStatus(newStatus);
+            return sysModeScheduleMapper.updateSysModeSchedule(update);
         }
         return 0;
     }
@@ -230,9 +266,9 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     // ==================== 定时任务用 ====================
 
     @Override
-    public List<SysModeSchedule> selectRunningSchedules() {
+    public List<SysModeSchedule> selectEnabledSchedules() {
         SysModeSchedule query = new SysModeSchedule();
-        query.setStatus("running");
+        query.setUsable("1");
         Long tenantId = TenantContext.get();
         if (!isAdmin(tenantId)) {
             query.setTenantId(tenantId);
@@ -246,18 +282,17 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     }
 
     @Override
-    public int updateScheduleExecutionStatus(Long scheduleId, String status, Date lastExecuteTime, String remark) {
-        SysModeSchedule schedule = new SysModeSchedule();
-        schedule.setScheduleId(scheduleId);
-        schedule.setLastExecuteStatus(status);
-        schedule.setLastExecuteTime(lastExecuteTime);
-        // robotIds 设为 null 以避免清空关联
-        schedule.setRobotIds(null);
-        return sysModeScheduleMapper.updateSysModeSchedule(schedule);
+    public int updateScheduleStatus(Long scheduleId, String status) {
+        return sysModeScheduleMapper.updateScheduleStatus(scheduleId, status);
     }
 
     @Override
-    public int completeSchedule(Long scheduleId) {
-        return sysModeScheduleMapper.updateScheduleStatus(scheduleId, "completed");
+    public int updateScheduleExecutionResult(Long scheduleId, String lastExecuteStatus, Date lastExecuteTime) {
+        SysModeSchedule schedule = new SysModeSchedule();
+        schedule.setScheduleId(scheduleId);
+        schedule.setLastExecuteStatus(lastExecuteStatus);
+        schedule.setLastExecuteTime(lastExecuteTime);
+        schedule.setRobotIds(null);
+        return sysModeScheduleMapper.updateSysModeSchedule(schedule);
     }
 }

@@ -52,7 +52,7 @@
 
         <el-select v-model="queryParams.status" placeholder="状态" clearable size="small" style="width:150px;">
           <el-option label="进行中" value="running" />
-          <el-option label="已暂停" value="paused" />
+          <el-option label="已停用" value="paused" />
           <el-option label="待执行" value="pending" />
           <el-option label="已完成" value="completed" />
           <el-option label="失败" value="failed" />
@@ -88,7 +88,7 @@
           <div class="stat-icon"><i class="fas fa-pause-circle"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ pausedSchedules }}</div>
-            <div class="stat-label">已暂停</div>
+            <div class="stat-label">已停用</div>
           </div>
         </div>
         <div class="stat-card pending" @click="showScheduleDetail('pending')">
@@ -126,7 +126,7 @@
           </div>
           <div class="stat-item paused">
             <div class="stat-value">{{ calendarStats.paused }}</div>
-            <div class="stat-label">已暂停</div>
+            <div class="stat-label">已停用</div>
           </div>
         </div>
 
@@ -179,7 +179,7 @@
           <span><i class="failed-dot"></i> 失败</span>
           <span><i class="pending-dot"></i> 待执行</span>
           <span><i class="running-dot"></i> 进行中</span>
-          <span><i class="paused-dot"></i> 已暂停</span>
+          <span><i class="paused-dot"></i> 已停用</span>
           <span><i class="future-dot"></i> 未来日期</span>
           <span><i class="today-dot"></i> 今日</span>
           <span><i class="default-dot"></i> 无任务</span>
@@ -271,13 +271,13 @@
                 <i class="fas fa-edit"></i> 编辑
               </el-button>
               <el-button
-                v-if="scope.row.status === 'running' || scope.row.status === 'paused'"
+                v-if="scope.row.status !== 'completed' && scope.row.status !== 'failed'"
                 size="mini"
                 type="text"
                 @click="handleToggleStatus(scope.row)"
               >
-                <i :class="scope.row.status === 'running' ? 'fas fa-pause' : 'fas fa-play'"></i>
-                {{ scope.row.status === 'running' ? '暂停' : '恢复' }}
+                <i :class="scope.row.usable === '1' ? 'fas fa-pause' : 'fas fa-play'"></i>
+                {{ scope.row.usable === '1' ? '停用' : '启用' }}
               </el-button>
               <el-button
                 size="mini"
@@ -402,12 +402,11 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择状态" style="width:100%">
-                <el-option label="待执行" value="pending" />
-                <el-option label="进行中" value="running" />
-                <el-option label="已暂停" value="paused" />
-              </el-select>
+            <el-form-item label="是否启用" prop="usable">
+              <el-radio-group v-model="form.usable">
+                <el-radio label="1">启用</el-radio>
+                <el-radio label="0">停用</el-radio>
+              </el-radio-group>
             </el-form-item>
           </el-col>
         </el-row>
@@ -584,7 +583,7 @@ export default {
         weekDays: [],
         monthDays: [],
         duration: 2,
-        status: 'running'
+        usable: '1'
       },
       rules: {
         scheduleName: [
@@ -972,7 +971,7 @@ export default {
           weekDays: weekDays,
           monthDays: monthDays,
           duration: data.duration ? Number(data.duration) : 2,
-          status: data.status || 'running'
+          usable: data.usable || '1'
         };
 
         if (!this.form.modeName && this.form.modeId) {
@@ -997,7 +996,7 @@ export default {
     },
 
     handleToggleStatus(row) {
-      const text = row.status === 'running' ? '暂停' : '恢复';
+      const text = row.usable === '1' ? '停用' : '启用';
       this.$modal.confirm('确认要' + text + ' "' + row.scheduleName + '" 吗？').then(() => {
         return toggleScheduleStatus(row.scheduleId);
       }).then(() => {
@@ -1021,7 +1020,7 @@ export default {
       const titleMap = {
         'total': '总调度详情',
         'running': '进行中调度详情',
-        'paused': '已暂停调度详情',
+        'paused': '已停用调度详情',
         'pending': '待执行调度详情'
       };
       this.detailTitle = titleMap[type] || '调度详情';
@@ -1037,7 +1036,7 @@ export default {
     scheduleStatusText(status) {
       const map = {
         'running': '进行中',
-        'paused': '已暂停',
+        'paused': '已停用',
         'pending': '待执行',
         'completed': '已完成',
         'success': '成功',
@@ -1066,7 +1065,7 @@ export default {
         weekDays: [],
         monthDays: [],
         duration: 2,
-        status: 'running'
+        usable: '1'
       };
       if (this.$refs.form) {
         this.$refs.form.clearValidate();
@@ -1114,7 +1113,7 @@ export default {
             repeatType: this.form.repeatType,
             repeatRule: repeatRule,
             duration: this.form.duration ? Number(this.form.duration) : 2,
-            status: this.form.status
+            usable: this.form.usable
           };
 
           const selectedMode = this.modeOptions.find(m => m.modeId === Number(this.form.modeId));
@@ -1371,7 +1370,7 @@ export default {
       if (partial > 0) tooltip += `🟡 部分完成: ${partial}\n`;
       if (failed > 0) tooltip += `❌ 失败: ${failed}\n`;
       if (running > 0) tooltip += `▶️ 进行中: ${running}\n`;
-      if (paused > 0) tooltip += `⏸️ 已暂停: ${paused}\n`;
+      if (paused > 0) tooltip += `⏸️ 已停用: ${paused}\n`;
       if (pending > 0) tooltip += `⏳ 待执行: ${pending}`;
 
       return tooltip;

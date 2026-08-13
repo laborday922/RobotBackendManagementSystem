@@ -1,6 +1,10 @@
 package com.ruoyi.mode.job;
 
+import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.mode.constants.HistoryConstants;
+import com.ruoyi.mode.domain.SysModeHistory;
 import com.ruoyi.mode.domain.SysModeSchedule;
+import com.ruoyi.mode.service.ISysModeHistoryService;
 import com.ruoyi.mode.service.ISysModeScheduleService;
 import com.ruoyi.mode.service.ISysRobotService;
 import com.ruoyi.robots.domain.Robot;
@@ -20,8 +24,8 @@ import java.util.List;
 /**
  * 模式排程定时执行Job
  * <p>
- * 每分钟巡检一次，检查是否有排程到了执行时间，
- * 如果是则对排程关联的机器人下发模式切换指令。
+ * 每分钟巡检一次启用的排程，维护排程运行状态（pending/running），
+ * 并在到达执行时间时对排程关联的机器人下发模式切换指令，同时写入历史日志。
  */
 @Component
 public class ModeScheduleJob {
@@ -34,23 +38,24 @@ public class ModeScheduleJob {
     @Autowired
     private ISysRobotService robotService;
 
+    @Autowired
+    private ISysModeHistoryService historyService;
+
     /**
      * 每分钟执行一次排程巡检
      */
     @Scheduled(cron = "0 * * * * ?")
     public void executeDueSchedules() {
-        logger.debug("开始巡检排程...");
-
         try {
-            List<SysModeSchedule> runningSchedules = scheduleService.selectRunningSchedules();
-            if (runningSchedules == null || runningSchedules.isEmpty()) {
+            List<SysModeSchedule> schedules = scheduleService.selectEnabledSchedules();
+            if (schedules == null || schedules.isEmpty()) {
                 return;
             }
 
             LocalDate today = LocalDate.now();
             LocalTime now = LocalTime.now().withSecond(0).withNano(0);
 
-            for (SysModeSchedule schedule : runningSchedules) {
+            for (SysModeSchedule schedule : schedules) {
                 try {
                     processSchedule(schedule, today, now);
                 } catch (Exception e) {
@@ -64,74 +69,101 @@ public class ModeScheduleJob {
     }
 
     /**
-     * 处理单个排程
+     * 处理单个排程：维护状态，必要时执行切换
      */
     private void processSchedule(SysModeSchedule schedule, LocalDate today, LocalTime now) {
-        // 1. 检查今天是否应执行
-        if (!matchesToday(schedule, today)) {
+        // 终态（单次已完成/执行失败）不再处理
+        if ("completed".equals(schedule.getStatus()) || "failed".equals(schedule.getStatus())) {
             return;
         }
 
-        // 2. 解析排程的开始时间 (HH:mm)
-        LocalTime startTime = parseStartTime(schedule.getStartTime());
-        if (startTime == null) {
-            return;
-        }
+        boolean todayMatches = matchesToday(schedule, today);
+        boolean inPeriod = todayMatches && isInPeriod(schedule, now);
 
-        // 3. 检查是否到了执行时间（当前分钟 == 开始分钟）
-        if (!now.equals(startTime)) {
-            return;
+        if (inPeriod) {
+            // 在排程期间内
+            if (!alreadyExecutedToday(schedule, today)) {
+                // 今天还未执行，触发执行
+                executeSchedule(schedule);
+            } else if (!"running".equals(schedule.getStatus())) {
+                // 已执行但状态不是进行中（例如期间内状态被改动），纠正为进行中
+                scheduleService.updateScheduleStatus(schedule.getScheduleId(), "running");
+            }
+        } else {
+            // 不在期间内：如果之前是进行中，说明期间结束，回到待执行
+            if ("running".equals(schedule.getStatus())) {
+                scheduleService.updateScheduleStatus(schedule.getScheduleId(), "pending");
+                logger.info("排程 [{}] 期间结束，状态由 running 恢复为 pending", schedule.getScheduleName());
+            }
         }
+    }
 
-        // 4. 检查今天是否已执行过（防止重复）
-        if (alreadyExecutedToday(schedule, today)) {
-            logger.debug("排程 {} 今天已执行过，跳过", schedule.getScheduleName());
-            return;
-        }
-
-        // 5. 执行模式切换
-        logger.info("排程 [{}] 触发执行: modeId={}, startTime={}, robots={}",
-                schedule.getScheduleName(), schedule.getModeId(),
-                schedule.getStartTime(),
-                schedule.getRobots() != null ? schedule.getRobots().size() : 0);
+    /**
+     * 执行排程：对关联机器人下发模式切换，写历史日志
+     */
+    private void executeSchedule(SysModeSchedule schedule) {
+        logger.info("排程 [{}] 触发执行: modeId={}, startTime={}",
+                schedule.getScheduleName(), schedule.getModeId(), schedule.getStartTime());
 
         List<Robot> robots = schedule.getRobots();
         if (robots == null || robots.isEmpty()) {
-            logger.warn("排程 {} 没有关联机器人，跳过", schedule.getScheduleName());
-            scheduleService.updateScheduleExecutionStatus(
-                    schedule.getScheduleId(), "failed", new Date(), "没有关联机器人");
+            logger.warn("排程 {} 没有关联机器人，标记为失败", schedule.getScheduleName());
+            scheduleService.updateScheduleExecutionResult(schedule.getScheduleId(), "failed", new Date());
+            scheduleService.updateScheduleStatus(schedule.getScheduleId(), "failed");
             return;
         }
 
         boolean allSuccess = true;
         for (Robot robot : robots) {
+            boolean ok = false;
             try {
-                int result = robotService.updateRobotMode(robot.getId(), schedule.getModeId());
-                if (result > 0) {
-                    logger.info("  排程机器人 {} 模式切换成功", robot.getName());
-                } else {
-                    logger.warn("  排程机器人 {} 模式切换失败", robot.getName());
-                    allSuccess = false;
-                }
+                ok = robotService.updateRobotMode(robot.getId(), schedule.getModeId()) > 0;
             } catch (Exception e) {
                 logger.error("  排程机器人 {} 模式切换异常", robot.getName(), e);
+                ok = false;
+            }
+            // 写历史日志
+            writeHistory(schedule, robot, ok);
+            if (!ok) {
                 allSuccess = false;
             }
         }
 
-        // 6. 更新执行状态
-        String status = allSuccess ? "success" : "failed";
-        scheduleService.updateScheduleExecutionStatus(
-                schedule.getScheduleId(), status, new Date(),
-                allSuccess ? null : "部分机器人切换失败");
+        // 记录执行结果
+        String lastExecuteStatus = allSuccess ? "success" : "failed";
+        scheduleService.updateScheduleExecutionResult(
+                schedule.getScheduleId(), lastExecuteStatus, new Date());
 
-        // 7. 单次排程执行后标记为已完成
+        // 更新排程状态：单次 -> 已完成，重复 -> 进行中
         if ("once".equals(schedule.getRepeatType())) {
-            scheduleService.completeSchedule(schedule.getScheduleId());
-            logger.info("单次排程 {} 已完成", schedule.getScheduleName());
+            scheduleService.updateScheduleStatus(schedule.getScheduleId(), "completed");
+            logger.info("单次排程 [{}] 执行完成", schedule.getScheduleName());
+        } else {
+            scheduleService.updateScheduleStatus(schedule.getScheduleId(), "running");
+            logger.info("重复排程 [{}] 执行完成，状态置为进行中", schedule.getScheduleName());
         }
+    }
 
-        logger.info("排程 [{}] 执行完成: status={}", schedule.getScheduleName(), status);
+    /**
+     * 写入模式切换历史日志
+     */
+    private void writeHistory(SysModeSchedule schedule, Robot robot, boolean success) {
+        try {
+            SysModeHistory history = new SysModeHistory();
+            history.setOperationType(HistoryConstants.OPERATION_TYPE_SCHEDULE);
+            history.setRobotId(robot.getId());
+            history.setModeId(schedule.getModeId());
+            history.setOperator("schedule");
+            history.setStatus(success ? HistoryConstants.STATUS_SUCCESS : HistoryConstants.STATUS_DANGER);
+            history.setContent(String.format("排程 [%s] 自动切换模式%s",
+                    schedule.getScheduleName(), success ? "成功" : "失败"));
+            history.setOperationTime(new Date());
+            history.setTenantId(TenantContext.get());
+            historyService.insertSysModeHistory(history);
+        } catch (Exception e) {
+            logger.error("写入排程历史日志失败: scheduleId={}, robotId={}",
+                    schedule.getScheduleId(), robot.getId(), e);
+        }
     }
 
     /**
@@ -143,10 +175,8 @@ public class ModeScheduleJob {
 
         switch (repeatType) {
             case "once":
-                // 单次：检查 startDate 是否等于今天
                 if (schedule.getStartDate() != null) {
-                    LocalDate startDate = toLocalDate(schedule.getStartDate());
-                    return today.equals(startDate);
+                    return today.equals(toLocalDate(schedule.getStartDate()));
                 }
                 return false;
 
@@ -154,25 +184,37 @@ public class ModeScheduleJob {
                 return true;
 
             case "weekdays":
-                // 工作日：周一到周五
-                int dayOfWeek = today.getDayOfWeek().getValue(); // 1=Mon, 7=Sun
+                int dayOfWeek = today.getDayOfWeek().getValue();
                 return dayOfWeek >= 1 && dayOfWeek <= 5;
 
-            case "weekly": {
-                // 每周：检查今天是周几，是否在 repeatRule 的 days 中
-                int cnWeekDay = today.getDayOfWeek().getValue(); // 1=Mon=1, 7=Sun=7
-                return isInRuleDays(schedule.getRepeatRule(), "weekly", cnWeekDay);
-            }
+            case "weekly":
+                return isInRuleDays(schedule.getRepeatRule(), "weekly", today.getDayOfWeek().getValue());
 
-            case "monthly": {
-                // 每月：检查今天几号，是否在 repeatRule 的 days 中
-                int dayOfMonth = today.getDayOfMonth();
-                return isInRuleDays(schedule.getRepeatRule(), "monthly", dayOfMonth);
-            }
+            case "monthly":
+                return isInRuleDays(schedule.getRepeatRule(), "monthly", today.getDayOfMonth());
 
             default:
                 return false;
         }
+    }
+
+    /**
+     * 检查当前时间是否处于排程的 [startTime, startTime+duration) 期间内
+     */
+    private boolean isInPeriod(SysModeSchedule schedule, LocalTime now) {
+        LocalTime start = parseStartTime(schedule.getStartTime());
+        if (start == null) return false;
+
+        long durationMinutes = 60; // 默认1小时
+        if (schedule.getDuration() != null) {
+            durationMinutes = (long) (schedule.getDuration().doubleValue() * 60);
+        }
+        LocalTime end = start.plusMinutes(durationMinutes);
+        // 不处理跨天场景，跨天视为不在期间内
+        if (!end.isAfter(start)) {
+            return false;
+        }
+        return !now.isBefore(start) && now.isBefore(end);
     }
 
     /**
@@ -215,8 +257,7 @@ public class ModeScheduleJob {
      */
     private boolean alreadyExecutedToday(SysModeSchedule schedule, LocalDate today) {
         if (schedule.getLastExecuteTime() == null) return false;
-        LocalDate lastExecuteDate = toLocalDate(schedule.getLastExecuteTime());
-        return today.equals(lastExecuteDate);
+        return today.equals(toLocalDate(schedule.getLastExecuteTime()));
     }
 
     /**

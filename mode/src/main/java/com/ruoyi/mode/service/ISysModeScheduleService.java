@@ -62,7 +62,7 @@ public interface ISysModeScheduleService
     public int deleteSysModeScheduleById(Long scheduleId);
 
     /**
-     * 切换排程状态
+     * 切换排程启用状态（启用/停用）
      *
      * @param scheduleId 排程ID
      * @return 结果
@@ -81,17 +81,17 @@ public interface ISysModeScheduleService
     // ==================== 定时任务用 ====================
 
     /**
-     * 查询所有待执行的排程（status='running'，含关联机器人）
+     * 查询所有启用的排程（usable='1'，含关联机器人）
      */
-    public List<SysModeSchedule> selectRunningSchedules();
+    public List<SysModeSchedule> selectEnabledSchedules();
 
     /**
-     * 更新排程执行状态
+     * 更新排程状态（pending/running/paused/completed/failed）
      */
-    public int updateScheduleExecutionStatus(Long scheduleId, String status, Date lastExecuteTime, String remark);
+    public int updateScheduleStatus(Long scheduleId, String status);
 
     /**
-     * 标记单次排程为已完成
+     * 更新排程执行结果（记录上次执行时间和执行结果）
      */
-    public int completeSchedule(Long scheduleId);
+    public int updateScheduleExecutionResult(Long scheduleId, String lastExecuteStatus, Date lastExecuteTime);
 }

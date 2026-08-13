@@ -55,6 +55,14 @@ public interface SysModeScheduleMapper
     public int updateScheduleStatus(@Param("scheduleId") Long scheduleId, @Param("status") String status);
 
     /**
+     * 重置排程执行标记（清空上次执行时间和状态）
+     *
+     * @param scheduleId 排程ID
+     * @return 结果
+     */
+    public int resetScheduleExecution(Long scheduleId);
+
+    /**
      * 删除排程
      *
      * @param scheduleId 排程ID

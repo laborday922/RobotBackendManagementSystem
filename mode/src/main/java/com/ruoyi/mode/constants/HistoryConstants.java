@@ -12,6 +12,7 @@ public class HistoryConstants {
     public static final String OPERATION_TYPE_EMERGENCY = "emergency";
     public static final String OPERATION_TYPE_RESTART = "restart";
     public static final String OPERATION_TYPE_STATUS_REFRESH = "status-refresh";
+    public static final String OPERATION_TYPE_SCHEDULE = "schedule";
 
     // 历史状态
     public static final String STATUS_SUCCESS = "success";

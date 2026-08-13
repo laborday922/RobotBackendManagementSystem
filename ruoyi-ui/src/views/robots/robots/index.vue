@@ -268,12 +268,22 @@ export default {
         productionDate: [{ required: true, message: "生产日期不能为空", trigger: "blur" }],
         area: [{ required: true, message: "所属区域不能为空", trigger: "blur" }]
       },
-      groupsLoaded: false
+      groupsLoaded: false,
+      refreshTimer: null
     }
   },
   created() {
     this.getList()
     this.getGroupsList()
+    this.refreshTimer = setInterval(() => {
+      this.getList()
+    }, 5000)
+  },
+  beforeDestroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer)
+      this.refreshTimer = null
+    }
   },
   methods: {
     getList() {

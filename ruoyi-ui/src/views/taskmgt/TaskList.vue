@@ -608,7 +608,8 @@ export default {
       },
       // 动态选项缓存 { paramKey: { options: [], loading: false } }
       dynamicOptionsCache: {},
-      debouncedQuery: null
+      debouncedQuery: null,
+      refreshTimer: null
     }
   },
   computed: {
@@ -662,9 +663,16 @@ export default {
     this.getRobotGroups()
     this.getTemplates()
     this.getList()
+    this.refreshTimer = setInterval(() => {
+      this.getList()
+    }, 5000)
   },
   beforeDestroy() {
     this.debouncedQuery.cancel()
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer)
+      this.refreshTimer = null
+    }
   },
   methods: {
     getInitialTaskForm() {

@@ -2,6 +2,7 @@ package com.ruoyi.mode.service;
 
 import com.ruoyi.mode.domain.SysModeSchedule;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -76,4 +77,21 @@ public interface ISysModeScheduleService
      * @return 日历数据
      */
     public Map<String, Object> getCalendarData(Integer year, Integer month);
+
+    // ==================== 定时任务用 ====================
+
+    /**
+     * 查询所有待执行的排程（status='running'，含关联机器人）
+     */
+    public List<SysModeSchedule> selectRunningSchedules();
+
+    /**
+     * 更新排程执行状态
+     */
+    public int updateScheduleExecutionStatus(Long scheduleId, String status, Date lastExecuteTime, String remark);
+
+    /**
+     * 标记单次排程为已完成
+     */
+    public int completeSchedule(Long scheduleId);
 }

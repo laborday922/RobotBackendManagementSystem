@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -224,5 +225,39 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         }
 
         return result;
+    }
+
+    // ==================== 定时任务用 ====================
+
+    @Override
+    public List<SysModeSchedule> selectRunningSchedules() {
+        SysModeSchedule query = new SysModeSchedule();
+        query.setStatus("running");
+        Long tenantId = TenantContext.get();
+        if (!isAdmin(tenantId)) {
+            query.setTenantId(tenantId);
+        }
+        List<SysModeSchedule> list = sysModeScheduleMapper.selectSysModeScheduleList(query);
+        for (SysModeSchedule s : list) {
+            s.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(
+                    s.getScheduleId(), isAdmin(tenantId) ? null : tenantId));
+        }
+        return list;
+    }
+
+    @Override
+    public int updateScheduleExecutionStatus(Long scheduleId, String status, Date lastExecuteTime, String remark) {
+        SysModeSchedule schedule = new SysModeSchedule();
+        schedule.setScheduleId(scheduleId);
+        schedule.setLastExecuteStatus(status);
+        schedule.setLastExecuteTime(lastExecuteTime);
+        // robotIds 设为 null 以避免清空关联
+        schedule.setRobotIds(null);
+        return sysModeScheduleMapper.updateSysModeSchedule(schedule);
+    }
+
+    @Override
+    public int completeSchedule(Long scheduleId) {
+        return sysModeScheduleMapper.updateScheduleStatus(scheduleId, "completed");
     }
 }

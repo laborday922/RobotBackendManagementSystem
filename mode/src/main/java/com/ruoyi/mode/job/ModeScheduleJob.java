@@ -2,6 +2,7 @@ package com.ruoyi.mode.job;
 
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.mode.constants.HistoryConstants;
+import com.ruoyi.mode.constants.ModeConstants;
 import com.ruoyi.mode.domain.SysModeHistory;
 import com.ruoyi.mode.domain.SysModeSchedule;
 import com.ruoyi.mode.service.ISysModeHistoryService;
@@ -69,36 +70,36 @@ public class ModeScheduleJob {
 
     /**
      * 处理单个排程：维护状态，必要时执行切换
+     * <p>
+     * 状态流转：
+     * pending（待执行）--到达开始时间--> running（执行中，机器人处于目标模式）
+     * running --持续时间结束--> 切回待机模式 --> completed（单次）/ pending（重复）
      */
     private void processSchedule(SysModeSchedule schedule, LocalDate today, LocalTime now) {
-        // 终态（单次已完成/执行失败）不再处理
-        if ("completed".equals(schedule.getStatus()) || "failed".equals(schedule.getStatus())) {
+        String status = schedule.getStatus();
+        // 终态（已完成/失败）与停用不再处理
+        if ("completed".equals(status) || "failed".equals(status) || "paused".equals(status)) {
             return;
         }
 
-        boolean todayMatches = matchesToday(schedule, today);
-        boolean inPeriod = todayMatches && isInPeriod(schedule, now);
+        boolean inPeriod = matchesToday(schedule, today) && isInPeriod(schedule, now);
 
         if (inPeriod) {
-            // 在排程期间内
-            if (!alreadyExecutedToday(schedule, today)) {
-                // 今天还未执行，触发执行
+            // 在排程期间内：只在待执行时下发一次目标模式，进入执行中
+            if ("pending".equals(status)) {
                 executeSchedule(schedule);
-            } else if (!"running".equals(schedule.getStatus())) {
-                // 已执行但状态不是进行中（例如期间内状态被改动），纠正为进行中
-                scheduleService.updateScheduleStatus(schedule.getScheduleId(), "running");
             }
+            // 已是 running 则保持，不重复下发
         } else {
-            // 不在期间内：如果之前是进行中，说明期间结束，回到待执行
-            if ("running".equals(schedule.getStatus())) {
-                scheduleService.updateScheduleStatus(schedule.getScheduleId(), "pending");
-                logger.info("排程 [{}] 期间结束，状态由 running 恢复为 pending", schedule.getScheduleName());
+            // 不在期间内：若之前在运行，说明持续时间已到，切回待机模式
+            if ("running".equals(status)) {
+                finishSchedule(schedule);
             }
         }
     }
 
     /**
-     * 执行排程：对关联机器人下发模式切换，写历史日志
+     * 执行排程：对关联机器人下发目标模式，写历史日志，状态置为进行中
      */
     private void executeSchedule(SysModeSchedule schedule) {
         logger.info("排程 [{}] 触发执行: modeId={}, startTime={}",
@@ -121,41 +122,64 @@ public class ModeScheduleJob {
                 logger.error("  排程机器人 {} 模式切换异常", robot.getName(), e);
                 ok = false;
             }
-            // 写历史日志
-            writeHistory(schedule, robot, ok);
+            writeHistory(schedule, robot, schedule.getModeId(), "自动切换目标模式", ok);
             if (!ok) {
                 allSuccess = false;
             }
         }
 
-        // 记录执行结果
+        // 记录本次下发结果
         String lastExecuteStatus = allSuccess ? "success" : "failed";
         scheduleService.updateScheduleExecutionResult(
                 schedule.getScheduleId(), lastExecuteStatus, new Date());
 
-        // 更新排程状态：单次 -> 已完成，重复 -> 进行中
+        // 进入执行中状态（持续时间由 isInPeriod 控制，结束后统一切回待机）
+        scheduleService.updateScheduleStatus(schedule.getScheduleId(), "running");
+        logger.info("排程 [{}] 已下发目标模式，状态置为进行中(running)", schedule.getScheduleName());
+    }
+
+    /**
+     * 结束排程：持续时间结束，切回待机模式，写历史日志，并推进终态
+     */
+    private void finishSchedule(SysModeSchedule schedule) {
+        logger.info("排程 [{}] 持续时间结束，切回待机模式", schedule.getScheduleName());
+
+        List<Robot> robots = schedule.getRobots();
+        if (robots != null && !robots.isEmpty()) {
+            for (Robot robot : robots) {
+                boolean ok = false;
+                try {
+                    ok = robotService.updateRobotMode(robot.getId(), ModeConstants.DEFAULT_MODE_ID) > 0;
+                } catch (Exception e) {
+                    logger.error("  排程机器人 {} 切回待机模式异常", robot.getName(), e);
+                }
+                writeHistory(schedule, robot, ModeConstants.DEFAULT_MODE_ID, "切回待机模式", ok);
+            }
+        }
+
+        // 单次 -> 已完成；重复 -> 待执行（等待下一次触发）
         if ("once".equals(schedule.getRepeatType())) {
             scheduleService.updateScheduleStatus(schedule.getScheduleId(), "completed");
             logger.info("单次排程 [{}] 执行完成", schedule.getScheduleName());
         } else {
-            scheduleService.updateScheduleStatus(schedule.getScheduleId(), "running");
-            logger.info("重复排程 [{}] 执行完成，状态置为进行中", schedule.getScheduleName());
+            scheduleService.updateScheduleStatus(schedule.getScheduleId(), "pending");
+            logger.info("重复排程 [{}] 期间结束，状态回到待执行(pending)", schedule.getScheduleName());
         }
     }
 
     /**
      * 写入模式切换历史日志
      */
-    private void writeHistory(SysModeSchedule schedule, Robot robot, boolean success) {
+    private void writeHistory(SysModeSchedule schedule, Robot robot, Long modeId, String action, boolean success) {
         try {
             SysModeHistory history = new SysModeHistory();
             history.setOperationType(HistoryConstants.OPERATION_TYPE_SCHEDULE);
             history.setRobotId(robot.getId());
-            history.setModeId(schedule.getModeId());
+            history.setModeId(modeId);
             history.setOperator("schedule");
             history.setStatus(success ? HistoryConstants.STATUS_SUCCESS : HistoryConstants.STATUS_DANGER);
-            history.setContent(String.format("排程 [%s] 自动切换模式%s",
-                    schedule.getScheduleName(), success ? "成功" : "失败"));
+            history.setContent(String.format("排程 [%s] %s%s",
+                    schedule.getScheduleName(), action, success ? "成功" : "失败"));
             history.setOperationTime(new Date());
             history.setTenantId(TenantContext.get());
             historyService.insertSysModeHistory(history);
@@ -255,14 +279,6 @@ public class ModeScheduleJob {
             logger.warn("解析开始时间失败: {}", startTime, e);
             return null;
         }
-    }
-
-    /**
-     * 检查排程今天是否已执行过
-     */
-    private boolean alreadyExecutedToday(SysModeSchedule schedule, LocalDate today) {
-        if (schedule.getLastExecuteTime() == null) return false;
-        return today.equals(toLocalDate(schedule.getLastExecuteTime()));
     }
 
     /**

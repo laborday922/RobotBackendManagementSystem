@@ -27,7 +27,7 @@
         <result property="updateTime" column="update_time" />
         <!-- 添加机器人集合 -->
         <collection property="robots" ofType="com.ruoyi.robots.domain.Robot"
-                    select="selectRobotsByScheduleId" column="schedule_id" />
+                    select="selectRobotsByScheduleId" column="{scheduleId=schedule_id}" />
     </resultMap>
 
     <!-- 机器人结果映射 -->

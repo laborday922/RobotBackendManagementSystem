@@ -42,8 +42,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
     {
         SysModeSchedule schedule = sysModeScheduleMapper.selectSysModeScheduleById(scheduleId);
         if (schedule != null) {
-            Long tenantId = TenantContext.get();
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId, isAdmin(tenantId) ? null : tenantId));
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(scheduleId));
         }
         return schedule;
     }
@@ -65,7 +64,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         List<SysModeSchedule> list = sysModeScheduleMapper.selectSysModeScheduleList(sysModeSchedule);
         // 为每个排程加载关联的机器人
         for (SysModeSchedule schedule : list) {
-            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId(), isAdmin(tenantId) ? null : tenantId));
+            schedule.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(schedule.getScheduleId()));
         }
         return list;
     }
@@ -275,8 +274,7 @@ public class SysModeScheduleServiceImpl implements ISysModeScheduleService
         }
         List<SysModeSchedule> list = sysModeScheduleMapper.selectSysModeScheduleList(query);
         for (SysModeSchedule s : list) {
-            s.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(
-                    s.getScheduleId(), isAdmin(tenantId) ? null : tenantId));
+            s.setRobots(sysModeScheduleMapper.selectRobotsByScheduleId(s.getScheduleId()));
         }
         return list;
     }

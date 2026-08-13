@@ -82,10 +82,9 @@ public interface SysModeScheduleMapper
      * 查询排程关联的机器人
      *
      * @param scheduleId 排程ID
-     * @param tenantId 租户ID（为null时查询所有租户）
      * @return 机器人集合
      */
-    public List<Robot> selectRobotsByScheduleId(@Param("scheduleId") Long scheduleId, @Param("tenantId") Long tenantId);
+    public List<Robot> selectRobotsByScheduleId(@Param("scheduleId") Long scheduleId);
 
     /**
      * 批量插入排程机器人关联

@@ -202,12 +202,12 @@
               <div v-if="scope.row.robots && scope.row.robots.length > 0">
                 <el-tag
                   v-for="robot in scope.row.robots"
-                  :key="robot.robotId"
+                  :key="robot.id"
                   size="small"
                   :type="getRobotStatusType(robot.status)"
                   style="margin-right: 5px; margin-bottom: 5px;"
                 >
-                  {{ robot.name || `机器人${robot.robotId}` }}
+                  {{ robot.name || `机器人${robot.id}` }}
                 </el-tag>
               </div>
               <div v-else-if="scope.row.robotIds && scope.row.robotIds.length > 0">
@@ -461,12 +461,12 @@
             <div v-if="scope.row.robots && scope.row.robots.length > 0">
               <el-tag
                 v-for="robot in scope.row.robots.slice(0, 3)"
-                :key="robot.robotId"
+                :key="robot.id"
                 size="small"
                 style="margin-right: 5px;"
                 :type="getRobotStatusType(robot.status)"
               >
-                {{ robot.robotName }}
+                {{ robot.name }}
               </el-tag>
             </div>
             <span v-else-if="scope.row.robotIds && scope.row.robotIds.length > 0">
@@ -502,12 +502,12 @@
             <div v-if="scope.row.robots && scope.row.robots.length > 0">
               <el-tag
                 v-for="robot in scope.row.robots.slice(0, 3)"
-                :key="robot.robotId"
+                :key="robot.id"
                 size="small"
                 style="margin-right: 5px;"
                 :type="getRobotStatusType(robot.status)"
               >
-                {{ robot.robotName }}
+                {{ robot.name }}
               </el-tag>
               <span v-if="scope.row.robots.length > 3">+{{ scope.row.robots.length - 3 }}</span>
             </div>
@@ -982,7 +982,7 @@ export default {
         }
 
         if (data.robots) {
-          this.form.robotIds = data.robots.map(r => Number(r.robotId));
+          this.form.robotIds = data.robots.map(r => Number(r.id));
         } else if (data.robotIds) {
           this.form.robotIds = data.robotIds.map(id => Number(id));
         }

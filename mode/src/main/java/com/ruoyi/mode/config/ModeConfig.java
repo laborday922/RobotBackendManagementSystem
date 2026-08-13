@@ -92,8 +92,8 @@ public class ModeConfig implements CommandLineRunner {
      */
     private void initDefaultParams() {
         try {
-            // 模式ID常量：1=待机，2=维修，3=充电
-            long[] modeIds = {1L, 2L, 3L};
+            // 只初始化充电模式的默认参数
+            long[] modeIds = {3L};
 
             for (long modeId : modeIds) {
                 Integer count = jdbcTemplate.queryForObject(
@@ -116,19 +116,6 @@ public class ModeConfig implements CommandLineRunner {
 
         Object[][] params;
         switch ((int) modeId) {
-            case 1: // 待机模式
-                params = new Object[][]{
-                    {1L, "stationary",      "保持静止",   "boolean", "机器人保持静止不动",                   "false", null, 0, 1, "", 1},
-                    {1L, "disable_sensors", "关闭传感器", "boolean", "关闭部分非必要传感器以省电",            "false", null, 0, 1, "", 2}
-                };
-                break;
-            case 2: // 维修模式
-                params = new Object[][]{
-                    {2L, "pause_all_tasks",   "暂停全部任务", "boolean", "暂停当前所有正在执行的任务",      "true",  null,                                                                                                                                              0, 1, "", 1},
-                    {2L, "maintenance_level", "维护权限",     "select",  "维护操作所需的权限级别",          "basic", "[{\"label\":\"基础维护\",\"value\":\"basic\"},{\"label\":\"高级维护\",\"value\":\"advanced\"}]", 0, 1, "", 2},
-                    {2L, "warning_enabled",   "警告提醒",     "boolean", "维护期间是否启用警告提示",           "true",  null,                                                                                                                                              0, 1, "", 3}
-                };
-                break;
             case 3: // 充电模式
                 params = new Object[][]{
                     {3L, "charge_strategy",  "充电策略",     "select",  "选择充电执行策略",            "after_task", "[{\"label\":\"完成任务后充电\",\"value\":\"after_task\"},{\"label\":\"立即充电\",\"value\":\"immediate\"}]", 0,   2,  "", 1},

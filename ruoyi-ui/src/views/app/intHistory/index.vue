@@ -34,28 +34,10 @@
         label-width="70px"
         class="search-form"
       >
-        <el-form-item label="任务ID" prop="taskId">
-          <el-input
-            v-model="queryParams.taskId"
-            placeholder="请输入任务ID"
-            clearable
-            @keyup.enter.native="handleQuery"
-            class="search-input"
-          />
-        </el-form-item>
         <el-form-item label="机器人ID" prop="robotId">
           <el-input
             v-model="queryParams.robotId"
             placeholder="请输入机器人ID"
-            clearable
-            @keyup.enter.native="handleQuery"
-            class="search-input"
-          />
-        </el-form-item>
-        <el-form-item label="用户ID" prop="userId">
-          <el-input
-            v-model="queryParams.userId"
-            placeholder="请输入用户ID"
             clearable
             @keyup.enter.native="handleQuery"
             class="search-input"
@@ -86,26 +68,6 @@
     <!-- 原有：操作按钮区域 -->
     <el-row :gutter="15" class="operate-bar mb10">
       <el-col :span="24">
-        <el-button
-          type="primary"
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['app:intHistory:add']"
-          class="add-btn"
-        >
-          新增交互记录
-        </el-button>
-        <el-button
-          type="warning"
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['app:intHistory:export']"
-          class="export-btn"
-        >
-          导出数据
-        </el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" class="right-toolbar" />
       </el-col>
     </el-row>
@@ -120,14 +82,11 @@
       class="data-table"
       :header-cell-style="{background: '#f5f7fa', color: '#303133', fontWeight: '500'}"
     >
-      <el-table-column label="任务ID" align="center" prop="taskId" width="120" />
       <el-table-column label="机器人ID" align="center" prop="robotId" width="120" />
-      <el-table-column label="用户ID" align="center" prop="userId" width="100" />
-      <el-table-column label="用户名称" align="center" prop="userName" width="120" />
-      <el-table-column label="交互类型" align="center" prop="interactionType" width="100">
+      <el-table-column label="来源类型" align="center" prop="sourceType" width="100">
         <template slot-scope="scope">
-          <el-tag :type="getTypeTagType(scope.row.interactionType)" size="mini">
-            {{ getInteractionTypeName(scope.row.interactionType) }}
+          <el-tag :type="getSourceTypeTagType(scope.row.sourceType)" size="mini">
+            {{ getSourceTypeName(scope.row.sourceType) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -163,181 +122,20 @@
         background
       />
     </div>
-
-    <!-- 原有：新增对话框 - 美化版 -->
-    <el-dialog
-      :title="title"
-      :visible.sync="open"
-      width="800px"
-      append-to-body
-      :close-on-click-modal="false"
-      class="add-dialog"
-      @close="cancel"
-    >
-      <el-form
-        ref="form"
-        :model="form"
-        :rules="rules"
-        label-width="110px"
-        class="dialog-form"
-        size="small"
-      >
-        <!-- 基础信息分组 -->
-        <div class="form-section">
-          <div class="section-title">
-            <i class="el-icon-info"></i> 基础信息
-          </div>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="任务ID" prop="taskId">
-                <el-input v-model="form.taskId" placeholder="请输入任务ID" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="交互标识" prop="interactionId">
-                <el-input v-model="form.interactionId" placeholder="唯一标识" clearable />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="机器人ID" prop="robotId">
-                <el-input v-model="form.robotId" placeholder="请输入机器人ID" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="用户ID" prop="userId">
-                <el-input v-model="form.userId" placeholder="请输入用户ID" clearable />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="用户名称" prop="userName">
-                <el-input v-model="form.userName" placeholder="请输入用户名称" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="交互类型" prop="interactionType">
-                <el-select v-model="form.interactionType" placeholder="请选择交互类型">
-                  <el-option label="配送" value="0" />
-                  <el-option label="清洁" value="1" />
-                  <el-option label="巡检" value="2" />
-                  <el-option label="维保" value="3" />
-                  <el-option label="安防" value="4" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </div>
-
-        <!-- 交互详情分组 -->
-        <div class="form-section">
-          <div class="section-title">
-            <i class="el-icon-data-analysis"></i> 交互详情
-          </div>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="交互时间" prop="interactionTime">
-                <el-date-picker clearable
-                  v-model="form.interactionTime"
-                  type="datetime"
-                  value-format="yyyy-MM-dd HH:mm:ss"
-                  placeholder="请选择交互发生时间"
-                  style="width: 100%;"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="耗时(分钟)" prop="duration">
-                <el-input v-model="form.duration" placeholder="数字" type="number" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="交互评分" prop="rating">
-                <el-select v-model="form.rating" placeholder="请选择交互评分">
-                  <el-option label="差" value="0" />
-                  <el-option label="中等" value="1" />
-                  <el-option label="良好" value="2" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="交互状态" prop="status">
-                <el-select v-model="form.status" placeholder="请选择交互状态">
-                  <el-option label="成功" value="0" />
-                  <el-option label="失败" value="1" />
-                  <el-option label="超时" value="2" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="交互内容" prop="interactionContent">
-            <el-input
-              v-model="form.interactionContent"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入交互内容（请求/响应数据）"
-              clearable
-              maxlength="1000"
-              show-word-limit
-            />
-          </el-form-item>
-        </div>
-
-        <!-- 评价反馈分组 -->
-        <div class="form-section">
-          <div class="section-title">
-            <i class="el-icon-comments-solid"></i> 评价反馈
-          </div>
-          <el-form-item label="评价文本" prop="evaluationText">
-            <el-input
-              v-model="form.evaluationText"
-              type="textarea"
-              :rows="2"
-              placeholder="请输入用户的评价文本"
-              clearable
-              maxlength="500"
-              show-word-limit
-            />
-          </el-form-item>
-          <el-form-item label="扩展信息" prop="extInfo">
-            <el-input
-              v-model="form.extInfo"
-              type="textarea"
-              :rows="2"
-              placeholder="请输入扩展信息（JSON格式）"
-              clearable
-              maxlength="2000"
-              show-word-limit
-            />
-          </el-form-item>
-        </div>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { listIntHistory, addIntHistory, getSumOfIntHistory } from "@/api/taskmgt/intHistory"
+import { listIntHistory, getSumOfIntHistory } from "@/api/taskmgt/intHistory"
 
 export default {
   name: "IntHistory",
   data() {
     return {
       loading: true,
-      submitLoading: false,
       showSearch: true,
       total: 0,
       intHistoryList: [],
-      title: "",
-      open: false,
       // 新增：统计数据初始化
       statsData: {
         totalTimes: 0,
@@ -349,26 +147,12 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 15,
-        taskId: null,
-        robotId: null,
-        userId: null
+        robotId: null
       },
-      form: {},
-      rules: {
-        taskId: [{ required: true, message: "任务ID不能为空", trigger: "blur" }],
-        interactionId: [{ required: true, message: "单次交互唯一标识不能为空", trigger: "blur" }],
-        robotId: [{ required: true, message: "机器人ID不能为空", trigger: "blur" }],
-        userId: [{ required: true, message: "用户ID不能为空", trigger: "blur" }],
-        userName: [{ required: true, message: "用户名称不能为空", trigger: "blur" }],
-        interactionType: [{ required: true, message: "交互类型不能为空", trigger: "change" }],
-        interactionTime: [{ required: true, message: "交互时间不能为空", trigger: "blur" }],
-        status: [{ required: true, message: "交互状态不能为空", trigger: "change" }],
-        rating: [{ required: true, message: "交互评分不能为空", trigger: "change" }]
-      },
-      interactionTypeMap: { 0: "配送", 1: "清洁", 2: "巡检", 3: "维保", 4: "安防" },
+      sourceTypeMap: { 1: "任务", 2: "问答" },
+      sourceTypeTagMap: { 1: "primary", 2: "success" },
       ratingMap: { 0: "差", 1: "中等", 2: "良好" },
       statusMap: { 0: "成功", 1: "失败", 2: "超时" },
-      typeTagMap: { 0: "primary", 1: "success", 2: "info", 3: "warning", 4: "danger" },
       ratingTagMap: { 0: "danger", 1: "warning", 2: "success" },
       statusTagMap: { 0: "success", 1: "danger", 2: "warning" }
     }
@@ -388,11 +172,11 @@ export default {
         console.error("获取统计数据失败：", error)
       })
     },
-    getInteractionTypeName(type) {
-      return this.interactionTypeMap[Number(type)] || "未知"
+    getSourceTypeName(type) {
+      return this.sourceTypeMap[Number(type)] || "未知"
     },
-    getTypeTagType(type) {
-      return this.typeTagMap[Number(type)] || "default"
+    getSourceTypeTagType(type) {
+      return this.sourceTypeTagMap[Number(type)] || "default"
     },
     getRatingName(rating) {
       return this.ratingMap[Number(rating)] || "未知"
@@ -414,18 +198,6 @@ export default {
         this.loading = false
       })
     },
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    reset() {
-      this.form = {
-        id: null, taskId: null, interactionId: null, robotId: null, userId: null, userName: null,
-        interactionType: null, interactionContent: null, interactionTime: null, duration: null,
-        rating: null, evaluationText: null, status: null, extInfo: null
-      }
-      this.resetForm("form")
-    },
     handleQuery() {
       this.queryParams.pageNum = 1
       this.getList()
@@ -436,35 +208,12 @@ export default {
       this.queryParams = {
         pageNum: 1,
         pageSize: 15,
-        taskId: null,
-        robotId: null,
-        userId: null
+        robotId: null
       }
       this.resetForm("queryForm")
       this.getList()
       // 新增：重置查询时同步刷新统计数据
       this.getStatsData()
-    },
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "新增交互历史记录"
-    },
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          addIntHistory(this.form).then(() => {
-            this.$modal.msgSuccess("新增成功")
-            this.open = false
-            this.getList()
-            // 新增：新增数据后同步刷新统计数据
-            this.getStatsData()
-          })
-        }
-      })
-    },
-    handleExport() {
-      this.download('app/intHistory/export', { ...this.queryParams }, `intHistory_${new Date().getTime()}.xlsx`)
     }
   }
 }

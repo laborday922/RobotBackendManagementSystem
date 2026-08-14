@@ -40,6 +40,9 @@ public class TInteractionHistory extends BaseEntity
     /** 交互类型：0(配送)、1(清洁)、2(巡检)、3(维保)、4(安防) */
     private Long interactionType;
 
+    /** 交互来源类型：1(任务)、2(问答) */
+    private Long sourceType;
+
     /** 交互内容（请求/响应数据） */
     private String interactionContent;
 
@@ -136,6 +139,16 @@ public class TInteractionHistory extends BaseEntity
         return interactionType;
     }
 
+    public void setSourceType(Long sourceType) 
+    {
+        this.sourceType = sourceType;
+    }
+
+    public Long getSourceType() 
+    {
+        return sourceType;
+    }
+
     public void setInteractionContent(String interactionContent) 
     {
         this.interactionContent = interactionContent;
@@ -216,6 +229,7 @@ public class TInteractionHistory extends BaseEntity
             .append("userId", getUserId())
             .append("userName", getUserName())
             .append("interactionType", getInteractionType())
+            .append("sourceType", getSourceType())
             .append("interactionContent", getInteractionContent())
             .append("interactionTime", getInteractionTime())
             .append("duration", getDuration())

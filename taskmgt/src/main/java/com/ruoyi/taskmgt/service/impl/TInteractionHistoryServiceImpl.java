@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.service.impl;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -127,6 +128,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         TInteractionHistory record = new TInteractionHistory();
         record.setTaskId(firstLog.getTaskId().toString());
         record.setInteractionId(interactionId);
+        record.setSourceType(1L); // 1-任务
         record.setInteractionTime(firstLog.getCreateTime());
 
         // 4. 从任务表获取 robotId 和任务名称
@@ -154,6 +156,18 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
 
         record.setRating(rating);
         record.setEvaluationText(evaluationText);
+
+        return insertTInteractionHistory(record);
+    }
+
+    @Override
+    public int saveQAEvaluation(Long rating, String evaluationText, Date interactionTime, Long duration) {
+        TInteractionHistory record = new TInteractionHistory();
+        record.setSourceType(2L); // 2-问答
+        record.setRating(rating);
+        record.setEvaluationText(evaluationText);
+        record.setInteractionTime(interactionTime);
+        record.setDuration(duration);
 
         return insertTInteractionHistory(record);
     }

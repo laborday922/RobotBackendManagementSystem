@@ -12,6 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="userId"    column="user_id"    />
         <result property="userName"    column="user_name"    />
         <result property="interactionType"    column="interaction_type"    />
+        <result property="sourceType"    column="source_type"    />
         <result property="interactionContent"    column="interaction_content"    />
         <result property="interactionTime"    column="interaction_time"    />
         <result property="duration"    column="duration"    />
@@ -22,7 +23,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTInteractionHistoryVo">
-        select id, task_id, interaction_id, robot_id, user_id, user_name, interaction_type, interaction_content, interaction_time, duration, rating, evaluation_text, status, ext_info from t_interaction_history
+        select id, task_id, interaction_id, robot_id, user_id, user_name, interaction_type, source_type, interaction_content, interaction_time, duration, rating, evaluation_text, status, ext_info from t_interaction_history
     </sql>
 
     <select id="selectTInteractionHistoryList" parameterType="TInteractionHistory" resultMap="TInteractionHistoryResult">
@@ -49,6 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">user_id,</if>
             <if test="userName != null">user_name,</if>
             <if test="interactionType != null">interaction_type,</if>
+            <if test="sourceType != null">source_type,</if>
             <if test="interactionContent != null">interaction_content,</if>
             <if test="interactionTime != null">interaction_time,</if>
             <if test="duration != null">duration,</if>
@@ -64,6 +66,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">#{userId},</if>
             <if test="userName != null">#{userName},</if>
             <if test="interactionType != null">#{interactionType},</if>
+            <if test="sourceType != null">#{sourceType},</if>
             <if test="interactionContent != null">#{interactionContent},</if>
             <if test="interactionTime != null">#{interactionTime},</if>
             <if test="duration != null">#{duration},</if>
@@ -83,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="userId != null">user_id = #{userId},</if>
             <if test="userName != null">user_name = #{userName},</if>
             <if test="interactionType != null">interaction_type = #{interactionType},</if>
+            <if test="sourceType != null">source_type = #{sourceType},</if>
             <if test="interactionContent != null">interaction_content = #{interactionContent},</if>
             <if test="interactionTime != null">interaction_time = #{interactionTime},</if>
             <if test="duration != null">duration = #{duration},</if>

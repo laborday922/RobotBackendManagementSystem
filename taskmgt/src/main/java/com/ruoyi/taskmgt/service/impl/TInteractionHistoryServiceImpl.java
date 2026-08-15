@@ -168,6 +168,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         record.setEvaluationText(evaluationText);
         record.setInteractionTime(interactionTime);
         record.setDuration(duration);
+        record.setInteractionContent("问答");
 
         return insertTInteractionHistory(record);
     }

@@ -20,7 +20,13 @@ public class LineChartStrategy implements ChartDataStrategy {
 
         for(Map<String,Object> row : data){
 
-            xAxis.add(String.valueOf(row.get("time")));
+            // 与柱状图/饼图保持一致，优先取 name；兼容旧的 time 列
+            Object x = row.get("name");
+            if (x == null) {
+                x = row.get("time");
+            }
+
+            xAxis.add(String.valueOf(x));
 
             series.add(row.get("value"));
 

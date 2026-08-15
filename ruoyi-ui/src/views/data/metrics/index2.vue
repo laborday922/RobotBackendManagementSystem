@@ -321,6 +321,12 @@ export default {
         });
       },
       deep: true
+    },
+    // 筛选条件变化导致 filteredMetrics 变化时，重新渲染图表
+    filteredMetrics() {
+      this.$nextTick(() => {
+        this.renderCharts();
+      });
     }
   },
   mounted() {

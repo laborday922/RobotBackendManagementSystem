@@ -146,7 +146,7 @@ export default {
       },
       queryParams: {
         pageNum: 1,
-        pageSize: 15,
+        pageSize: 10,
         robotId: null
       },
       sourceTypeMap: { 1: "任务", 2: "问答" },
@@ -207,7 +207,7 @@ export default {
     resetQuery() {
       this.queryParams = {
         pageNum: 1,
-        pageSize: 15,
+        pageSize: 10,
         robotId: null
       }
       this.resetForm("queryForm")

@@ -716,7 +716,7 @@ export default {
           tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
           legend: { orient: 'vertical', left: 'left' },
           series: [{
-            name: metric.name,
+            name: metric.metricName,
             type: 'pie',
             radius: chartType === 'ring' ? ['40%', '70%'] : '50%',
             data: data,
@@ -724,21 +724,44 @@ export default {
           }]
         };
       } else if (chartType === 'bar' || chartType === 'line') {
-        // 柱状图 / 折线图：预期 data 为 { xAxis: [], series: [{ name, data }] } 或 { xAxis: [], data: [] }
-        let xAxisData = data.xAxis || [];
-        let seriesData = data.series || (data.data ? [{ name: metric.name, data: data.data }] : []);
-        if (!Array.isArray(seriesData)) seriesData = [seriesData];
+        // 柱状图 / 折线图：兼容两种后端返回格式
+        // 1) { xAxis: [], series: [{ name, data }] }
+        // 2) { xAxis: [], series: [值1, 值2, ...] }（后端 LineChartStrategy / BarChartStrategy 实际返回此格式）
+        const xAxisData = data.xAxis || [];
+        let rawSeries = data.series;
+        if (rawSeries == null) {
+          rawSeries = data.data != null ? [{ name: metric.metricName, data: data.data }] : [];
+        }
+        if (!Array.isArray(rawSeries)) rawSeries = [rawSeries];
+
+        const isSeriesObjects = rawSeries.length > 0 && rawSeries[0] !== null
+          && typeof rawSeries[0] === 'object' && !Array.isArray(rawSeries[0]);
+
+        let series;
+        if (isSeriesObjects) {
+          series = rawSeries.map(s => ({
+            name: s.name || metric.metricName,
+            type: chartType,
+            data: s.data || [],
+            smooth: chartType === 'line',
+            itemStyle: { borderRadius: chartType === 'bar' ? [4,4,0,0] : undefined }
+          }));
+        } else {
+          // 纯数值数组，作为单条序列的 data
+          series = [{
+            name: metric.metricName,
+            type: chartType,
+            data: rawSeries,
+            smooth: chartType === 'line',
+            itemStyle: { borderRadius: chartType === 'bar' ? [4,4,0,0] : undefined }
+          }];
+        }
+
         option = {
           tooltip: { trigger: 'axis' },
           xAxis: { type: 'category', data: xAxisData },
           yAxis: { type: 'value' },
-          series: seriesData.map(s => ({
-            name: s.name || metric.name,
-            type: chartType,
-            data: s.data,
-            smooth: chartType === 'line',
-            itemStyle: { borderRadius: chartType === 'bar' ? [4,4,0,0] : undefined }
-          }))
+          series
         };
       } else {
         // 默认使用折线图

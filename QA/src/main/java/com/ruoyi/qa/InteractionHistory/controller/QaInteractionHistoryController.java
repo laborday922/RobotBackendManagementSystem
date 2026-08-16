@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2026-03-13
  */
 @RestController
-@RequestMapping("/qa/interactionHistory")
+@RequestMapping("/qa/intHistory")
 public class QaInteractionHistoryController
 {
     @Autowired
@@ -31,7 +31,7 @@ public class QaInteractionHistoryController
      */
     @ApiOperation("提交问答评价")
     @Anonymous
-    @PostMapping("/QAevaluate")
+    @PostMapping("/evaluate")
     public AjaxResult qaEvaluate(
             @RequestParam Long robotId,
             @RequestParam Long rating,

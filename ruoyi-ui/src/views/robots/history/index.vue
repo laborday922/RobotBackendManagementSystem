@@ -84,7 +84,7 @@
     <el-dialog
       title="位置历史信息"
       :visible="historyDialogVisible"
-      width="90%"
+      width="60%"
       append-to-body
       class="history-dialog"
       :close-on-click-modal="false"

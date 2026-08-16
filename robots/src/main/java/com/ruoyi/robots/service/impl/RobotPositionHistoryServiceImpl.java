@@ -118,12 +118,12 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
         BeanUtils.copyProperties(robotStatusDto, incoming);
         incoming.setId(null);
         incoming.setRobotId(robotStatusDto.getId());
-        incoming.setRecordTime(robotStatusDto.getLastHeartbeatTime());
+        incoming.setRecordTime(robotStatusDto.getLastHeartbeatTime()==null?DateUtils.getNowDate():robotStatusDto.getLastHeartbeatTime());
 
         // 未携带任何位置信息时不写入历史表
         if (incoming.getLocationArea() == null && incoming.getSpecificLocation() == null
                 && incoming.getCoordinateX() == null && incoming.getCoordinateY() == null
-                && incoming.getMoveSpeed() == null) {
+           ) {
             return;
         }
 
@@ -168,7 +168,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
         else if (left == null || right == null) {
             return false;
         }
-        else if (left.equals(right)) {
+        else if (left.subtract(right).abs().compareTo(BigDecimal.ONE) <= 0) {
             return true;
         }
         else return false;

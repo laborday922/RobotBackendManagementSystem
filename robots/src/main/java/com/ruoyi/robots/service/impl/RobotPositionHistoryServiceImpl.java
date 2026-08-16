@@ -19,12 +19,12 @@ import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
 
 /**
  * 机器人位置历史信息Service业务层处理
- * 
+ *
  * @author xiaocai
  * @date 2026-03-07
  */
 @Service
-public class RobotPositionHistoryServiceImpl implements IRobotPositionHistoryService 
+public class RobotPositionHistoryServiceImpl implements IRobotPositionHistoryService
 {
     @Autowired
     private RobotPositionHistoryMapper robotPositionHistoryMapper;
@@ -34,7 +34,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 查询机器人位置历史信息
-     * 
+     *
      * @param id 机器人位置历史信息主键
      * @return 机器人位置历史信息
      */
@@ -46,7 +46,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 查询机器人位置历史信息列表
-     * 
+     *
      * @param robotPositionHistory 机器人位置历史信息
      * @return 机器人位置历史信息
      */
@@ -61,7 +61,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 新增机器人位置历史信息
-     * 
+     *
      * @param robotPositionHistory 机器人位置历史信息
      * @return 结果
      */
@@ -74,7 +74,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 修改机器人位置历史信息
-     * 
+     *
      * @param robotPositionHistory 机器人位置历史信息
      * @return 结果
      */
@@ -86,7 +86,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 批量删除机器人位置历史信息
-     * 
+     *
      * @param ids 需要删除的机器人位置历史信息主键
      * @return 结果
      */
@@ -98,7 +98,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
 
     /**
      * 删除机器人位置历史信息信息
-     * 
+     *
      * @param id 机器人位置历史信息主键
      * @return 结果
      */
@@ -118,7 +118,7 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
         BeanUtils.copyProperties(robotStatusDto, incoming);
         incoming.setId(null);
         incoming.setRobotId(robotStatusDto.getId());
-        incoming.setRecordTime(DateUtils.getNowDate());
+        incoming.setRecordTime(robotStatusDto.getLastHeartbeatTime());
 
         // 未携带任何位置信息时不写入历史表
         if (incoming.getLocationArea() == null && incoming.getSpecificLocation() == null

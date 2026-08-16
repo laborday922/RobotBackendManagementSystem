@@ -71,15 +71,13 @@
             </div>
             <div v-show="robotViewMode === 'map'" id="robotMapChart" class="chart"></div>
             <div v-show="robotViewMode === 'table'" class="robot-table">
-              <el-table :data="robotLocationList" height="100%" size="mini" border>
-                <el-table-column type="index" label="#" width="40" align="center" />
-                <el-table-column label="机器人" align="center" min-width="120" show-overflow-tooltip>
+              <el-table :data="robotLocationList" height="100%" size="mini" stripe>
+                <el-table-column label="机器人" align="left" width="140" show-overflow-tooltip>
                   <template slot-scope="scope">
                     <span>{{ scope.row.name || scope.row.code || '-' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="编号" align="center" prop="code" min-width="100" show-overflow-tooltip />
-                <el-table-column label="位置" align="center" prop="specificLocation" min-width="120" show-overflow-tooltip>
+                <el-table-column label="位置" align="left" prop="specificLocation" show-overflow-tooltip>
                   <template slot-scope="scope">
                     <span>{{ scope.row.specificLocation || '-' }}</span>
                   </template>
@@ -755,29 +753,53 @@ export default {
 .robot-table {
   flex: 1;
   min-height: 0;
-  padding: 8px;
+  padding: 8px 10px 10px;
   overflow: hidden;
 }
 
-.robot-table ::v-deep .el-table,
-.robot-table ::v-deep .el-table__expanded-cell {
+.robot-table ::v-deep .el-table {
+  width: 100% !important;
   background: transparent;
-  color: #b0c2f9;
+  border: 1px solid rgba(31, 58, 138, 0.65);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.robot-table ::v-deep .el-table th,
-.robot-table ::v-deep .el-table tr {
-  background: transparent;
-  color: #b0c2f9;
+.robot-table ::v-deep .el-table::before {
+  background-color: transparent;
 }
 
-.robot-table ::v-deep .el-table td,
-.robot-table ::v-deep .el-table th.is-leaf {
-  border-bottom: 1px solid #1f3a8a;
+.robot-table ::v-deep .el-table__header-wrapper {
+  background: rgba(31, 58, 138, 0.18);
+}
+
+.robot-table ::v-deep .el-table th {
+  background: rgba(31, 58, 138, 0.18) !important;
+  color: #dbe6ff;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(31, 58, 138, 0.8);
+  border-right: none;
+  padding: 8px 0;
+}
+
+.robot-table ::v-deep .el-table td {
+  background: rgba(0, 0, 0, 0.12);
+  color: #b0c2f9;
+  border-bottom: 1px solid rgba(31, 58, 138, 0.45);
+  border-right: none;
+  padding: 8px 0;
+}
+
+.robot-table ::v-deep .el-table .cell {
+  padding: 0 10px;
+}
+
+.robot-table ::v-deep .el-table__body-wrapper {
+  overflow-x: hidden;
 }
 
 .robot-table ::v-deep .el-table--enable-row-hover .el-table__body tr:hover > td {
-  background: rgba(64, 158, 255, 0.15);
+  background: rgba(64, 158, 255, 0.18) !important;
 }
 
 .chart {

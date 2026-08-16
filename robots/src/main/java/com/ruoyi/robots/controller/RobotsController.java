@@ -128,7 +128,7 @@ public class RobotsController extends BaseController
     @ApiOperation("机器人状态上传")
     public AjaxResult upload(@Validated @RequestBody RobotStatusDto robotStatusDto)
     {
-        robotPositionHistoryService.saveIfPositionChanged(robotStatusDto);
+//        robotPositionHistoryService.saveIfPositionChanged(robotStatusDto);
         return toAjax(robotsService.updateRobotStatus(robotStatusDto));
     }
 }

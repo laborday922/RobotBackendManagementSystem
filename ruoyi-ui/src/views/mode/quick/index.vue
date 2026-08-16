@@ -85,7 +85,7 @@
       <!-- 快捷操作按钮组 -->
       <el-row :gutter="20" class="operation-section">
         <!-- 紧急操作组 -->
-        <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
           <el-card class="operation-card emergency">
             <div slot="header">
               <span><i class="fas fa-exclamation-triangle"></i> 紧急操作</span>
@@ -116,40 +116,8 @@
           </el-card>
         </el-col>
 
-        <!-- 状态操作组 -->
-        <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
-          <el-card class="operation-card status">
-            <div slot="header">
-              <span><i class="fas fa-chart-line"></i> 状态操作</span>
-            </div>
-            <div class="button-group">
-              <el-button
-                type="success"
-                class="operation-btn"
-                @click="executeOperation('refresh_status')"
-                :disabled="!hasSelectedRobot() || loading">
-                <i class="fas fa-sync-alt"></i> 刷新状态
-              </el-button>
-              <el-button
-                type="warning"
-                class="operation-btn"
-                @click="executeOperation('test_alert')"
-                :disabled="!hasSelectedRobot() || loading">
-                <i class="fas fa-bell"></i> 测试告警
-              </el-button>
-              <el-button
-                type="info"
-                class="operation-btn"
-                @click="executeOperation('clear_alerts')"
-                :disabled="!hasSelectedRobot() || loading">
-                <i class="fas fa-bell-slash"></i> 清除告警
-              </el-button>
-            </div>
-          </el-card>
-        </el-col>
-
         <!-- 系统操作组 -->
-        <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
+        <el-col :xs="24" :sm="24" :md="12" :lg="12" :xl="12">
           <el-card class="operation-card system">
             <div slot="header">
               <span><i class="fas fa-cogs"></i> 系统操作</span>
@@ -158,21 +126,21 @@
               <el-button
                 type="primary"
                 class="operation-btn"
-                @click="executeOperation('standby_mode')"
+                @click="switchSystemMode(1)"
                 :disabled="!hasSelectedRobot() || loading">
                 <i class="fas fa-pause-circle"></i> 待机模式
               </el-button>
               <el-button
                 type="primary"
                 class="operation-btn"
-                @click="executeOperation('maintenance_mode')"
+                @click="switchSystemMode(2)"
                 :disabled="!hasSelectedRobot() || loading">
                 <i class="fas fa-tools"></i> 维护模式
               </el-button>
               <el-button
                 type="primary"
                 class="operation-btn"
-                @click="executeOperation('charge_mode')"
+                @click="switchSystemMode(3)"
                 :disabled="!hasSelectedRobot() || loading">
                 <i class="fas fa-bolt"></i> 充电模式
               </el-button>
@@ -475,6 +443,15 @@ export default {
         .filter(r => ids.includes(r.robotId))
         .map(r => r.robotName)
         .join('、');
+    },
+
+    // 系统操作：将写死的三个预设模式（1-待机、2-维护、3-充电）下发为模式切换指令
+    switchSystemMode(modeId) {
+      const typeMap = { 1: 'standby_mode', 2: 'maintenance_mode', 3: 'charge_mode' };
+      const type = typeMap[modeId];
+      if (type) {
+        this.executeOperation(type);
+      }
     },
 
     executeOperation(type) {

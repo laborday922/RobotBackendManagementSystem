@@ -105,4 +105,12 @@ public interface ISysRobotService
      * 通过 WebSocket 切换机器人模式（同步），携带 sys_mode_param 参数
      */
     public boolean switchModeViaWebSocketSync(Long robotId, Long modeId, String modeName);
+
+    /**
+     * 通过 WebSocket 下发紧急操作指令（同步），action=emergency
+     *
+     * @param robotId 机器人ID
+     * @param command 紧急操作子类型：emergency_stop / emergency_evacuation / restart
+     */
+    public boolean sendEmergencyCommandViaWebSocketSync(Long robotId, String command);
 }

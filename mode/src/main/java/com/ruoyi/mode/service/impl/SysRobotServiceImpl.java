@@ -3,6 +3,7 @@ package com.ruoyi.mode.service.impl;
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.mode.domain.SysModeParam;
+import com.ruoyi.mode.invoker.dto.EmergencyCommandRequest;
 import com.ruoyi.mode.invoker.dto.ModeSwitchRequest;
 import com.ruoyi.mode.mapper.SysModeParamMapper;
 import com.ruoyi.mode.mapper.SysRobotMapper;
@@ -62,6 +63,11 @@ public class SysRobotServiceImpl implements ISysRobotService
     private com.ruoyi.robots.websocket.RobotWebSocketHandler webSocketHandler;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // 紧急操作指令子类型
+    private static final String EMERGENCY_CMD_STOP = "emergency_stop";
+    private static final String EMERGENCY_CMD_EVACUATION = "emergency_evacuation";
+    private static final String EMERGENCY_CMD_RESTART = "restart";
 
     // 模式名称缓存
     private Map<Long, String> modeNameCache = new HashMap<>();
@@ -195,6 +201,58 @@ public class SysRobotServiceImpl implements ISysRobotService
         }
     }
 
+    @Override
+    public boolean sendEmergencyCommandViaWebSocketSync(Long robotId, String command) {
+        if (!webSocketHandler.isOnline(robotId)) {
+            logger.warn("机器人 {} 不在线，无法下发紧急操作指令", robotId);
+            return false;
+        }
+
+        try {
+            EmergencyCommandRequest request = EmergencyCommandRequest.of(command);
+
+            String correlationId = UUID.randomUUID().toString();
+            var future = webSocketHandler.sendAndWaitRaw(robotId, request, correlationId, 30);
+            var response = future.get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            if (response.getData() != null) {
+                Map<String, Object> respData = (Map<String, Object>) response.getData();
+                Boolean success = (Boolean) respData.getOrDefault("success", false);
+                if (success) {
+                    logger.info("紧急操作指令下发成功: robotId={}, command={}", robotId, command);
+                    return true;
+                } else {
+                    String errorMsg = (String) respData.getOrDefault("errorMsg", "操作失败");
+                    logger.error("紧急操作指令执行失败: robotId={}, command={}, error={}", robotId, command, errorMsg);
+                    return false;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            logger.error("紧急操作指令下发异常: robotId={}, command={}", robotId, command, e);
+            return false;
+        }
+    }
+
+    /**
+     * 下发重启指令（不等待确认）。重启会导致机器人主动断开连接，无法可靠等待同步响应。
+     */
+    private boolean sendEmergencyRestartCommand(Long robotId) {
+        if (!webSocketHandler.isOnline(robotId)) {
+            logger.warn("机器人 {} 不在线，无法下发重启指令", robotId);
+            return false;
+        }
+        try {
+            EmergencyCommandRequest request = EmergencyCommandRequest.of(EMERGENCY_CMD_RESTART);
+            String correlationId = UUID.randomUUID().toString();
+            webSocketHandler.sendRequest(robotId, request, correlationId);
+            return true;
+        } catch (Exception e) {
+            logger.error("下发重启指令失败: robotId={}", robotId, e);
+            return false;
+        }
+    }
+
     // ==================== 核心：更新机器人模式（直接操作 robots 表） ====================
 
     @Override
@@ -288,6 +346,9 @@ public class SysRobotServiceImpl implements ISysRobotService
         logger.info("异步重启线程开始: robotId={}, robotName={}", robotId, robotName);
 
         try {
+            // 下发重启指令给机器人（不等待确认）
+            boolean wsSuccess = sendEmergencyRestartCommand(robotId);
+
             Thread.sleep(500);
 
             Robot robot = robotsMapper.selectRobotsById(robotId);
@@ -297,9 +358,10 @@ public class SysRobotServiceImpl implements ISysRobotService
                 statusDto.setTaskStatus(2);
                 robotsService.updateRobotStatus(statusDto);
 
-                logger.info("机器人重启成功: robotId={}, robotName={}", robotId, robotName);
+                logger.info("机器人重启完成: robotId={}, robotName={}, wsSuccess={}", robotId, robotName, wsSuccess);
                 recordOperation(robotId, robotName, "batch_restart_complete",
-                        "success", operator, "重启完成");
+                        wsSuccess ? "success" : "warning", operator,
+                        "重启完成（WebSocket: " + (wsSuccess ? "成功" : "失败") + "）");
             }
         } catch (InterruptedException e) {
             logger.error("机器人异步重启被中断: robotId={}", robotId, e);
@@ -384,13 +446,18 @@ public class SysRobotServiceImpl implements ISysRobotService
             try {
                 Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
+                    // 1. 下发紧急停止指令给机器人
+                    boolean wsSuccess = sendEmergencyCommandViaWebSocketSync(robotId, EMERGENCY_CMD_STOP);
+
+                    // 2. 更新数据库状态（WebSocket 失败时也更新，保证后台状态一致）
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setStatus(0);
                     statusDto.setTaskStatus(2);
                     robotsService.updateRobotStatus(statusDto);
 
                     recordOperation(robotId, robot.getName(), "emergency_stop",
-                            "success", operator, "紧急停止");
+                            wsSuccess ? "success" : "warning", operator,
+                            "紧急停止（WebSocket: " + (wsSuccess ? "成功" : "失败") + "）");
                     successCount++;
                 }
             } catch (Exception e) {
@@ -407,23 +474,23 @@ public class SysRobotServiceImpl implements ISysRobotService
         int successCount = 0;
         String operator = getCurrentUsername();
 
-        Long safeModeId = getSafeEvacuationModeId();
-        String safeModeName = getModeNameById(safeModeId);
-
         for (Long robotId : robotIds) {
             try {
                 Robot robot = robotsMapper.selectRobotsById(robotId);
                 if (robot != null && robot.getStatus() != 0) {
+                    // 1. 下发紧急撤离指令给机器人
+                    boolean wsSuccess = sendEmergencyCommandViaWebSocketSync(robotId, EMERGENCY_CMD_EVACUATION);
+
+                    // 2. 更新数据库状态
                     RobotStatusDto statusDto = convertToRobotStatusDto(robot);
                     statusDto.setTaskStatus(0);
                     statusDto.setStatus(2);
                     statusDto.setHardwareStatus(0);
                     robotsService.updateRobotStatus(statusDto);
 
-                    updateRobotMode(robotId, safeModeId);
-
                     recordOperation(robotId, robot.getName(), "emergency_evacuation",
-                            "success", operator, "紧急撤离 - 停止任务并返回安全位置(" + safeModeName + ")");
+                            wsSuccess ? "success" : "warning", operator,
+                            "紧急撤离 - 停止任务并返回安全位置（WebSocket: " + (wsSuccess ? "成功" : "失败") + "）");
                     successCount++;
                 }
             } catch (Exception e) {
@@ -433,24 +500,6 @@ public class SysRobotServiceImpl implements ISysRobotService
 
         logger.info("紧急撤离完成: 成功={}, 总数={}", successCount, robotIds.length);
         return successCount;
-    }
-
-    private Long getSafeEvacuationModeId() {
-        try {
-            Long tenantId = TenantContext.get();
-            String sql = "SELECT mode_id FROM sys_mode WHERE (mode_name LIKE '%安全%' OR mode_name LIKE '%撤离%') AND del_flag = '0'";
-            if (!isAdmin(tenantId)) {
-                sql += " AND tenant_id = ?";
-                Long modeId = jdbcTemplate.queryForObject(sql, Long.class, tenantId);
-                if (modeId != null) return modeId;
-            } else {
-                Long modeId = jdbcTemplate.queryForObject(sql, Long.class);
-                if (modeId != null) return modeId;
-            }
-        } catch (Exception e) {
-            logger.warn("未找到安全撤离模式，使用待机模式作为默认");
-        }
-        return 1L;
     }
 
     @Override

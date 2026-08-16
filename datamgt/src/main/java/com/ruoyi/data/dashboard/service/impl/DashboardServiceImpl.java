@@ -48,11 +48,16 @@ public class DashboardServiceImpl implements DashboardService {
         List<InteractionEvaluationPo> records =
                 dashboardMapper.selectEvaluationTexts(tenantId, startTime, endTime, rating);
 
-        // 2️.提取非空的评论文本，准备送入词云生成服务
-        List<String> texts = records.stream()
-                .map(InteractionEvaluationPo::getEvaluationText)
-                .filter(t -> t != null && !t.isEmpty())
-                .toList();
+        // 2️.提取非空的评价文本与交互内容，准备送入词云生成服务
+        List<String> texts = new ArrayList<>();
+        for (InteractionEvaluationPo record : records) {
+            if (record.getEvaluationText() != null && !record.getEvaluationText().isEmpty()) {
+                texts.add(record.getEvaluationText());
+            }
+            if (record.getInteractionContent() != null && !record.getInteractionContent().isEmpty()) {
+                texts.add(record.getInteractionContent());
+            }
+        }
 
         // 3️.调用AI分析服务对文本集合进行分词、统计词频，生成词云数据
         return aiAnalysisService.generateWordCloud(texts);

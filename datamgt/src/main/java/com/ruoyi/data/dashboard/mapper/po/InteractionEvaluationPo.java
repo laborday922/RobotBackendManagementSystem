@@ -10,4 +10,9 @@ public class InteractionEvaluationPo {
      */
     private String evaluationText;
 
+    /**
+     * 交互内容
+     */
+    private String interactionContent;
+
 }

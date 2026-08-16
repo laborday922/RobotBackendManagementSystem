@@ -8,23 +8,25 @@
     <select id="selectEvaluationTexts"
             resultType="com.ruoyi.data.dashboard.mapper.po.InteractionEvaluationPo">
 
-        SELECT clean_content AS evaluationText
-        FROM clean_interaction_result
-        WHERE clean_content IS NOT NULL
-        AND clean_content != ''
+        SELECT c.clean_content AS evaluationText,
+               h.interaction_content AS interactionContent
+        FROM clean_interaction_result c
+        LEFT JOIN t_interaction_history h ON c.source_id = h.id
+        WHERE c.clean_content IS NOT NULL
+        AND c.clean_content != ''
         <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
+            AND c.tenant_id = #{tenantId}
         </if>
-        AND task_id = (
+        AND c.task_id = (
         SELECT MAX(task_id) FROM clean_interaction_result
         )
 
         <if test="startTime != null">
-            AND interaction_time &gt;= #{startTime}
+            AND h.interaction_time &gt;= #{startTime}
         </if>
 
         <if test="endTime != null">
-            AND interaction_time &lt;= #{endTime}
+            AND h.interaction_time &lt;= #{endTime}
         </if>
 
     </select>

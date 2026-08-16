@@ -3,12 +3,12 @@ package com.ruoyi.qa.InteractionHistory.service;
 import java.util.Date;
 
 /**
- * 交互历史记录Service接口
+ * 问答评价Service接口
  *
  * @author xiaocai
  * @date 2026-03-13
  */
-public interface ITInteractionHistoryService
+public interface IQaInteractionHistoryService
 {
     /**
      * 保存问答评价记录（来源类型固定为 2-问答，与任务无关）

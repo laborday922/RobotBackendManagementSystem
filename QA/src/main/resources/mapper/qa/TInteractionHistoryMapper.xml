@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.qa.InteractionHistory.mapper.TInteractionHistoryMapper">
+
+    <insert id="insertTInteractionHistory" parameterType="com.ruoyi.qa.InteractionHistory.domain.TInteractionHistory" useGeneratedKeys="true" keyProperty="id">
+        insert into t_interaction_history
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="robotId != null">robot_id,</if>
+            <if test="sourceType != null">source_type,</if>
+            <if test="interactionContent != null">interaction_content,</if>
+            <if test="interactionTime != null">interaction_time,</if>
+            <if test="duration != null">duration,</if>
+            <if test="rating != null">rating,</if>
+            <if test="evaluationText != null">evaluation_text,</if>
+            <if test="status != null">status,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="robotId != null">#{robotId},</if>
+            <if test="sourceType != null">#{sourceType},</if>
+            <if test="interactionContent != null">#{interactionContent},</if>
+            <if test="interactionTime != null">#{interactionTime},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="rating != null">#{rating},</if>
+            <if test="evaluationText != null">#{evaluationText},</if>
+            <if test="status != null">#{status},</if>
+        </trim>
+    </insert>
+
+</mapper>

@@ -1,6 +1,5 @@
 package com.ruoyi.taskmgt.service.impl;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -160,18 +159,4 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         return insertTInteractionHistory(record);
     }
 
-    @Override
-    public int saveQAEvaluation(Long robotId, Long rating, String evaluationText, Date interactionTime, Long duration) {
-        TInteractionHistory record = new TInteractionHistory();
-        record.setRobotId(robotId);
-        record.setSourceType(2L); // 2-问答
-        record.setRating(rating);
-        record.setEvaluationText(evaluationText);
-        record.setInteractionTime(interactionTime);
-        record.setDuration(duration);
-        record.setInteractionContent("问答");
-        record.setStatus(0L); //0-成功
-
-        return insertTInteractionHistory(record);
-    }
 }

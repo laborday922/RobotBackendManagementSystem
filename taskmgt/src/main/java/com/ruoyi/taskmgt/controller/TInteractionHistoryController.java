@@ -1,13 +1,11 @@
 package com.ruoyi.taskmgt.controller;
 
-import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
 import io.swagger.annotations.ApiOperation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -113,21 +111,6 @@ public class TInteractionHistoryController extends BaseController
         } catch (IllegalArgumentException e) {
             return error(e.getMessage());
         }
-    }
-
-    /**
-     * 提交问答评价（评分 + 评价内容 + 交互时间相关字段），与任务无关，无需 interactionId
-     */
-    @ApiOperation("提交问答评价")
-    @PostMapping("/QAevaluate")
-    public AjaxResult qaEvaluate(
-            @RequestParam Long robotId,
-            @RequestParam Long rating,
-            @RequestParam(required = false) String evaluationText,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date interactionTime,
-            @RequestParam(required = false) Long duration) {
-        int rows = tInteractionHistoryService.saveQAEvaluation(robotId, rating, evaluationText, interactionTime, duration);
-        return rows > 0 ? success() : error("提交评价失败");
     }
 
 //    /**

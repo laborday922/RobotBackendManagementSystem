@@ -21,6 +21,14 @@ public interface RobotPositionHistoryMapper
     public RobotPositionHistory selectRobotPositionHistoryById(Long id);
 
     /**
+     * 查询机器人最近一条位置历史信息
+     *
+     * @param robotId 机器人ID
+     * @return 机器人位置历史信息
+     */
+    public RobotPositionHistory selectLatestRobotPositionHistoryByRobotId(Long robotId);
+
+    /**
      * 查询机器人位置历史信息列表
      * 
      * @param robotPositionHistory 机器人位置历史信息

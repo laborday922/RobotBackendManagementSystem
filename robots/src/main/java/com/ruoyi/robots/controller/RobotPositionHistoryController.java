@@ -25,7 +25,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 
 /**
  * 机器人位置历史信息Controller
- * 
+ *
  * @author xiaocai
  * @date 2026-03-07
  */
@@ -50,19 +50,6 @@ public class RobotPositionHistoryController extends BaseController
     }
 
     /**
-     * 导出机器人位置历史信息列表
-     */
-//    @PreAuthorize("@ss.hasPermi('robots:history:export')")
-    @Log(title = "机器人位置历史信息", businessType = BusinessType.EXPORT)
-    @PostMapping("/export")
-    public void export(HttpServletResponse response, RobotPositionHistory robotPositionHistory)
-    {
-        List<RobotPositionHistory> list = robotPositionHistoryService.selectRobotPositionHistoryList(robotPositionHistory);
-        ExcelUtil<RobotPositionHistory> util = new ExcelUtil<RobotPositionHistory>(RobotPositionHistory.class);
-        util.exportExcel(response, list, "机器人位置历史信息数据");
-    }
-
-    /**
      * 获取机器人位置历史信息详细信息
      *
      */
@@ -74,38 +61,4 @@ public class RobotPositionHistoryController extends BaseController
         return success(robotPositionHistoryService.selectRobotPositionHistoryById(id));
     }
 
-    /**
-     * 新增机器人位置历史信息
-     *
-     */
-    @ApiOperation("新增机器人位置历史信息")
-//    @PreAuthorize("@ss.hasPermi('robots:history:add')")
-    @Log(title = "机器人位置历史信息", businessType = BusinessType.INSERT)
-    @PostMapping
-    public AjaxResult add(@RequestBody RobotPositionHistory robotPositionHistory)
-    {
-        return toAjax(robotPositionHistoryService.insertRobotPositionHistory(robotPositionHistory));
-    }
-
-//    /**
-//     * 修改机器人位置历史信息
-//     */
-//    @PreAuthorize("@ss.hasPermi('robots:history:edit')")
-//    @Log(title = "机器人位置历史信息", businessType = BusinessType.UPDATE)
-//    @PutMapping
-//    public AjaxResult edit(@RequestBody RobotPositionHistory robotPositionHistory)
-//    {
-//        return toAjax(robotPositionHistoryService.updateRobotPositionHistory(robotPositionHistory));
-//    }
-//
-//    /**
-//     * 删除机器人位置历史信息
-//     */
-//    @PreAuthorize("@ss.hasPermi('robots:history:remove')")
-//    @Log(title = "机器人位置历史信息", businessType = BusinessType.DELETE)
-//	@DeleteMapping("/{ids}")
-//    public AjaxResult remove(@PathVariable Long[] ids)
-//    {
-//        return toAjax(robotPositionHistoryService.deleteRobotPositionHistoryByIds(ids));
-//    }
 }

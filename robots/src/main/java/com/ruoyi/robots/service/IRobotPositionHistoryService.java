@@ -61,5 +61,5 @@ public interface IRobotPositionHistoryService
      */
     public int deleteRobotPositionHistoryById(Long id);
 
-    void loadPosToRedis(RobotStatusDto robotStatusDto);
+    void saveIfPositionChanged(RobotStatusDto robotStatusDto);
 }

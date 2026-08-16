@@ -5,6 +5,7 @@ import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.event.RobotConnectedEvent;
 import com.ruoyi.robots.event.WebSocketAsyncResultEvent;
+import com.ruoyi.robots.service.IRobotPositionHistoryService;
 import com.ruoyi.robots.service.IRobotsService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class RobotWebSocketHandler extends TextWebSocketHandler {
 
     protected final IRobotsService robotService;
+    protected final IRobotPositionHistoryService robotPositionHistoryService;
     protected final ApplicationEventPublisher eventPublisher;
     protected final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -164,6 +166,12 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             RobotStatusDto robot = new RobotStatusDto();
             robot.setId(robotId);
             robot.setLastHeartbeatTime(new Date());
+            if (wsMsg.getData() != null) {
+                robot = objectMapper.convertValue(wsMsg.getData(), RobotStatusDto.class);
+                robot.setId(robotId);
+                robot.setLastHeartbeatTime(new Date());
+                robotPositionHistoryService.saveIfPositionChanged(robot);
+            }
             robotService.updateRobotStatus(robot);
             sendMessage(session, RobotWebSocketMessage.heartbeatAck());
             log.debug("收到心跳 from robotId={}", robotId);

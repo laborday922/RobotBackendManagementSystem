@@ -1,10 +1,11 @@
 package com.ruoyi.robots.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
-import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.threadlocal.TenantContext;
+import com.ruoyi.common.utils.DateUtils;
 import com.ruoyi.robots.controller.dto.RobotStatusDto;
 import com.ruoyi.robots.mapper.RobotsMapper;
 import org.springframework.beans.BeanUtils;
@@ -29,8 +30,6 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     private RobotPositionHistoryMapper robotPositionHistoryMapper;
     @Autowired
     private RobotsMapper robotsMapper;
-    @Autowired
-    private RedisCache redisCache;
 
 
     /**
@@ -110,14 +109,65 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
     }
 
     @Override
-    public void loadPosToRedis(RobotStatusDto robotStatusDto) {
-        RobotPositionHistory robotPositionHistory = new RobotPositionHistory();
-        BeanUtils.copyProperties(robotStatusDto, robotPositionHistory);
-        robotPositionHistory.setTenantId(TenantContext.get());
-        robotPositionHistory.setId(null);
-        robotPositionHistory.setRobotId(robotStatusDto.getId());
-        String redisKey = "robot:position:" + robotPositionHistory.getRobotId();
+    public void saveIfPositionChanged(RobotStatusDto robotStatusDto) {
+        if (robotStatusDto == null || robotStatusDto.getId() == null) {
+            return;
+        }
 
-        redisCache.setCacheObject(redisKey, robotPositionHistory, 5, TimeUnit.MINUTES);
+        RobotPositionHistory incoming = new RobotPositionHistory();
+        BeanUtils.copyProperties(robotStatusDto, incoming);
+        incoming.setId(null);
+        incoming.setRobotId(robotStatusDto.getId());
+        incoming.setRecordTime(DateUtils.getNowDate());
+
+        // 未携带任何位置信息时不写入历史表
+        if (incoming.getLocationArea() == null && incoming.getSpecificLocation() == null
+                && incoming.getCoordinateX() == null && incoming.getCoordinateY() == null
+                && incoming.getMoveSpeed() == null) {
+            return;
+        }
+
+        RobotPositionHistory latest = robotPositionHistoryMapper.selectLatestRobotPositionHistoryByRobotId(robotStatusDto.getId());
+        if (isPositionChanged(latest, incoming)) {
+            robotPositionHistoryMapper.insertRobotPositionHistory(incoming);
+        }
+    }
+
+    /**
+     * 判断位置相关信息是否发生变化
+     */
+    private boolean isPositionChanged(RobotPositionHistory latest, RobotPositionHistory incoming) {
+        if (latest == null) {
+            return true;
+        }
+        if (!Objects.equals(latest.getLocationArea(), incoming.getLocationArea())) {
+            return true;
+        }
+        if (!Objects.equals(latest.getSpecificLocation(), incoming.getSpecificLocation())) {
+            return true;
+        }
+        if (!decimalEquals(latest.getCoordinateX(), incoming.getCoordinateX())) {
+            return true;
+        }
+        if (!decimalEquals(latest.getCoordinateY(), incoming.getCoordinateY())) {
+            return true;
+        }
+        if (!decimalEquals(latest.getMoveSpeed(), incoming.getMoveSpeed())) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * BigDecimal 按数值比较，忽略精度差异
+     */
+    private boolean decimalEquals(BigDecimal left, BigDecimal right) {
+        if (left == right) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.compareTo(right) == 0;
     }
 }

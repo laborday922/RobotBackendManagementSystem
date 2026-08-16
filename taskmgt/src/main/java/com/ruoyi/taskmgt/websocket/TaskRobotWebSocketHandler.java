@@ -1,5 +1,6 @@
 package com.ruoyi.taskmgt.websocket;
 import com.ruoyi.common.core.websocket.RobotWebSocketMessage;
+import com.ruoyi.robots.service.IRobotPositionHistoryService;
 import com.ruoyi.robots.service.IRobotsService;
 import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import com.ruoyi.taskmgt.invoker.dto.RobotTaskResponse;
@@ -22,8 +23,8 @@ public class TaskRobotWebSocketHandler extends RobotWebSocketHandler {
     /** correlationId -> CompletableFuture<RobotTaskResponse> 映射 */
     private final Map<String, CompletableFuture<RobotTaskResponse>> pendingResponses = new ConcurrentHashMap<>();
 
-    public TaskRobotWebSocketHandler(IRobotsService robotService, ApplicationEventPublisher eventPublisher) {
-        super(robotService, eventPublisher);
+    public TaskRobotWebSocketHandler(IRobotsService robotService, ApplicationEventPublisher eventPublisher, IRobotPositionHistoryService robotPositionHistoryService) {
+        super(robotService, eventPublisher, robotPositionHistoryService);
     }
 
     @Override

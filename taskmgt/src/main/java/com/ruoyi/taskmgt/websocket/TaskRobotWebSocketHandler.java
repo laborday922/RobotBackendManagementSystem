@@ -24,7 +24,7 @@ public class TaskRobotWebSocketHandler extends RobotWebSocketHandler {
     private final Map<String, CompletableFuture<RobotTaskResponse>> pendingResponses = new ConcurrentHashMap<>();
 
     public TaskRobotWebSocketHandler(IRobotsService robotService, ApplicationEventPublisher eventPublisher, IRobotPositionHistoryService robotPositionHistoryService) {
-        super(robotService, eventPublisher, robotPositionHistoryService);
+        super(robotService, robotPositionHistoryService, eventPublisher);
     }
 
     @Override

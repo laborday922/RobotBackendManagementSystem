@@ -161,8 +161,9 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
     }
 
     @Override
-    public int saveQAEvaluation(Long rating, String evaluationText, Date interactionTime, Long duration) {
+    public int saveQAEvaluation(Long robotId, Long rating, String evaluationText, Date interactionTime, Long duration) {
         TInteractionHistory record = new TInteractionHistory();
+        record.setRobotId(robotId);
         record.setSourceType(2L); // 2-问答
         record.setRating(rating);
         record.setEvaluationText(evaluationText);

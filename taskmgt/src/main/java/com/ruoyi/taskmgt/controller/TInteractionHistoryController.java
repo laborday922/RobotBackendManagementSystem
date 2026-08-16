@@ -121,11 +121,12 @@ public class TInteractionHistoryController extends BaseController
     @ApiOperation("提交问答评价")
     @PostMapping("/QAevaluate")
     public AjaxResult qaEvaluate(
+            @RequestParam Long robotId,
             @RequestParam Long rating,
             @RequestParam(required = false) String evaluationText,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date interactionTime,
             @RequestParam(required = false) Long duration) {
-        int rows = tInteractionHistoryService.saveQAEvaluation(rating, evaluationText, interactionTime, duration);
+        int rows = tInteractionHistoryService.saveQAEvaluation(robotId, rating, evaluationText, interactionTime, duration);
         return rows > 0 ? success() : error("提交评价失败");
     }
 

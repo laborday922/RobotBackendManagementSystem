@@ -162,12 +162,15 @@ public class RobotPositionHistoryServiceImpl implements IRobotPositionHistorySer
      * BigDecimal 按数值比较，忽略精度差异
      */
     private boolean decimalEquals(BigDecimal left, BigDecimal right) {
-        if (left == right) {
+        if (left == null && right == null) {
             return true;
         }
-        if (left == null || right == null) {
+        else if (left == null || right == null) {
             return false;
         }
-        return left.compareTo(right) == 0;
+        else if (left.equals(right)) {
+            return true;
+        }
+        else return false;
     }
 }

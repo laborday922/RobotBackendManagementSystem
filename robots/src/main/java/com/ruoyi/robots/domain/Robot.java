@@ -67,8 +67,8 @@ public class Robot extends BaseEntity
     @Excel(name = "当前电量", readConverterExp = "0=-100")
     private Integer battery;
 
-    /** 位置名称 */
-    private String nearAreaName;
+    /** 具体位置 */
+    private String specificLocation;
 
     /** 坐标X */
     private BigDecimal coordinateX;

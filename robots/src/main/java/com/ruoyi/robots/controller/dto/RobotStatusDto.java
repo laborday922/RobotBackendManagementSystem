@@ -39,9 +39,6 @@ public class RobotStatusDto {
     /** 坐标Y */
     private BigDecimal coordinateY;
 
-    /** 位置名称*/
-    private String nearAreaName;
-
     /** 移动速度（单位：m/s） */
     private BigDecimal moveSpeed;
 

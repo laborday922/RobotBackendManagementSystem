@@ -102,9 +102,9 @@
             <el-tag :type="getStatusTagType(scope.row.status)" effect="light">{{ getStatusText(scope.row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="位置" align="center" prop="nearAreaName" width="100" show-overflow-tooltip>
+        <el-table-column label="位置" align="center" prop="specificLocation" width="100" show-overflow-tooltip>
           <template slot-scope="scope">
-            <span>{{ scope.row.nearAreaName || '-' }}</span>
+            <span>{{ scope.row.specificLocation || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="硬件" align="center" prop="hardwareStatus" width="70">

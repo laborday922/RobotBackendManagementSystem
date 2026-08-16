@@ -688,7 +688,7 @@ CREATE TABLE `robots`  (
   `hardware_status` tinyint UNSIGNED NOT NULL DEFAULT 0 COMMENT '硬件状态（0-正常，1-警告，2-故障）',
   `task_status` tinyint UNSIGNED NOT NULL DEFAULT 2 COMMENT '任务状态（0-执行中，1-充电中，2-闲置，3-维护）',
   `battery` tinyint UNSIGNED NOT NULL DEFAULT 100 COMMENT '当前电量（0-100）',
-  `near_area_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '位置名称',
+  `specific_location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '具体位置',
   `coordinate_x` decimal(10, 2) NULL DEFAULT NULL COMMENT '坐标X',
   `coordinate_y` decimal(10, 2) NULL DEFAULT NULL COMMENT '坐标Y',
   `current_mode` int NULL DEFAULT NULL COMMENT '当前模式ID',

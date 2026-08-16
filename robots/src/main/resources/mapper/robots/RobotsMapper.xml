@@ -16,7 +16,7 @@
         <result property="hardwareStatus"    column="hardware_status"    />
         <result property="taskStatus"    column="task_status"    />
         <result property="battery"    column="battery"    />
-        <result property="nearAreaName"    column="near_area_name"    />
+        <result property="specificLocation"    column="specific_location"    />
         <result property="coordinateX"    column="coordinate_x"    />
         <result property="coordinateY"    column="coordinate_y"    />
         <result property="currentMode"    column="current_mode"    />
@@ -26,7 +26,7 @@
 
     <sql id="selectRobotsVo">
         select id, code, name, group_id, manufacturer, production_date,
-        area, status, hardware_status, task_status, battery, near_area_name, coordinate_x, coordinate_y,
+        area, status, hardware_status, task_status, battery, specific_location, coordinate_x, coordinate_y,
         current_mode, idle_start_time, created_at
         from robots
     </sql>
@@ -59,7 +59,7 @@
             <if test="hardwareStatus != null">hardware_status,</if>
             <if test="taskStatus != null">task_status,</if>
             <if test="battery != null and battery != ''">battery,</if>
-            <if test="nearAreaName != null and nearAreaName != ''">near_area_name,</if>
+            <if test="specificLocation != null and specificLocation != ''">specific_location,</if>
             <if test="coordinateX != null">coordinate_x,</if>
             <if test="coordinateY != null">coordinate_y,</if>
             <if test="currentMode != null and currentMode != ''">current_mode,</if>
@@ -77,7 +77,7 @@
             <if test="hardwareStatus != null">#{hardwareStatus},</if>
             <if test="taskStatus != null">#{taskStatus},</if>
             <if test="battery != null and battery != ''">#{battery},</if>
-            <if test="nearAreaName != null and nearAreaName != ''">#{nearAreaName},</if>
+            <if test="specificLocation != null and specificLocation != ''">#{specificLocation},</if>
             <if test="coordinateX != null">#{coordinateX},</if>
             <if test="coordinateY != null">#{coordinateY},</if>
             <if test="currentMode != null and currentMode != ''">#{currentMode},</if>
@@ -99,7 +99,7 @@
             <if test="hardwareStatus != null">hardware_status = #{hardwareStatus},</if>
             <if test="taskStatus != null">task_status = #{taskStatus},</if>
             <if test="battery != null and battery != ''">battery = #{battery},</if>
-            <if test="nearAreaName != null and nearAreaName != ''">near_area_name = #{nearAreaName},</if>
+            <if test="specificLocation != null and specificLocation != ''">specific_location = #{specificLocation},</if>
             <if test="coordinateX != null">coordinate_x = #{coordinateX},</if>
             <if test="coordinateY != null">coordinate_y = #{coordinateY},</if>
             <if test="currentMode != null and currentMode != ''">current_mode = #{currentMode},</if>

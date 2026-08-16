@@ -170,6 +170,7 @@ public class TInteractionHistoryServiceImpl implements ITInteractionHistoryServi
         record.setInteractionTime(interactionTime);
         record.setDuration(duration);
         record.setInteractionContent("问答");
+        record.setStatus(0L); //0-成功
 
         return insertTInteractionHistory(record);
     }

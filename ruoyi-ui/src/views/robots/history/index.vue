@@ -118,11 +118,11 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="位置区域" align="center" prop="locationArea" width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <el-tag type="warning" size="small">{{ scope.row.locationArea }}</el-tag>
-          </template>
-        </el-table-column>
+<!--        <el-table-column label="位置区域" align="center" prop="locationArea" width="120" show-overflow-tooltip>-->
+<!--          <template slot-scope="scope">-->
+<!--            <el-tag type="warning" size="small">{{ scope.row.locationArea }}</el-tag>-->
+<!--          </template>-->
+<!--        </el-table-column>-->
         <el-table-column label="具体位置" align="center" prop="specificLocation" width="150" show-overflow-tooltip>
           <template slot-scope="scope">
             <i class="el-icon-location-information"></i>

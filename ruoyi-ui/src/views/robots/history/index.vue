@@ -147,13 +147,13 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态描述" align="center" prop="statusDesc" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <el-tooltip :content="scope.row.statusDesc" placement="top">
-              <span class="status-text">{{ scope.row.statusDesc }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
+<!--        <el-table-column label="状态描述" align="center" prop="statusDesc" show-overflow-tooltip>-->
+<!--          <template slot-scope="scope">-->
+<!--            <el-tooltip :content="scope.row.statusDesc" placement="top">-->
+<!--              <span class="status-text">{{ scope.row.statusDesc }}</span>-->
+<!--            </el-tooltip>-->
+<!--          </template>-->
+<!--        </el-table-column>-->
       </el-table>
 
       <div class="pagination-wrapper" v-show="historyTotal>0">

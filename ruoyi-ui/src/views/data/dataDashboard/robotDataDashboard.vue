@@ -55,11 +55,37 @@
           </div>
         </div>
 
-        <!-- 右：机器人分布地图 -->
+        <!-- 右：机器人分布地图 / 列表 -->
         <div class="cell">
           <div class="panel">
-            <div class="panel-title">机器人分布</div>
-            <div id="robotMapChart" class="chart"></div>
+            <div class="panel-title title-flex">
+              <span>机器人分布</span>
+              <el-button
+                size="mini"
+                type="text"
+                :icon="robotViewMode === 'map' ? 'el-icon-s-grid' : 'el-icon-location'"
+                @click="toggleRobotView"
+              >
+                {{ robotViewMode === 'map' ? '切换列表' : '切换地图' }}
+              </el-button>
+            </div>
+            <div v-show="robotViewMode === 'map'" id="robotMapChart" class="chart"></div>
+            <div v-show="robotViewMode === 'table'" class="robot-table">
+              <el-table :data="robotLocationList" height="100%" size="mini" border>
+                <el-table-column type="index" label="#" width="40" align="center" />
+                <el-table-column label="机器人" align="center" min-width="120" show-overflow-tooltip>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.name || scope.row.code || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="编号" align="center" prop="code" min-width="100" show-overflow-tooltip />
+                <el-table-column label="位置" align="center" prop="specificLocation" min-width="120" show-overflow-tooltip>
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.specificLocation || '-' }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </div>
         </div>
       </div>
@@ -132,6 +158,7 @@ import {
   getServiceOverview,
   getTaskExecutions
 } from "@/api/data/dataDashboard/dashboard"
+import { listRobots } from "@/api/robots/robots"
 
 export default {
   data() {
@@ -149,6 +176,8 @@ export default {
       metricList: [],
       robotGeoList: [],
       clusteredMapPoints: [],  // 聚合后的地图点位数据
+      robotViewMode: "map",  // 机器人分布面板展示模式：map-地图，table-列表
+      robotLocationList: [],  // 机器人及其具体位置列表
       wordCloudData: [],
       anomalyTrend: { dates: [], values: [] },
       groups: [],
@@ -193,6 +222,7 @@ export default {
         this.loadServiceOverview(),
         this.loadRobotGroups(),
         this.loadRobotGeo(),
+        this.loadRobotLocations(),
         this.loadTrend(),
         this.loadTaskExecutions()
       ])
@@ -257,6 +287,21 @@ export default {
         // 聚合地理位置数据
         this.clusteredMapPoints = this.aggregateGeoPoints(this.robotGeoList)
       }
+    },
+
+    async loadRobotLocations() {
+      try {
+        const res = await listRobots({ pageNum: 1, pageSize: 1000 })
+        if (res.code === 200) {
+          this.robotLocationList = res.rows || []
+        }
+      } catch (error) {
+        console.error('加载机器人位置列表失败:', error)
+      }
+    },
+
+    toggleRobotView() {
+      this.robotViewMode = this.robotViewMode === 'map' ? 'table' : 'map'
     },
 
     /**
@@ -698,6 +743,41 @@ export default {
   font-size: 14px;
   background: rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
+}
+
+.panel-title.title-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 10px;
+}
+
+.robot-table {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.robot-table ::v-deep .el-table,
+.robot-table ::v-deep .el-table__expanded-cell {
+  background: transparent;
+  color: #b0c2f9;
+}
+
+.robot-table ::v-deep .el-table th,
+.robot-table ::v-deep .el-table tr {
+  background: transparent;
+  color: #b0c2f9;
+}
+
+.robot-table ::v-deep .el-table td,
+.robot-table ::v-deep .el-table th.is-leaf {
+  border-bottom: 1px solid #1f3a8a;
+}
+
+.robot-table ::v-deep .el-table--enable-row-hover .el-table__body tr:hover > td {
+  background: rgba(64, 158, 255, 0.15);
 }
 
 .chart {

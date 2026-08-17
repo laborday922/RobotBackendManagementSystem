@@ -73,9 +73,6 @@
         FROM t_interaction_history
         WHERE evaluation_text IS NOT NULL
         AND evaluation_text != ''
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </select>
 
 </mapper>

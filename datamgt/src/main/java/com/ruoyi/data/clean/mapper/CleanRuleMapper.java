@@ -41,7 +41,7 @@ public interface CleanRuleMapper {
     void batchInsertResults(List<CleanResultPo> list);
 
     /**
-     * 查询原始数据（建议加 tenant）
+     * 查询原始数据
      */
-    List<Map<String, Object>> selectRawInteractionData(@Param("tenantId") Long tenantId);
+    List<Map<String, Object>> selectRawInteractionData();
 }

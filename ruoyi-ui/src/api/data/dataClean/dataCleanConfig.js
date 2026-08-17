@@ -32,3 +32,14 @@ export function executeTask(id) {
     method: 'post'
   })
 }
+
+/**
+ * 删除执行记录
+ * @param {Number} id 记录ID
+ */
+export function deleteHistory(id) {
+  return request({
+    url: `/clean/history/${id}`,
+    method: 'delete'
+  })
+}

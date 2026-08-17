@@ -36,10 +36,10 @@ public class RuleRegistry {
                 ExecuteMode.valueOf(po.getExecuteMode())
         );
 
-//        // 时间（你现在是String，需要转）
-//        if (po.getRunTime() != null) {
-//            rule.setRunTime(LocalTime.parse(po.getRunTime()));
-//        }
+        // 定时执行 cron 表达式
+        rule.setCronExpression(po.getCronExpression());
+
+
 
         // 数据源解析
         rule.setDataSources(

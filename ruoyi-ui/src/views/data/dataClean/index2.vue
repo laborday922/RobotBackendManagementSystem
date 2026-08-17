@@ -183,6 +183,11 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="操作" align="center" width="100">
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
         </el-table>
 
       </div>
@@ -192,7 +197,7 @@
 </template>
 
 <script>
-import {createHistory, executeTask, getHistoryList} from '@/api/data/dataClean/dataCleanConfig'
+import {createHistory, executeTask, getHistoryList, deleteHistory} from '@/api/data/dataClean/dataCleanConfig'
 
 export default {
   name: 'DataCleaningTools',
@@ -372,6 +377,27 @@ export default {
       } catch (error) {
         console.error('执行失败', error)
         this.$message.error('执行失败')
+      }
+    },
+
+    // 删除执行记录（定时任务或手动记录都可删除）
+    async handleDelete(row) {
+      try {
+        await this.$confirm('确认删除该条记录？', '提示', { type: 'warning' })
+      } catch (e) {
+        return
+      }
+      try {
+        const res = await deleteHistory(row.id)
+        if (res.code === 200) {
+          this.$message.success('删除成功')
+          this.fetchHistoryList()
+        } else {
+          this.$message.error(res.msg || '删除失败')
+        }
+      } catch (error) {
+        console.error('删除失败', error)
+        this.$message.error('删除失败')
       }
     }
   }

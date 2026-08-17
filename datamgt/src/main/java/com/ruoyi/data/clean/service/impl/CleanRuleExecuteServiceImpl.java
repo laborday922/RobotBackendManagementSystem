@@ -20,9 +20,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-import static com.ruoyi.common.utils.SecurityUtils.getUserId;
-import static com.ruoyi.common.utils.SecurityUtils.isAdmin;
-
 @Service
 public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
 
@@ -47,16 +44,10 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
             throw new RuntimeException("tenantId不能为空");
         }
 
-        // 是否管理员
-        boolean isAdmin = isAdmin(getUserId());
-
-        // 👉 查询用的 tenantId（核心）
-        Long queryTenantId = isAdmin ? null : tenantId;
-
         // ================================
         // 1️⃣ 查询任务
         // ================================
-        CleanRulePo po = cleanRuleMapper.selectById(id, queryTenantId);
+        CleanRulePo po = cleanRuleMapper.selectById(id, tenantId);
 
         if (po == null) {
             throw new RuntimeException("清洗任务不存在");
@@ -106,7 +97,7 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
         // 5️⃣ 查询原始数据
         // ================================
         List<Map<String, Object>> rawData =
-                cleanRuleMapper.selectRawInteractionData(queryTenantId);
+                cleanRuleMapper.selectRawInteractionData();
 
         context.setRawData(rawData);
         context.setTaskId(id);

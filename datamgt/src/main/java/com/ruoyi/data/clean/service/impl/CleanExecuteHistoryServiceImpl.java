@@ -5,6 +5,7 @@ import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.data.clean.domain.CleanExecuteHistory;
 import com.ruoyi.data.clean.mapper.CleanExecuteHistoryMapper;
 import com.ruoyi.data.clean.service.CleanExecuteHistoryService;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -19,6 +20,11 @@ public class CleanExecuteHistoryServiceImpl implements CleanExecuteHistoryServic
 
     @Override
     public Long createRecord(CleanExecuteHistory history) {
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
+            throw new RuntimeException("无法获取租户信息，请检查登录状态");
+        }
+        history.setTenantId(tenantId);
         history.setCreateTime(LocalDateTime.now());
         mapper.insert(history);
         return history.getId();
@@ -41,12 +47,35 @@ public class CleanExecuteHistoryServiceImpl implements CleanExecuteHistoryServic
 
     @Override
     public List<CleanExecuteHistory> listAll() {
-        return mapper.selectAll(getQueryTenantId());
+        List<CleanExecuteHistory> list = mapper.selectAll(getQueryTenantId());
+        for (CleanExecuteHistory item : list) {
+            item.setNextRunTime(calcNextRunTime(item.getCronExpression()));
+        }
+        return list;
+    }
+
+    /**
+     * 根据 cron 表达式计算下次执行时间
+     */
+    private LocalDateTime calcNextRunTime(String cronExpression) {
+        if (cronExpression == null || cronExpression.isEmpty()) {
+            return null;
+        }
+        try {
+            return CronExpression.parse(cronExpression).next(LocalDateTime.now());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
-    public void updateStatus(Long id, Integer status) {
-        mapper.updateStatus(id, status, getQueryTenantId());
+    public void update(CleanExecuteHistory history) {
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
+            throw new RuntimeException("无法获取租户信息，请检查登录状态");
+        }
+        history.setTenantId(tenantId);
+        mapper.update(history);
     }
 
     @Override

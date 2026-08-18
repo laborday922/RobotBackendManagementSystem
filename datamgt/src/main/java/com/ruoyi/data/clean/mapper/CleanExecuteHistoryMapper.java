@@ -16,9 +16,7 @@ public interface CleanExecuteHistoryMapper {
 
     List<CleanExecuteHistory> selectAll(@Param("tenantId") Long tenantId);
 
-    int updateStatus(@Param("id") Long id,
-                     @Param("status") Integer status,
-                     @Param("tenantId") Long tenantId);
+    int update(CleanExecuteHistory history);
 
     int deleteById(@Param("id") Long id,
                    @Param("tenantId") Long tenantId);

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ruoyi.data.clean.mapper.CleanExecuteRecordMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO clean_execute_record
+        (task_id, execute_mode, success, message, run_time, tenant_id, create_time)
+        VALUES
+            (#{taskId}, #{executeMode}, #{success}, #{message}, #{runTime}, #{tenantId}, #{createTime})
+    </insert>
+
+    <select id="selectAll" resultType="com.ruoyi.data.clean.domain.CleanExecuteRecord">
+        SELECT id, task_id, execute_mode, success, message, run_time, tenant_id, create_time
+        FROM clean_execute_record
+        <where>
+            <if test="tenantId != null">
+                AND tenant_id = #{tenantId}
+            </if>
+        </where>
+        ORDER BY run_time DESC
+    </select>
+
+</mapper>

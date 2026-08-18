@@ -55,16 +55,17 @@ public class CleanExecuteHistoryController {
     }
 
     /**
-     * 更新状态
+     * 编辑定时任务
      */
-    @PutMapping("/{id}/status")
-    public AjaxResult updateStatus(@PathVariable Long id,
-                                   @RequestParam Integer status) {
+    @PutMapping("/{id}")
+    public AjaxResult update(@PathVariable Long id,
+                             @RequestBody CleanExecuteHistory history) {
         try {
-            service.updateStatus(id, status);
-            return AjaxResult.success("更新状态成功");
+            history.setId(id);
+            service.update(history);
+            return AjaxResult.success("更新成功");
         } catch (Exception e) {
-            return AjaxResult.error("更新状态失败：" + e.getMessage());
+            return AjaxResult.error("更新失败：" + e.getMessage());
         }
     }
 

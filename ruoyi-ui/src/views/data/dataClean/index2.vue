@@ -5,10 +5,11 @@
     <div class="glass-card">
       <div class="card-header">
         <h3>数据清洗规则配置</h3>
+        <el-tag v-if="editingId" type="warning" size="small">正在编辑任务 #{{ editingId }}</el-tag>
       </div>
 
       <div class="card-body">
-        <!-- 新增：文本格式处理 + 状态统一映射 -->
+        <!-- 文本格式处理 + 重复数据处理 -->
         <div class="two-column">
           <div class="column">
             <div class="form-item">
@@ -23,18 +24,6 @@
 
           <div class="column">
             <div class="form-item">
-              <label>状态统一映射</label>
-              <el-select v-model="cleaningRules.statusMapping" placeholder="请选择">
-                <el-option label="保持原样" value="KEEP_ORIGINAL" />
-                <el-option label="映射到平台枚举" value="MAP_TO_PLATFORM_ENUM" />
-              </el-select>
-            </div>
-          </div>
-        </div>
-        <!-- 两列（增加“保持原样”选项） -->
-        <div class="two-column">
-          <div class="column">
-            <div class="form-item">
               <label>重复数据处理</label>
               <el-select v-model="cleaningRules.duplicateHandling" placeholder="请选择">
                 <el-option label="保持原样" value="KEEP_ORIGINAL" />
@@ -44,12 +33,10 @@
           </div>
         </div>
 
-        <!-- 应用数据源选择卡片 -->
+        <!-- 应用数据源 -->
         <div class="data-source-section">
-          <div class="data-source-section">
-            <h4>应用数据源</h4>
-            <el-tag type="success">交互历史表（t_interaction_history）</el-tag>
-          </div>
+          <h4>应用数据源</h4>
+          <el-tag type="success">交互历史表（t_interaction_history）</el-tag>
         </div>
 
         <!-- 执行方式 -->
@@ -117,18 +104,17 @@
 
         <!-- 按钮区域：根据执行方式显示不同按钮 -->
         <div class="actions">
-          <el-button
-            v-if="cleaningRules.executionType === 'schedule'"
-            type="primary"
-            @click="saveScheduleConfig"
-          >
-            保存配置
-          </el-button>
+          <template v-if="cleaningRules.executionType === 'schedule'">
+            <el-button type="primary" @click="saveScheduleConfig">
+              {{ editingId ? '更新配置' : '保存配置' }}
+            </el-button>
+            <el-button v-if="editingId" @click="resetForm">取消编辑</el-button>
+          </template>
 
           <el-button
             v-if="cleaningRules.executionType === 'manual'"
             type="success"
-            @click="executeManual"
+            @click="handleManualExecute"
           >
             立即执行
           </el-button>
@@ -137,59 +123,80 @@
       </div>
     </div>
 
-    <!-- ===== 记录卡片 ===== -->
+    <!-- ===== 定时任务表 ===== -->
     <div class="glass-card">
       <div class="card-header">
-        <h3>历史处理记录</h3>
+        <h3>定时任务</h3>
       </div>
 
       <div class="card-body">
-        <!-- 统计（动态计算） -->
         <div class="summary">
           <div class="summary-item">
-            <div class="num">{{ totalTasks }}</div>
-            <div class="label">总任务数</div>
+            <div class="num">{{ taskList.length }}</div>
+            <div class="label">等待执行的定时任务</div>
           </div>
           <div class="summary-item">
-            <div class="num green">{{ successTasks }}</div>
-            <div class="label">成功任务</div>
-          </div>
-          <div class="summary-item">
-            <div class="num orange">{{ failedTasks }}</div>
-            <div class="label">失败任务</div>
+            <div class="num green">{{ recordList.length }}</div>
+            <div class="label">执行记录总数</div>
           </div>
         </div>
 
-        <!-- 表格 -->
-        <el-table :data="historyList" class="glass-table">
-          <el-table-column prop="id" label="ID" />
-          <el-table-column prop="runTime" label="执行时间" >
+        <el-table :data="taskList" class="glass-table">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column label="数据清洗规则" min-width="220">
             <template slot-scope="scope">
-              {{ scope.row.runTime || '待定时执行' }}
+              {{ formatRules(scope.row.configJson) }}
             </template>
           </el-table-column>
-          <el-table-column prop="executeMode" label="类型">
+          <el-table-column prop="applyDataSource" label="数据源" width="160" />
+          <el-table-column prop="cronExpression" label="cron 表达式" width="140" />
+          <el-table-column label="下次执行时间" width="170">
+            <template slot-scope="scope">
+              {{ formatTime(scope.row.nextRunTime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" align="center" width="140">
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+              <el-button type="text" size="small" class="danger-text" @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
+    <!-- ===== 执行记录表 ===== -->
+    <div class="glass-card">
+      <div class="card-header">
+        <h3>执行记录</h3>
+      </div>
+
+      <div class="card-body">
+        <el-table :data="recordList" class="glass-table">
+          <el-table-column prop="id" label="ID" width="70" />
+          <el-table-column label="执行时间" width="170">
+            <template slot-scope="scope">
+              {{ formatTime(scope.row.runTime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="执行方式" width="100">
             <template slot-scope="scope">
               {{ scope.row.executeMode === 'SCHEDULED' ? '定时' : '手动' }}
             </template>
           </el-table-column>
-          <el-table-column prop="applyDataSource" label="数据源" />
-          <el-table-column prop="status" label="状态">
+          <el-table-column label="执行结果" width="100">
             <template slot-scope="scope">
-              <el-tag
-                :type="scope.row.status === 1 ? 'success' : (scope.row.status === 2 ? 'info' : 'danger')"
-                size="small">
-                {{ scope.row.status === 1 ? '成功' : (scope.row.status === 2 ? '待定' : '失败') }}
+              <el-tag :type="scope.row.success === 1 ? 'success' : 'danger'" size="small">
+                {{ scope.row.success === 1 ? '成功' : '失败' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="100">
+          <el-table-column prop="message" label="失败原因" min-width="200">
             <template slot-scope="scope">
-              <el-button type="text" size="small" @click="handleDelete(scope.row)">删除</el-button>
+              {{ scope.row.message || '-' }}
             </template>
           </el-table-column>
         </el-table>
-
       </div>
     </div>
 
@@ -197,28 +204,16 @@
 </template>
 
 <script>
-import {createHistory, executeTask, getHistoryList, deleteHistory} from '@/api/data/dataClean/dataCleanConfig'
+import {createTask, updateTask, deleteTask, executeManual, getTaskList, getRecordList} from '@/api/data/dataClean/dataCleanConfig'
 
 export default {
   name: 'DataCleaningTools',
   data() {
     return {
       cleaningRules: {
-        duplicateHandling: '',   // KEEP_FIRST / DELETE_ALL / KEEP_ORIGINAL
+        duplicateHandling: '',   // KEEP_FIRST / KEEP_ORIGINAL
         textCleaning: '',        // REMOVE_HTML / REMOVE_SPECIAL_CHAR / KEEP_ORIGINAL
-        statusMapping: '',       // MAP_TO_PLATFORM_ENUM / KEEP_ORIGINAL
         executionType: 'schedule'
-      },
-      // dataSources: {
-      //   interactionLogs: false,   // 交互日志（默认选中）
-      //   robotStatus: false,       // 机器人状态（默认选中）
-      //   userFeedback: false,     // 用户反馈
-      //   taskExecution: false,    // 任务执行记录
-      //   performance: false,      // 性能指标
-      //   errorLogs: false         // 错误日志
-      // },
-      dataSources: {
-        interactionHistory: true // 默认选中 & 唯一
       },
       scheduleConfig: {
         period: 'daily',      // daily, weekly, monthly
@@ -226,55 +221,43 @@ export default {
         monthDay: 1,          // 1-31
         time: '00:00'         // HH:mm
       },
-      historyList: []         // 历史记录列表
-    }
-  },
-  computed: {
-    // 总任务数
-    totalTasks() {
-      return this.historyList.length
-    },
-    // 成功任务数（status === 1）
-    successTasks() {
-      return this.historyList.filter(item => item.status === 1).length
-    },
-    // 失败任务数（status === 0）
-    failedTasks() {
-      return this.historyList.filter(item => item.status === 0).length
-    },
-    // 已选数据源数量（保持不变）
-    selectedDataSourcesCount() {
-      return Object.values(this.dataSources).filter(v => v).length
+      editingId: null,      // 正在编辑的任务ID，null 表示新增
+      taskList: [],         // 定时任务列表
+      recordList: []        // 执行记录列表
     }
   },
   mounted() {
-    this.fetchHistoryList()
+    this.fetchTaskList()
+    this.fetchRecordList()
   },
   methods: {
-    // 判断日期是否为今天
-    isToday(dateStr) {
-      if (!dateStr) return false
-      const date = new Date(dateStr)
-      const today = new Date()
-      return (
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate()
-      )
-    },
-
-    // 获取历史记录列表
-    async fetchHistoryList() {
+    // 获取定时任务列表
+    async fetchTaskList() {
       try {
-        const res = await getHistoryList()
+        const res = await getTaskList()
         if (res.code === 200) {
-          this.historyList = res.data || []
+          this.taskList = res.data || []
         } else {
-          this.$message.error(res.msg || '获取历史记录失败')
+          this.$message.error(res.msg || '获取定时任务失败')
         }
       } catch (error) {
-        console.error('获取历史记录失败', error)
-        this.$message.error('获取历史记录失败')
+        console.error('获取定时任务失败', error)
+        this.$message.error('获取定时任务失败')
+      }
+    },
+
+    // 获取执行记录列表
+    async fetchRecordList() {
+      try {
+        const res = await getRecordList()
+        if (res.code === 200) {
+          this.recordList = res.data || []
+        } else {
+          this.$message.error(res.msg || '获取执行记录失败')
+        }
+      } catch (error) {
+        console.error('获取执行记录失败', error)
+        this.$message.error('获取执行记录失败')
       }
     },
 
@@ -286,7 +269,6 @@ export default {
         case 'daily':
           return `0 ${minute} ${hour} * * ?`
         case 'weekly':
-          // 注意：Quartz 中周一=1，周日=7，前端传入的值直接使用
           return `0 ${minute} ${hour} ? * ${weekDay}`
         case 'monthly':
           return `0 ${minute} ${hour} ${monthDay} * ?`
@@ -295,84 +277,120 @@ export default {
       }
     },
 
-    // 获取选中的数据源枚举值（根据实际后端期望的枚举名映射）
-    getSelectedDataSources() {
-      const mapping = {
-        interactionLogs: 'ROBOT_INTERACTION_LOG',
-        robotStatus: 'ROBOT_STATUS',
-        userFeedback: 'USER_FEEDBACK',
-        taskExecution: 'TASK_EXECUTION',
-        performance: 'PERFORMANCE',
-        errorLogs: 'ERROR_LOG'
-      };
-      const selected = Object.keys(this.dataSources)
-        .filter(key => this.dataSources[key])
-        .map(key => mapping[key]);
-      return selected.join(',');
+    // 从 cron 表达式反解出定时配置（用于编辑回显）
+    parseCron(cron) {
+      const def = { period: 'daily', weekDay: '1', monthDay: 1, time: '00:00' }
+      if (!cron) return def
+      const parts = String(cron).split(' ')
+      if (parts.length < 6) return def
+      const minute = parts[1]
+      const hour = parts[2]
+      const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+      if (parts[5] !== '?') {
+        return { period: 'weekly', weekDay: parts[5], monthDay: 1, time }
+      }
+      if (parts[3] !== '*' && parts[3] !== '?') {
+        return { period: 'monthly', weekDay: '1', monthDay: parseInt(parts[3]) || 1, time }
+      }
+      return { period: 'daily', weekDay: '1', monthDay: 1, time }
     },
 
-    // 构造保存请求参数
-    buildHistoryParams(executeMode, cronExpression = null) {
+    // 解析规则配置 JSON
+    parseRules(configJson) {
+      let obj = {}
+      try {
+        obj = JSON.parse(configJson || '{}')
+      } catch (e) {
+        obj = {}
+      }
       return {
-        executeMode: executeMode,           // 'SCHEDULED' 或 'IMMEDIATE'
-        applyDataSource: 't_interaction_history', // 可根据实际需求改为用户选择
-        // applyDataSource: this.getSelectedDataSources(),
-        configJson: JSON.stringify({
-          duplicateHandling: this.cleaningRules.duplicateHandling,
-          textCleaning: this.cleaningRules.textCleaning,
-          statusMapping: this.cleaningRules.statusMapping
-        }),
-        status: 1,                                 // 启用
-        createTime:  new Date().toISOString().slice(0, 19).replace(' ', 'T'),
-        cronExpression: cronExpression
+        textCleaning: obj.textCleaning || '',
+        duplicateHandling: obj.duplicateHandling || ''
       }
     },
 
-    // 定时模式：保存配置（不执行）
+    // 规则 JSON 转为可读文本（用于表格展示）
+    formatRules(configJson) {
+      const rules = this.parseRules(configJson)
+      const textMap = {
+        REMOVE_HTML: '移除HTML标签',
+        REMOVE_SPECIAL_CHAR: '移除特殊字符',
+        KEEP_ORIGINAL: '保持原样'
+      }
+      const dupMap = {
+        KEEP_FIRST: '保留第一条',
+        KEEP_ORIGINAL: '保持原样',
+        DELETE_ALL: '删除全部'
+      }
+      const text = textMap[rules.textCleaning] || rules.textCleaning || '-'
+      const dup = dupMap[rules.duplicateHandling] || rules.duplicateHandling || '-'
+      return `文本：${text}；去重：${dup}`
+    },
+
+    // 时间格式化（兼容 'T' 分隔与空格分隔）
+    formatTime(value) {
+      if (!value) return '-'
+      return String(value).replace('T', ' ').slice(0, 19)
+    },
+
+    // 构造保存请求参数
+    buildParams(executeMode, cronExpression = null) {
+      return {
+        executeMode,                             // 'SCHEDULED'
+        applyDataSource: 't_interaction_history',
+        configJson: JSON.stringify({
+          duplicateHandling: this.cleaningRules.duplicateHandling,
+          textCleaning: this.cleaningRules.textCleaning
+        }),
+        cronExpression
+      }
+    },
+
+    // 定时模式：新增或更新定时任务
     async saveScheduleConfig() {
+      if (!this.cleaningRules.textCleaning || !this.cleaningRules.duplicateHandling) {
+        this.$message.warning('请选择文本处理和重复数据处理方式')
+        return
+      }
       const cron = this.generateCron()
-      const params = this.buildHistoryParams('SCHEDULED', cron)
+      const params = this.buildParams('SCHEDULED', cron)
       try {
-        const res = await createHistory(params)
+        const res = this.editingId
+          ? await updateTask(this.editingId, params)
+          : await createTask(params)
         if (res.code === 200) {
-          this.$message.success('定时配置保存成功')
-          this.fetchHistoryList()
+          this.$message.success(this.editingId ? '更新成功' : '保存成功')
+          this.resetForm()
+          this.fetchTaskList()
         } else {
           this.$message.error(res.msg || '保存失败')
         }
       } catch (error) {
         console.error('保存失败', error)
+        this.$message.error('保存失败')
       }
     },
 
-    // 手动模式：立即执行（先保存配置，再执行）
-    async executeManual() {
-      // 1. 保存规则（无 cron）
-      const params = this.buildHistoryParams('IMMEDIATE', null)
-      let recordId
-      try {
-        const res = await createHistory(params)
-        if (res.code === 200) {
-          recordId = res.data
-          this.$message.success('规则保存成功')
-        } else {
-          this.$message.error(res.msg || '保存规则失败')
-          return
-        }
-      } catch (error) {
-        console.error('保存规则失败', error)
+    // 手动模式：立即执行（不落任务，只产生执行记录）
+    async handleManualExecute() {
+      if (!this.cleaningRules.textCleaning || !this.cleaningRules.duplicateHandling) {
+        this.$message.warning('请选择文本处理和重复数据处理方式')
         return
       }
-
-      // 2. 执行任务
+      const configJson = JSON.stringify({
+        duplicateHandling: this.cleaningRules.duplicateHandling,
+        textCleaning: this.cleaningRules.textCleaning
+      })
       try {
-        const execRes = await executeTask(recordId)
-        if (execRes.code === 200) {
-          this.$message.success('任务已提交执行')
-          // 稍后刷新历史记录，等待执行结果
-          setTimeout(() => this.fetchHistoryList(), 1000)
+        const res = await executeManual({
+          configJson,
+          applyDataSource: 't_interaction_history'
+        })
+        if (res.code === 200) {
+          this.$message.success('执行完成')
+          this.fetchRecordList()
         } else {
-          this.$message.error(execRes.msg || '执行失败')
+          this.$message.error(res.msg || '执行失败')
         }
       } catch (error) {
         console.error('执行失败', error)
@@ -380,18 +398,31 @@ export default {
       }
     },
 
-    // 删除执行记录（定时任务或手动记录都可删除）
+    // 编辑定时任务：回显配置
+    handleEdit(row) {
+      this.editingId = row.id
+      this.cleaningRules.executionType = 'schedule'
+      const rules = this.parseRules(row.configJson)
+      this.cleaningRules.textCleaning = rules.textCleaning
+      this.cleaningRules.duplicateHandling = rules.duplicateHandling
+      this.scheduleConfig = this.parseCron(row.cronExpression)
+      this.$nextTick(() => {
+        this.$el && this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    },
+
+    // 删除定时任务（删除后不再定时执行）
     async handleDelete(row) {
       try {
-        await this.$confirm('确认删除该条记录？', '提示', { type: 'warning' })
+        await this.$confirm('确认删除该定时任务？删除后将不再定时执行。', '提示', { type: 'warning' })
       } catch (e) {
         return
       }
       try {
-        const res = await deleteHistory(row.id)
+        const res = await deleteTask(row.id)
         if (res.code === 200) {
           this.$message.success('删除成功')
-          this.fetchHistoryList()
+          this.fetchTaskList()
         } else {
           this.$message.error(res.msg || '删除失败')
         }
@@ -399,14 +430,21 @@ export default {
         console.error('删除失败', error)
         this.$message.error('删除失败')
       }
+    },
+
+    // 重置表单（新增状态）
+    resetForm() {
+      this.editingId = null
+      this.cleaningRules.duplicateHandling = ''
+      this.cleaningRules.textCleaning = ''
+      this.cleaningRules.executionType = 'schedule'
+      this.scheduleConfig = { period: 'daily', weekDay: '1', monthDay: 1, time: '00:00' }
     }
   }
 }
 </script>
 
 <style scoped lang="scss">
-/* 原有样式保持不变，增加定时配置相关样式 */
-
 .data-cleaning-tools {
   padding: 0 24px;
 }
@@ -423,6 +461,9 @@ export default {
 }
 
 .card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 10px 24px;
   font-weight: 400;
   border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -473,7 +514,6 @@ export default {
   color: #fff;
 }
 
-/* 定时配置样式 */
 .schedule-config {
   margin-top: 16px;
   padding: 16px;
@@ -504,6 +544,16 @@ export default {
   gap: 12px;
 }
 
+.data-source-section {
+  margin: 20px 0;
+  h4 {
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+}
+
 .summary {
   display: flex;
   gap: 20px;
@@ -524,7 +574,6 @@ export default {
 }
 
 .green { color: #52c41a; }
-.orange { color: #fa8c16; }
 
 .glass-table ::v-deep .el-table {
   background: transparent;
@@ -538,37 +587,7 @@ export default {
   background: transparent;
 }
 
-//数据源卡片样式
-.data-source-section {
-  margin: 20px 0;
-  h4 {
-    margin-bottom: 12px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-  }
-}
-.simple-checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.simple-checkbox {
-  display: flex;
-  align-items: center;
-  input {
-    margin-right: 6px;
-    cursor: pointer;
-  }
-  label {
-    cursor: pointer;
-    font-size: 13px;
-    color: #666;
-  }
-}
-.selected-count {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #999;
+.danger-text {
+  color: #f56c6c;
 }
 </style>

@@ -1,9 +1,9 @@
 import request from '@/utils/request'
 
 /**
- * 获取历史执行记录列表
+ * 获取定时任务列表（等待定时执行的任务）
  */
-export function getHistoryList() {
+export function getTaskList() {
   return request({
     url: '/clean/history/list',
     method: 'get'
@@ -11,10 +11,10 @@ export function getHistoryList() {
 }
 
 /**
- * 创建执行记录（保存配置）
+ * 新增定时任务
  * @param {Object} data 配置参数
  */
-export function createHistory(data) {
+export function createTask(data) {
   return request({
     url: '/clean/history/create',
     method: 'post',
@@ -23,23 +23,47 @@ export function createHistory(data) {
 }
 
 /**
- * 立即执行清洗任务
- * @param {Number} id 记录ID
+ * 编辑定时任务
+ * @param {Number} id 任务ID
+ * @param {Object} data 配置参数
  */
-export function executeTask(id) {
+export function updateTask(id, data) {
   return request({
-    url: `/clean/execute/clean/${id}`,
-    method: 'post'
+    url: `/clean/history/${id}`,
+    method: 'put',
+    data: data
   })
 }
 
 /**
- * 删除执行记录
- * @param {Number} id 记录ID
+ * 删除定时任务
+ * @param {Number} id 任务ID
  */
-export function deleteHistory(id) {
+export function deleteTask(id) {
   return request({
     url: `/clean/history/${id}`,
     method: 'delete'
+  })
+}
+
+/**
+ * 手动立即执行（不落任务，只产生执行记录）
+ * @param {Object} data { configJson, applyDataSource }
+ */
+export function executeManual(data) {
+  return request({
+    url: '/clean/execute/manual',
+    method: 'post',
+    data: data
+  })
+}
+
+/**
+ * 获取执行记录列表（定时 + 手动）
+ */
+export function getRecordList() {
+  return request({
+    url: '/clean/record/list',
+    method: 'get'
   })
 }

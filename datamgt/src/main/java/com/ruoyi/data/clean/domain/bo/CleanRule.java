@@ -5,7 +5,6 @@ import com.ruoyi.data.clean.domain.enums.DataSourceType;
 import com.ruoyi.data.clean.domain.enums.ExecuteMode;
 import lombok.Data;
 
-import java.time.LocalTime;
 import java.util.List;
 
 @Data
@@ -18,8 +17,6 @@ public class CleanRule {
     private String description;
 
     private ExecuteMode executeMode;
-
-    private LocalTime runTime;
 
     private List<DataSourceType> dataSources;
 

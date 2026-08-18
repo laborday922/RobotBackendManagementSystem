@@ -6,9 +6,17 @@ package com.ruoyi.data.clean.service;
 public interface ICleanRuleExecuteService {
 
     /**
-     * 执行清洗任务
+     * 定时执行清洗任务
      *
-     * @param id 任务ID
+     * @param taskId 任务ID
      */
-    void executeTask(Long id);
+    void executeScheduled(Long taskId);
+
+    /**
+     * 手动立即执行（不落任务，只产生执行记录）
+     *
+     * @param configJson      规则配置JSON
+     * @param applyDataSource 应用数据源
+     */
+    void executeManual(String configJson, String applyDataSource);
 }

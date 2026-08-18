@@ -29,14 +29,14 @@ public class CleanExecuteHistory {
      */
     private String configJson;
 
-    /**
-     * 执行状态：0失败 1成功 2运行中
-     */
-    private Integer status;
-
     private LocalDateTime createTime;
 
     private String cronExpression;
+
+    /**
+     * 下次执行时间（根据 cron 计算，非数据库字段）
+     */
+    private LocalDateTime nextRunTime;
 
     private Long tenantId;
 }

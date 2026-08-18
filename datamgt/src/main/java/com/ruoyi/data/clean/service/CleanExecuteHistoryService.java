@@ -12,7 +12,7 @@ public interface CleanExecuteHistoryService {
 
     List<CleanExecuteHistory> listAll();
 
-    void updateStatus(Long id, Integer status);
+    void update(CleanExecuteHistory history);
 
     void delete(Long id);
 }

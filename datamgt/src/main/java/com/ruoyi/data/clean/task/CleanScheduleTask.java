@@ -44,7 +44,7 @@ public class CleanScheduleTask {
 
                 if (last != null && last.isBefore(now)) {
 
-                    executeService.executeTask(rule.getId());
+                    executeService.executeScheduled(rule.getId());
                 }
 
             } finally {

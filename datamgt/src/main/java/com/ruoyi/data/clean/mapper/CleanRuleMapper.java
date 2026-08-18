@@ -5,7 +5,6 @@ import com.ruoyi.data.clean.mapper.po.CleanRulePo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,13 +26,6 @@ public interface CleanRuleMapper {
      * 查询定时任务（按租户隔离）
      */
     List<CleanRulePo> selectScheduledRules(@Param("tenantId") Long tenantId);
-
-    /**
-     * 更新运行时间（必须防串租户）
-     */
-    int updateRuntime(@Param("id") Long id,
-                      @Param("runTime") LocalDateTime runTime,
-                      @Param("tenantId") Long tenantId);
 
     /**
      * 批量插入（tenant 在对象里）

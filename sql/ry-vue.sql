@@ -65,7 +65,6 @@ CREATE TABLE `clean_rule_config`  (
   `apply_data_source` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL,
   `run_time` datetime NULL DEFAULT NULL COMMENT '最近一次运行时间',
   `config_json` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL,
-  `status` int NULL DEFAULT 0,
   `create_time` datetime NULL DEFAULT NULL,
   `cron_expression` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '设定的清洗任务执行时间',
   `tenant_id` int NULL DEFAULT NULL COMMENT '租户id',
@@ -77,7 +76,24 @@ CREATE TABLE `clean_rule_config`  (
 -- ----------------------------
 INSERT INTO `clean_rule_config` VALUES (18, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', 1, '2026-08-08 15:39:15', NULL, NULL);
 INSERT INTO `clean_rule_config` VALUES (19, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"REMOVE_HTML\",\"statusMapping\":\"KEEP_ORIGINAL\"}', 1, '2026-08-10 10:06:32', NULL, NULL);
-INSERT INTO `clean_rule_config` VALUES (20, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', 1, '2026-08-11 15:30:53', NULL, NULL);
+INSERT INTO `clean_rule_config` VALUES (20, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', '2026-08-11 15:30:53', NULL, NULL);
+
+-- ----------------------------
+-- Table structure for clean_execute_record
+-- ----------------------------
+DROP TABLE IF EXISTS `clean_execute_record`;
+CREATE TABLE `clean_execute_record`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `task_id` bigint NULL DEFAULT NULL COMMENT '清洗任务ID(clean_rule_config.id)，手动执行时为空',
+  `execute_mode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '执行模式 IMMEDIATE/SCHEDULED',
+  `success` tinyint NULL DEFAULT NULL COMMENT '是否成功 1成功 0失败',
+  `message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `run_time` datetime NULL DEFAULT NULL COMMENT '执行时间',
+  `tenant_id` bigint NULL DEFAULT NULL COMMENT '租户id',
+  `create_time` datetime NULL DEFAULT NULL COMMENT '记录创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_task_id`(`task_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_as_ci COMMENT = '数据清洗执行记录' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for data_report

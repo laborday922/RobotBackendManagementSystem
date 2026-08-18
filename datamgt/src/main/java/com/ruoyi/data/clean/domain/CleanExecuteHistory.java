@@ -37,6 +37,4 @@ public class CleanExecuteHistory {
      * 下次执行时间（根据 cron 计算，非数据库字段）
      */
     private LocalDateTime nextRunTime;
-
-    private Long tenantId;
 }

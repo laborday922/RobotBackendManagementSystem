@@ -14,21 +14,17 @@ public interface CleanRuleMapper {
     /**
      * 根据ID查询任务
      */
-    CleanRulePo selectById(@Param("id") Long id,
-                           @Param("tenantId") Long tenantId);
+    CleanRulePo selectById(@Param("id") Long id);
 
-    /**
-     * 系统表，不需要 tenant
-     */
     List<String> getTableColumns(@Param("tableName") String tableName);
 
     /**
-     * 查询定时任务（按租户隔离）
+     * 查询定时任务
      */
-    List<CleanRulePo> selectScheduledRules(@Param("tenantId") Long tenantId);
+    List<CleanRulePo> selectScheduledRules();
 
     /**
-     * 批量插入（tenant 在对象里）
+     * 批量插入清洗结果
      */
     void batchInsertResults(List<CleanResultPo> list);
 

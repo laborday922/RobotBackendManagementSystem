@@ -13,32 +13,25 @@
         <result property="configJson" column="config_json"/>
         <result property="createTime" column="create_time"/>
         <result property="cronExpression" column="cron_expression"/>
-        <result property="tenantId" column="tenant_id"/>
     </resultMap>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO clean_rule_config
         (execute_mode, apply_data_source, run_time,
-         config_json, create_time, cron_expression, tenant_id)
+         config_json, create_time, cron_expression)
         VALUES
             (#{executeMode}, #{applyDataSource}, #{runTime},
-             #{configJson}, #{createTime}, #{cronExpression}, #{tenantId})
+             #{configJson}, #{createTime}, #{cronExpression})
     </insert>
 
     <select id="selectById" resultMap="BaseResultMap">
         SELECT * FROM clean_rule_config
         WHERE id = #{id}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT * FROM clean_rule_config
         WHERE execute_mode = 'SCHEDULED'
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
         ORDER BY create_time DESC
     </select>
 
@@ -49,17 +42,11 @@
             config_json = #{configJson},
             cron_expression = #{cronExpression}
         WHERE id = #{id}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </update>
 
     <delete id="deleteById">
         DELETE FROM clean_rule_config
         WHERE id = #{id}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </delete>
 
 </mapper>

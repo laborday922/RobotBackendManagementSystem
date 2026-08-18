@@ -1,7 +1,5 @@
 package com.ruoyi.data.clean.service.impl;
 
-import com.ruoyi.common.threadlocal.TenantContext;
-import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.data.clean.domain.CleanExecuteHistory;
 import com.ruoyi.data.clean.mapper.CleanExecuteHistoryMapper;
 import com.ruoyi.data.clean.service.CleanExecuteHistoryService;
@@ -20,34 +18,19 @@ public class CleanExecuteHistoryServiceImpl implements CleanExecuteHistoryServic
 
     @Override
     public Long createRecord(CleanExecuteHistory history) {
-        Long tenantId = TenantContext.get();
-        if (tenantId == null) {
-            throw new RuntimeException("无法获取租户信息，请检查登录状态");
-        }
-        history.setTenantId(tenantId);
         history.setCreateTime(LocalDateTime.now());
         mapper.insert(history);
         return history.getId();
     }
 
-    /**
-     * 动态获取当前租户ID（根据用户权限决定是否过滤）
-     */
-    private Long getQueryTenantId() {
-        Long tenantId = TenantContext.get();
-        Long userId = SecurityUtils.getUserId();
-        boolean isAdmin = SecurityUtils.isAdmin(userId);
-        return isAdmin ? null : tenantId;
-    }
-
     @Override
     public CleanExecuteHistory getById(Long id) {
-        return mapper.selectById(id, getQueryTenantId());
+        return mapper.selectById(id);
     }
 
     @Override
     public List<CleanExecuteHistory> listAll() {
-        List<CleanExecuteHistory> list = mapper.selectAll(getQueryTenantId());
+        List<CleanExecuteHistory> list = mapper.selectAll();
         for (CleanExecuteHistory item : list) {
             item.setNextRunTime(calcNextRunTime(item.getCronExpression()));
         }
@@ -70,16 +53,11 @@ public class CleanExecuteHistoryServiceImpl implements CleanExecuteHistoryServic
 
     @Override
     public void update(CleanExecuteHistory history) {
-        Long tenantId = TenantContext.get();
-        if (tenantId == null) {
-            throw new RuntimeException("无法获取租户信息，请检查登录状态");
-        }
-        history.setTenantId(tenantId);
         mapper.update(history);
     }
 
     @Override
     public void delete(Long id) {
-        mapper.deleteById(id, getQueryTenantId());
+        mapper.deleteById(id);
     }
 }

@@ -30,7 +30,6 @@ CREATE TABLE `clean_interaction_result`  (
   `clean_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL COMMENT '清洗后内容',
   `status_label` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '标签（正常/异常/脏数据）',
   `clean_time` datetime NULL DEFAULT NULL,
-  `tenant_id` int NOT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_source_id`(`source_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 45 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_as_ci ROW_FORMAT = DYNAMIC;
@@ -38,22 +37,22 @@ CREATE TABLE `clean_interaction_result`  (
 -- ----------------------------
 -- Records of clean_interaction_result
 -- ----------------------------
-INSERT INTO `clean_interaction_result` VALUES (29, 7, 18, 18, '配送及时，药品无误', '配送及时，药品无误', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (30, 8, 18, 18, '配送延迟5分钟，需优化路径', '配送延迟5分钟，需优化路径', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (31, 9, 18, 18, '清洁刷故障，任务未完成', '清洁刷故障，任务未完成', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (32, 10, 18, 18, '设置成功，机器人已生效', '设置成功，机器人已生效', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (33, 11, 18, 18, '画面清晰，定位准确', '画面清晰，定位准确', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (34, 12, 18, 18, '校准成功，但响应略有延迟', '校准成功，但响应略有延迟', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (35, 13, 18, 18, '回答清晰，导航准确', '回答清晰，导航准确', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (36, 14, 18, 18, '机器人离线，引导失败', '机器人离线，引导失败', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (37, 15, 18, 18, '耗材齐全，配送准时', '耗材齐全，配送准时', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (38, 16, 18, 18, '电量充足，但移动速度略慢', '电量充足，但移动速度略慢', '原始状态', '2026-08-08 15:39:16', 1);
-INSERT INTO `clean_interaction_result` VALUES (39, 20, 19, 19, '任务正常完成', '任务正常完成', '原始状态', '2026-08-10 10:06:32', 1);
-INSERT INTO `clean_interaction_result` VALUES (40, 1, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54', 1);
-INSERT INTO `clean_interaction_result` VALUES (41, 2, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54', 1);
-INSERT INTO `clean_interaction_result` VALUES (42, 20, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54', 1);
-INSERT INTO `clean_interaction_result` VALUES (43, 21, 20, 20, '任务正常完成，挺好', '任务正常完成，挺好', '原始状态', '2026-08-11 15:30:54', 1);
-INSERT INTO `clean_interaction_result` VALUES (44, 22, 20, 20, 'good', 'good', '原始状态', '2026-08-11 15:30:54', 1);
+INSERT INTO `clean_interaction_result` VALUES (29, 7, 18, 18, '配送及时，药品无误', '配送及时，药品无误', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (30, 8, 18, 18, '配送延迟5分钟，需优化路径', '配送延迟5分钟，需优化路径', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (31, 9, 18, 18, '清洁刷故障，任务未完成', '清洁刷故障，任务未完成', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (32, 10, 18, 18, '设置成功，机器人已生效', '设置成功，机器人已生效', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (33, 11, 18, 18, '画面清晰，定位准确', '画面清晰，定位准确', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (34, 12, 18, 18, '校准成功，但响应略有延迟', '校准成功，但响应略有延迟', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (35, 13, 18, 18, '回答清晰，导航准确', '回答清晰，导航准确', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (36, 14, 18, 18, '机器人离线，引导失败', '机器人离线，引导失败', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (37, 15, 18, 18, '耗材齐全，配送准时', '耗材齐全，配送准时', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (38, 16, 18, 18, '电量充足，但移动速度略慢', '电量充足，但移动速度略慢', '原始状态', '2026-08-08 15:39:16');
+INSERT INTO `clean_interaction_result` VALUES (39, 20, 19, 19, '任务正常完成', '任务正常完成', '原始状态', '2026-08-10 10:06:32');
+INSERT INTO `clean_interaction_result` VALUES (40, 1, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54');
+INSERT INTO `clean_interaction_result` VALUES (41, 2, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54');
+INSERT INTO `clean_interaction_result` VALUES (42, 20, 20, 20, '任务正常完成', '任务正常完成', '原始状态', '2026-08-11 15:30:54');
+INSERT INTO `clean_interaction_result` VALUES (43, 21, 20, 20, '任务正常完成，挺好', '任务正常完成，挺好', '原始状态', '2026-08-11 15:30:54');
+INSERT INTO `clean_interaction_result` VALUES (44, 22, 20, 20, 'good', 'good', '原始状态', '2026-08-11 15:30:54');
 
 -- ----------------------------
 -- Table structure for clean_rule_config
@@ -67,16 +66,15 @@ CREATE TABLE `clean_rule_config`  (
   `config_json` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL,
   `create_time` datetime NULL DEFAULT NULL,
   `cron_expression` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '设定的清洗任务执行时间',
-  `tenant_id` int NULL DEFAULT NULL COMMENT '租户id',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_as_ci COMMENT = '数据清洗规则配置项' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of clean_rule_config
 -- ----------------------------
-INSERT INTO `clean_rule_config` VALUES (18, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', 1, '2026-08-08 15:39:15', NULL, NULL);
-INSERT INTO `clean_rule_config` VALUES (19, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"REMOVE_HTML\",\"statusMapping\":\"KEEP_ORIGINAL\"}', 1, '2026-08-10 10:06:32', NULL, NULL);
-INSERT INTO `clean_rule_config` VALUES (20, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', '2026-08-11 15:30:53', NULL, NULL);
+INSERT INTO `clean_rule_config` VALUES (18, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', '2026-08-08 15:39:15', NULL);
+INSERT INTO `clean_rule_config` VALUES (19, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"REMOVE_HTML\",\"statusMapping\":\"KEEP_ORIGINAL\"}', '2026-08-10 10:06:32', NULL);
+INSERT INTO `clean_rule_config` VALUES (20, 'IMMEDIATE', 't_interaction_history', NULL, '{\"duplicateHandling\":\"KEEP_ORIGINAL\",\"textCleaning\":\"KEEP_ORIGINAL\",\"statusMapping\":\"KEEP_ORIGINAL\"}', '2026-08-11 15:30:53', NULL);
 
 -- ----------------------------
 -- Table structure for clean_execute_record
@@ -84,12 +82,11 @@ INSERT INTO `clean_rule_config` VALUES (20, 'IMMEDIATE', 't_interaction_history'
 DROP TABLE IF EXISTS `clean_execute_record`;
 CREATE TABLE `clean_execute_record`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `task_id` bigint NULL DEFAULT NULL COMMENT '清洗任务ID(clean_rule_config.id)，手动执行时为空',
+  `task_id` bigint NULL DEFAULT NULL COMMENT '清洗任务ID(clean_rule_config.id)',
   `execute_mode` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '执行模式 IMMEDIATE/SCHEDULED',
   `success` tinyint NULL DEFAULT NULL COMMENT '是否成功 1成功 0失败',
   `message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '失败原因',
   `run_time` datetime NULL DEFAULT NULL COMMENT '执行时间',
-  `tenant_id` bigint NULL DEFAULT NULL COMMENT '租户id',
   `create_time` datetime NULL DEFAULT NULL COMMENT '记录创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_task_id`(`task_id` ASC) USING BTREE

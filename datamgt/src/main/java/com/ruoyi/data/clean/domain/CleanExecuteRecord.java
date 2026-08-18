@@ -37,7 +37,5 @@ public class CleanExecuteRecord {
      */
     private LocalDateTime runTime;
 
-    private Long tenantId;
-
     private LocalDateTime createTime;
 }

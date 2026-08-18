@@ -2,7 +2,6 @@ package com.ruoyi.data.clean.mapper;
 
 import com.ruoyi.data.clean.domain.CleanExecuteRecord;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -11,5 +10,5 @@ public interface CleanExecuteRecordMapper {
 
     int insert(CleanExecuteRecord record);
 
-    List<CleanExecuteRecord> selectAll(@Param("tenantId") Long tenantId);
+    List<CleanExecuteRecord> selectAll();
 }

@@ -1,6 +1,5 @@
 package com.ruoyi.data.clean.service.impl;
 
-import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.data.clean.domain.CleanExecuteRecord;
 import com.ruoyi.data.clean.domain.RuleRegistry;
 import com.ruoyi.data.clean.domain.bo.CleanRule;
@@ -32,12 +31,7 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
     @Transactional(rollbackFor = Exception.class)
     public void executeScheduled(Long taskId) {
 
-        Long tenantId = TenantContext.get();
-        if (tenantId == null) {
-            throw new RuntimeException("tenantId不能为空");
-        }
-
-        CleanRulePo po = cleanRuleMapper.selectById(taskId, tenantId);
+        CleanRulePo po = cleanRuleMapper.selectById(taskId);
         if (po == null) {
             throw new RuntimeException("清洗任务不存在");
         }
@@ -50,10 +44,9 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
         record.setExecuteMode("SCHEDULED");
         record.setRunTime(runTime);
         record.setCreateTime(runTime);
-        record.setTenantId(tenantId);
 
         try {
-            doExecute(rule, taskId, tenantId);
+            doExecute(rule, taskId);
             record.setSuccess(1);
         } catch (Exception e) {
             record.setSuccess(0);
@@ -66,11 +59,6 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void executeManual(String configJson, String applyDataSource) {
-
-        Long tenantId = TenantContext.get();
-        if (tenantId == null) {
-            throw new RuntimeException("tenantId不能为空");
-        }
 
         CleanRulePo po = new CleanRulePo();
         po.setExecuteMode("IMMEDIATE");
@@ -85,10 +73,9 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
         record.setExecuteMode("IMMEDIATE");
         record.setRunTime(runTime);
         record.setCreateTime(runTime);
-        record.setTenantId(tenantId);
 
         try {
-            doExecute(rule, null, tenantId);
+            doExecute(rule, null);
             record.setSuccess(1);
         } catch (Exception e) {
             record.setSuccess(0);
@@ -101,7 +88,7 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
     /**
      * 执行清洗核心流程（查原始数据 -> 执行规则 -> 批量入库）
      */
-    private void doExecute(CleanRule rule, Long taskId, Long tenantId) {
+    private void doExecute(CleanRule rule, Long taskId) {
 
         DataContext context = new DataContext(rule.getDataSources());
 
@@ -121,7 +108,6 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
                 .toList();
 
         if (poList != null && !poList.isEmpty()) {
-            poList.forEach(item -> item.setTenantId(tenantId));
             cleanRuleMapper.batchInsertResults(poList);
         }
     }

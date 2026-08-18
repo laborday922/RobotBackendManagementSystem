@@ -11,13 +11,11 @@ public interface CleanExecuteHistoryMapper {
 
     int insert(CleanExecuteHistory history);
 
-    CleanExecuteHistory selectById(@Param("id") Long id,
-                                   @Param("tenantId") Long tenantId);
+    CleanExecuteHistory selectById(@Param("id") Long id);
 
-    List<CleanExecuteHistory> selectAll(@Param("tenantId") Long tenantId);
+    List<CleanExecuteHistory> selectAll();
 
     int update(CleanExecuteHistory history);
 
-    int deleteById(@Param("id") Long id,
-                   @Param("tenantId") Long tenantId);
+    int deleteById(@Param("id") Long id);
 }

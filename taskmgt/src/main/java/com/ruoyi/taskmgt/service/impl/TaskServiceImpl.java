@@ -193,10 +193,6 @@ public class TaskServiceImpl implements ITaskService {
             }
 
             if (StringUtils.isNotNull(task.getRobotId()) || StringUtils.isNotNull(task.getRobotGroupId())) {
-                if (!isRobotNormal(task)) {
-                    String[] args = new String[]{this.messageSourceAccessor.getMessage("Task.name", LocaleContextHolder.getLocale()), task.toString()};
-                    throw new TaskmgtException(ReturnNo.ROBOT_STATUS_ABNORMAL, args, this.messageSourceAccessor.getMessage(ReturnNo.ROBOT_STATUS_ABNORMAL.getMessage()));
-                }
                 if (Objects.equals(originTask.getStatus(), Task.PAUSED)) {
                     if (robotChanged) {
                         task.setStatus(Task.PENDING);

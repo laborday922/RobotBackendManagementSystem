@@ -608,6 +608,7 @@ export default {
       },
       // 动态选项缓存 { paramKey: { options: [], loading: false } }
       dynamicOptionsCache: {},
+      dynamicOptionsPromiseCache: {},
       debouncedQuery: null,
       refreshTimer: null
     }
@@ -640,7 +641,7 @@ export default {
     },
     currentTemplate() {
       if (!this.taskForm.templateId) return null
-      return this.templateOptions.find(t => t.id === this.taskForm.templateId)
+      return this.templateOptions.find(t => Number(t.id) === Number(this.taskForm.templateId))
     }
   },
   watch: {
@@ -883,11 +884,15 @@ export default {
       this.taskForm = this.getInitialTaskForm()
       this.generatedSteps = []
       this.dynamicOptionsCache = {}
+      this.dynamicOptionsPromiseCache = {}
       this.dialog.visible = true
     },
     async handleEdit(row) {
       this.dialog.mode = 'edit'
       this.dialog.title = '修改任务'
+      this.generatedSteps = []
+      this.dynamicOptionsCache = {}
+      this.dynamicOptionsPromiseCache = {}
 
       // 将后端传的duration秒转为时分秒
       const durationHMS = this.secondsToHMS(row.duration)
@@ -908,7 +913,7 @@ export default {
       this.taskForm = {
         id: row.id,
         name: row.name,
-        templateId: row.templateId,
+        templateId: row.templateId ? Number(row.templateId) : undefined,
         priority: row.priority,
         isGroupTask: row.isGroupTask === 1,
         durationHMS: durationHMS, // 使用转换后的时分秒对象
@@ -921,24 +926,49 @@ export default {
         robotGroupId: row.robotGroupId ? Number(row.robotGroupId) : undefined,
         formData: {}
       }
+
+      let template = this.templateOptions.find(t => Number(t.id) === Number(this.taskForm.templateId))
+      if (!template && this.taskForm.templateId) {
+        await this.getTemplates()
+        template = this.templateOptions.find(t => Number(t.id) === Number(this.taskForm.templateId))
+      }
+      if (template) {
+        this.prepareDynamicFields(template)
+      }
+
+      const baseFormData = {}
+      if (template && template.fields) {
+        template.fields.forEach(field => {
+          if (['image','video','audio','file'].includes(field.type)) {
+            baseFormData[field.id] = []
+          } else {
+            baseFormData[field.id] = ''
+          }
+        })
+      }
+
       if (row.formContent) {
         try {
           const parsed = JSON.parse(row.formContent) || {}
-          if (this.currentTemplate && this.currentTemplate.fields) {
-            this.currentTemplate.fields.forEach(field => {
+
+          const merged = { ...baseFormData, ...parsed }
+          if (template && template.fields) {
+            template.fields.forEach(field => {
               if (['image','video','audio','file'].includes(field.type)) {
-                if (parsed[field.id] && typeof parsed[field.id] === 'string') {
-                  parsed[field.id] = [{ name: '已上传文件', url: parsed[field.id] }]
-                } else if (!parsed[field.id]) {
-                  parsed[field.id] = []
+                if (merged[field.id] && typeof merged[field.id] === 'string') {
+                  merged[field.id] = [{ name: '已上传文件', url: merged[field.id] }]
+                } else if (!merged[field.id] || !Array.isArray(merged[field.id])) {
+                  merged[field.id] = []
                 }
               }
             })
           }
-          this.taskForm.formData = parsed
+          this.taskForm.formData = merged
         } catch (e) {
-          this.taskForm.formData = {}
+          this.taskForm.formData = baseFormData
         }
+      } else {
+        this.taskForm.formData = baseFormData
       }
       this.$nextTick(() => {
         this.updateStepPreview()
@@ -954,9 +984,11 @@ export default {
       this.dialog.visible = false
       this.$refs.taskFormRef?.resetFields()
       this.generatedSteps = []
+      this.dynamicOptionsCache = {}
+      this.dynamicOptionsPromiseCache = {}
     },
     onTemplateChange(val) {
-      const template = this.templateOptions.find(t => t.id === val)
+      const template = this.templateOptions.find(t => Number(t.id) === Number(val))
       if (template) {
         const formData = {}
         template.fields.forEach(field => {
@@ -969,6 +1001,8 @@ export default {
         this.taskForm.formData = formData
         this.taskForm.robotId = undefined
         this.taskForm.robotGroupId = undefined
+        this.dynamicOptionsCache = {}
+        this.dynamicOptionsPromiseCache = {}
         // 预加载动态参数元数据（不加载选项，等待选机器人）
         this.prepareDynamicFields(template)
         this.updateStepPreview()
@@ -979,24 +1013,27 @@ export default {
       if (!template || !template.fields) return
       template.fields.forEach(field => {
         if (field.type === 'dynamicSelect') {
-          field.options = field.options || []
-          field.loading = false
-          // 从模板配置中可获取关联的 apiId/paramKey
-          if (!field.dynamicConfig) {
-            // 若模板未配置，可从步骤中推断，简化处理：默认从模板第一个步骤的apiId获取
-            if (template.steps && template.steps.length) {
-              const firstStep = template.steps[0]
-              if (firstStep.apiId) {
-                field.apiId = firstStep.apiId
-                field.paramKey = field.id // 假设字段ID与参数key一致
-              }
-            }
-          } else {
+          this.$set(field, 'options', [])
+          this.$set(field, 'loading', false)
+          this.$set(field, '_loadedRobotId', undefined)
+
+          if (field.apiId && field.paramKey) return
+
+          if (field.dynamicConfig) {
             try {
               const cfg = JSON.parse(field.dynamicConfig)
               field.apiId = cfg.apiId
               field.paramKey = cfg.paramKey
+              return
             } catch (e) {}
+          }
+
+          if (template.steps && template.steps.length) {
+            const firstStep = template.steps[0]
+            if (firstStep.apiId) {
+              field.apiId = firstStep.apiId
+              field.paramKey = field.id
+            }
           }
         }
       })
@@ -1007,17 +1044,37 @@ export default {
         if (!this.taskForm.robotId) this.$message.warning('请先选择机器人')
         return
       }
-      if (field.options && field.options.length > 0) return // 已加载
+      if (field._loadedRobotId === this.taskForm.robotId && field.options && field.options.length > 0) return
       field.loading = true
       try {
-        const res = await getDynamicParams(field.apiId, { robotId: this.taskForm.robotId })
-        const params = res.data || []
-        const targetParam = params.find(p => p.paramKey === field.paramKey)
-        if (targetParam && targetParam.options) {
-          field.options = targetParam.options.map(opt => ({ value: opt.value, label: opt.label }))
-          // 存入缓存供详情和预览使用
-          this.dynamicOptionsCache[field.paramKey] = targetParam.options
+        const robotId = this.taskForm.robotId
+        const cacheKey = `${robotId}::${field.paramKey}`
+
+        if (!this.dynamicOptionsCache[cacheKey]) {
+          if (!this.dynamicOptionsPromiseCache[cacheKey]) {
+            this.dynamicOptionsPromiseCache[cacheKey] = getDynamicParams(field.apiId, { robotId })
+              .then(res => {
+                const params = res.data || []
+                const targetParam = params.find(p => p.paramKey === field.paramKey)
+                if (targetParam && targetParam.options) {
+                  const normalized = targetParam.options.map(opt => ({ value: opt.value, label: opt.label }))
+                  this.dynamicOptionsCache[cacheKey] = normalized
+                  this.dynamicOptionsCache[field.paramKey] = normalized
+                } else {
+                  this.dynamicOptionsCache[cacheKey] = []
+                }
+              })
+              .finally(() => {
+                delete this.dynamicOptionsPromiseCache[cacheKey]
+              })
+          }
+          await this.dynamicOptionsPromiseCache[cacheKey]
         }
+
+        const options = this.dynamicOptionsCache[cacheKey] || []
+        field.options = options
+        this.dynamicOptionsCache[field.id] = options
+        field._loadedRobotId = robotId
       } catch (e) {
         this.$message.error('加载选项失败')
       } finally {
@@ -1050,7 +1107,7 @@ export default {
             let displayValue = val
             // 尝试将ID转为名称显示（用于预览）
             if (this.dynamicOptionsCache[key]) {
-              const opt = this.dynamicOptionsCache[key].find(o => o.value === val)
+              const opt = this.dynamicOptionsCache[key].find(o => String(o.value) === String(val))
               displayValue = opt ? opt.label : val
             }
             if (Array.isArray(val)) {
@@ -1270,7 +1327,7 @@ export default {
           this.currentTask.formData = {}
         }
         if (this.currentTask.templateId) {
-          const template = this.templateOptions.find(t => t.id === this.currentTask.templateId)
+          const template = this.templateOptions.find(t => Number(t.id) === Number(this.currentTask.templateId))
           if (template) {
             this.formFields = template.fields || []
             this.formFields.forEach(field => {
@@ -1298,7 +1355,7 @@ export default {
               // 对每个动态字段尝试转换
               for (let key in json) {
                 if (this.dynamicOptionsCache[key]) {
-                  const opt = this.dynamicOptionsCache[key].find(o => o.value === String(json[key]))
+                  const opt = this.dynamicOptionsCache[key].find(o => String(o.value) === String(json[key]))
                   if (opt) json[key] = opt.label // 替换为名称显示
                 }
               }

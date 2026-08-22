@@ -973,9 +973,11 @@ export default {
       this.$nextTick(() => {
         this.updateStepPreview()
         this.validateStepRobotsBelongToGroup()
-        // 编辑时若已选机器人，预加载动态字段选项
+        // 编辑时若已选机器人，预加载动态字段选项（不清空已有值）
         if (this.taskForm.robotId && this.currentTemplate) {
-          this.onRobotChange(this.taskForm.robotId)
+          this.currentTemplate.fields
+            .filter(f => f.type === 'dynamicSelect')
+            .forEach(field => this.loadFieldOptions(field))
         }
       })
       this.dialog.visible = true
@@ -1038,16 +1040,41 @@ export default {
         }
       })
     },
+    // 解析动态字段所属机器人的 id（组任务按步骤分配，非组任务用任务机器人）
+    resolveFieldRobotId(field) {
+      if (this.taskForm.isGroupTask) {
+        const step = this.generatedSteps.find(s =>
+          (s.paramMapping || []).some(pm => pm.sourceType === 'field' && pm.sourceValue === field.id)
+        )
+        return step ? step.assignedRobotId : null
+      }
+      return this.taskForm.robotId
+    },
+    // 清空与机器人相关的动态字段值，返回受影响的字段列表
+    clearDynamicFieldValues(fieldIds) {
+      if (!this.currentTemplate) return []
+      const dynamicFields = this.currentTemplate.fields.filter(f => f.type === 'dynamicSelect')
+      const targetFields = fieldIds && fieldIds.length
+        ? dynamicFields.filter(f => fieldIds.includes(f.id))
+        : dynamicFields
+      targetFields.forEach(field => {
+        this.$set(this.taskForm.formData, field.id, '')
+        field.options = []
+        field._loadedRobotId = undefined
+      })
+      return targetFields
+    },
     // 加载单个动态字段的选项
     async loadFieldOptions(field) {
-      if (!field.apiId || !this.taskForm.robotId) {
-        if (!this.taskForm.robotId) this.$message.warning('请先选择机器人')
+      const robotId = this.resolveFieldRobotId(field)
+      if (!field.apiId || !robotId) {
+        if (!robotId) this.$message.warning('请先选择机器人')
         return
       }
-      if (field._loadedRobotId === this.taskForm.robotId && field.options && field.options.length > 0) return
+      if (field._loadedRobotId === robotId && field.options && field.options.length > 0) return
+      if (field._loadedRobotId !== robotId) field.options = []
       field.loading = true
       try {
-        const robotId = this.taskForm.robotId
         const cacheKey = `${robotId}::${field.paramKey}`
 
         if (!this.dynamicOptionsCache[cacheKey]) {
@@ -1081,18 +1108,26 @@ export default {
         field.loading = false
       }
     },
-    // 选择机器人时加载所有动态字段选项
+    // 选择机器人时：清空机器人相关字段，并加载新机器人的动态字段选项
     onRobotChange(robotId) {
-      if (!robotId || !this.currentTemplate) return
-      const dynamicFields = this.currentTemplate.fields.filter(f => f.type === 'dynamicSelect')
-      dynamicFields.forEach(field => this.loadFieldOptions(field))
+      if (!this.currentTemplate) return
+      const dynamicFields = this.clearDynamicFieldValues()
+      this.updateStepPreview()
+      if (robotId) {
+        dynamicFields.forEach(field => this.loadFieldOptions(field))
+      }
     },
     onRobotGroupChange() {
       // 组任务暂不支持动态参数加载，可扩展
     },
     updateStepPreview() {
       if (this.currentTemplate && this.currentTemplate.steps) {
+        const prevAssigned = {}
+        this.generatedSteps.forEach(s => { prevAssigned[s.orderNum] = s.assignedRobotId })
         this.generatedSteps = this.generateStepsFromTemplate(this.currentTemplate, this.taskForm.formData)
+        this.generatedSteps.forEach(s => {
+          if (prevAssigned[s.orderNum] != null) s.assignedRobotId = prevAssigned[s.orderNum]
+        })
       } else {
         this.generatedSteps = []
       }
@@ -1121,12 +1156,22 @@ export default {
           description: description,
           orderNum: index + 1,
           status: 0,
-          assignedRobotId: null
+          assignedRobotId: null,
+          paramMapping: step.paramMapping || []
         }
       })
     },
     onStepRobotChange({ step, robotId }) {
       step.assignedRobotId = robotId
+      // 该步骤引用的表单字段（如点位等），切换机器人后需要清空
+      const fieldIds = (step.paramMapping || [])
+        .filter(pm => pm.sourceType === 'field' && pm.sourceValue)
+        .map(pm => pm.sourceValue)
+      const dynamicFields = this.clearDynamicFieldValues(fieldIds)
+      this.updateStepPreview()
+      if (robotId) {
+        dynamicFields.forEach(field => this.loadFieldOptions(field))
+      }
     },
     onGroupTaskChange(val) {
       if (!val) {

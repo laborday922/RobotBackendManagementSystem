@@ -132,6 +132,23 @@ export default {
           const text = await resp.text()
           throw new Error("HTTP " + resp.status + ": " + text)
         }
+        const contentType = (resp.headers && resp.headers.get && resp.headers.get("content-type")) || ""
+        if (!String(contentType).includes("text/event-stream")) {
+          const text = await resp.text()
+          try {
+            const obj = JSON.parse(text)
+            if (obj && typeof obj.answer === "string") {
+              assistant.content += obj.answer
+            } else if (obj && typeof obj.msg === "string") {
+              assistant.content += obj.msg
+            } else {
+              assistant.content += text
+            }
+          } catch (e) {
+            assistant.content += text
+          }
+          return
+        }
         if (!resp.body) {
           throw new Error("浏览器不支持流式读取 response.body")
         }
@@ -139,50 +156,67 @@ export default {
         const reader = resp.body.getReader()
         const decoder = new TextDecoder("utf-8")
         let buffer = ""
+        let dataLines = []
 
-        const handleChunk = (chunk) => {
-          const lines = String(chunk).split("\n")
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i]
-            if (!line || !line.startsWith("data:")) continue
-            const raw = line.slice(5).trim()
-            if (!raw) continue
-            try {
-              const obj = JSON.parse(raw)
-              if (obj && typeof obj.answer === "string") {
-                assistant.content += obj.answer
-              } else if (obj && obj.event === "error") {
-                assistant.content += "\n[ERROR] " + (obj.message || "")
-              }
-            } catch (e) {
-              assistant.content += raw
+        const dispatchEvent = () => {
+          if (!dataLines.length) return
+          const data = dataLines.join("\n")
+          dataLines = []
+          if (!data || !String(data).trim()) return
+          if (String(data).trim() === "[DONE]") return
+
+          try {
+            const obj = JSON.parse(data)
+            if (obj && typeof obj.answer === "string") {
+              assistant.content += obj.answer
+            } else if (obj && obj.event === "error") {
+              assistant.content += "\n[ERROR] " + (obj.message || obj.data || "")
+            } else if (obj && typeof obj.data === "string") {
+              assistant.content += obj.data
+            } else {
+              assistant.content += data
             }
+          } catch (e) {
+            assistant.content += data
           }
           this.$nextTick(() => this.scrollToBottom())
         }
 
-        const drainBuffer = (final) => {
-          let idx
-          while ((idx = buffer.indexOf("\n\n")) !== -1) {
-            const part = buffer.slice(0, idx)
-            buffer = buffer.slice(idx + 2)
-            if (part.trim()) handleChunk(part)
-          }
-          if (final && buffer.trim()) {
-            handleChunk(buffer)
-            buffer = ""
+        const feedSseText = (text) => {
+          buffer += String(text)
+          const lines = buffer.split(/\r?\n/)
+          buffer = lines.pop()
+
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            if (line === "") {
+              dispatchEvent()
+              continue
+            }
+            if (line.startsWith("data:")) {
+              dataLines.push(line.slice(5).replace(/^\s/, ""))
+              continue
+            }
+            if (line.startsWith(":")) continue
+            if (line.startsWith("event:")) continue
+            if (line.startsWith("id:")) continue
+            if (line.startsWith("retry:")) continue
+            dataLines.push(line)
           }
         }
 
         while (true) {
           const { value, done } = await reader.read()
           if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          drainBuffer(false)
+          feedSseText(decoder.decode(value, { stream: true }))
         }
 
-        buffer += decoder.decode()
-        drainBuffer(true)
+        feedSseText(decoder.decode())
+        if (buffer && String(buffer).trim()) {
+          dataLines.push(buffer)
+          buffer = ""
+        }
+        dispatchEvent()
       } catch (e) {
         const msg = e && e.name === "AbortError" ? "已停止" : (e && e.message ? e.message : String(e))
         assistant.content += "\n[ERROR] " + msg

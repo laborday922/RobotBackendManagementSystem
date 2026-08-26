@@ -49,6 +49,10 @@
         </foreach>
     </insert>
 
+    <delete id="deleteAllResults">
+        DELETE FROM clean_interaction_result
+    </delete>
+
     <select id="selectRawInteractionData" resultType="map">
         SELECT id, evaluation_text
         FROM t_interaction_history

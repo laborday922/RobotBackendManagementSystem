@@ -113,6 +113,9 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
 
         rule.execute(context);
 
+        // 执行成功后清空历史结果，保证结果表只保留本次最新结果
+        cleanRuleMapper.deleteAllResults();
+
         List<CleanResultPo> poList = context.getResultList().stream()
                 .map(r -> {
                     CleanResultPo resultPo = new CleanResultPo();

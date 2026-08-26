@@ -29,6 +29,11 @@ public interface CleanRuleMapper {
     void batchInsertResults(List<CleanResultPo> list);
 
     /**
+     * 清空所有历史清洗结果（每次执行前调用，保证只保留最新结果）
+     */
+    int deleteAllResults();
+
+    /**
      * 查询原始数据
      */
     List<Map<String, Object>> selectRawInteractionData();

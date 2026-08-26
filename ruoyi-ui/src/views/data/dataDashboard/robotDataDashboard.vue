@@ -60,6 +60,7 @@
           <div class="panel">
             <div class="panel-title title-flex">
               <span>机器人分布</span>
+              <!--
               <el-button
                 size="mini"
                 type="text"
@@ -68,9 +69,12 @@
               >
                 {{ robotViewMode === 'map' ? '切换列表' : '切换地图' }}
               </el-button>
+              -->
             </div>
+            <!--
             <div v-show="robotViewMode === 'map'" id="robotMapChart" class="chart"></div>
-            <div v-show="robotViewMode === 'table'" class="robot-table">
+            -->
+            <div class="robot-table">
               <el-table :data="robotLocationList" height="100%" size="mini" stripe>
                 <el-table-column label="机器人" align="left" width="140" show-overflow-tooltip>
                   <template slot-scope="scope">
@@ -385,7 +389,7 @@ export default {
     initCharts() {
       this.robotStatusChart = echarts.init(document.getElementById("robotStatusChart"))
       this.robotGroupBarChart = echarts.init(document.getElementById("robotGroupBarChart"))
-      this.robotMapChart = echarts.init(document.getElementById("robotMapChart"))
+      // this.robotMapChart = echarts.init(document.getElementById("robotMapChart"))
       this.wordCloudChart = echarts.init(document.getElementById("wordCloudChart"))
       this.dailyExceptionChart = echarts.init(document.getElementById("dailyExceptionChart"))
     },
@@ -454,15 +458,15 @@ export default {
         })
       }
 
-      // 3. 地图
-      // 3. 地图（使用聚合数据）
-      const mapPoints = this.clusteredMapPoints.map(point => ({
-        name: `位置(${point.lng.toFixed(2)}, ${point.lat.toFixed(2)})`,
-        value: [point.lng, point.lat],
-        robotCount: point.count,
-        robotIds: point.robotIds
-      }))
+      // 3. 地图（已注释，仅保留列表展示）
+      // const mapPoints = this.clusteredMapPoints.map(point => ({
+      //   name: `位置(${point.lng.toFixed(2)}, ${point.lat.toFixed(2)})`,
+      //   value: [point.lng, point.lat],
+      //   robotCount: point.count,
+      //   robotIds: point.robotIds
+      // }))
 
+      /*
       this.robotMapChart.setOption({
         geo: {
           map: "china",
@@ -562,6 +566,7 @@ export default {
           }
         }]
       })
+      */
 
       // 4. 异常趋势折线图
       this.dailyExceptionChart.setOption({

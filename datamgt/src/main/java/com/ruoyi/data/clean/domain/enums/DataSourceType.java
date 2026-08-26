@@ -2,7 +2,8 @@ package com.ruoyi.data.clean.domain.enums;
 
 public enum DataSourceType {
     USER("sys_user"),          // 枚举常量 USER，对应表 "sys_user"
-    t_interaction_history("t_interaction_history");     // 枚举常量 t_interaction_history，对应表 "robot_interaction_log"
+    t_interaction_history("t_interaction_history"),     // 枚举常量 t_interaction_history，对应表 "robot_interaction_log"
+    qa_log("qa_log");
 
     private final String tableName;   // 成员变量，保存表名
 

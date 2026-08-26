@@ -56,4 +56,11 @@
         AND evaluation_text != ''
     </select>
 
+    <select id="selectRawQaLogData" resultType="map">
+        SELECT id, `query` AS evaluation_text
+        FROM qa_log
+        WHERE `query` IS NOT NULL
+        AND `query` != ''
+    </select>
+
 </mapper>

@@ -36,7 +36,10 @@
         <!-- 应用数据源 -->
         <div class="data-source-section">
           <h4>应用数据源</h4>
-          <el-tag type="success">交互历史表（t_interaction_history）</el-tag>
+          <el-checkbox-group v-model="cleaningRules.applyDataSources">
+            <el-checkbox label="t_interaction_history">交互历史表（t_interaction_history）</el-checkbox>
+            <el-checkbox label="qa_log">QA日志表（qa_log）</el-checkbox>
+          </el-checkbox-group>
         </div>
 
         <!-- 执行方式 -->
@@ -148,7 +151,11 @@
               {{ formatRules(scope.row.configJson) }}
             </template>
           </el-table-column>
-          <el-table-column prop="applyDataSource" label="数据源" width="160" />
+          <el-table-column label="数据源" width="160">
+            <template slot-scope="scope">
+              {{ formatDataSources(scope.row.applyDataSource) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="cronExpression" label="cron 表达式" width="140" />
           <el-table-column label="下次执行时间" width="170">
             <template slot-scope="scope">
@@ -213,7 +220,8 @@ export default {
       cleaningRules: {
         duplicateHandling: '',   // KEEP_FIRST / KEEP_ORIGINAL
         textCleaning: '',        // REMOVE_HTML / REMOVE_SPECIAL_CHAR / KEEP_ORIGINAL
-        executionType: 'schedule'
+        executionType: 'schedule',
+        applyDataSources: ['t_interaction_history']
       },
       scheduleConfig: {
         period: 'daily',      // daily, weekly, monthly
@@ -333,11 +341,24 @@ export default {
       return String(value).replace('T', ' ').slice(0, 19)
     },
 
+    formatDataSources(value) {
+      const list = String(value || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+      if (!list.length) return '-'
+      const map = {
+        t_interaction_history: '交互历史',
+        qa_log: 'QA日志'
+      }
+      return list.map(x => map[x] || x).join('、')
+    },
+
     // 构造保存请求参数
     buildParams(executeMode, cronExpression = null) {
       return {
         executeMode,                             // 'SCHEDULED'
-        applyDataSource: 't_interaction_history',
+        applyDataSource: (this.cleaningRules.applyDataSources || []).join(','),
         configJson: JSON.stringify({
           duplicateHandling: this.cleaningRules.duplicateHandling,
           textCleaning: this.cleaningRules.textCleaning
@@ -350,6 +371,10 @@ export default {
     async saveScheduleConfig() {
       if (!this.cleaningRules.textCleaning || !this.cleaningRules.duplicateHandling) {
         this.$message.warning('请选择文本处理和重复数据处理方式')
+        return
+      }
+      if (!this.cleaningRules.applyDataSources || !this.cleaningRules.applyDataSources.length) {
+        this.$message.warning('请选择至少一个数据源')
         return
       }
       const cron = this.generateCron()
@@ -377,6 +402,10 @@ export default {
         this.$message.warning('请选择文本处理和重复数据处理方式')
         return
       }
+      if (!this.cleaningRules.applyDataSources || !this.cleaningRules.applyDataSources.length) {
+        this.$message.warning('请选择至少一个数据源')
+        return
+      }
       const configJson = JSON.stringify({
         duplicateHandling: this.cleaningRules.duplicateHandling,
         textCleaning: this.cleaningRules.textCleaning
@@ -384,7 +413,7 @@ export default {
       try {
         const res = await executeManual({
           configJson,
-          applyDataSource: 't_interaction_history'
+          applyDataSource: (this.cleaningRules.applyDataSources || []).join(',')
         })
         if (res.code === 200) {
           this.$message.success('执行完成')
@@ -405,6 +434,10 @@ export default {
       const rules = this.parseRules(row.configJson)
       this.cleaningRules.textCleaning = rules.textCleaning
       this.cleaningRules.duplicateHandling = rules.duplicateHandling
+      this.cleaningRules.applyDataSources = String(row.applyDataSource || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
       this.scheduleConfig = this.parseCron(row.cronExpression)
       this.$nextTick(() => {
         this.$el && this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -438,6 +471,7 @@ export default {
       this.cleaningRules.duplicateHandling = ''
       this.cleaningRules.textCleaning = ''
       this.cleaningRules.executionType = 'schedule'
+      this.cleaningRules.applyDataSources = ['t_interaction_history']
       this.scheduleConfig = { period: 'daily', weekDay: '1', monthDay: 1, time: '00:00' }
     }
   }

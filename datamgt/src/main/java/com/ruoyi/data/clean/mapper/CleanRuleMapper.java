@@ -32,4 +32,6 @@ public interface CleanRuleMapper {
      * 查询原始数据
      */
     List<Map<String, Object>> selectRawInteractionData();
+
+    List<Map<String, Object>> selectRawQaLogData();
 }

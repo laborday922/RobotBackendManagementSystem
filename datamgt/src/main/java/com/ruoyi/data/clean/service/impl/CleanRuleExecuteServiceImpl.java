@@ -4,6 +4,7 @@ import com.ruoyi.data.clean.domain.CleanExecuteRecord;
 import com.ruoyi.data.clean.domain.RuleRegistry;
 import com.ruoyi.data.clean.domain.bo.CleanRule;
 import com.ruoyi.data.clean.domain.context.DataContext;
+import com.ruoyi.data.clean.domain.enums.DataSourceType;
 import com.ruoyi.data.clean.mapper.CleanExecuteRecordMapper;
 import com.ruoyi.data.clean.mapper.CleanRuleMapper;
 import com.ruoyi.data.clean.mapper.po.CleanResultPo;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -92,7 +94,19 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
 
         DataContext context = new DataContext(rule.getDataSources());
 
-        List<Map<String, Object>> rawData = cleanRuleMapper.selectRawInteractionData();
+        List<DataSourceType> sources = rule.getDataSources();
+        if (sources == null || sources.isEmpty()) {
+            sources = List.of(DataSourceType.t_interaction_history);
+        }
+
+        List<Map<String, Object>> rawData = new ArrayList<>();
+        if (sources.contains(DataSourceType.t_interaction_history)) {
+            rawData.addAll(cleanRuleMapper.selectRawInteractionData());
+        }
+        if (sources.contains(DataSourceType.qa_log)) {
+            rawData.addAll(cleanRuleMapper.selectRawQaLogData());
+        }
+
         context.setRawData(rawData);
         context.setTaskId(taskId);
         context.setConfigId(rule.getId());

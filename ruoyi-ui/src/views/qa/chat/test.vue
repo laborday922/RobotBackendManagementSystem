@@ -149,6 +149,10 @@ export default {
             if (!raw) continue
             try {
               const obj = JSON.parse(raw)
+              const cid = obj && (obj.conversation_id || obj.conversationId)
+              if (cid) {
+                this.form.conversationId = String(cid)
+              }
               if (obj && typeof obj.answer === "string") {
                 assistant.content += obj.answer
               } else if (obj && obj.event === "error") {

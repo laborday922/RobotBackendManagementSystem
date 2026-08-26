@@ -195,6 +195,10 @@ public class ChatServiceImpl implements ChatService
         }
         catch (Exception e)
         {
+            if (isAsyncRequestCompleted(e))
+            {
+                return;
+            }
             logState.markError(e.getMessage());
             writeSseError(outputStream, logState.getErrorMessage());
         }
@@ -250,6 +254,10 @@ public class ChatServiceImpl implements ChatService
         }
         catch (Exception e)
         {
+            if (isAsyncRequestCompleted(e))
+            {
+                return;
+            }
             logState.markError(e.getMessage());
             writeSseError(outputStream, logState.getErrorMessage());
         }
@@ -543,8 +551,29 @@ public class ChatServiceImpl implements ChatService
         data.put("event", "error");
         data.put("message", safe);
         String payload = "data: " + JSON.toJSONString(data) + "\n\n";
-        outputStream.write(payload.getBytes(StandardCharsets.UTF_8));
-        outputStream.flush();
+        try
+        {
+            outputStream.write(payload.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
+        }
+        catch (Exception ignored)
+        {
+        }
+    }
+
+    private static boolean isAsyncRequestCompleted(Throwable e)
+    {
+        Throwable current = e;
+        while (current != null)
+        {
+            String message = current.getMessage();
+            if (message != null && message.contains("Response not usable after async request completion"))
+            {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private SysPoint findPoint(Long robotId, Long robotPointId)

@@ -5,6 +5,8 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.function.domain.SysPoint;
 import com.ruoyi.function.service.ISysPointService;
+import com.ruoyi.qa.ChatLog.domain.QaLog;
+import com.ruoyi.qa.ChatLog.service.IQaLogService;
 import com.ruoyi.qa.Chat.dto.DifyChatMessagesRequest;
 import com.ruoyi.qa.Chat.dto.RobotChatRequest;
 import com.ruoyi.qa.Chat.dto.RobotNavigateRequest;
@@ -34,6 +36,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +54,11 @@ public class ChatServiceImpl implements ChatService
     private final ChatTranslationService chatTranslationService;
     private final ChatTranslationProperties chatTranslationProperties;
     private final OpenAiConversationStore openAiConversationStore;
+    private final IQaLogService qaLogService;
 
     public ChatServiceImpl(DifyChatClient difyChatClient, ISysPointService sysPointService, RobotInvoker robotInvoker,
         IQaRobotChatRelService qaRobotChatRelService, ChatTranslationService chatTranslationService,
-        ChatTranslationProperties chatTranslationProperties, OpenAiConversationStore openAiConversationStore)
+        ChatTranslationProperties chatTranslationProperties, OpenAiConversationStore openAiConversationStore, IQaLogService qaLogService)
     {
         this.difyChatClient = difyChatClient;
         this.sysPointService = sysPointService;
@@ -63,19 +67,16 @@ public class ChatServiceImpl implements ChatService
         this.chatTranslationService = chatTranslationService;
         this.chatTranslationProperties = chatTranslationProperties;
         this.openAiConversationStore = openAiConversationStore;
+        this.qaLogService = qaLogService;
     }
 
     @Override
     public void streamRobotChat(RobotChatRequest request, OutputStream outputStream) throws IOException
     {
+        long startMs = System.currentTimeMillis();
         if (request == null || !StringUtils.hasText(request.getRobotId()))
         {
             writeSseError(outputStream, "robotId is blank");
-            return;
-        }
-        if (!StringUtils.hasText(request.getQuery()))
-        {
-            writeSseError(outputStream, "query is blank");
             return;
         }
 
@@ -86,35 +87,56 @@ public class ChatServiceImpl implements ChatService
             return;
         }
 
-        QaChat qaChat = qaRobotChatRelService.selectQaChatByRobotId(robotId);
-        if (qaChat == null)
-        {
-            writeSseError(outputStream, "robot chat config not found");
-            return;
-        }
-        if (!StringUtils.hasText(qaChat.getApiKey()))
-        {
-            writeSseError(outputStream, "api key is blank");
-            return;
-        }
+        ChatLogState logState = new ChatLogState();
+        logState.setConversationId(trimToNull(request.getConversationId()));
 
-        if (qaChat.isDify())
+        QaChat qaChat = null;
+        try
         {
-            streamDifyChat(request, outputStream, robotId, qaChat);
+            if (!StringUtils.hasText(request.getQuery()))
+            {
+                logState.markError("query is blank");
+                writeSseError(outputStream, logState.getErrorMessage());
+                return;
+            }
+
+            qaChat = qaRobotChatRelService.selectQaChatByRobotId(robotId);
+            if (qaChat == null)
+            {
+                logState.markError("robot chat config not found");
+                writeSseError(outputStream, logState.getErrorMessage());
+                return;
+            }
+            if (!StringUtils.hasText(qaChat.getApiKey()))
+            {
+                logState.markError("api key is blank");
+                writeSseError(outputStream, logState.getErrorMessage());
+                return;
+            }
+
+            if (qaChat.isDify())
+            {
+                streamDifyChat(request, outputStream, robotId, qaChat, logState);
+            }
+            else if (qaChat.isOpenai())
+            {
+                streamOpenAiChat(request, outputStream, qaChat, logState);
+            }
+            else
+            {
+                logState.markError("unsupported chat type: " + qaChat.getChatType());
+                writeSseError(outputStream, logState.getErrorMessage());
+            }
         }
-        else if (qaChat.isOpenai())
+        finally
         {
-            streamOpenAiChat(request, outputStream, qaChat);
-        }
-        else
-        {
-            writeSseError(outputStream, "unsupported chat type: " + qaChat.getChatType());
+            persistChatLog(robotId, qaChat, request, logState, System.currentTimeMillis() - startMs);
         }
     }
 
     // ==================== Dify 路径 ====================
 
-    private void streamDifyChat(RobotChatRequest request, OutputStream outputStream, Long robotId, QaChat qaChat)
+    private void streamDifyChat(RobotChatRequest request, OutputStream outputStream, Long robotId, QaChat qaChat, ChatLogState logState)
         throws IOException
     {
         Map<String, Object> inputs = new HashMap<>();
@@ -154,28 +176,33 @@ public class ChatServiceImpl implements ChatService
             {
                 try (InputStream upstream = difyChatClient.openChatMessagesStreaming(difyReq, qaChat.getApiKey(), baseUrl))
                 {
-                    relayTranslatedSse(upstream, outputStream, translationPreparation);
+                    relayDifySse(upstream, outputStream, translationPreparation, logState);
                 }
             }
             else
             {
-                difyChatClient.postChatMessagesStreaming(difyReq, qaChat.getApiKey(), outputStream);
+                try (InputStream upstream = difyChatClient.openChatMessagesStreaming(difyReq, qaChat.getApiKey(), baseUrl))
+                {
+                    relayDifySse(upstream, outputStream, null, logState);
+                }
             }
         }
         catch (InterruptedException e)
         {
             Thread.currentThread().interrupt();
-            writeSseError(outputStream, "interrupted");
+            logState.markError("interrupted");
+            writeSseError(outputStream, logState.getErrorMessage());
         }
         catch (Exception e)
         {
-            writeSseError(outputStream, e.getMessage());
+            logState.markError(e.getMessage());
+            writeSseError(outputStream, logState.getErrorMessage());
         }
     }
 
     // ==================== OpenAI 路径 ====================
 
-    private void streamOpenAiChat(RobotChatRequest request, OutputStream outputStream, QaChat qaChat) throws IOException
+    private void streamOpenAiChat(RobotChatRequest request, OutputStream outputStream, QaChat qaChat, ChatLogState logState) throws IOException
     {
         String conversationId = request.getConversationId();
         boolean isNewConversation = !StringUtils.hasText(conversationId);
@@ -184,6 +211,7 @@ public class ChatServiceImpl implements ChatService
         {
             conversationId = openAiConversationStore.createConversation(request.getRobotId());
         }
+        logState.setConversationId(conversationId);
 
         // 追加用户消息到对话历史
         openAiConversationStore.appendUserMessage(conversationId, request.getQuery());
@@ -208,26 +236,28 @@ public class ChatServiceImpl implements ChatService
             isNewConversation,
             request.getQuery() == null ? 0 : request.getQuery().length());
 
-        StringBuilder assistantResponse = new StringBuilder();
+        int answerStart = logState.getAnswerCollector().length();
 
         try (InputStream upstream = client.openChatCompletionsStream(messages))
         {
-            relayOpenAiSseToDifyFormat(upstream, outputStream, conversationId, assistantResponse);
+            relayOpenAiSseToDifyFormat(upstream, outputStream, conversationId, logState.getAnswerCollector());
         }
         catch (InterruptedException e)
         {
             Thread.currentThread().interrupt();
-            writeSseError(outputStream, "interrupted");
+            logState.markError("interrupted");
+            writeSseError(outputStream, logState.getErrorMessage());
         }
         catch (Exception e)
         {
-            writeSseError(outputStream, e.getMessage());
+            logState.markError(e.getMessage());
+            writeSseError(outputStream, logState.getErrorMessage());
         }
 
         // 存储 assistant 回复到对话历史
-        if (assistantResponse.length() > 0)
+        if (logState.getAnswerCollector().length() > answerStart)
         {
-            openAiConversationStore.appendAssistantMessage(conversationId, assistantResponse.toString());
+            openAiConversationStore.appendAssistantMessage(conversationId, logState.getAnswerCollector().substring(answerStart));
         }
     }
 
@@ -311,10 +341,11 @@ public class ChatServiceImpl implements ChatService
 
     // ==================== Dify 翻译相关（仅 Dify 路径使用） ====================
 
-    private void relayTranslatedSse(InputStream upstream, OutputStream downstream, TranslationPreparation preparation)
+    private void relayDifySse(InputStream upstream, OutputStream downstream, TranslationPreparation preparation, ChatLogState logState)
         throws IOException
     {
-        AnswerStreamTranslator translator = new AnswerStreamTranslator(chatTranslationService, chatTranslationProperties, preparation);
+        AnswerStreamTranslator translator = preparation == null ? null
+            : new AnswerStreamTranslator(chatTranslationService, chatTranslationProperties, preparation, logState.getAnswerCollector());
         List<String> eventLines = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(upstream, StandardCharsets.UTF_8)))
@@ -324,7 +355,7 @@ public class ChatServiceImpl implements ChatService
             {
                 if (line.isEmpty())
                 {
-                    handleSseEvent(eventLines, downstream, translator);
+                    handleSseEvent(eventLines, downstream, translator, logState);
                     eventLines.clear();
                     continue;
                 }
@@ -334,12 +365,15 @@ public class ChatServiceImpl implements ChatService
 
         if (!eventLines.isEmpty())
         {
-            handleSseEvent(eventLines, downstream, translator);
+            handleSseEvent(eventLines, downstream, translator, logState);
         }
-        translator.flushRemaining(downstream, null);
+        if (translator != null)
+        {
+            translator.flushRemaining(downstream, null);
+        }
     }
 
-    private void handleSseEvent(List<String> eventLines, OutputStream downstream, AnswerStreamTranslator translator)
+    private void handleSseEvent(List<String> eventLines, OutputStream downstream, AnswerStreamTranslator translator, ChatLogState logState)
         throws IOException
     {
         if (eventLines == null || eventLines.isEmpty())
@@ -371,7 +405,10 @@ public class ChatServiceImpl implements ChatService
         String rawData = dataBuilder.toString();
         if ("[DONE]".equals(rawData))
         {
-            translator.flushRemaining(downstream, null);
+            if (translator != null)
+            {
+                translator.flushRemaining(downstream, null);
+            }
             forwardRawSse(eventLines, downstream);
             return;
         }
@@ -387,17 +424,44 @@ public class ChatServiceImpl implements ChatService
             return;
         }
 
+        String conversationId = data.getString("conversation_id");
+        if (StringUtils.hasText(conversationId) && !StringUtils.hasText(logState.getConversationId()))
+        {
+            logState.setConversationId(conversationId);
+        }
+
         String answer = data.getString("answer");
         if (answer != null)
         {
-            translator.accept(data, answer, downstream);
+            if (translator != null)
+            {
+                translator.accept(data, answer, downstream);
+                return;
+            }
+            logState.getAnswerCollector().append(answer);
+            forwardRawSse(eventLines, downstream);
             return;
         }
 
         String eventName = data.getString("event");
-        if ("message_end".equals(eventName) || "error".equals(eventName))
+        if ("error".equals(eventName))
         {
-            translator.flushRemaining(downstream, data);
+            if (logState.getStatus() == 0)
+            {
+                String msg = data.getString("message");
+                logState.markError(StringUtils.hasText(msg) ? msg : "dify error");
+            }
+            if (translator != null)
+            {
+                translator.flushRemaining(downstream, data);
+            }
+        }
+        else if ("message_end".equals(eventName))
+        {
+            if (translator != null)
+            {
+                translator.flushRemaining(downstream, data);
+            }
         }
         forwardRawSse(eventLines, downstream);
     }
@@ -536,14 +600,16 @@ public class ChatServiceImpl implements ChatService
         private final ChatTranslationService translationService;
         private final TranslationPreparation preparation;
         private final int streamFlushThreshold;
+        private final StringBuilder answerCollector;
         private final StringBuilder pendingChinese = new StringBuilder();
         private JSONObject lastAnswerEvent;
 
         private AnswerStreamTranslator(ChatTranslationService translationService,
-            ChatTranslationProperties translationProperties, TranslationPreparation preparation)
+            ChatTranslationProperties translationProperties, TranslationPreparation preparation, StringBuilder answerCollector)
         {
             this.translationService = translationService;
             this.preparation = preparation;
+            this.answerCollector = answerCollector;
             this.streamFlushThreshold = translationProperties.getStreamFlushThreshold() > 0
                 ? translationProperties.getStreamFlushThreshold()
                 : 80;
@@ -635,8 +701,111 @@ public class ChatServiceImpl implements ChatService
             }
             payload.put("answer", translatedAnswer);
             String sse = "data: " + payload.toJSONString() + "\n\n";
+            if (answerCollector != null && translatedAnswer != null)
+            {
+                answerCollector.append(translatedAnswer);
+            }
             downstream.write(sse.getBytes(StandardCharsets.UTF_8));
             downstream.flush();
         }
+    }
+
+    private static class ChatLogState
+    {
+        private final StringBuilder answerCollector = new StringBuilder();
+        private String conversationId;
+        private int status;
+        private String errorMessage;
+
+        private StringBuilder getAnswerCollector()
+        {
+            return answerCollector;
+        }
+
+        private String getConversationId()
+        {
+            return conversationId;
+        }
+
+        private void setConversationId(String conversationId)
+        {
+            if (StringUtils.hasText(conversationId))
+            {
+                this.conversationId = conversationId.trim();
+            }
+        }
+
+        private int getStatus()
+        {
+            return status;
+        }
+
+        private String getErrorMessage()
+        {
+            return errorMessage;
+        }
+
+        private void markError(String message)
+        {
+            this.status = 1;
+            this.errorMessage = sanitizeErrorMessage(message);
+        }
+    }
+
+    private void persistChatLog(Long robotId, QaChat qaChat, RobotChatRequest request, ChatLogState logState, long durationMs)
+    {
+        if (robotId == null || request == null)
+        {
+            return;
+        }
+        try
+        {
+            QaLog qaLog = new QaLog();
+            qaLog.setRobotId(robotId);
+            qaLog.setChatId(qaChat == null ? null : qaChat.getId());
+            qaLog.setConversationId(trimToNull(logState.getConversationId()));
+            qaLog.setQuery(request.getQuery());
+            qaLog.setAnswer(logState.getAnswerCollector().length() == 0 ? null : logState.getAnswerCollector().toString());
+            qaLog.setStatus(logState.getStatus());
+            qaLog.setErrorMessage(trimToLength(trimToNull(logState.getErrorMessage()), 1000));
+            qaLog.setDurationMs(durationMs);
+            qaLog.setCreateTime(new Date());
+            qaLogService.insertQaLog(qaLog);
+        }
+        catch (Exception e)
+        {
+            log.warn("Persist qa_log failed: {}", e.getMessage());
+        }
+    }
+
+    private static String sanitizeErrorMessage(String message)
+    {
+        if (message == null)
+        {
+            return null;
+        }
+        return message.replace("\n", " ").replace("\r", " ").trim();
+    }
+
+    private static String trimToNull(String s)
+    {
+        if (!StringUtils.hasText(s))
+        {
+            return null;
+        }
+        return s.trim();
+    }
+
+    private static String trimToLength(String s, int maxLength)
+    {
+        if (s == null)
+        {
+            return null;
+        }
+        if (maxLength <= 0 || s.length() <= maxLength)
+        {
+            return s;
+        }
+        return s.substring(0, maxLength);
     }
 }

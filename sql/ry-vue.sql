@@ -298,6 +298,27 @@ INSERT INTO `qa_chat` VALUES (1, '政务指南问答', '', 'dify', 'app-EdNaeoq8
 INSERT INTO `qa_chat` VALUES (2, 'deepseek API', 'deepseek的一个API', 'openai', 'sk-aff9a28daf214d2fafea1bd9555e8752', 'https://api.deepseek.com', 'deepseek-v4-pro', '', '2026-08-11 19:57:00', '', '2026-08-11 20:08:33');
 
 -- ----------------------------
+-- Table structure for qa_log
+-- ----------------------------
+DROP TABLE IF EXISTS `qa_log`;
+CREATE TABLE `qa_log`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  `robot_id` bigint NOT NULL COMMENT '机器人ID',
+  `chat_id` bigint NULL DEFAULT NULL COMMENT '问答配置ID',
+  `conversation_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '会话ID',
+  `query` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '输入内容',
+  `answer` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '返回内容',
+  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '状态(0成功 1失败)',
+  `error_message` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `duration_ms` bigint NULL DEFAULT NULL COMMENT '耗时(毫秒)',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_qa_log_robot_time`(`robot_id` ASC, `create_time` ASC) USING BTREE,
+  INDEX `idx_qa_log_chat_time`(`chat_id` ASC, `create_time` ASC) USING BTREE,
+  INDEX `idx_qa_log_conversation`(`conversation_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '机器人问答日志表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
 -- Table structure for qa_file
 -- ----------------------------
 DROP TABLE IF EXISTS `qa_file`;

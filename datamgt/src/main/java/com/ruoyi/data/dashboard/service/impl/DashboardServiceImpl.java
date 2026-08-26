@@ -54,9 +54,6 @@ public class DashboardServiceImpl implements DashboardService {
             if (record.getEvaluationText() != null && !record.getEvaluationText().isEmpty()) {
                 texts.add(record.getEvaluationText());
             }
-            if (record.getInteractionContent() != null && !record.getInteractionContent().isEmpty()) {
-                texts.add(record.getInteractionContent());
-            }
         }
 
         // 3️.调用AI分析服务对文本集合进行分词、统计词频，生成词云数据

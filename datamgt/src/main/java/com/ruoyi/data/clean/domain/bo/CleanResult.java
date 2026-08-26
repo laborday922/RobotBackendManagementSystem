@@ -11,6 +11,8 @@ public class CleanResult {
     private Long taskId;
     private Long configId;
 
+    private String sourceType;
+
     private String rawContent;
     private String cleanContent;
 

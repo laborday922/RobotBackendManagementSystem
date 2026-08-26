@@ -6,13 +6,8 @@ import lombok.Data;
 public class InteractionEvaluationPo {
 
     /**
-     * 评价文本
+     * 评价文本（清洗后内容）
      */
     private String evaluationText;
-
-    /**
-     * 交互内容
-     */
-    private String interactionContent;
 
 }

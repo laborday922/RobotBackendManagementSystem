@@ -11,6 +11,8 @@ public class CleanResultPo {
     private Long taskId;
     private Long configId;
 
+    private String sourceType;
+
     private String rawContent;
     private String cleanContent;
 

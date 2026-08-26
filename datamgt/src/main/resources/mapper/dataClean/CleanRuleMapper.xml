@@ -34,13 +34,14 @@
 
     <insert id="batchInsertResults">
         INSERT INTO clean_interaction_result
-        (source_id, task_id, config_id, raw_content, clean_content, status_label, clean_time)
+        (source_id, task_id, config_id, source_type, raw_content, clean_content, status_label, clean_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (
             #{item.sourceId},
             #{item.taskId},
             #{item.configId},
+            #{item.sourceType},
             #{item.rawContent},
             #{item.cleanContent},
             #{item.statusLabel},
@@ -54,10 +55,10 @@
     </delete>
 
     <select id="selectRawInteractionData" resultType="map">
-        SELECT id, evaluation_text
+        SELECT id, evaluation_text, interaction_content
         FROM t_interaction_history
-        WHERE evaluation_text IS NOT NULL
-        AND evaluation_text != ''
+        WHERE (evaluation_text IS NOT NULL AND evaluation_text != '')
+        OR (interaction_content IS NOT NULL AND interaction_content != '')
     </select>
 
     <select id="selectRawQaLogData" resultType="map">

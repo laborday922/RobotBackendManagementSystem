@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -101,10 +102,17 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
 
         List<Map<String, Object>> rawData = new ArrayList<>();
         if (sources.contains(DataSourceType.t_interaction_history)) {
-            rawData.addAll(cleanRuleMapper.selectRawInteractionData());
+            for (Map<String, Object> row : cleanRuleMapper.selectRawInteractionData()) {
+                // 评价内容单独成一条
+                rawData.add(buildRawRow(row.get("id"), row.get("evaluation_text"), DataSourceType.t_interaction_history));
+                // 交互内容单独成一条
+                rawData.add(buildRawRow(row.get("id"), row.get("interaction_content"), DataSourceType.t_interaction_history));
+            }
         }
         if (sources.contains(DataSourceType.qa_log)) {
-            rawData.addAll(cleanRuleMapper.selectRawQaLogData());
+            for (Map<String, Object> row : cleanRuleMapper.selectRawQaLogData()) {
+                rawData.add(buildRawRow(row.get("id"), row.get("evaluation_text"), DataSourceType.qa_log));
+            }
         }
 
         context.setRawData(rawData);
@@ -127,5 +135,17 @@ public class CleanRuleExecuteServiceImpl implements ICleanRuleExecuteService {
         if (poList != null && !poList.isEmpty()) {
             cleanRuleMapper.batchInsertResults(poList);
         }
+    }
+
+    /**
+     * 将单条原始数据的一列内容组装为统一结构的原始行，供清洗规则处理。
+     * 交互表会分别把「评价内容」和「交互内容」拆成两条；qa_log 只有 query 拆一条。
+     */
+    private Map<String, Object> buildRawRow(Object id, Object content, DataSourceType sourceType) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", id);
+        row.put("evaluation_text", content);
+        row.put("source_type", sourceType.name());
+        return row;
     }
 }

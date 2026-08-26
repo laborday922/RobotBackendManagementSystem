@@ -45,10 +45,11 @@ INSERT INTO `clean_execute_record` VALUES (2, 21, 'SCHEDULED', 1, NULL, '2026-08
 DROP TABLE IF EXISTS `clean_interaction_result`;
 CREATE TABLE `clean_interaction_result`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `source_id` bigint NULL DEFAULT NULL COMMENT '原表 t_interaction_history.id',
+  `source_id` bigint NULL DEFAULT NULL COMMENT '来源表记录ID（t_interaction_history.id / qa_log.id）',
   `task_id` bigint NULL DEFAULT NULL COMMENT '清洗任务ID',
   `config_id` bigint NULL DEFAULT NULL COMMENT '规则配置ID',
-  `raw_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL COMMENT '原始 evaluation_text',
+  `source_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '数据源类型 t_interaction_history/qa_log',
+  `raw_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL COMMENT '原始评价文本/query',
   `clean_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL COMMENT '清洗后内容',
   `status_label` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '标签（正常/异常/脏数据）',
   `clean_time` datetime NULL DEFAULT NULL,
@@ -59,40 +60,40 @@ CREATE TABLE `clean_interaction_result`  (
 -- ----------------------------
 -- Records of clean_interaction_result
 -- ----------------------------
-INSERT INTO `clean_interaction_result` VALUES (45, 1, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (46, 2, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (47, 20, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (48, 21, NULL, NULL, '任务正常完成，挺好', '任务正常完成，挺好', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (49, 22, NULL, NULL, 'good', 'good', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (50, 23, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (51, 24, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (52, 25, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (53, 26, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (54, 27, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (55, 28, NULL, NULL, '差', '差', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (56, 29, NULL, NULL, '多步骤正常完成', '多步骤正常完成', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (57, 30, NULL, NULL, '好', '好', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (58, 31, NULL, NULL, '好', '好', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (59, 32, NULL, NULL, '可以可以', '可以可以', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (60, 33, NULL, NULL, '还行', '还行', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (61, 34, NULL, NULL, '反应慢', '反应慢', NULL, '2026-08-18 17:32:48');
-INSERT INTO `clean_interaction_result` VALUES (62, 1, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (63, 2, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (64, 20, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (65, 21, 21, 21, '任务正常完成，挺好', '任务正常完成，挺好', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (66, 22, 21, 21, 'good', 'good', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (67, 23, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (68, 24, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (69, 25, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (70, 26, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (71, 27, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (72, 28, 21, 21, '差', '差', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (73, 29, 21, 21, '多步骤正常完成', '多步骤正常完成', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (74, 30, 21, 21, '好', '好', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (75, 31, 21, 21, '好', '好', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (76, 32, 21, 21, '可以可以', '可以可以', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (77, 33, 21, 21, '还行', '还行', NULL, '2026-08-18 17:33:10');
-INSERT INTO `clean_interaction_result` VALUES (78, 34, 21, 21, '反应慢', '反应慢', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (45, 1, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (46, 2, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (47, 20, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (48, 21, NULL, NULL, '任务正常完成，挺好', '任务正常完成，挺好', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (49, 22, NULL, NULL, 'good', 'good', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (50, 23, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (51, 24, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (52, 25, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (53, 26, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (54, 27, NULL, NULL, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (55, 28, NULL, NULL, '差', '差', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (56, 29, NULL, NULL, '多步骤正常完成', '多步骤正常完成', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (57, 30, NULL, NULL, '好', '好', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (58, 31, NULL, NULL, '好', '好', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (59, 32, NULL, NULL, '可以可以', '可以可以', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (60, 33, NULL, NULL, '还行', '还行', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (61, 34, NULL, NULL, '反应慢', '反应慢', NULL, '2026-08-18 17:32:48');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (62, 1, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (63, 2, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (64, 20, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (65, 21, 21, 21, '任务正常完成，挺好', '任务正常完成，挺好', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (66, 22, 21, 21, 'good', 'good', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (67, 23, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (68, 24, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (69, 25, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (70, 26, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (71, 27, 21, 21, '任务正常完成', '任务正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (72, 28, 21, 21, '差', '差', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (73, 29, 21, 21, '多步骤正常完成', '多步骤正常完成', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (74, 30, 21, 21, '好', '好', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (75, 31, 21, 21, '好', '好', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (76, 32, 21, 21, '可以可以', '可以可以', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (77, 33, 21, 21, '还行', '还行', NULL, '2026-08-18 17:33:10');
+INSERT INTO `clean_interaction_result` (`id`, `source_id`, `task_id`, `config_id`, `raw_content`, `clean_content`, `status_label`, `clean_time`) VALUES (78, 34, 21, 21, '反应慢', '反应慢', NULL, '2026-08-18 17:33:10');
 
 -- ----------------------------
 -- Table structure for clean_rule_config

@@ -71,6 +71,7 @@ public class CleanRule {
             // 3️.构建结果
             var result = new com.ruoyi.data.clean.domain.bo.CleanResult();
             result.setSourceId(sourceId);
+            result.setSourceType((String) row.get("source_type"));
             result.setTaskId(context.getTaskId());
             result.setConfigId(context.getConfigId());
             result.setRawContent(text);

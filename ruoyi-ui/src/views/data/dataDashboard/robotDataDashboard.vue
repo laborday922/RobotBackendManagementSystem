@@ -418,7 +418,7 @@ export default {
         const onlineCounts = this.groups.map(g => g.onlineCount)
         this.robotGroupBarChart.setOption({
           tooltip: {trigger: "axis", axisPointer: {type: "shadow"}, formatter: '{b}<br/>在线数量: {c}'},
-          grid: {top: 20, bottom: 20, left: 70, right: 50, containLabel: true},
+          grid: {top: 20, bottom: 20, left: 50, right: 80, containLabel: true},
           xAxis: {
             type: "value",
             name: "在线数量",

@@ -199,10 +199,9 @@ export default {
     this.loadAllDataExceptWordCloud()
     this.loadWordCloudAsync()
 
-    // 每 5 秒自动刷新所有数据
+      // 每 5 秒自动刷新除词云外的数据
     this.dataTimer = setInterval(() => {
       this.loadAllDataExceptWordCloud()
-      this.loadWordCloudAsync()
     }, 5000)
 
     window.addEventListener("resize", this.resizeCharts)

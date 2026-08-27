@@ -21,6 +21,9 @@
             AND c.clean_time &lt;= #{endTime}
         </if>
 
+        ORDER BY c.clean_time DESC
+        LIMIT 500
+
     </select>
 
     <select id="selectRobotLatestPositions"

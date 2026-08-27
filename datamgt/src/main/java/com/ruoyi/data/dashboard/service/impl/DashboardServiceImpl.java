@@ -2,6 +2,7 @@ package com.ruoyi.data.dashboard.service.impl;
 
 import com.ruoyi.common.threadlocal.TenantContext;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.data.ai.service.AiAnalysisService;
 import com.ruoyi.data.dashboard.controller.vo.*;
 import com.ruoyi.data.dashboard.mapper.DashboardMapper;
@@ -14,6 +15,7 @@ import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
@@ -23,6 +25,9 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Autowired
     private AiAnalysisService aiAnalysisService;
+
+    @Autowired
+    private RedisCache redisCache;
 
     /**
      * 动态获取当前租户ID（根据用户权限决定是否过滤）
@@ -44,6 +49,12 @@ public class DashboardServiceImpl implements DashboardService {
         Integer rating = convertRating(feedbackType);
         Long tenantId = getQueryTenantId();
 
+        String cacheKey = buildWordCloudCacheKey(tenantId, startTime, endTime, feedbackType);
+        Object cached = redisCache.getCacheObject(cacheKey);
+        if (cached instanceof List) {
+            return (List<WordCloudItem>) cached;
+        }
+
         // 1️.根据租户、时间范围、评分类型从数据库中查询原始评价记录
         List<InteractionEvaluationPo> records =
                 dashboardMapper.selectEvaluationTexts(tenantId, startTime, endTime, rating);
@@ -57,7 +68,17 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         // 3️.调用AI分析服务对文本集合进行分词、统计词频，生成词云数据
-        return aiAnalysisService.generateWordCloud(texts);
+        List<WordCloudItem> result = aiAnalysisService.generateWordCloud(texts);
+        redisCache.setCacheObject(cacheKey, result, 3600, TimeUnit.SECONDS);
+        return result;
+    }
+
+    private String buildWordCloudCacheKey(Long tenantId, Date startTime, Date endTime, String feedbackType) {
+        String tenantPart = tenantId == null ? "all" : tenantId.toString();
+        String startPart = startTime == null ? "null" : String.valueOf(startTime.getTime());
+        String endPart = endTime == null ? "null" : String.valueOf(endTime.getTime());
+        String typePart = feedbackType == null ? "all" : feedbackType;
+        return "dashboard:wordcloud:v1:" + tenantPart + ":" + startPart + ":" + endPart + ":" + typePart;
     }
 
     private Integer convertRating(String type) {

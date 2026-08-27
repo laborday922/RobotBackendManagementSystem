@@ -5,6 +5,8 @@ import com.ruoyi.data.ai.service.AiAnalysisService;
 import com.ruoyi.data.ai.service.SiliconFlowService;
 import com.ruoyi.data.ai.util.JsonParseUtil;
 import com.ruoyi.data.dashboard.controller.vo.WordCloudItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,8 @@ import java.util.List;
 
 @Service
 public class AiAnalysisServiceImpl implements AiAnalysisService {
+
+    private static final Logger log = LoggerFactory.getLogger(AiAnalysisServiceImpl.class);
 
     @Autowired
     private SiliconFlowService siliconFlowService;
@@ -43,7 +47,12 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
         try {
             return JsonParseUtil.parseList(aiResult, WordCloudItem.class);
         } catch (Exception e) {
-            throw new RuntimeException("AI词云解析失败：" + aiResult);
+            String safe = aiResult == null ? "" : aiResult;
+            if (safe.length() > 2000) {
+                safe = safe.substring(0, 2000);
+            }
+            log.warn("AI词云解析失败，已降级为空列表。aiResult={}", safe, e);
+            return Collections.emptyList();
         }
     }
 }

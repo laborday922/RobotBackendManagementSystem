@@ -424,6 +424,7 @@ export default {
             type: "value",
             name: "在线数量",
             nameTextStyle: {color: "#b0c2f9"},
+            minInterval: 1,
             axisLabel: {color: "#b0c2f9", formatter: (value) => Math.floor(value)},
             splitLine: {lineStyle: {color: "#2a3e6e"}}
           },

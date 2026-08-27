@@ -183,15 +183,15 @@ export const constantRoutes = [
     icon: 'build'
   },
   children: [
-    {
-      path: 'reception',
-      component: () => import('@/views/function/reception/index.vue'),
-      name: 'Reception',
-      meta: {
-        title: '业务接待',
-        icon: 'user'
-      }
-    },
+    // {
+    //   path: 'reception',
+    //   component: () => import('@/views/function/reception/index.vue'),
+    //   name: 'Reception',
+    //   meta: {
+    //     title: '业务接待',
+    //     icon: 'user'
+    //   }
+    // },
     {
       path: 'nav',
       component: () => import('@/views/function/nav/index.vue'),

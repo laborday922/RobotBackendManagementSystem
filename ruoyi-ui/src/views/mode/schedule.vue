@@ -1,34 +1,6 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-calendar-alt"></i> 模式排程
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" size="small" @click="handleAdd">
-          <i class="fas fa-plus"></i> 新建排程
-        </el-button>
-        <el-button
-          type="success"
-          size="small"
-          :class="{ active: viewMode === 'calendar' }"
-          @click="switchToCalendarView"
-        >
-          <i class="fas fa-calendar-alt"></i> 日历视图
-        </el-button>
-        <el-button
-          type="primary"
-          size="small"
-          :class="{ active: viewMode === 'table' }"
-          @click="viewMode = 'table'"
-        >
-          <i class="fas fa-table"></i> 表格视图
-        </el-button>
-      </div>
-    </div>
-
-    <div class="card-body">
-      <!-- 搜索栏 -->
+  <div class="app-container">
+    <el-card class="search-card" shadow="never">
       <div class="filter-bar">
         <el-input
           v-model="queryParams.scheduleName"
@@ -67,42 +39,78 @@
 
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" style="margin-left: auto;" />
       </div>
+    </el-card>
 
-      <!-- 调度统计卡片 -->
-      <div class="stats-cards">
-        <div class="stat-card total" @click="showScheduleDetail('total')">
-          <div class="stat-icon"><i class="fas fa-database"></i></div>
+    <el-row :gutter="16" class="stats-cards">
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover" @click.native="showScheduleDetail('total')">
+          <div class="stat-icon blue"><i class="fas fa-database"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ totalSchedules }}</div>
             <div class="stat-label">总调度数</div>
           </div>
-        </div>
-        <div class="stat-card running" @click="showScheduleDetail('running')">
-          <div class="stat-icon"><i class="fas fa-play-circle"></i></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover" @click.native="showScheduleDetail('running')">
+          <div class="stat-icon green"><i class="fas fa-play-circle"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ runningSchedules }}</div>
             <div class="stat-label">进行中</div>
           </div>
-        </div>
-        <div class="stat-card paused" @click="showScheduleDetail('paused')">
-          <div class="stat-icon"><i class="fas fa-pause-circle"></i></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover" @click.native="showScheduleDetail('paused')">
+          <div class="stat-icon orange"><i class="fas fa-pause-circle"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ pausedSchedules }}</div>
             <div class="stat-label">已停用</div>
           </div>
-        </div>
-        <div class="stat-card pending" @click="showScheduleDetail('pending')">
-          <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover" @click.native="showScheduleDetail('pending')">
+          <div class="stat-icon gray"><i class="fas fa-clock"></i></div>
           <div class="stat-info">
             <div class="stat-value">{{ pendingSchedules }}</div>
             <div class="stat-label">待执行</div>
           </div>
-        </div>
-      </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-      <!-- 日历视图区域 -->
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-calendar-alt"></i> 模式排程
+          </div>
+          <div class="header-actions">
+            <el-button type="primary" size="small" @click="handleAdd">
+              <i class="fas fa-plus"></i> 新建排程
+            </el-button>
+            <el-button
+              type="success"
+              size="small"
+              :class="{ active: viewMode === 'calendar' }"
+              @click="switchToCalendarView"
+            >
+              <i class="fas fa-calendar-alt"></i> 日历视图
+            </el-button>
+            <el-button
+              type="primary"
+              size="small"
+              :class="{ active: viewMode === 'table' }"
+              @click="viewMode = 'table'"
+            >
+              <i class="fas fa-table"></i> 表格视图
+            </el-button>
+          </div>
+        </div>
+      </template>
+
       <div v-if="viewMode === 'calendar'" class="calendar-view">
-        <!-- 日历统计信息卡片 -->
         <div class="stats-cards small">
           <div class="stat-item success">
             <div class="stat-value">{{ calendarStats.success }}</div>
@@ -301,7 +309,7 @@
           />
         </div>
       </div>
-    </div>
+    </el-card>
 
     <!-- 添加或修改排程对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="750px" append-to-body>
@@ -1441,19 +1449,19 @@ export default {
 </script>
 
 <style scoped>
-.card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
-  margin-bottom: 24px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
+.app-container {
+  padding: 20px;
+}
+
+.search-card {
+  margin-bottom: 20px;
+}
+
+.table-card {
+  margin-bottom: 20px;
 }
 
 .card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #E5E7EB;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1474,10 +1482,6 @@ export default {
   color: #3976E4;
 }
 
-.card-body {
-  padding: 24px 20px;
-}
-
 .header-actions {
   display: flex;
   gap: 8px;
@@ -1488,12 +1492,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
-  background-color: #f8f9fa;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #E5E7EB;
 }
 
 .filter-bar i {
@@ -1502,56 +1501,58 @@ export default {
 }
 
 .stats-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .stats-cards.small {
   grid-template-columns: repeat(6, 1fr);
+  display: grid;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
 .stat-card {
-  background: white;
+  cursor: pointer;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+::v-deep .stat-card .el-card__body {
   display: flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-left: 4px solid transparent;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card.total {
-  border-left-color: #3976E4;
-}
-
-.stat-card.running {
-  border-left-color: #67c23a;
-}
-
-.stat-card.paused {
-  border-left-color: #e6a23c;
-}
-
-.stat-card.pending {
-  border-left-color: #909399;
+  padding: 16px;
 }
 
 .stat-icon {
-  font-size: 28px;
-  margin-right: 8px;
-  min-width: 40px;
-  text-align: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.stat-icon.blue {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.stat-icon.green {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.stat-icon.orange {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+
+.stat-icon.gray {
+  background-color: #f5f5f5;
+  color: #999;
 }
 
 .stat-info {
@@ -1562,12 +1563,12 @@ export default {
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
-  color: #4D4D4D;
+  color: #333;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #808080;
+  color: #666;
   margin-top: 4px;
 }
 
@@ -1918,10 +1919,6 @@ export default {
 }
 
 @media (max-width: 992px) {
-  .stats-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .stats-cards.small {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1946,10 +1943,6 @@ export default {
   .filter-bar .el-select,
   .filter-bar .el-input {
     width: 100% !important;
-  }
-
-  .stats-cards {
-    grid-template-columns: 1fr;
   }
 
   .stats-cards.small {

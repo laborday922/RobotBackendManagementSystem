@@ -1,18 +1,20 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">
-          <i class="fas fa-comments"></i> 问答管理
+  <div class="app-container">
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <i class="fas fa-comments"></i> 问答管理
+            </div>
+            <div class="card-desc">统一维护 Dify / OpenAI 问答配置，并为机器人分配唯一的问答入口。</div>
+          </div>
+          <div class="page-badge">
+            <span class="badge"><i class="fas fa-robot"></i> 机器人问答管理台</span>
+          </div>
         </div>
-        <div class="card-desc">统一维护 Dify / OpenAI 问答配置，并为机器人分配唯一的问答入口。</div>
-      </div>
-      <div class="page-badge">
-        <span class="badge"><i class="fas fa-robot"></i> 机器人问答管理台</span>
-      </div>
-    </div>
+      </template>
 
-    <div class="card-body">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="问答配置" name="chat">
           <div class="sub-card">
@@ -163,9 +165,9 @@
           </div>
         </el-tab-pane>
       </el-tabs>
-    </div>
+    </el-card>
 
-    <el-dialog :title="chatDialogTitle" :visible.sync="chatDialogOpen" width="650px" append-to-body class="global-dialog">
+    <el-dialog :title="chatDialogTitle" :visible.sync="chatDialogOpen" width="650px" append-to-body>
       <el-form ref="chatForm" :model="chatForm" :rules="chatRules" label-width="110px">
         <el-form-item label="问答名称" prop="chatName">
           <el-input v-model="chatForm.chatName" placeholder="请输入问答名称" maxlength="100" />
@@ -209,7 +211,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog :title="relDialogTitle" :visible.sync="relDialogOpen" width="520px" append-to-body class="global-dialog">
+    <el-dialog :title="relDialogTitle" :visible.sync="relDialogOpen" width="520px" append-to-body>
       <el-form ref="relForm" :model="relForm" :rules="relRules" label-width="110px">
         <el-form-item label="机器人" prop="robotId">
           <el-select v-model="relForm.robotId" placeholder="请选择机器人" filterable style="width: 100%">
@@ -499,16 +501,10 @@ export default {
 </script>
 
 <style scoped>
-.card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(57, 118, 228, 0.08);
-  overflow: hidden;
-}
+.app-container { padding: 20px; }
+.table-card { margin-bottom: 20px; }
 
 .card-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #eef2f8;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -534,10 +530,6 @@ export default {
   color: #7a869a;
   font-size: 13px;
   line-height: 1.6;
-}
-
-.card-body {
-  padding: 24px 20px;
 }
 
 .page-badge {
@@ -628,10 +620,7 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .app-container { padding: 10px; }
 
   .page-badge {
     width: 100%;

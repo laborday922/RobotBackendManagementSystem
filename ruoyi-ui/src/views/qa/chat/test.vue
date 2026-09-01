@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-row :gutter="12">
       <el-col :span="8">
-        <el-card shadow="never">
+        <el-card shadow="never" class="table-card">
           <div slot="header">
             <span>机器人请求模拟</span>
           </div>
@@ -35,7 +35,7 @@
         </el-card>
       </el-col>
       <el-col :span="16">
-        <el-card shadow="never" class="chat-card">
+        <el-card shadow="never" class="chat-card table-card">
           <div slot="header" class="chat-header">
             <span>流式输出</span>
             <span class="status" :class="{ on: streaming }">{{ streaming ? 'Streaming' : 'Idle' }}</span>
@@ -220,6 +220,10 @@ export default {
 </script>
 
 <style scoped>
+.table-card {
+  margin-bottom: 20px;
+}
+
 .chat-card .chat-body {
   height: calc(100vh - 210px);
   overflow: auto;

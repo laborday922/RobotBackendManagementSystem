@@ -1,51 +1,52 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-edit"></i> 编辑模式
-      </div>
-      <!-- 新增按钮已注释，系统仅保留3个预留模式 -->
-      <!-- <div>
-        <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['system:mode:add']">
-          <i class="fas fa-plus"></i> 新增
-        </el-button>
-      </div> -->
-    </div>
-
-    <div class="card-body">
-      <!-- 搜索栏 -->
-      <div class="filter-bar">
-        <el-input
-          v-model="queryParams.modeName"
-          placeholder="搜索模式名称"
-          style="width:200px;"
-          size="small"
-          clearable
-          @keyup.enter.native="handleQuery"
-        >
-          <template #prefix><i class="fas fa-search"></i></template>
-        </el-input>
-        <el-select v-model="queryParams.modeType" placeholder="模式类型" clearable size="small" style="width:150px;">
-          <el-option label="系统模式" value="system" />
-          <el-option label="自定义模式" value="custom" />
-        </el-select>
-        <el-select v-model="queryParams.enabled" placeholder="状态" clearable size="small" style="width:150px;">
-          <el-option label="已启用" value="1" />
-          <el-option label="已禁用" value="0" />
-        </el-select>
-        <el-button type="primary" size="small" @click="handleQuery">
-          <i class="fas fa-search"></i> 查询
-        </el-button>
-        <el-button size="small" @click="resetQuery">
-          <i class="fas fa-undo"></i> 重置
-        </el-button>
-        <div style="margin-left: auto; display: flex; gap: 8px;">
-          <el-button size="small" @click="handleSort">
-            <i class="fas fa-sort-amount-down"></i> 排序
-          </el-button>
-          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+  <div class="app-container">
+    <div class="table-card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fas fa-edit"></i> 编辑模式
         </div>
+        <!-- 新增按钮已注释，系统仅保留3个预留模式 -->
+        <!-- <div>
+          <el-button type="primary" size="small" @click="handleAdd" v-hasPermi="['system:mode:add']">
+            <i class="fas fa-plus"></i> 新增
+          </el-button>
+        </div> -->
       </div>
+
+      <div class="card-body">
+        <!-- 搜索栏
+        <div class="filter-bar">
+          <el-input
+            v-model="queryParams.modeName"
+            placeholder="搜索模式名称"
+            style="width:200px;"
+            size="small"
+            clearable
+            @keyup.enter.native="handleQuery"
+          >
+            <template #prefix><i class="fas fa-search"></i></template>
+          </el-input>
+          <el-select v-model="queryParams.modeType" placeholder="模式类型" clearable size="small" style="width:150px;">
+            <el-option label="系统模式" value="system" />
+            <el-option label="自定义模式" value="custom" />
+          </el-select>
+          <el-select v-model="queryParams.enabled" placeholder="状态" clearable size="small" style="width:150px;">
+            <el-option label="已启用" value="1" />
+            <el-option label="已禁用" value="0" />
+          </el-select>
+          <el-button type="primary" size="small" @click="handleQuery">
+            <i class="fas fa-search"></i> 查询
+          </el-button>
+          <el-button size="small" @click="resetQuery">
+            <i class="fas fa-undo"></i> 重置
+          </el-button>
+          <div style="margin-left: auto; display: flex; gap: 8px;">
+            <el-button size="small" @click="handleSort">
+              <i class="fas fa-sort-amount-down"></i> 排序
+            </el-button>
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+        </div> -->
 
       <!-- 模式卡片列表 -->
       <div class="mode-grid">
@@ -147,7 +148,7 @@
           @pagination="getList"
         />
       </div>
-    </div>
+      </div>
 
     <!-- 添加或修改模式对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="800px" append-to-body>
@@ -382,6 +383,7 @@
         <el-button @click="sortDialogOpen = false">取 消</el-button>
       </div>
     </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -975,7 +977,11 @@ export default {
 </script>
 
 <style scoped>
-.card {
+.app-container {
+  padding: 20px;
+}
+
+.table-card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);

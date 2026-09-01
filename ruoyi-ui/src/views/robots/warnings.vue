@@ -37,63 +37,69 @@
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
-    <el-table v-loading="loading" :data="warningsList" @selection-change="handleSelectionChange" style="width: 100%" stripe highlight-current-row>
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="预警ID" align="center" prop="id" width="70" show-overflow-tooltip />
-      <el-table-column label="机器人ID" align="center" prop="robotId" width="90" show-overflow-tooltip />
-      <el-table-column label="预警类型" align="center" prop="warningType" width="110" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.warningType === '0'" type="warning" effect="dark">低电量</el-tag>
-          <el-tag v-else-if="scope.row.warningType === '1'" type="danger" effect="light">硬件异常</el-tag>
-          <el-tag v-else-if="scope.row.warningType === '2'" type="danger" effect="dark">硬件损坏</el-tag>
-          <el-tag v-else-if="scope.row.warningType === '3'" type="info" effect="dark">离线</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="预警描述" align="center" prop="warningContent" width="150" show-overflow-tooltip />
-      <el-table-column label="预警级别" align="center" prop="warningLevel" width="100" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <el-tag v-if="scope.row.warningLevel === '0'" type="success">提示</el-tag>
-          <el-tag v-else-if="scope.row.warningLevel === '1'" type="warning">警告</el-tag>
-          <el-tag v-else-if="scope.row.warningLevel === '2'" type="danger">错误</el-tag>
-        </template>
-      </el-table-column>
-      <!-- 未处理状态不显示已处理相关字段 -->
-      <el-table-column v-if="statusType === '1'" label="处理完成时间" align="center" prop="resolveTime" width="160" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <i class="el-icon-time"></i>
-          <span style="margin-left: 5px;">{{ parseTime(scope.row.resolveTime, '{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="statusType === '1'" label="处理人" align="center" prop="resolveUser" width="100" show-overflow-tooltip />
-      <el-table-column v-if="statusType === '1'" label="处理备注" align="center" prop="resolveNote" width="140" show-overflow-tooltip />
-      <el-table-column label="预警创建时间" align="center" prop="createdAt" width="160" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <i class="el-icon-time"></i>
-          <span style="margin-left: 5px;">{{ parseTime(scope.row.createdAt, '{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
-        <template slot-scope="scope">
-          <!-- 仅未处理状态显示处理按钮 -->
-          <el-button
-            v-if="statusType === '0'"
-            size="mini"
-            type="text"
-            icon="el-icon-check"
-            @click="handleDeal(scope.row)"
-            v-hasPermi="['robots:warnings:deal']"
-          >处理</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>预警列表</span>
+        </div>
+      </template>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+      <el-table v-loading="loading" :data="warningsList" @selection-change="handleSelectionChange" style="width: 100%" border>
+        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column label="预警ID" align="center" prop="id" width="70" show-overflow-tooltip />
+        <el-table-column label="机器人ID" align="center" prop="robotId" width="100" show-overflow-tooltip />
+        <el-table-column label="预警类型" align="center" prop="warningType" width="120" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.warningType === '0'" type="warning" effect="dark">低电量</el-tag>
+            <el-tag v-else-if="scope.row.warningType === '1'" type="danger" effect="light">硬件异常</el-tag>
+            <el-tag v-else-if="scope.row.warningType === '2'" type="danger" effect="dark">硬件损坏</el-tag>
+            <el-tag v-else-if="scope.row.warningType === '3'" type="info" effect="dark">离线</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="预警描述" align="center" prop="warningContent" min-width="200" show-overflow-tooltip />
+        <el-table-column label="预警级别" align="center" prop="warningLevel" width="100" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.warningLevel === '0'" type="success">提示</el-tag>
+            <el-tag v-else-if="scope.row.warningLevel === '1'" type="warning">警告</el-tag>
+            <el-tag v-else-if="scope.row.warningLevel === '2'" type="danger">错误</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="statusType === '1'" label="处理完成时间" align="center" prop="resolveTime" width="160" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <i class="el-icon-time"></i>
+            <span style="margin-left: 5px;">{{ parseTime(scope.row.resolveTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="statusType === '1'" label="处理人" align="center" prop="resolveUser" width="100" show-overflow-tooltip />
+        <el-table-column v-if="statusType === '1'" label="处理备注" align="center" prop="resolveNote" width="140" show-overflow-tooltip />
+        <el-table-column label="预警创建时间" align="center" prop="createdAt" width="180" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <i class="el-icon-time"></i>
+            <span style="margin-left: 5px;">{{ parseTime(scope.row.createdAt, '{y}-{m}-{d} {h}:{i}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100">
+          <template slot-scope="scope">
+            <el-button
+              v-if="statusType === '0'"
+              size="mini"
+              type="text"
+              icon="el-icon-check"
+              @click="handleDeal(scope.row)"
+              v-hasPermi="['robots:warnings:deal']"
+            >处理</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
+    </el-card>
 
     <!-- 处理机器人预警对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="550px" append-to-body @close="cancel">
@@ -263,3 +269,19 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.app-container {
+  padding: 20px;
+}
+
+.table-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>

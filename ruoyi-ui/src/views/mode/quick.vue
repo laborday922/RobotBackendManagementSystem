@@ -1,24 +1,25 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-bolt"></i> 快捷操作
+  <div class="app-container">
+    <div class="table-card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fas fa-bolt"></i> 快捷操作
+        </div>
+        <div class="header-actions">
+          <el-button size="small" type="warning" @click="showDebugPanel = true">
+            <i class="el-icon-setting"></i> 调试工具
+          </el-button>
+          <el-button size="small" type="primary" @click="refreshRobotList" :loading="refreshing">
+            <i class="el-icon-refresh"></i> 刷新
+          </el-button>
+        </div>
       </div>
-      <div class="header-actions">
-        <el-button size="small" type="warning" @click="showDebugPanel = true">
-          <i class="el-icon-setting"></i> 调试工具
-        </el-button>
-        <el-button size="small" type="primary" @click="refreshRobotList" :loading="refreshing">
-          <i class="el-icon-refresh"></i> 刷新
-        </el-button>
-      </div>
-    </div>
 
-    <div class="card-body">
-      <!-- 机器人选择区域 -->
-      <div class="filter-bar">
-        <span><i class="fas fa-robot"></i> 选择操作对象</span>
-      </div>
+      <div class="card-body">
+        <!-- 机器人选择区域 -->
+        <div class="filter-bar">
+          <span><i class="fas fa-robot"></i> 选择操作对象</span>
+        </div>
 
       <!-- 选择方式选项 -->
       <el-radio-group v-model="selectionMode" @change="handleSelectionModeChange" style="margin-bottom: 20px;">
@@ -160,6 +161,7 @@
           <el-button type="primary" @click="resultDialogVisible = false">确 定</el-button>
         </span>
       </el-dialog>
+      </div>
     </div>
 
     <!-- 调试面板 -->
@@ -1032,7 +1034,11 @@ export default {
 </script>
 
 <style scoped>
-.card {
+.app-container {
+  padding: 20px;
+}
+
+.table-card {
   background: white;
   border-radius: 10px;
   box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);

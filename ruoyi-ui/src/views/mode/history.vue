@@ -1,13 +1,6 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-history"></i> 历史记录
-      </div>
-    </div>
-
-    <div class="card-body">
-      <!-- 筛选区域 -->
+  <div class="app-container">
+    <el-card class="search-card" shadow="never">
       <div class="filter-bar">
         <el-select v-model="queryParams.operationType" placeholder="操作类型" clearable style="width: 150px;">
           <el-option label="紧急操作" value="emergency" />
@@ -22,16 +15,16 @@
           start-placeholder="开始日期"
           end-placeholder="结束日期"
           value-format="yyyy-MM-dd"
-          style="width: 300px;">
-        </el-date-picker>
+          style="width: 300px;"
+        />
 
-        <!-- 机器人下拉框 - 兼容后端返回的 id 和 name 字段 -->
         <el-select v-model="queryParams.robotId" placeholder="机器人" clearable filterable style="width: 150px;">
           <el-option
             v-for="robot in robotOptions"
             :key="robot.id || robot.robotId"
             :label="robot.name || robot.robotName"
-            :value="robot.id || robot.robotId" />
+            :value="robot.id || robot.robotId"
+          />
         </el-select>
 
         <el-button type="primary" @click="handleQuery">
@@ -44,21 +37,29 @@
           <i class="fas fa-trash"></i> 清空记录
         </el-button>
       </div>
+    </el-card>
 
-      <!-- 统计卡片 - 显示全量统计数据 -->
-      <div class="stats-cards">
-        <div class="stat-card" :class="stat.type" v-for="stat in statistics" :key="stat.type" @click="filterByType(stat.type)">
-          <div class="stat-icon">
+    <el-row :gutter="16" class="stats-cards">
+      <el-col v-for="stat in statistics" :key="stat.type" :xs="24" :sm="12" :md="6">
+        <el-card class="stat-card" shadow="hover" @click.native="filterByType(stat.type)">
+          <div class="stat-icon" :class="getStatIconColor(stat.type)">
             <i :class="stat.icon"></i>
           </div>
-          <div class="stat-content">
+          <div class="stat-info">
             <div class="stat-value">{{ stat.count }}</div>
             <div class="stat-label">{{ stat.label }}</div>
           </div>
-        </div>
-      </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-      <!-- 历史记录表格 -->
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>历史记录</span>
+        </div>
+      </template>
+
       <el-table :data="historyList" v-loading="loading" border style="width: 100%">
         <el-table-column prop="operationTime" label="操作时间" width="160" align="center">
           <template slot-scope="scope">
@@ -96,7 +97,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-wrap">
         <pagination
           v-show="total > 0"
@@ -106,15 +106,15 @@
           @pagination="getList"
         />
       </div>
-    </div>
+    </el-card>
 
-    <!-- 详情对话框 - 调整垂直位置靠下一些 -->
     <el-dialog
       :title="detailTitle"
       :visible.sync="detailVisible"
       width="500px"
       top="15vh"
-      :before-close="handleClose">
+      :before-close="handleClose"
+    >
       <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="操作时间">{{ parseTime(detailData.operationTime) }}</el-descriptions-item>
         <el-descriptions-item label="操作类型">{{ getOperationTypeText(detailData.operationType) }}</el-descriptions-item>
@@ -431,57 +431,33 @@ export default {
     viewDetail(row) {
       this.detailData = row;
       this.detailVisible = true;
+    },
+
+    getStatIconColor(type) {
+      if (type === 'total') return 'blue'
+      if (type === 'emergency') return 'red'
+      if (type === 'status') return 'orange'
+      if (type === 'system') return 'green'
+      return 'blue'
     }
   }
 };
 </script>
 
 <style scoped>
-.card {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
-  margin-bottom: 24px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
+.app-container {
+  padding: 20px;
 }
 
-.card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #E5E7EB;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #000;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-title i {
-  color: #3976E4;
-}
-
-.card-body {
-  padding: 24px 20px;
+.search-card {
+  margin-bottom: 20px;
 }
 
 .filter-bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 24px;
   flex-wrap: wrap;
-  background-color: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #E5E7EB;
 }
 
 .filter-bar i {
@@ -490,84 +466,78 @@ export default {
 }
 
 .stats-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
-  background: white;
+  cursor: pointer;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+::v-deep .stat-card .el-card__body {
   display: flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-left: 4px solid transparent;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card.total {
-  border-left-color: #3976E4;
-}
-
-.stat-card.total .stat-icon {
-  color: #3976E4;
-}
-
-.stat-card.emergency {
-  border-left-color: #f56c6c;
-}
-
-.stat-card.emergency .stat-icon {
-  color: #f56c6c;
-}
-
-.stat-card.status {
-  border-left-color: #e6a23c;
-}
-
-.stat-card.status .stat-icon {
-  color: #e6a23c;
-}
-
-.stat-card.system {
-  border-left-color: #67c23a;
-}
-
-.stat-card.system .stat-icon {
-  color: #67c23a;
+  padding: 16px;
 }
 
 .stat-icon {
-  font-size: 28px;
-  margin-right: 8px;
-  min-width: 40px;
-  text-align: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-right: 16px;
+  flex-shrink: 0;
 }
 
-.stat-content {
+.stat-icon.blue {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.stat-icon.green {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.stat-icon.orange {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+
+.stat-icon.red {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+.stat-info {
   flex: 1;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
+  color: #333;
   line-height: 1.2;
-  color: #4D4D4D;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #808080;
+  color: #666;
   margin-top: 4px;
+}
+
+.table-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .pagination-wrap {
@@ -620,18 +590,7 @@ export default {
   border-top: 1px solid #EBEEF5;
 }
 
-/* 响应式样式 */
-@media (max-width: 992px) {
-  .stats-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
-  .stats-cards {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .filter-bar {
     flex-direction: column;
     align-items: stretch;
@@ -641,18 +600,6 @@ export default {
   .filter-bar .el-date-picker,
   .filter-bar .el-button {
     width: 100% !important;
-  }
-
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-}
-
-@media (max-width: 576px) {
-  .stats-cards {
-    grid-template-columns: 1fr;
   }
 
   ::v-deep .el-dialog {

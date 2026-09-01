@@ -1,33 +1,34 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-exchange-alt"></i> 模式切换
+  <div class="app-container">
+    <div class="table-card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fas fa-exchange-alt"></i> 模式切换
+        </div>
+        <el-tag type="info" size="small">当前生效模式: {{ activeModeName }}</el-tag>
       </div>
-      <el-tag type="info" size="small">当前生效模式: {{ activeModeName }}</el-tag>
-    </div>
 
-    <div class="card-body">
-      <!-- 机器人选择 -->
-      <div class="filter-bar">
-        <span><i class="fas fa-robot"></i> 选择目标机器人</span>
-        <el-select v-model="selectedRobotId" placeholder="请选择机器人" filterable clearable style="flex: 1;" @change="onRobotChange">
-          <el-option label="所有机器人" value="all"></el-option>
-          <el-option
-            v-for="robot in robotOptions"
-            :key="robot.robotId"
-            :label="robot.name"
-            :value="robot.robotId">
-            <span style="float: left">{{ robot.name }}</span>
-            <span style="float: right; color: #8492a6; font-size: 13px">
-              <el-tag :type="getStatusType(robot.status)" size="mini">
-                {{ getStatusText(robot.status) }}
-              </el-tag>
-              <span style="margin-left: 5px;">当前模式: {{ robot.currentModeName || '未知' }}</span>
-            </span>
-          </el-option>
-        </el-select>
-      </div>
+      <div class="card-body">
+        <!-- 机器人选择 -->
+        <div class="filter-bar">
+          <span><i class="fas fa-robot"></i> 选择目标机器人</span>
+          <el-select v-model="selectedRobotId" placeholder="请选择机器人" filterable clearable style="flex: 1;" @change="onRobotChange">
+            <el-option label="所有机器人" value="all"></el-option>
+            <el-option
+              v-for="robot in robotOptions"
+              :key="robot.robotId"
+              :label="robot.name"
+              :value="robot.robotId">
+              <span style="float: left">{{ robot.name }}</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">
+                <el-tag :type="getStatusType(robot.status)" size="mini">
+                  {{ getStatusText(robot.status) }}
+                </el-tag>
+                <span style="margin-left: 5px;">当前模式: {{ robot.currentModeName || '未知' }}</span>
+              </span>
+            </el-option>
+          </el-select>
+        </div>
 
       <!-- 模式切换按钮组 - 过滤掉 mode_id = 0 的"无"模式 -->
       <div class="mode-buttons">
@@ -133,19 +134,20 @@
           </el-button>
         </div>
       </div>
-    </div>
-
-    <!-- 充电模式结果弹窗 -->
-    <el-dialog :title="chargeResult.title" :visible.sync="chargeResultDialogVisible" width="30%">
-      <div class="result-content">
-        <i :class="chargeResult.icon" :style="{ color: chargeResult.color, fontSize: '48px' }"></i>
-        <p>{{ chargeResult.message }}</p>
-        <p v-if="chargeResult.detail" class="result-detail">{{ chargeResult.detail }}</p>
       </div>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="chargeResultDialogVisible = false">确 定</el-button>
-      </span>
-    </el-dialog>
+
+      <!-- 充电模式结果弹窗 -->
+      <el-dialog :title="chargeResult.title" :visible.sync="chargeResultDialogVisible" width="30%">
+        <div class="result-content">
+          <i :class="chargeResult.icon" :style="{ color: chargeResult.color, fontSize: '48px' }"></i>
+          <p>{{ chargeResult.message }}</p>
+          <p v-if="chargeResult.detail" class="result-detail">{{ chargeResult.detail }}</p>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="chargeResultDialogVisible = false">确 定</el-button>
+        </span>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -655,7 +657,11 @@ export default {
 </script>
 
 <style scoped>
-.card {
+.app-container {
+  padding: 20px;
+}
+
+.table-card {
   background: white;
   border-radius: 10px;
   box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.5);

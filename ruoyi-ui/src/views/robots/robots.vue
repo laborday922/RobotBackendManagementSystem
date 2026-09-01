@@ -1,8 +1,6 @@
 <template>
   <div class="app-container">
-
-    <!-- 搜索栏：卡片化美化 + 逻辑整洁 -->
-    <el-card class="search-panel" shadow="hover">
+    <el-card class="search-card" shadow="never">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px">
         <el-form-item label="在线状态" prop="status">
           <el-select v-model="queryParams.status" placeholder="请选择在线状态" clearable>
@@ -28,59 +26,41 @@
       </el-form>
     </el-card>
 
-    <!-- 工具栏 -->
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['robots:robots:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['robots:robots:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['robots:robots:remove']"
-        >删除</el-button>
-      </el-col>
-<!--      <el-col :span="1.5">-->
-<!--        <el-button-->
-<!--          type="warning"-->
-<!--          plain-->
-<!--          icon="el-icon-download"-->
-<!--          size="mini"-->
-<!--          @click="handleExport"-->
-<!--          v-hasPermi="['robots:robots:export']"-->
-<!--        >导出</el-button>-->
-<!--      </el-col>-->
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
     <!-- 表格卡片 -->
     <el-card class="table-card" shadow="never">
-      <div slot="header" class="clearfix card-header">
-        <span><i class="el-icon-robot"></i> 机器人管理列表</span>
-      </div>
-      <el-table v-loading="loading" :data="robotsList" @selection-change="handleSelectionChange" style="width: 100%" border stripe>
+      <template #header>
+        <div class="card-header">
+          <span>机器人管理列表</span>
+          <div class="card-actions">
+            <el-button
+              type="primary"
+              icon="el-icon-plus"
+              size="mini"
+              @click="handleAdd"
+              v-hasPermi="['robots:robots:add']"
+            >新增</el-button>
+            <el-button
+              type="success"
+              icon="el-icon-edit"
+              size="mini"
+              :disabled="single"
+              @click="handleUpdate"
+              v-hasPermi="['robots:robots:edit']"
+            >修改</el-button>
+            <el-button
+              type="danger"
+              icon="el-icon-delete"
+              size="mini"
+              :disabled="multiple"
+              @click="handleDelete"
+              v-hasPermi="['robots:robots:remove']"
+            >删除</el-button>
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+        </div>
+      </template>
+
+      <el-table v-loading="loading" :data="robotsList" @selection-change="handleSelectionChange" style="width: 100%" border>
         <el-table-column type="selection" width="50" align="center" />
         <el-table-column label="ID" align="center" prop="id" width="60" show-overflow-tooltip />
         <el-table-column label="编号" align="center" prop="code" width="100" show-overflow-tooltip />
@@ -130,7 +110,7 @@
             <el-tag :type="getModeTagType(scope.row.currentMode)" effect="light">{{ getModeName(scope.row.currentMode) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
           <template slot-scope="scope">
             <!-- 位置历史功能未完成，暂时隐藏 -->
             <!-- <el-button
@@ -156,10 +136,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
 
-    <!-- 分页 -->
-    <div class="pagination-box">
       <pagination
         v-show="total>0"
         :total="total"
@@ -167,10 +144,10 @@
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
-    </div>
+    </el-card>
 
     <!-- 弹窗：统一美化 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body class="global-dialog">
+    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="机器人编号" prop="code">
           <el-input v-model="form.code" placeholder="请输入机器人编号" />
@@ -430,67 +407,15 @@ export default {
 <style lang="scss" scoped>
 .app-container {
   padding: 20px;
-  background-color: #f5f7fa;
-  min-height: calc(100vh - 84px);
 }
 
-/* 搜索栏卡片美化 */
-.search-panel {
-  margin-bottom: 16px;
-  border-radius: 8px;
-  overflow: hidden;
-}
+.search-card { margin-bottom: 20px; }
 
-/* 表格卡片 */
 .table-card {
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 15px;
-
-  ::v-deep .el-card__header {
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
-    font-weight: 500;
-  }
-
-  ::v-deep .el-card__body {
-    padding: 0;
-  }
+  margin-bottom: 20px;
 }
 
-/* 分页 */
-.pagination-box {
-  text-align: right;
-  margin-top: 10px;
-}
-
-/* 表格样式 */
-::v-deep .el-table {
-  border: none;
-  --el-table-row-hover-bg-color: #ecf5ff;
-}
-::v-deep .el-table th {
-  background-color: #f5f7fa !important;
-  font-weight: 600;
-}
-
-/* 全局弹窗美化：所有弹窗统一渐变头部 */
-::v-deep .global-dialog .el-dialog__header {
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
-  color: #fff;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-}
-::v-deep .global-dialog .el-dialog__title {
-  color: #fff;
-  font-weight: 500;
-}
-::v-deep .global-dialog .el-dialog__close {
-  color: #fff !important;
-}
-::v-deep .global-dialog .el-dialog {
-  border-radius: 8px;
-  overflow: hidden;
-}
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.el-table .cell .el-button + .el-button { margin-left: 6px; }
 </style>

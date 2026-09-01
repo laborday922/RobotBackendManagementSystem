@@ -75,7 +75,7 @@
             <div v-show="robotViewMode === 'map'" id="robotMapChart" class="chart"></div>
             -->
             <div class="robot-table">
-              <el-table :data="robotLocationList" height="100%" size="mini" stripe>
+              <el-table :data="robotLocationList" height="100%" size="mini">
                 <el-table-column label="机器人" align="left" width="140" show-overflow-tooltip>
                   <template slot-scope="scope">
                     <span>{{ scope.row.name || scope.row.code || '-' }}</span>
@@ -764,7 +764,7 @@ export default {
 
 .robot-table ::v-deep .el-table {
   width: 100% !important;
-  background: transparent;
+  background: transparent !important;
   border: 1px solid rgba(31, 58, 138, 0.65);
   border-radius: 8px;
   overflow: hidden;
@@ -780,19 +780,25 @@ export default {
 
 .robot-table ::v-deep .el-table th {
   background: rgba(31, 58, 138, 0.18) !important;
-  color: #dbe6ff;
-  font-weight: 600;
+  color: #dbe6ff !important;
+  font-weight: 700 !important;
   border-bottom: 1px solid rgba(31, 58, 138, 0.8);
   border-right: none;
   padding: 8px 0;
 }
 
 .robot-table ::v-deep .el-table td {
-  background: rgba(0, 0, 0, 0.12);
-  color: #b0c2f9;
+  background: transparent;
+  color: #dbe6ff;
   border-bottom: 1px solid rgba(31, 58, 138, 0.45);
   border-right: none;
   padding: 8px 0;
+}
+
+.robot-table ::v-deep .el-table tr,
+.robot-table ::v-deep .el-table__body,
+.robot-table ::v-deep .el-table__body-wrapper {
+  background: transparent !important;
 }
 
 .robot-table ::v-deep .el-table .cell {

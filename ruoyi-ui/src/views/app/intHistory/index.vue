@@ -65,12 +65,12 @@
       </el-form>
     </div>
 
-    <!-- 原有：操作按钮区域 -->
+    <!-- 原有：操作按钮区域
     <el-row :gutter="15" class="operate-bar mb10">
       <el-col :span="24">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" class="right-toolbar" />
       </el-col>
-    </el-row>
+    </el-row> -->
 
     <!-- 原有：表格区域 -->
     <el-table

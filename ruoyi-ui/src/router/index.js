@@ -141,31 +141,31 @@ export const constantRoutes = [
   children: [
     {
       path: 'quick',
-      component: () => import('@/views/mode/quick/index'),
+      component: () => import('@/views/mode/quick'),
       name: 'Quick',
       meta: { title: '快捷操作', icon: 'star', noCache: true }
     },
     {
       path: 'switch',
-      component: () => import('@/views/mode/switch/index'),
+      component: () => import('@/views/mode/switch'),
       name: 'Switch',
       meta: { title: '模式切换', icon: 'switch', noCache: true }
     },
     {
       path: 'schedule',
-      component: () => import('@/views/mode/schedule/index'),
+      component: () => import('@/views/mode/schedule'),
       name: 'Schedule',
       meta: { title: '模式排程', icon: 'date', noCache: true }
     },
     {
       path: 'history',
-      component: () => import('@/views/mode/history/index'),
+      component: () => import('@/views/mode/history'),
       name: 'History',
       meta: { title: '历史记录', icon: 'time', noCache: true }
     },
     {
       path: 'edit',
-      component: () => import('@/views/mode/mode/index.vue'),
+      component: () => import('@/views/mode/mode.vue'),
       name: 'Edit',
       meta: { title: '编辑模式', icon: 'edit', noCache: true }
     }
@@ -185,7 +185,7 @@ export const constantRoutes = [
   children: [
     // {
     //   path: 'reception',
-    //   component: () => import('@/views/function/reception/index.vue'),
+    //   component: () => import('@/views/function/reception.vue'),
     //   name: 'Reception',
     //   meta: {
     //     title: '业务接待',
@@ -194,7 +194,7 @@ export const constantRoutes = [
     // },
     {
       path: 'nav',
-      component: () => import('@/views/function/nav/index.vue'),
+      component: () => import('@/views/function/nav.vue'),
       name: 'Nav',
       meta: {
         title: '导航指引',
@@ -203,7 +203,7 @@ export const constantRoutes = [
     },
     {
       path: 'tour',
-      component: () => import('@/views/function/tour/index'),
+      component: () => import('@/views/function/tour'),
       name: 'Tour',
       meta: {
         title: '智能讲解',
@@ -226,25 +226,25 @@ export const constantRoutes = [
     children: [
       {
         path: 'robots',
-        component: () => import('@/views/robots/robots/index'),
+        component: () => import('@/views/robots/robots'),
         name: 'RobotIndex',
         meta: { title: '机器人信息', icon: 'el-icon-user-solid' }
       },
       {
         path: 'groups',
-        component: () => import('@/views/robots/groups/index.vue'),
+        component: () => import('@/views/robots/groups.vue'),
         name: 'RobotGroups',
         meta: { title: '机器人分组', icon: 'el-icon-files' }
       },
       {
         path: 'history',
-        component: () => import('@/views/robots/history/index.vue'),
+        component: () => import('@/views/robots/history.vue'),
         name: 'RobotHistory',
         meta: { title: '运行历史', icon: 'el-icon-time' }
       },
       {
         path: 'warnings',
-        component: () => import('@/views/robots/warnings/index.vue'),
+        component: () => import('@/views/robots/warnings.vue'),
         name: 'RobotWarnings',
         meta: { title: '预警信息', icon: 'el-icon-warning' }
       }

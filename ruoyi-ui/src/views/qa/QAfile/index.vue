@@ -1,18 +1,20 @@
 <template>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">
-          <i class="fas fa-database"></i> 知识库与文件管理
+  <div class="app-container">
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <i class="fas fa-database"></i> 知识库与文件管理
+            </div>
+            <div class="card-desc">统一管理知识库分组、Dify 配置、外部 API 配置，以及该知识库下的文件。</div>
+          </div>
+          <div class="page-badge">
+            <span class="badge"><i class="fas fa-folder-open"></i> QA 知识库工作台</span>
+          </div>
         </div>
-        <div class="card-desc">统一管理知识库分组、Dify 配置、外部 API 配置，以及该知识库下的文件。</div>
-      </div>
-      <div class="page-badge">
-        <span class="badge"><i class="fas fa-folder-open"></i> QA 知识库工作台</span>
-      </div>
-    </div>
+      </template>
 
-    <div class="card-body">
       <el-tabs v-model="activeTab">
         <el-tab-pane label="知识库管理" name="knowledgeBase">
           <div class="sub-card">
@@ -203,9 +205,9 @@
           </div>
         </el-tab-pane>
       </el-tabs>
-    </div>
+    </el-card>
 
-    <el-dialog :title="knowledgeBaseDialogTitle" :visible.sync="knowledgeBaseDialogOpen" width="680px" append-to-body class="global-dialog">
+    <el-dialog :title="knowledgeBaseDialogTitle" :visible.sync="knowledgeBaseDialogOpen" width="680px" append-to-body>
       <el-form ref="knowledgeBaseForm" :model="knowledgeBaseForm" :rules="knowledgeBaseRules" label-width="120px">
         <el-form-item label="知识库名称" prop="kbName">
           <el-input v-model="knowledgeBaseForm.kbName" placeholder="请输入知识库名称" maxlength="100" />
@@ -406,7 +408,7 @@
       </div>
     </el-dialog>
 
-    <el-dialog title="上传 QA 文件" :visible.sync="fileDialogOpen" width="520px" append-to-body class="global-dialog">
+    <el-dialog title="上传 QA 文件" :visible.sync="fileDialogOpen" width="520px" append-to-body>
       <el-form :model="fileUploadForm" label-width="90px">
         <el-form-item label="所属知识库" required>
           <el-select v-model="fileUploadForm.knowledgeBaseId" placeholder="请选择知识库" filterable style="width: 100%">
@@ -776,16 +778,10 @@ export default {
 </script>
 
 <style scoped>
-.card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(57, 118, 228, 0.08);
-  overflow: hidden;
-}
+.app-container { padding: 20px; }
+.table-card { margin-bottom: 20px; }
 
 .card-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #eef2f8;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -811,10 +807,6 @@ export default {
   color: #7a869a;
   font-size: 13px;
   line-height: 1.6;
-}
-
-.card-body {
-  padding: 24px 20px;
 }
 
 .page-badge {
@@ -922,10 +914,7 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .app-container { padding: 10px; }
 
   .page-badge {
     width: 100%;

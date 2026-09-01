@@ -1,15 +1,13 @@
 <template>
   <div class="app-container">
-    <!-- 搜索区域美化 -->
-    <div class="search-card">
-      <el-form 
-        :model="queryParams" 
-        ref="queryForm" 
-        size="small" 
-        :inline="true" 
-        v-show="showSearch" 
+    <el-card class="search-card" shadow="never">
+      <el-form
+        :model="queryParams"
+        ref="queryForm"
+        size="small"
+        :inline="true"
+        v-show="showSearch"
         label-width="90px"
-        class="search-form"
       >
         <el-form-item label="应用编号" prop="appId">
           <el-input
@@ -66,143 +64,129 @@
           <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
-    </div>
+    </el-card>
 
-    <!-- 操作按钮区域美化 -->
-    <el-row :gutter="10" class="mb8 operate-bar">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['app:appLibrary:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['app:appLibrary:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['app:appLibrary:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['app:appLibrary:export']"
-        >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>应用库列表</span>
+          <div class="card-actions">
+            <el-button
+              type="primary"
+              icon="el-icon-plus"
+              size="mini"
+              @click="handleAdd"
+              v-hasPermi="['app:appLibrary:add']"
+            >新增</el-button>
+            <el-button
+              type="success"
+              icon="el-icon-edit"
+              size="mini"
+              :disabled="single"
+              @click="handleUpdate"
+              v-hasPermi="['app:appLibrary:edit']"
+            >修改</el-button>
+            <el-button
+              type="danger"
+              icon="el-icon-delete"
+              size="mini"
+              :disabled="multiple"
+              @click="handleDelete"
+              v-hasPermi="['app:appLibrary:remove']"
+            >删除</el-button>
+            <el-button
+              type="warning"
+              icon="el-icon-download"
+              size="mini"
+              @click="handleExport"
+              v-hasPermi="['app:appLibrary:export']"
+            >导出</el-button>
+            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+          </div>
+        </div>
+      </template>
 
-    <!-- 表格美化：展示所有字段 + 枚举映射 + 样式优化 -->
-    <el-table 
-      v-loading="loading" 
-      :data="appLibraryList" 
-      @selection-change="handleSelectionChange"
-      border
-      stripe
-      highlight-current-row
-      class="data-table"
-      :header-cell-style="{background: '#f5f7fa', color: '#303133', fontWeight: '500'}"
-    >
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="应用编号" align="center" prop="appId" min-width="120" />
-      <el-table-column label="应用名称" align="center" prop="appName" min-width="120" />
-      <el-table-column label="应用类型" align="center" prop="appType" width="100">
-        <template slot-scope="scope">
-          <el-tag :type="getAppTypeTagType(scope.row.appType)" size="mini">
-            {{ appTypeMap[scope.row.appType] || '未知' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="启用状态" align="center" prop="enabled" width="120">
-        <template slot-scope="scope">
-          <el-switch
-            v-model="scope.row.enabled"
-            :active-value="1"
-            :inactive-value="0"
-            active-color="#13ce66"
-            inactive-color="#ff4949"
-            @change="handleStatusChange(scope.row)"
-            v-hasPermi="['app:appLibrary:edit']"
-          />
-          <span v-hasNoPermi="['app:appLibrary:edit']" class="status-text">
-            <el-tag :type="getEnabledTagType(scope.row.enabled)" size="mini">
-              {{ enabledMap[scope.row.enabled] || '未知' }}
+      <el-table
+        v-loading="loading"
+        :data="appLibraryList"
+        @selection-change="handleSelectionChange"
+        border
+        style="width: 100%"
+      >
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="应用编号" align="center" prop="appId" min-width="120" />
+        <el-table-column label="应用名称" align="center" prop="appName" min-width="120" />
+        <el-table-column label="应用类型" align="center" prop="appType" width="100">
+          <template slot-scope="scope">
+            <el-tag :type="getAppTypeTagType(scope.row.appType)" size="mini">
+              {{ appTypeMap[scope.row.appType] || '未知' }}
             </el-tag>
-          </span>
-        </template>
-      </el-table-column>
-      <el-table-column label="应用描述" align="center" prop="description" min-width="180" show-overflow-tooltip />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
-          {{ formatIsoTime(scope.row.createTime) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="更新时间" align="center" prop="updateTime" width="180">
-        <template slot-scope="scope">
-          {{ formatIsoTime(scope.row.updateTime) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleViewApi(scope.row)"
-            v-hasPermi="['app:api:list']"
-          >查看详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['app:appLibrary:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['app:appLibrary:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    
-    <!-- 分页美化 -->
-    <div class="pagination-container">
+          </template>
+        </el-table-column>
+        <el-table-column label="启用状态" align="center" prop="enabled" width="120">
+          <template slot-scope="scope">
+            <el-switch
+              v-model="scope.row.enabled"
+              :active-value="1"
+              :inactive-value="0"
+              active-color="#13ce66"
+              inactive-color="#ff4949"
+              @change="handleStatusChange(scope.row)"
+              v-hasPermi="['app:appLibrary:edit']"
+            />
+            <span v-hasNoPermi="['app:appLibrary:edit']" class="status-text">
+              <el-tag :type="getEnabledTagType(scope.row.enabled)" size="mini">
+                {{ enabledMap[scope.row.enabled] || '未知' }}
+              </el-tag>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="应用描述" align="center" prop="description" min-width="180" show-overflow-tooltip />
+        <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+          <template slot-scope="scope">
+            {{ formatIsoTime(scope.row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="更新时间" align="center" prop="updateTime" width="180">
+          <template slot-scope="scope">
+            {{ formatIsoTime(scope.row.updateTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-view"
+              @click="handleViewApi(scope.row)"
+              v-hasPermi="['app:api:list']"
+            >查看详情</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['app:appLibrary:edit']"
+            >修改</el-button>
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-delete"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['app:appLibrary:remove']"
+            >删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
       <pagination
         v-show="total>0"
         :total="total"
         :page.sync="queryParams.pageNum"
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
-        background
       />
-    </div>
+    </el-card>
 
     <!-- 添加/修改对话框美化 -->
     <el-dialog 
@@ -211,7 +195,6 @@
       width="600px" 
       append-to-body
       :close-on-click-modal="false"
-      class="app-dialog"
     >
       <el-form 
         ref="form" 
@@ -260,7 +243,6 @@
       width="600px" 
       append-to-body
       :close-on-click-modal="false"
-      class="app-dialog"
     >
       <el-form 
         ref="apiForm" 
@@ -301,7 +283,6 @@
       width="600px" 
       append-to-body
       :close-on-click-modal="false"
-      class="app-dialog"
     >
       <el-form 
         ref="paramForm" 
@@ -350,7 +331,6 @@
       width="600px" 
       append-to-body
       :close-on-click-modal="false"
-      class="app-dialog"
     >
       <el-form 
         ref="constraintForm" 
@@ -394,7 +374,6 @@
       width="1400px"
       append-to-body
       :close-on-click-modal="false"
-      class="app-dialog"
     >
       <div class="api-list-container">
         <el-tabs v-model="activeTab" @tab-click="handleTabClick">
@@ -1199,43 +1178,11 @@ export default {
 </script>
 
 <style scoped>
-/* 通用间距 */
-.mb8 {
-  margin-bottom: 8px;
-}
-
-/* 搜索区域样式 */
-.search-card {
-  background: #fff;
-  padding: 15px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 15px;
-}
-.search-form {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.search-input {
-  width: 180px;
-}
-.search-select {
-  width: 150px;
-}
-
-/* 操作按钮区域 */
-.operate-bar {
-  padding: 10px 0;
-}
-
-/* 表格样式 */
-.data-table {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-}
+.search-card { margin-bottom: 20px; }
+.table-card { margin-bottom: 20px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.el-table .cell .el-button + .el-button { margin-left: 6px; }
 
 /* API列表容器样式 */
 .api-list-container {
@@ -1243,17 +1190,6 @@ export default {
   overflow-y: auto;
 }
 
-/* 分页样式 */
-.pagination-container {
-  margin-top: 20px;
-  text-align: center;
-}
-
-/* 对话框样式 */
-.app-dialog /deep/ .el-dialog__header {
-  border-bottom: 1px solid #e4e7ed;
-  padding-bottom: 10px;
-}
 .dialog-form {
   padding: 10px 0;
 }

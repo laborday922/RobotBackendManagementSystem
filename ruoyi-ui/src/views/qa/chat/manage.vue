@@ -373,7 +373,7 @@ export default {
         modelName: '',
         hasApiKey: false
       }
-      this.$nextTick(() => this.resetForm('chatForm'))
+      this.$nextTick(() => this.clearChatFormValidate())
     },
     handleEditChat(row) {
       getQaChat(row.id).then(response => {
@@ -389,7 +389,7 @@ export default {
         }, response.data || {})
         this.chatDialogTitle = '修改问答配置'
         this.chatDialogOpen = true
-        this.$nextTick(() => this.resetForm('chatForm'))
+        this.$nextTick(() => this.clearChatFormValidate())
       })
     },
     onChatTypeChange(val) {
@@ -442,7 +442,7 @@ export default {
         robotId: null,
         chatId: null
       }
-      this.$nextTick(() => this.resetForm('relForm'))
+      this.$nextTick(() => this.clearRelFormValidate())
     },
     handleEditRel(row) {
       getQaRobotChatRel(row.robotId).then(response => {
@@ -452,7 +452,7 @@ export default {
         }, response.data || {})
         this.relDialogTitle = '修改机器人绑定'
         this.relDialogOpen = true
-        this.$nextTick(() => this.resetForm('relForm'))
+        this.$nextTick(() => this.clearRelFormValidate())
       })
     },
     submitRelForm() {
@@ -480,6 +480,16 @@ export default {
     robotOptionLabel(item) {
       const name = item.name || ('机器人' + item.id)
       return item.code ? `${name}（${item.code}）` : name
+    },
+    clearChatFormValidate() {
+      if (this.$refs.chatForm) {
+        this.$refs.chatForm.clearValidate()
+      }
+    },
+    clearRelFormValidate() {
+      if (this.$refs.relForm) {
+        this.$refs.relForm.clearValidate()
+      }
     },
     keyStatusText(hasKey) {
       return hasKey ? '已配置' : '未配置'

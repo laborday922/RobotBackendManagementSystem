@@ -6,9 +6,9 @@
           <i class="fas fa-bolt"></i> 快捷操作
         </div>
         <div class="header-actions">
-          <el-button size="small" type="warning" @click="showDebugPanel = true">
-            <i class="el-icon-setting"></i> 调试工具
-          </el-button>
+<!--          <el-button size="small" type="warning" @click="showDebugPanel = true">-->
+<!--            <i class="el-icon-setting"></i> 调试工具-->
+<!--          </el-button>-->
           <el-button size="small" type="primary" @click="refreshRobotList" :loading="refreshing">
             <i class="el-icon-refresh"></i> 刷新
           </el-button>

@@ -532,7 +532,8 @@ export default {
         if (res.code === 200) {
           this.$message.success('执行完成')
           this.recordQuery.pageNum = 1
-          this.fetchRecordList()
+          await this.fetchRecordList()
+          this.configDialogVisible = false
         } else {
           this.$message.error(res.msg || '执行失败')
         }

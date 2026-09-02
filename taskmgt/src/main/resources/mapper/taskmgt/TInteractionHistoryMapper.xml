@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.taskmgt.mapper.TInteractionHistoryMapper">
-    
+
     <resultMap type="TInteractionHistory" id="TInteractionHistoryResult">
         <result property="id"    column="id"    />
         <result property="taskId"    column="task_id"    />
@@ -28,14 +28,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectTInteractionHistoryList" parameterType="TInteractionHistory" resultMap="TInteractionHistoryResult">
         <include refid="selectTInteractionHistoryVo"/>
-        <where>  
+        <where>
             <if test="taskId != null  and taskId != ''"> and task_id like CONCAT('%', #{taskId}, '%')</if>
             <if test="interactionId != null  and interactionId != ''"> and interaction_id like CONCAT('%', #{interactionId}, '%')</if>
             <if test="robotId != null  and robotId != ''"> and robot_id like CONCAT('%', #{robotId}, '%')</if>
             <if test="userId != null  and userId != ''"> and user_id like CONCAT('%', #{userId}, '%')</if>
         </where>
+        order by interaction_time desc
     </select>
-    
+
     <select id="selectTInteractionHistoryById" parameterType="Long" resultMap="TInteractionHistoryResult">
         <include refid="selectTInteractionHistoryVo"/>
         where id = #{id}
@@ -103,7 +104,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteTInteractionHistoryByIds" parameterType="String">
-        delete from t_interaction_history where id in 
+        delete from t_interaction_history where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

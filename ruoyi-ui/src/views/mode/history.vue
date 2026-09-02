@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-card class="search-card" shadow="never">
       <div class="filter-bar">
-        <el-select v-model="queryParams.operationType" placeholder="操作类型" clearable style="width: 150px;">
+        <el-select v-model="queryParams.operationType" placeholder="操作类型" clearable style="width: 150px;" @change="onOperationTypeChange">
           <el-option label="紧急操作" value="emergency" />
           <el-option label="状态操作" value="status" />
           <el-option label="系统操作" value="system" />
@@ -351,6 +351,18 @@ export default {
           this.loadFullStatistics();
         });
       }).catch(() => {});
+    },
+
+    /** 操作类型下拉变更 - 将分类映射为具体操作类型列表后再查询 */
+    onOperationTypeChange(val) {
+      if (val) {
+        this.queryParams.operationTypes = this.categoryTypeMap[val] || [];
+      } else {
+        this.queryParams.operationTypes = null;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
+      this.loadFullStatistics();
     },
 
     /** 按分类筛选 */

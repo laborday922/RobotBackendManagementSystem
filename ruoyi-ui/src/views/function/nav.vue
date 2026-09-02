@@ -1,30 +1,30 @@
 <template>
   <div class="app-container">
-    <el-card class="box-card">
-      <div slot="header" class="clearfix">
-        <div class="header-left">
-          <span><i class="el-icon-location"></i> 导航指引</span>
-        </div>
-        <div class="header-right">
-          <div class="robot-selector">
-            <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
-            <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="onRobotChange">
-              <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
-            </el-select>
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>导航指引</span>
+          <div class="card-actions">
+            <div class="robot-selector">
+              <span class="badge"><i class="fas fa-robot"></i> 导览机器人：</span>
+              <el-select v-model="selectedRobotId" placeholder="请选择机器人" style="width:200px;" @change="onRobotChange">
+                <el-option v-for="r in robotList" :key="r.id" :label="r.name" :value="r.id" />
+              </el-select>
+            </div>
+            <div class="action-buttons">
+              <el-button type="primary" size="small" @click="triggerUploadNewMap">
+                <i class="el-icon-upload"></i> 上传新地图
+              </el-button>
+              <el-button type="warning" size="small" plain :disabled="!navConfig.mapId" @click="triggerUpdateCurrentMap">
+                <i class="el-icon-refresh"></i> 更新当前地图
+              </el-button>
+              <el-button type="danger" size="small" plain :disabled="!navConfig.mapId" @click="deleteCurrentMap">
+                <i class="el-icon-delete"></i> 删除地图
+              </el-button>
+            </div>
           </div>
-          <div class="action-buttons">
-            <el-button type="primary" size="small" @click="triggerUploadNewMap">
-              <i class="el-icon-upload"></i> 上传新地图
-            </el-button>
-            <el-button type="warning" size="small" plain :disabled="!navConfig.mapId" @click="triggerUpdateCurrentMap">
-              <i class="el-icon-refresh"></i> 更新当前地图
-            </el-button>
-            <el-button type="danger" size="small" plain :disabled="!navConfig.mapId" @click="deleteCurrentMap">
-              <i class="el-icon-delete"></i> 删除地图
-            </el-button>
-          </div>
         </div>
-      </div>
+      </template>
 
       <!-- 隐藏的文件上传输入框 -->
       <input
@@ -947,20 +947,15 @@ export default {
 </script>
 
 <style scoped>
-/* 样式保持不变，与原来相同 */
 .app-container {
   padding: 20px;
 }
 
-.box-card {
-  border-radius: 8px;
+.table-card {
+  margin-bottom: 20px;
 }
 
-.box-card >>> .el-card__header {
-  padding: 16px 20px;
-}
-
-.clearfix {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -968,24 +963,7 @@ export default {
   gap: 16px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-left span {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.header-left i {
-  font-size: 18px;
-  color: #409eff;
-}
-
-.header-right {
+.card-actions {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -1074,11 +1052,11 @@ export default {
 }
 
 @media (max-width: 992px) {
-  .clearfix {
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  .header-right {
+  .card-actions {
     width: 100%;
     flex-direction: column;
     align-items: stretch;

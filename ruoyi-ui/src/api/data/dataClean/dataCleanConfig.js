@@ -61,9 +61,10 @@ export function executeManual(data) {
 /**
  * 获取执行记录列表（定时 + 手动）
  */
-export function getRecordList() {
+export function getRecordList(params) {
   return request({
     url: '/clean/record/list',
-    method: 'get'
+    method: 'get',
+    params
   })
 }

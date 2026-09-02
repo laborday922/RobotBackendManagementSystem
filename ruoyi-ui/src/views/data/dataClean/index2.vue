@@ -1,20 +1,133 @@
 <template>
-  <div class="data-cleaning-tools">
-
-    <!-- ===== 配置卡片 ===== -->
-    <div class="glass-card">
-      <div class="card-header">
-        <h3>数据清洗规则配置</h3>
-        <el-tag v-if="editingId" type="warning" size="small">正在编辑任务 #{{ editingId }}</el-tag>
+  <div class="app-container">
+    <el-card class="search-card" shadow="never">
+      <div class="summary">
+        <div class="summary-item">
+          <div class="num">{{ taskList.length }}</div>
+          <div class="label">等待执行的定时任务</div>
+        </div>
+        <div class="summary-item">
+          <div class="num green">{{ recordAllTotal || recordTotal }}</div>
+          <div class="label">执行记录总数</div>
+        </div>
       </div>
+    </el-card>
 
-      <div class="card-body">
-        <!-- 文本格式处理 + 重复数据处理 -->
+    <el-card class="table-card" shadow="never">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="定时任务" name="task">
+          <div class="sub-card">
+            <div class="table-header">
+              <span>定时任务列表</span>
+              <div class="table-actions">
+                <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreateDialog">新增数据清洗</el-button>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <el-table v-loading="taskLoading" :data="taskList" border>
+                <el-table-column prop="id" label="ID" width="70" />
+                <el-table-column label="数据清洗规则" min-width="220">
+                  <template slot-scope="scope">
+                    {{ formatRules(scope.row.configJson) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="数据源" min-width="160">
+                  <template slot-scope="scope">
+                    {{ formatDataSources(scope.row.applyDataSource) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="cronExpression" label="cron 表达式" min-width="140" />
+                <el-table-column label="下次执行时间" width="180">
+                  <template slot-scope="scope">
+                    {{ formatTime(scope.row.nextRunTime) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center" width="140">
+                  <template slot-scope="scope">
+                    <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                    <el-button type="text" size="small" class="danger-text" @click="handleDelete(scope.row)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="执行记录" name="record">
+          <div class="sub-card">
+            <div class="table-header">
+              <span>执行记录列表</span>
+            </div>
+
+            <el-form :model="recordQuery" ref="recordQueryForm" size="small" :inline="true" label-width="80px" class="query-form">
+              <el-form-item label="执行方式" prop="executeMode">
+                <el-select v-model="recordQuery.executeMode" placeholder="请选择" clearable style="width: 140px">
+                  <el-option label="定时" value="SCHEDULED" />
+                  <el-option label="手动" value="MANUAL" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="执行结果" prop="success">
+                <el-select v-model="recordQuery.success" placeholder="请选择" clearable style="width: 140px">
+                  <el-option label="成功" :value="1" />
+                  <el-option label="失败" :value="0" />
+                </el-select>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" icon="el-icon-search" size="mini" @click="handleRecordQuery">查询</el-button>
+                <el-button icon="el-icon-refresh" size="mini" @click="resetRecordQuery">重置</el-button>
+              </el-form-item>
+            </el-form>
+
+            <div class="table-wrapper">
+              <el-table v-loading="recordLoading" :data="recordList" border>
+                <el-table-column prop="id" label="ID" width="70" />
+                <el-table-column label="执行时间" width="180">
+                  <template slot-scope="scope">
+                    {{ formatTime(scope.row.runTime) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="执行方式" width="100">
+                  <template slot-scope="scope">
+                    {{ scope.row.executeMode === 'SCHEDULED' ? '定时' : '手动' }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="执行结果" width="100">
+                  <template slot-scope="scope">
+                    <el-tag :type="scope.row.success === 1 ? 'success' : 'danger'" size="small">
+                      {{ scope.row.success === 1 ? '成功' : '失败' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="message" label="失败原因" min-width="200">
+                  <template slot-scope="scope">
+                    {{ scope.row.message || '-' }}
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <div class="pagination-wrap">
+              <pagination
+                v-show="recordTotal>0"
+                :total="recordTotal"
+                :page.sync="recordQuery.pageNum"
+                :limit.sync="recordQuery.pageSize"
+                @pagination="handleRecordPagination"
+              />
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
+
+    <el-dialog :title="configDialogTitle" :visible.sync="configDialogVisible" width="760px" append-to-body @close="handleDialogClose">
+      <div class="dialog-body">
         <div class="two-column">
           <div class="column">
             <div class="form-item">
               <label>文本格式处理</label>
-              <el-select v-model="cleaningRules.textCleaning" placeholder="请选择">
+              <el-select v-model="cleaningRules.textCleaning" placeholder="请选择" style="width: 100%">
                 <el-option label="移除HTML标签" value="REMOVE_HTML" />
                 <el-option label="移除特殊字符" value="REMOVE_SPECIAL_CHAR" />
                 <el-option label="保持原样" value="KEEP_ORIGINAL" />
@@ -25,7 +138,7 @@
           <div class="column">
             <div class="form-item">
               <label>重复数据处理</label>
-              <el-select v-model="cleaningRules.duplicateHandling" placeholder="请选择">
+              <el-select v-model="cleaningRules.duplicateHandling" placeholder="请选择" style="width: 100%">
                 <el-option label="保持原样" value="KEEP_ORIGINAL" />
                 <el-option label="保留第一条" value="KEEP_FIRST" />
               </el-select>
@@ -33,7 +146,6 @@
           </div>
         </div>
 
-        <!-- 应用数据源 -->
         <div class="data-source-section">
           <h4>应用数据源</h4>
           <el-checkbox-group v-model="cleaningRules.applyDataSources">
@@ -42,7 +154,6 @@
           </el-checkbox-group>
         </div>
 
-        <!-- 执行方式 -->
         <div class="section">
           <h4>执行方式</h4>
 
@@ -64,11 +175,10 @@
             </div>
           </div>
 
-          <!-- 定时配置（仅当选择定时执行时显示） -->
           <div v-if="cleaningRules.executionType === 'schedule'" class="schedule-config">
             <div class="schedule-row">
               <div class="schedule-label">周期</div>
-              <el-select v-model="scheduleConfig.period" placeholder="请选择周期">
+              <el-select v-model="scheduleConfig.period" placeholder="请选择周期" style="width: 100%">
                 <el-option label="每日" value="daily" />
                 <el-option label="每周" value="weekly" />
                 <el-option label="每月" value="monthly" />
@@ -77,7 +187,7 @@
 
             <div class="schedule-row" v-if="scheduleConfig.period === 'weekly'">
               <div class="schedule-label">星期几</div>
-              <el-select v-model="scheduleConfig.weekDay" placeholder="请选择">
+              <el-select v-model="scheduleConfig.weekDay" placeholder="请选择" style="width: 100%">
                 <el-option label="周一" value="1" />
                 <el-option label="周二" value="2" />
                 <el-option label="周三" value="3" />
@@ -90,7 +200,7 @@
 
             <div class="schedule-row" v-if="scheduleConfig.period === 'monthly'">
               <div class="schedule-label">每月几号</div>
-              <el-input-number v-model="scheduleConfig.monthDay" :min="1" :max="31" />
+              <el-input-number v-model="scheduleConfig.monthDay" :min="1" :max="31" style="width: 100%" />
             </div>
 
             <div class="schedule-row">
@@ -100,113 +210,21 @@
                 format="HH:mm"
                 value-format="HH:mm"
                 placeholder="选择时间"
+                style="width: 100%"
               />
             </div>
           </div>
         </div>
-
-        <!-- 按钮区域：根据执行方式显示不同按钮 -->
-        <div class="actions">
-          <template v-if="cleaningRules.executionType === 'schedule'">
-            <el-button type="primary" @click="saveScheduleConfig">
-              {{ editingId ? '更新配置' : '保存配置' }}
-            </el-button>
-            <el-button v-if="editingId" @click="resetForm">取消编辑</el-button>
-          </template>
-
-          <el-button
-            v-if="cleaningRules.executionType === 'manual'"
-            type="success"
-            @click="handleManualExecute"
-          >
-            立即执行
-          </el-button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ===== 定时任务表 ===== -->
-    <div class="glass-card">
-      <div class="card-header">
-        <h3>定时任务</h3>
       </div>
 
-      <div class="card-body">
-        <div class="summary">
-          <div class="summary-item">
-            <div class="num">{{ taskList.length }}</div>
-            <div class="label">等待执行的定时任务</div>
-          </div>
-          <div class="summary-item">
-            <div class="num green">{{ recordList.length }}</div>
-            <div class="label">执行记录总数</div>
-          </div>
-        </div>
-
-        <el-table :data="taskList" class="glass-table">
-          <el-table-column prop="id" label="ID" width="70" />
-          <el-table-column label="数据清洗规则" min-width="220">
-            <template slot-scope="scope">
-              {{ formatRules(scope.row.configJson) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="数据源" width="160">
-            <template slot-scope="scope">
-              {{ formatDataSources(scope.row.applyDataSource) }}
-            </template>
-          </el-table-column>
-          <el-table-column prop="cronExpression" label="cron 表达式" width="140" />
-          <el-table-column label="下次执行时间" width="170">
-            <template slot-scope="scope">
-              {{ formatTime(scope.row.nextRunTime) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" width="140">
-            <template slot-scope="scope">
-              <el-button type="text" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button type="text" size="small" class="danger-text" @click="handleDelete(scope.row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="configDialogVisible=false">取 消</el-button>
+        <template v-if="cleaningRules.executionType === 'schedule'">
+          <el-button type="primary" @click="saveScheduleConfig">{{ editingId ? '更新配置' : '保存配置' }}</el-button>
+        </template>
+        <el-button v-else type="success" @click="handleManualExecute">立即执行</el-button>
       </div>
-    </div>
-
-    <!-- ===== 执行记录表 ===== -->
-    <div class="glass-card">
-      <div class="card-header">
-        <h3>执行记录</h3>
-      </div>
-
-      <div class="card-body">
-        <el-table :data="recordList" class="glass-table">
-          <el-table-column prop="id" label="ID" width="70" />
-          <el-table-column label="执行时间" width="170">
-            <template slot-scope="scope">
-              {{ formatTime(scope.row.runTime) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="执行方式" width="100">
-            <template slot-scope="scope">
-              {{ scope.row.executeMode === 'SCHEDULED' ? '定时' : '手动' }}
-            </template>
-          </el-table-column>
-          <el-table-column label="执行结果" width="100">
-            <template slot-scope="scope">
-              <el-tag :type="scope.row.success === 1 ? 'success' : 'danger'" size="small">
-                {{ scope.row.success === 1 ? '成功' : '失败' }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="message" label="失败原因" min-width="200">
-            <template slot-scope="scope">
-              {{ scope.row.message || '-' }}
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </div>
-
+    </el-dialog>
   </div>
 </template>
 
@@ -217,6 +235,9 @@ export default {
   name: 'DataCleaningTools',
   data() {
     return {
+      activeTab: 'task',
+      taskLoading: false,
+      recordLoading: false,
       cleaningRules: {
         duplicateHandling: '',   // KEEP_FIRST / KEEP_ORIGINAL
         textCleaning: '',        // REMOVE_HTML / REMOVE_SPECIAL_CHAR / KEEP_ORIGINAL
@@ -229,18 +250,39 @@ export default {
         monthDay: 1,          // 1-31
         time: '00:00'         // HH:mm
       },
+      configDialogVisible: false,
       editingId: null,      // 正在编辑的任务ID，null 表示新增
       taskList: [],         // 定时任务列表
-      recordList: []        // 执行记录列表
+      recordList: [],       // 执行记录列表
+      recordAllList: [],
+      recordAllTotal: 0,
+      recordTotal: 0,
+      recordQuery: {
+        pageNum: 1,
+        pageSize: 10,
+        executeMode: null,
+        success: null
+      }
     }
   },
   mounted() {
     this.fetchTaskList()
     this.fetchRecordList()
   },
+  computed: {
+    configDialogTitle() {
+      return this.editingId ? `编辑清洗任务 #${this.editingId}` : '新增清洗任务'
+    }
+  },
   methods: {
+    openCreateDialog() {
+      this.resetForm()
+      this.configDialogVisible = true
+    },
+
     // 获取定时任务列表
     async fetchTaskList() {
+      this.taskLoading = true
       try {
         const res = await getTaskList()
         if (res.code === 200) {
@@ -251,22 +293,93 @@ export default {
       } catch (error) {
         console.error('获取定时任务失败', error)
         this.$message.error('获取定时任务失败')
+      } finally {
+        this.taskLoading = false
       }
     },
 
     // 获取执行记录列表
     async fetchRecordList() {
+      this.recordLoading = true
       try {
-        const res = await getRecordList()
+        const params = {
+          pageNum: this.recordQuery.pageNum,
+          pageSize: this.recordQuery.pageSize,
+          executeMode: this.recordQuery.executeMode,
+          success: this.recordQuery.success
+        }
+        const res = await getRecordList(params)
         if (res.code === 200) {
-          this.recordList = res.data || []
+          if (Array.isArray(res.rows) || typeof res.total === 'number') {
+            const rows = res.rows || []
+            this.recordList = rows
+            this.recordTotal = typeof res.total === 'number' ? res.total : rows.length
+            this.recordAllTotal = this.recordTotal
+            this.recordAllList = []
+            return
+          }
+
+          const all = Array.isArray(res.data) ? res.data : []
+          this.recordAllList = all
+          this.recordAllTotal = all.length
+          this.applyRecordFilterAndPaging()
         } else {
           this.$message.error(res.msg || '获取执行记录失败')
         }
       } catch (error) {
         console.error('获取执行记录失败', error)
         this.$message.error('获取执行记录失败')
+      } finally {
+        this.recordLoading = false
       }
+    },
+
+    handleRecordQuery() {
+      this.recordQuery.pageNum = 1
+      if (this.recordAllList && this.recordAllList.length) {
+        this.applyRecordFilterAndPaging()
+      } else {
+        this.fetchRecordList()
+      }
+    },
+
+    handleRecordPagination() {
+      if (this.recordAllList && this.recordAllList.length) {
+        this.applyRecordFilterAndPaging()
+        return
+      }
+      this.fetchRecordList()
+    },
+
+    resetRecordQuery() {
+      this.recordQuery = { pageNum: 1, pageSize: 10, executeMode: null, success: null }
+      this.fetchRecordList()
+    },
+
+    applyRecordFilterAndPaging() {
+      let list = Array.isArray(this.recordAllList) ? this.recordAllList.slice() : []
+      if (this.recordQuery.executeMode) {
+        if (this.recordQuery.executeMode === 'SCHEDULED') {
+          list = list.filter(r => String(r.executeMode) === 'SCHEDULED')
+        } else if (this.recordQuery.executeMode === 'MANUAL') {
+          list = list.filter(r => String(r.executeMode) !== 'SCHEDULED')
+        }
+      }
+      if (this.recordQuery.success !== null && this.recordQuery.success !== undefined && this.recordQuery.success !== '') {
+        const expected = Number(this.recordQuery.success)
+        list = list.filter(r => Number(r.success) === expected)
+      }
+
+      this.recordTotal = list.length
+      const pageNum = Number(this.recordQuery.pageNum) || 1
+      const pageSize = Number(this.recordQuery.pageSize) || 10
+      const start = (pageNum - 1) * pageSize
+      if (start >= list.length && pageNum > 1) {
+        this.recordQuery.pageNum = 1
+        this.recordList = list.slice(0, pageSize)
+        return
+      }
+      this.recordList = list.slice(start, start + pageSize)
     },
 
     // 生成 cron 表达式（秒 分 时 日 月 周）
@@ -385,6 +498,7 @@ export default {
           : await createTask(params)
         if (res.code === 200) {
           this.$message.success(this.editingId ? '更新成功' : '保存成功')
+          this.configDialogVisible = false
           this.resetForm()
           this.fetchTaskList()
         } else {
@@ -417,6 +531,7 @@ export default {
         })
         if (res.code === 200) {
           this.$message.success('执行完成')
+          this.recordQuery.pageNum = 1
           this.fetchRecordList()
         } else {
           this.$message.error(res.msg || '执行失败')
@@ -439,9 +554,7 @@ export default {
         .map(s => s.trim())
         .filter(Boolean)
       this.scheduleConfig = this.parseCron(row.cronExpression)
-      this.$nextTick(() => {
-        this.$el && this.$el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      })
+      this.configDialogVisible = true
     },
 
     // 删除定时任务（删除后不再定时执行）
@@ -473,38 +586,118 @@ export default {
       this.cleaningRules.executionType = 'schedule'
       this.cleaningRules.applyDataSources = ['t_interaction_history']
       this.scheduleConfig = { period: 'daily', weekDay: '1', monthDay: 1, time: '00:00' }
+    },
+
+    handleDialogClose() {
+      this.resetForm()
     }
   }
 }
 </script>
 
 <style scoped lang="scss">
-.data-cleaning-tools {
-  padding: 0 24px;
-}
-
-.glass-card {
-  margin-top: 20px;
-  margin-bottom: 24px;
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  background: rgba(255,255,255);
-  box-shadow: 0 5px 5px rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
-  overflow: hidden;
-}
-
 .card-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 24px;
-  font-weight: 400;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  justify-content: space-between;
 }
 
-.card-body {
-  padding: 24px;
+.app-container {
+  padding: 20px;
+}
+
+.search-card {
+  margin-bottom: 20px;
+}
+
+.table-card {
+  margin-bottom: 20px;
+}
+
+.sub-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #E5E7EB;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.table-header span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e2a3a;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.query-form {
+  margin-bottom: 12px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.summary {
+  display: flex;
+  gap: 20px;
+}
+
+.summary-item {
+  flex: 1;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #303133;
+}
+
+.label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.green {
+  color: #52c41a;
+}
+
+
+.hint-text {
+  color: #909399;
+  font-size: 13px;
 }
 
 .two-column {
@@ -586,39 +779,6 @@ export default {
     font-weight: 500;
     color: #333;
   }
-}
-
-.summary {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.summary-item {
-  flex: 1;
-  background: rgba(255,255,255,0.6);
-  padding: 16px;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.num {
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.green { color: #52c41a; }
-
-.glass-table ::v-deep .el-table {
-  background: transparent;
-}
-
-.glass-table ::v-deep th {
-  background: rgba(0,0,0,0.03);
-}
-
-.glass-table ::v-deep tr {
-  background: transparent;
 }
 
 .danger-text {

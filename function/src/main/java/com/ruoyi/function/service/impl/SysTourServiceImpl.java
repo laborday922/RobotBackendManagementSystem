@@ -177,6 +177,7 @@ public class SysTourServiceImpl implements ISysTourService {
             requestData.put("broadcastType", content.getBroadcastType());
             requestData.put("broadcastText", content.getBroadcastText());
             requestData.put("audioFile", content.getAudioFile());
+            requestData.put("mediaFile", content.getMediaFile());
             requestData.put("voiceType", content.getVoiceType());
             requestData.put("speechRate", content.getSpeechRate());
             requestData.put("intervalTime", content.getIntervalTime());

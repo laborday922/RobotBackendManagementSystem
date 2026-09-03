@@ -43,6 +43,7 @@
                 <result property="broadcastType" column="broadcast_type"/>
                 <result property="broadcastText" column="broadcast_text"/>
                 <result property="audioFile" column="audio_file"/>
+                <result property="mediaFile" column="media_file"/>
                 <result property="voiceType" column="voice_type"/>
                 <result property="speechRate" column="speech_rate"/>
                 <result property="intervalTime" column="interval_time"/>
@@ -93,7 +94,7 @@
         sp.sys_point_id, sp.robot_point_id, sp.point_name, sp.point_code, sp.point_type,
         sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
         tc.content_id, tc.point_name as content_point_name, tc.point_desc,
-        tc.broadcast_type, tc.broadcast_text, tc.audio_file,
+        tc.broadcast_type, tc.broadcast_text, tc.audio_file, tc.media_file,
         tc.voice_type, tc.speech_rate, tc.interval_time,
         tc.arm_action, tc.chassis_angle
         FROM sys_tour_route sr
@@ -115,7 +116,7 @@
         sp.sys_point_id, sp.robot_point_id, sp.point_name, sp.point_code, sp.point_type,
         sp.coordinate_x, sp.coordinate_y, sp.status as point_status,
         tc.content_id, tc.point_name as content_point_name, tc.point_desc,
-        tc.broadcast_type, tc.broadcast_text, tc.audio_file,
+        tc.broadcast_type, tc.broadcast_text, tc.audio_file, tc.media_file,
         tc.voice_type, tc.speech_rate, tc.interval_time,
         tc.arm_action, tc.chassis_angle
         FROM sys_tour_route sr

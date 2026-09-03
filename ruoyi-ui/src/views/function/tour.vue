@@ -101,8 +101,8 @@
               <el-table-column label="讲解点描述" prop="pointDesc" min-width="200" show-overflow-tooltip />
               <el-table-column label="播报类型" width="100" align="center">
                 <template slot-scope="scope">
-                  <el-tag :type="scope.row.broadcastType === 'audio' ? 'success' : 'info'">
-                    {{ scope.row.broadcastType === 'audio' ? '音频' : '文本' }}
+                  <el-tag :type="broadcastTypeTag(scope.row.broadcastType).type">
+                    {{ broadcastTypeTag(scope.row.broadcastType).label }}
                   </el-tag>
                 </template>
               </el-table-column>
@@ -232,6 +232,7 @@
             <el-radio-group v-model="drawerForm.broadcastType">
               <el-radio label="text">播报语</el-radio>
               <el-radio label="audio">音频文件</el-radio>
+              <el-radio label="video">视频文件</el-radio>
             </el-radio-group>
           </el-form-item>
 
@@ -249,6 +250,23 @@
             </el-upload>
             <div v-if="drawerForm.audioFile" class="uploaded-file">
               <i class="fas fa-file-audio"></i> {{ drawerForm.audioFile }}
+            </div>
+          </el-form-item>
+
+          <el-form-item v-if="drawerForm.broadcastType === 'video'" label="视频文件">
+            <el-upload
+              class="upload-area"
+              drag
+              action="#"
+              :before-upload="handleVideoUpload"
+              :show-file-list="false"
+            >
+              <i class="el-icon-upload"></i>
+              <div class="el-upload__text">将视频文件拖到此处，或<em>点击上传</em></div>
+              <div class="el-upload__tip" slot="tip">支持 mp4 格式，大小不超过100MB</div>
+            </el-upload>
+            <div v-if="drawerForm.mediaFile" class="uploaded-file">
+              <i class="fas fa-file-video"></i> {{ drawerForm.mediaFile }}
             </div>
           </el-form-item>
 
@@ -448,6 +466,7 @@ export default {
         broadcastType: 'text',
         broadcastText: '',
         audioFile: '',
+        mediaFile: '',
         voiceType: '温柔女声',
         speechRate: 50,
         intervalTime: 0,
@@ -725,6 +744,7 @@ export default {
           broadcastType: 'text',
           broadcastText: '',
           audioFile: '',
+          mediaFile: '',
           voiceType: '温柔女声',
           speechRate: 50,
           intervalTime: 0,
@@ -825,6 +845,21 @@ export default {
       return false;
     },
 
+    handleVideoUpload(file) {
+      const isValid = file.type === 'video/mp4';
+      if (!isValid) { this.$message.error('只支持 mp4 格式'); return false; }
+      if (file.size / 1024 / 1024 > 100) { this.$message.error('文件大小不能超过100MB'); return false; }
+      this.drawerForm.mediaFile = file.name;
+      this.$message.success('视频文件已选择');
+      return false;
+    },
+
+    broadcastTypeTag(type) {
+      if (type === 'audio') return { type: 'success', label: '音频' };
+      if (type === 'video') return { type: 'warning', label: '视频' };
+      return { type: 'info', label: '文本' };
+    },
+
     triggerContentImport() {
       this.$refs.contentImportInput.click();
     },
@@ -873,6 +908,7 @@ export default {
         broadcastType: item.broadcastType,
         broadcastText: item.broadcastText,
         audioFile: item.audioFile,
+        mediaFile: item.mediaFile,
         voiceType: item.voiceType,
         speechRate: item.speechRate,
         intervalTime: item.intervalTime,
@@ -904,6 +940,7 @@ export default {
             broadcastType: content.broadcastType,
             broadcastText: content.broadcastText,
             audioFile: content.audioFile,
+            mediaFile: content.mediaFile,
             voiceType: content.voiceType,
             speechRate: content.speechRate,
             intervalTime: content.intervalTime,

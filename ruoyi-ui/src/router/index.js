@@ -250,7 +250,7 @@ export const constantRoutes = [
       }
     ]
   },
-  // ========== 交互应用管理模块 ==========
+  // ========== 交互管理模块 ==========
   {
     path: '/app',
     component: Layout,
@@ -258,7 +258,7 @@ export const constantRoutes = [
     redirect: 'noredirect',
     name: 'AppManagement',
     meta: {
-      title: '交互应用管理',
+      title: '交互管理',
       icon: 'el-icon-s-operation'
     },
     children: [
@@ -323,6 +323,40 @@ export const constantRoutes = [
         component: () => import('@/views/data/ai/index2.vue'),
         name: 'AiAnalyze',
         meta: { title: 'Ai分析', icon: 'log' }
+      }
+    ]
+  },
+  // ========== 问答管理模块 ==========
+  {
+    path: '/qa',
+    component: Layout,
+    hidden: false,
+    redirect: '/qa/QAfile',
+    name: 'QaManagement',
+    meta: {
+      title: '问答管理',
+      icon: 'message'
+    },
+    children: [
+      {
+        path: 'QAfile',
+        component: () => import('@/views/qa/QAfile/index.vue'),
+        name: 'QAFile',
+        permissions: ['qa:QAfile:list'],
+        meta: { title: '文件管理', icon: 'documentation' }
+      },
+      {
+        path: 'RobotChatManage',
+        component: () => import('@/views/qa/chat/manage.vue'),
+        name: 'RobotChatManage',
+        meta: { title: '问答管理', icon: 'message' }
+      },
+      {
+        path: 'RobotChat',
+        component: () => import('@/views/qa/chat/test.vue'),
+        name: 'RobotChatTest',
+        permissions: ['qa:chat'],
+        meta: { title: '问答测试', icon: 'bug' }
       }
     ]
   }

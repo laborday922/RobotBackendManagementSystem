@@ -332,10 +332,10 @@ export const constantRoutes = [
     component: Layout,
     hidden: false,
     redirect: '/qa/QAfile',
-    name: 'QaManagement',
+    name: 'KnowledgeQa',
     meta: {
-      title: '问答管理',
-      icon: 'message'
+      title: '知识问答',
+      icon: 'phone'
     },
     children: [
       {

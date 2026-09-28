@@ -14,6 +14,5 @@ public interface ReportContentMapper {
     int deleteContentByReportId(@Param("reportId") Long reportId);
 
     //报告文件下载
-    ReportContentPo selectContentByReportId(@Param("reportId") Long reportId,
-                                            @Param("tenantId") Long tenantId);
+    ReportContentPo selectContentByReportId(@Param("reportId") Long reportId);
 }

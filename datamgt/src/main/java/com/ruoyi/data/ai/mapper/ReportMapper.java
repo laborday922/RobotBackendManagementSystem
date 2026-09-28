@@ -10,14 +10,11 @@ import java.util.List;
 @Mapper
 public interface ReportMapper {
 
-    int insertReport(ReportPo report); // tenantId 放在 report 里
+    int insertReport(ReportPo report);
 
     List<ReportPo> selectReportList(ReportQueryDto query);
-    // 👉 query 里要加 tenantId
 
-    ReportPo selectById(@Param("id") Long id,
-                        @Param("tenantId") Long tenantId);
+    ReportPo selectById(@Param("id") Long id);
 
-    int deleteById(@Param("id") Long id,
-                   @Param("tenantId") Long tenantId);
+    int deleteById(@Param("id") Long id);
 }

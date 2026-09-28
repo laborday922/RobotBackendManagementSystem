@@ -7,10 +7,10 @@
 
     <insert id="insertReport" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO data_report (
-            report_name, report_type, start_date, end_date, status, created_at, tenant_id,
+            report_name, report_type, start_date, end_date, status, created_at,
             analysis_dimension, custom_prompt, report_depth
         ) VALUES (
-                     #{reportName}, #{reportType}, #{startDate}, #{endDate}, #{status}, NOW(), #{tenantId},
+                     #{reportName}, #{reportType}, #{startDate}, #{endDate}, #{status}, NOW(),
                      #{analysisDimension}, #{customPrompt}, #{reportDepth}
                  )
     </insert>
@@ -19,10 +19,6 @@
         SELECT *
         FROM data_report
         <where>
-
-            <if test="tenantId != null">
-                AND tenant_id = #{tenantId}
-            </if>
 
             <if test="reportType != null and reportType != ''">
                 AND report_type = #{reportType}
@@ -43,22 +39,9 @@
 
     <select id="selectById" resultType="com.ruoyi.data.ai.mapper.po.ReportPo">
         SELECT * FROM data_report WHERE id = #{id}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
-    </select>
-
-    <select id="selectContentByReportId" resultType="com.ruoyi.data.ai.mapper.po.ReportContentPo">
-        SELECT * FROM data_report_content WHERE report_id = #{reportId}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </select>
 
     <delete id="deleteById">
         DELETE FROM data_report WHERE id = #{id}
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
     </delete>
 </mapper>

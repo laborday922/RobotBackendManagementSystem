@@ -7,9 +7,11 @@
 
     <insert id="insertReport" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO data_report (
-            report_name, report_type, start_date, end_date, status, created_at, tenant_id
+            report_name, report_type, start_date, end_date, status, created_at, tenant_id,
+            analysis_dimension, custom_prompt, report_depth
         ) VALUES (
-                     #{reportName}, #{reportType}, #{startDate}, #{endDate}, #{status}, NOW(), #{tenantId}
+                     #{reportName}, #{reportType}, #{startDate}, #{endDate}, #{status}, NOW(), #{tenantId},
+                     #{analysisDimension}, #{customPrompt}, #{reportDepth}
                  )
     </insert>
 

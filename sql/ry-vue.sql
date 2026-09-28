@@ -131,6 +131,9 @@ CREATE TABLE `data_report`  (
   `created_at` datetime NULL DEFAULT NULL,
   `updated_at` datetime NULL DEFAULT NULL,
   `tenant_id` int NULL DEFAULT NULL COMMENT '租户ID',
+  `analysis_dimension` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '分析维度',
+  `custom_prompt` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL COMMENT '自定义提示词',
+  `report_depth` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_ci NULL DEFAULT NULL COMMENT '报告深度',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_data_report_tenant`(`tenant_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_as_ci ROW_FORMAT = DYNAMIC;
@@ -138,10 +141,10 @@ CREATE TABLE `data_report`  (
 -- ----------------------------
 -- Records of data_report
 -- ----------------------------
-INSERT INTO `data_report` VALUES (10, 'quality报告_2021-08-03_2028-09-22_v1786174210', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:30:13', NULL, NULL);
-INSERT INTO `data_report` VALUES (11, 'quality报告_2021-08-03_2028-09-22_v1786174283', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:31:26', NULL, NULL);
-INSERT INTO `data_report` VALUES (12, 'quality报告_2021-08-03_2028-09-22_v1786174337', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:32:19', NULL, NULL);
-INSERT INTO `data_report` VALUES (13, 'quality报告_2022-08-11_2026-09-24_v1786344790', 'quality', '2022-08-11', '2026-09-24', 'success', NULL, NULL, '2026-08-10 14:53:10', NULL, NULL);
+INSERT INTO `data_report` VALUES (10, 'quality报告_2021-08-03_2028-09-22_v1786174210', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:30:13', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `data_report` VALUES (11, 'quality报告_2021-08-03_2028-09-22_v1786174283', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:31:26', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `data_report` VALUES (12, 'quality报告_2021-08-03_2028-09-22_v1786174337', 'quality', '2021-08-03', '2028-09-22', 'success', NULL, NULL, '2026-08-08 15:32:19', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `data_report` VALUES (13, 'quality报告_2022-08-11_2026-09-24_v1786344790', 'quality', '2022-08-11', '2026-09-24', 'success', NULL, NULL, '2026-08-10 14:53:10', NULL, NULL, NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for data_report_content

@@ -14,9 +14,10 @@
     </insert>
 
     <select id="selectContentByReportId" resultType="com.ruoyi.data.ai.mapper.po.ReportContentPo">
-        SELECT * FROM data_report_content WHERE report_id = #{reportId}
+        SELECT * FROM data_report_content
+        WHERE report_id = #{reportId}
         <if test="tenantId != null">
-            WHERE tenant_id = #{tenantId}
+            AND tenant_id = #{tenantId}
         </if>
     </select>
 

@@ -16,4 +16,7 @@ public class ReportPo {
     private String fileUrl;
     private Date createdAt;
     private Long tenantId;
+    private String analysisDimension;
+    private String customPrompt;
+    private String reportDepth;
 }

@@ -107,17 +107,7 @@ public class ReportServiceImpl implements ReportService {
             throw new RuntimeException("无法获取租户信息，请重新登录");
         }
 
-        // 3. 从数据库查询原始数据
-        String rawData = fetchRawData(analysisDimension, startDate, endDate, tenantId);
-
-        // 4. 构建 AI Prompt
-        String aiPrompt = buildAIPrompt(reportType, startDate, endDate, analysisDimension,
-                rawData, customPrompt, reportDepth);
-
-        // 5. 调用 AI 服务生成报告
-        String aiResult = siliconFlowService.chat(aiPrompt);
-
-        // 6. 保存报告元数据
+        // 3. 保存报告元数据（含生成参数，便于后续内容缺失时重新生成）
         ReportPo reportPO = new ReportPo();
         // 使用时间戳作为版本号
         String reportName = String.format("%s报告_%s_%s_v%d",
@@ -128,14 +118,35 @@ public class ReportServiceImpl implements ReportService {
         reportPO.setEndDate(java.sql.Date.valueOf(endDate));
         reportPO.setStatus("success");
         reportPO.setCreatedAt(new Date());
+        reportPO.setTenantId(tenantId);
+        reportPO.setAnalysisDimension(analysisDimension);
+        reportPO.setCustomPrompt(customPrompt);
+        reportPO.setReportDepth(reportDepth);
         reportMapper.insertReport(reportPO);
 
-        // 7. 保存报告内容
+        // 4. 生成并保存报告内容
+        return generateContent(reportPO);
+    }
+
+    /**
+     * 根据报告元数据生成报告内容并保存到 data_report_content，
+     * 同时用于 content 缺失时的补偿生成。
+     */
+    private String generateContent(ReportPo report) {
+        String start = report.getStartDate() == null ? null : report.getStartDate().toString();
+        String end = report.getEndDate() == null ? null : report.getEndDate().toString();
+        String depth = report.getReportDepth() == null ? "standard" : report.getReportDepth();
+
+        String rawData = fetchRawData(report.getAnalysisDimension(), start, end, report.getTenantId());
+        String aiPrompt = buildAIPrompt(report.getReportType(), start, end,
+                report.getAnalysisDimension(), rawData, report.getCustomPrompt(), depth);
+        String aiResult = siliconFlowService.chat(aiPrompt);
+
         ReportContentPo contentPO = new ReportContentPo();
-        contentPO.setReportId(reportPO.getId());
+        contentPO.setReportId(report.getId());
         contentPO.setContent(aiResult);
+        contentPO.setTenantId(report.getTenantId());
         contentMapper.insertContent(contentPO);
-        // 8. 返回报告内容
         return aiResult;
     }
 
@@ -194,8 +205,16 @@ public class ReportServiceImpl implements ReportService {
 
         ReportContentPo contentPO = contentMapper.selectContentByReportId(id, tenantId);
         if (contentPO == null || contentPO.getContent() == null) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND, "报告内容不存在");
-            return;
+            try {
+                String content = generateContent(report);
+                contentPO = new ReportContentPo();
+                contentPO.setReportId(report.getId());
+                contentPO.setContent(content);
+            } catch (Exception e) {
+                log.error("重新生成报告内容失败, id={}", id, e);
+                writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "报告内容生成失败，请稍后重试");
+                return;
+            }
         }
         String markdown = contentPO.getContent();
 
@@ -344,6 +363,12 @@ public class ReportServiceImpl implements ReportService {
         }
 
         ReportContentPo contentPo = contentMapper.selectContentByReportId(id, tenantId);
+        if (contentPo == null || contentPo.getContent() == null) {
+            String content = generateContent(report);
+            contentPo = new ReportContentPo();
+            contentPo.setReportId(report.getId());
+            contentPo.setContent(content);
+        }
 
         ReportDetailVo vo = new ReportDetailVo();
 

@@ -42,6 +42,10 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     @Getter
     protected final Map<Long, WebSocketSession> robotSessions = new ConcurrentHashMap<>();
 
+    /** 机器人ID -> 最近一次收到消息的时间（毫秒时间戳），用于心跳超时判定 */
+    @Getter
+    protected final Map<Long, Long> lastActiveTime = new ConcurrentHashMap<>();
+
     /** correlationId -> CompletableFuture<RobotWebSocketMessage> 映射（通用原始响应） */
     protected final Map<String, CompletableFuture<RobotWebSocketMessage>> pendingRawResponses = new ConcurrentHashMap<>();
 
@@ -56,6 +60,11 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
         String payload = message.getPayload();
         RobotWebSocketMessage wsMsg = objectMapper.readValue(payload, RobotWebSocketMessage.class);
         String type = wsMsg.getType();
+
+        Long activeRobotId = (Long) session.getAttributes().get("robotId");
+        if (activeRobotId != null) {
+            lastActiveTime.put(activeRobotId, System.currentTimeMillis());
+        }
 
         if ("AUTH".equals(type)) {
             handleAuth(session, wsMsg);
@@ -82,6 +91,7 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
             robotSessions.put(robotId, session);
             session.getAttributes().put("robotId", robotId);
             session.getAttributes().put("authenticated", true);
+            lastActiveTime.put(robotId, System.currentTimeMillis());
 
             // 更新在线状态和心跳时间
             RobotStatusDto robot = new RobotStatusDto();
@@ -181,31 +191,52 @@ public class RobotWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Long robotId = (Long) session.getAttributes().get("robotId");
-        if (robotId != null) {
-            robotSessions.remove(robotId);
-            RobotStatusDto robot = new RobotStatusDto();
-            robot.setId(robotId);
-            robot.setStatus(0);
-            robot.setLastHeartbeatTime(new Date(0));
-            robotService.updateRobotStatus(robot);
-            log.info("机器人 {} 断开连接", robotId);
-            eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, false));
+        if (robotId != null && robotSessions.remove(robotId) != null) {
+            lastActiveTime.remove(robotId);
+            markOffline(robotId);
         }
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         Long robotId = (Long) session.getAttributes().get("robotId");
-        if (robotId != null) {
-            robotSessions.remove(robotId);
-            RobotStatusDto robot = new RobotStatusDto();
-            robot.setId(robotId);
-            robot.setStatus(0);
-            robot.setLastHeartbeatTime(new Date(0));
-            robotService.updateRobotStatus(robot);
-            eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, false));
+        if (robotId != null && robotSessions.remove(robotId) != null) {
+            lastActiveTime.remove(robotId);
+            markOffline(robotId);
         }
         log.error("WebSocket传输错误", exception);
+    }
+
+    /**
+     * 心跳超时判定为离线：从会话表移除并标记离线，随后关闭底层会话。
+     * 关闭会话会再次触发 afterConnectionClosed，但此时会话已从 map 移除，不会重复处理。
+     */
+    public void handleTimeoutOffline(Long robotId) {
+        WebSocketSession session = robotSessions.remove(robotId);
+        lastActiveTime.remove(robotId);
+        if (session != null) {
+            markOffline(robotId);
+            if (session.isOpen()) {
+                try {
+                    session.close(CloseStatus.NORMAL);
+                } catch (IOException e) {
+                    log.error("关闭超时会话失败: {}", robotId, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * 将机器人标记为离线并发布离线事件
+     */
+    private void markOffline(Long robotId) {
+        RobotStatusDto robot = new RobotStatusDto();
+        robot.setId(robotId);
+        robot.setStatus(0);
+        robot.setLastHeartbeatTime(new Date(0));
+        robotService.updateRobotStatus(robot);
+        eventPublisher.publishEvent(new RobotConnectedEvent(this, robotId, false));
+        log.info("机器人 {} 断开连接", robotId);
     }
 
     /**

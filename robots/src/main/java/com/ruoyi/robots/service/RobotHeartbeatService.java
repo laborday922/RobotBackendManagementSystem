@@ -5,12 +5,14 @@ import com.ruoyi.robots.websocket.RobotWebSocketHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -19,6 +21,10 @@ public class RobotHeartbeatService {
     private RobotWebSocketHandler webSocketHandler;
     @Autowired
     private IRobotsService robotService;
+
+    /** 心跳超时阈值（毫秒），超过该时长未收到机器人消息则判定为离线 */
+    @Value("${robot.heartbeat.timeout:30000}")
+    private long heartbeatTimeout;
 
     @Scheduled(fixedDelay = 10000) // 每30秒发送一次心跳
     public void sendHeartbeat() {
@@ -46,6 +52,23 @@ public class RobotHeartbeatService {
                         log.error("关闭会话失败", ex);
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * 心跳超时检测：对已连接但长时间未收到任何消息的机器人判定为离线并关闭会话。
+     * 用于覆盖机器人被强制关机（未发送 CLOSE/FIN）导致服务端无法感知断开的场景。
+     */
+    @Scheduled(fixedDelay = 10000)
+    public void checkHeartbeatTimeout() {
+        long now = System.currentTimeMillis();
+        for (Map.Entry<Long, WebSocketSession> entry : webSocketHandler.getRobotSessions().entrySet()) {
+            Long robotId = entry.getKey();
+            Long lastActive = webSocketHandler.getLastActiveTime().get(robotId);
+            if (lastActive != null && now - lastActive > heartbeatTimeout) {
+                log.warn("机器人 {} 心跳超时（{}ms 未收到消息），判定离线", robotId, now - lastActive);
+                webSocketHandler.handleTimeoutOffline(robotId);
             }
         }
     }

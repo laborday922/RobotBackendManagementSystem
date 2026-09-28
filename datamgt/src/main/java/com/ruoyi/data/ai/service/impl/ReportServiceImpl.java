@@ -24,9 +24,14 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -38,6 +43,8 @@ import java.util.stream.Collectors;
 public class ReportServiceImpl implements ReportService {
 
     private static final Logger log = LoggerFactory.getLogger(ReportServiceImpl.class);
+    private static final String PDF_FONT_RESOURCE = "/fonts/NotoSansCJKsc-Regular.otf";
+    private static volatile String cachedPdfFontPath;
 
     @Autowired
     private SiliconFlowService siliconFlowService;
@@ -204,11 +211,11 @@ public class ReportServiceImpl implements ReportService {
 
                 ITextRenderer renderer = new ITextRenderer();
 
-                // ⚠️ 中文字体（关键！！！）
+                String fontPath = getPdfFontPath();
                 renderer.getFontResolver().addFont(
-                        "C:/Windows/Fonts/simsun.ttc",
+                        fontPath,
                         com.lowagie.text.pdf.BaseFont.IDENTITY_H,
-                        com.lowagie.text.pdf.BaseFont.NOT_EMBEDDED
+                        com.lowagie.text.pdf.BaseFont.EMBEDDED
                 );
 
                 renderer.setDocumentFromString(fullHtml);
@@ -264,12 +271,36 @@ public class ReportServiceImpl implements ReportService {
         }
     }
 
+    private String prepareClasspathFont(String classpathLocation) throws IOException {
+        try (InputStream in = ReportServiceImpl.class.getResourceAsStream(classpathLocation)) {
+            if (in == null) {
+                throw new FileNotFoundException("字体资源不存在: " + classpathLocation);
+            }
+            Path tmp = Files.createTempFile("report-font-", ".otf");
+            Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+            tmp.toFile().deleteOnExit();
+            return tmp.toAbsolutePath().toString();
+        }
+    }
+
+    private String getPdfFontPath() throws IOException {
+        if (cachedPdfFontPath != null) {
+            return cachedPdfFontPath;
+        }
+        synchronized (ReportServiceImpl.class) {
+            if (cachedPdfFontPath == null) {
+                cachedPdfFontPath = prepareClasspathFont(PDF_FONT_RESOURCE);
+            }
+            return cachedPdfFontPath;
+        }
+    }
+
     public String buildHtml(String body) {
         return "<html>" +
                 "<head>" +
                 "<meta charset='UTF-8'/>" +
                 "<style>" +
-                "body { font-family: SimSun; padding: 20px; }" +
+                "body { font-family: 'Noto Sans CJK SC', SimSun, 'Microsoft YaHei', sans-serif; padding: 20px; }" +
                 "h1 { font-size: 24px; }" +
                 "h2 { font-size: 20px; }" +
                 "h3 { font-size: 16px; }" +

@@ -133,8 +133,8 @@ public class ReportServiceImpl implements ReportService {
      * 同时用于 content 缺失时的补偿生成。
      */
     private String generateContent(ReportPo report) {
-        String start = report.getStartDate() == null ? null : report.getStartDate().toString();
-        String end = report.getEndDate() == null ? null : report.getEndDate().toString();
+        String start = toDateString(report.getStartDate());
+        String end = toDateString(report.getEndDate());
         String depth = report.getReportDepth() == null ? "standard" : report.getReportDepth();
 
         String rawData = fetchRawData(report.getAnalysisDimension(), start, end, report.getTenantId());
@@ -142,12 +142,27 @@ public class ReportServiceImpl implements ReportService {
                 report.getAnalysisDimension(), rawData, report.getCustomPrompt(), depth);
         String aiResult = siliconFlowService.chat(aiPrompt);
 
-        ReportContentPo contentPO = new ReportContentPo();
-        contentPO.setReportId(report.getId());
-        contentPO.setContent(aiResult);
-        contentPO.setTenantId(report.getTenantId());
-        contentMapper.insertContent(contentPO);
+        // 已有内容则更新，避免重复插入；否则插入新记录
+        ReportContentPo existing = contentMapper.selectContentByReportId(report.getId(), report.getTenantId());
+        if (existing != null) {
+            existing.setContent(aiResult);
+            contentMapper.updateContent(existing);
+        } else {
+            ReportContentPo contentPO = new ReportContentPo();
+            contentPO.setReportId(report.getId());
+            contentPO.setContent(aiResult);
+            contentPO.setTenantId(report.getTenantId());
+            contentMapper.insertContent(contentPO);
+        }
         return aiResult;
+    }
+
+    /**
+     * 将日期格式化为 yyyy-MM-dd，避免 java.util.Date.toString() 的默认格式
+     * （如 Mon Sep 01 00:00:00 CST 2025）无法被 MySQL 的 DATE 类型识别。
+     */
+    private String toDateString(Date date) {
+        return date == null ? null : new java.sql.Date(date.getTime()).toString();
     }
 
     /**

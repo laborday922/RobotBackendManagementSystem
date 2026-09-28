@@ -68,7 +68,7 @@
               <i class="fas fa-play"></i>
               开始生成报告
             </el-button>
-            <el-button @click="resetReportForm">
+            <el-button :disabled="generating" @click="resetReportForm">
               <i class="fas fa-undo"></i>
               重置
             </el-button>
@@ -145,8 +145,8 @@
             </el-table-column>
             <el-table-column label="操作" width="260">
               <template #default="scope">
-                <el-button size="small" @click="viewReportDetail(scope.row)">查看</el-button>
-                <el-button size="small" @click="downloadReportById(scope.row.id)">下载</el-button>
+                <el-button size="small" :loading="viewingId === scope.row.id" @click="viewReportDetail(scope.row)">查看</el-button>
+                <el-button size="small" :loading="downloadingId === scope.row.id" @click="downloadReportById(scope.row.id)">下载</el-button>
                 <el-button size="small" type="danger" @click="deleteReport(scope.row.id)">删除</el-button>
               </template>
             </el-table-column>
@@ -324,6 +324,8 @@ export default {
       reportDetail: null,
       detailVisible: false,
       loadingReports: false,
+      viewingId: null,
+      downloadingId: null,
 
       // 问题分类数据
       problemCategories: [],
@@ -360,7 +362,7 @@ export default {
       }
 
       this.generating = true
-      this.previewStatusText = '生成中...'
+      this.previewStatusText = '正在生成，请稍候...'
       this.previewStatusClass = 'generating'
 
       try {
@@ -469,6 +471,7 @@ export default {
     },
 
     async viewReportDetail(row) {
+      this.viewingId = row.id
       try {
         const res = await getReportDetail(row.id)
         if (res.code === 200) {
@@ -481,10 +484,13 @@ export default {
         }
       } catch (error) {
         this.$message.error(error.message || '加载报告详情失败')
+      } finally {
+        this.viewingId = null
       }
     },
 
     downloadReportById(id) {
+      this.downloadingId = id
       downloadReport(id, 'pdf').then(blob => {
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -497,6 +503,8 @@ export default {
         this.$message.success('下载已开始')
       }).catch(error => {
         this.$message.error('下载失败')
+      }).finally(() => {
+        this.downloadingId = null
       })
     },
 

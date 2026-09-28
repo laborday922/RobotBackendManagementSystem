@@ -26,7 +26,8 @@ export function downloadReport(id, format) {
     url: `/ai/reports/${id}/download`,
     method: 'get',
     params: { format },
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 60000
   })
 }
 
@@ -34,7 +35,8 @@ export function downloadReport(id, format) {
 export function getReportDetail(id) {
   return request({
     url: `/ai/reports/${id}`,
-    method: 'get'
+    method: 'get',
+    timeout: 60000
   })
 }
 

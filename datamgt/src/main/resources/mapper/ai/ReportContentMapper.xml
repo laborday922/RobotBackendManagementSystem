@@ -13,12 +13,23 @@
                  )
     </insert>
 
+    <update id="updateContent">
+        UPDATE data_report_content
+        SET content = #{content},
+            summary = #{summary},
+            highlights = #{highlights},
+            created_at = NOW()
+        WHERE id = #{id}
+    </update>
+
     <select id="selectContentByReportId" resultType="com.ruoyi.data.ai.mapper.po.ReportContentPo">
         SELECT * FROM data_report_content
         WHERE report_id = #{reportId}
         <if test="tenantId != null">
             AND tenant_id = #{tenantId}
         </if>
+        ORDER BY id DESC
+        LIMIT 1
     </select>
 
 </mapper>

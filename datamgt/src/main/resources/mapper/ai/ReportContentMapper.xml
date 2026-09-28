@@ -22,6 +22,10 @@
         WHERE id = #{id}
     </update>
 
+    <delete id="deleteContentByReportId">
+        DELETE FROM data_report_content WHERE report_id = #{reportId}
+    </delete>
+
     <select id="selectContentByReportId" resultType="com.ruoyi.data.ai.mapper.po.ReportContentPo">
         SELECT * FROM data_report_content
         WHERE report_id = #{reportId}

@@ -118,7 +118,6 @@ public class ReportServiceImpl implements ReportService {
         reportPO.setEndDate(java.sql.Date.valueOf(endDate));
         reportPO.setStatus("success");
         reportPO.setCreatedAt(new Date());
-        reportPO.setTenantId(tenantId);
         reportPO.setAnalysisDimension(analysisDimension);
         reportPO.setCustomPrompt(customPrompt);
         reportPO.setReportDepth(reportDepth);
@@ -137,13 +136,13 @@ public class ReportServiceImpl implements ReportService {
         String end = toDateString(report.getEndDate());
         String depth = report.getReportDepth() == null ? "standard" : report.getReportDepth();
 
-        String rawData = fetchRawData(report.getAnalysisDimension(), start, end, report.getTenantId());
+        String rawData = fetchRawData(report.getAnalysisDimension(), start, end, TenantContext.get());
         String aiPrompt = buildAIPrompt(report.getReportType(), start, end,
                 report.getAnalysisDimension(), rawData, report.getCustomPrompt(), depth);
         String aiResult = siliconFlowService.chat(aiPrompt);
 
         // 已有内容则更新，避免重复插入；否则插入新记录
-        ReportContentPo existing = contentMapper.selectContentByReportId(report.getId(), report.getTenantId());
+        ReportContentPo existing = contentMapper.selectContentByReportId(report.getId(), null);
         if (existing != null) {
             existing.setContent(aiResult);
             contentMapper.updateContent(existing);
@@ -151,7 +150,6 @@ public class ReportServiceImpl implements ReportService {
             ReportContentPo contentPO = new ReportContentPo();
             contentPO.setReportId(report.getId());
             contentPO.setContent(aiResult);
-            contentPO.setTenantId(report.getTenantId());
             contentMapper.insertContent(contentPO);
         }
         return aiResult;
@@ -409,6 +407,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public int deleteById(Long id) {
         Long tenantId = TenantContext.get();
+        contentMapper.deleteContentByReportId(id);
         return reportMapper.deleteById(id,tenantId);
     }
 

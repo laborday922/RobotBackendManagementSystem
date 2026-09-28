@@ -16,19 +16,28 @@ import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class ReportServiceImpl implements ReportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportServiceImpl.class);
 
     @Autowired
     private SiliconFlowService siliconFlowService;
@@ -172,14 +181,20 @@ public class ReportServiceImpl implements ReportService {
         ReportPo report = reportMapper.selectById(id, tenantId);
 
         if (report == null) {
-            throw new RuntimeException("报告不存在");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, "报告不存在");
+            return;
         }
 
         ReportContentPo contentPO = contentMapper.selectContentByReportId(id, tenantId);
+        if (contentPO == null || contentPO.getContent() == null) {
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, "报告内容不存在");
+            return;
+        }
         String markdown = contentPO.getContent();
 
         try {
-            if ("pdf".equals(format)) {
+            String normalizedFormat = format == null ? "" : format.trim().toLowerCase(Locale.ROOT);
+            if ("pdf".equals(normalizedFormat)) {
 
                 // ✅ 1. Markdown → HTML
                 String htmlBody = markdownToHtml(markdown);
@@ -187,11 +202,6 @@ public class ReportServiceImpl implements ReportService {
                 // ✅ 2. 包装完整HTML（加样式）
                 String fullHtml = buildHtml(htmlBody);
 
-                // ✅ 3. 设置响应头
-                response.setContentType("application/pdf");
-                response.setHeader("Content-Disposition", "attachment;filename=report.pdf");
-
-                // ✅ 4. 生成PDF
                 ITextRenderer renderer = new ITextRenderer();
 
                 // ⚠️ 中文字体（关键！！！）
@@ -203,9 +213,26 @@ public class ReportServiceImpl implements ReportService {
 
                 renderer.setDocumentFromString(fullHtml);
                 renderer.layout();
-                renderer.createPDF(response.getOutputStream());
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                renderer.createPDF(baos);
+                renderer.finishPDF();
 
-            } else if ("html".equals(format)) {
+                byte[] pdfBytes = baos.toByteArray();
+
+                String baseName = report.getReportName() == null || report.getReportName().trim().isEmpty()
+                        ? "report"
+                        : report.getReportName().trim();
+                String fileName = baseName.endsWith(".pdf") ? baseName : baseName + ".pdf";
+                String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replace("+", "%20");
+
+                response.reset();
+                response.setContentType("application/pdf");
+                response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
+                response.setHeader("Content-Length", String.valueOf(pdfBytes.length));
+                response.getOutputStream().write(pdfBytes);
+                response.flushBuffer();
+
+            } else if ("html".equals(normalizedFormat)) {
 
                 String htmlBody = markdownToHtml(markdown);
                 String fullHtml = buildHtml(htmlBody);
@@ -214,12 +241,26 @@ public class ReportServiceImpl implements ReportService {
                 response.getWriter().write(fullHtml);
 
             } else {
-                throw new RuntimeException("暂不支持该格式");
+                writeError(response, HttpServletResponse.SC_BAD_REQUEST, "暂不支持该格式");
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("下载失败");
+            log.error("下载报告失败, id={}, format={}", id, format, e);
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "下载失败");
+        }
+    }
+
+    private void writeError(HttpServletResponse response, int status, String message) {
+        if (response == null || response.isCommitted()) {
+            return;
+        }
+        try {
+            response.reset();
+            response.setStatus(status);
+            response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write(message);
+            response.flushBuffer();
+        } catch (IOException ignored) {
         }
     }
 

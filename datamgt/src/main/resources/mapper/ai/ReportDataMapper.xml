@@ -11,9 +11,11 @@
             status,
             COUNT(*) AS count
         FROM tm_task
-        <if test="tenantId != null">
-            AND tenant_id = #{tenantId}
-        </if>
+        <where>
+            <if test="tenantId != null">
+                tenant_id = #{tenantId}
+            </if>
+        </where>
         GROUP BY status
     </select>
 
@@ -42,19 +44,20 @@
     <select id="getLatestCleanedInteractions" resultType="java.lang.String">
         SELECT clean_content
         FROM clean_interaction_result
-
-        <if test="tenantId != null">
-            WHERE tenant_id = #{tenantId}
-        </if>
-
-        AND task_id = (
-        SELECT MAX(task_id)
-        FROM clean_interaction_result
-
-        <if test="tenantId != null">
-            WHERE tenant_id = #{tenantId}
-        </if>
-        )
+        <where>
+            <if test="tenantId != null">
+                tenant_id = #{tenantId}
+            </if>
+            AND task_id = (
+                SELECT MAX(task_id)
+                FROM clean_interaction_result
+                <where>
+                    <if test="tenantId != null">
+                        tenant_id = #{tenantId}
+                    </if>
+                </where>
+            )
+        </where>
     </select>
 
     <!-- 按时间范围获取交互文本（使用 clean_time） -->

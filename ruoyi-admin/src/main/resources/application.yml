@@ -166,7 +166,7 @@ mode:
 
 # 硅基流动配置
 siliconflow:
-  api-key: ${SILICONFLOW_API_KEY:sk-sgisogtvczvranturblgmfnnmzpwflmzpeaakbhyolrejhbd}
+  api-key: ${SILICONFLOW_API_KEY:}
   base-url: https://api.siliconflow.cn
   model: Qwen/Qwen2.5-72B-Instruct
 
@@ -176,10 +176,10 @@ kg:
     token: ""
 
 dify:
-  base-url: "http://119.91.158.102:8048/v1"
-  api-key: "app-EdNaeoq8ej55IDR7LGo6Clz1"
-  dataset-id: "709bfc53-936e-49e2-9c22-ea540675dd0f"
-  dataset-api-key: "dataset-8KxfPzicN2K0epRTSNkVZ1Ww"
+  base-url: ""
+  api-key: ""
+  dataset-id: ""
+  dataset-api-key: ""
   connect-timeout-seconds: 10
   request-timeout-seconds: 300
 
@@ -188,7 +188,7 @@ qa:
     translation:
       enabled: true
       base-url: ${QA_CHAT_TRANSLATION_BASE_URL:https://api.siliconflow.cn/v1}
-      api-key: ${QA_CHAT_TRANSLATION_API_KEY:sk-sgisogtvczvranturblgmfnnmzpwflmzpeaakbhyolrejhbd}
+      api-key: ${QA_CHAT_TRANSLATION_API_KEY:}
       model: ${QA_CHAT_TRANSLATION_MODEL:Qwen/Qwen2.5-14B-Instruct}
       connect-timeout-seconds: 10
       request-timeout-seconds: 60
